@@ -11,6 +11,16 @@ export interface User {
 
 export const supabaseService = {
   async signUp(email: string, password: string, role: UserRole, name: string) {
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -57,5 +67,14 @@ export const supabaseService = {
     
     if (error) throw error;
     return data as User;
+  },
+
+  async checkIfUsersExist() {
+    const { count, error } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) throw error;
+    return count && count > 0;
   }
 }; 

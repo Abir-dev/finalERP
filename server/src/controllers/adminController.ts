@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { supabaseService } from '../services/supabaseService';
 import { UserRole } from '../utils/constants';
-import { supabase } from '../config/supabase';
 
 export const adminController = {
   async createUser(req: Request, res: Response): Promise<void> {
@@ -35,17 +34,10 @@ export const adminController = {
       const { email, password, name } = req.body;
       
       // Check if any user exists
-      const { data: existingUsers, error: checkError } = await supabase
-        .from('users')
-        .select('count');
-      
-      if (checkError) {
-        res.status(500).json({ error: checkError.message });
-        return;
-      }
+      const usersExist = await supabaseService.checkIfUsersExist();
       
       // If users exist, prevent creating initial admin
-      if (existingUsers && existingUsers.length > 0) {
+      if (usersExist) {
         res.status(403).json({ 
           error: 'Initial admin can only be created when no users exist' 
         });
