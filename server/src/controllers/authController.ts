@@ -13,8 +13,12 @@ export const authController = {
 
       const data = await supabaseService.signUp(email, password, role as UserRole, name);
       res.status(201).json(data);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: 'An unknown error occurred' });
+      }
     }
   },
 
@@ -28,8 +32,12 @@ export const authController = {
 
       const data = await supabaseService.signIn(email, password);
       res.json(data);
-    } catch (error) {
-      res.status(401).json({ error: error.message });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(401).json({ error: error.message });
+      } else {
+        res.status(401).json({ error: 'An unknown error occurred' });
+      }
     }
   },
 
@@ -42,8 +50,12 @@ export const authController = {
 
       const user = await supabaseService.getUserById(userId);
       res.json(user);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: 'An unknown error occurred' });
+      }
     }
   }
 }; 
