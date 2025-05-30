@@ -28,7 +28,8 @@ export const supabaseService = {
         data: {
           role,
           name
-        }
+        },
+        emailRedirectTo: `${process.env.CLIENT_URL || 'http://localhost:5000'}/auth/callback`
       }
     });
     

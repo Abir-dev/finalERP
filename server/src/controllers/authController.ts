@@ -24,15 +24,18 @@ export const authController = {
 
   async login(req: Request, res: Response) {
     try {
+      console.log('Login attempt with body:', req.body);
       const { email, password } = req.body;
 
       if (!email || !password) {
+        console.log('Missing credentials:', { email: !!email, password: !!password });
         return res.status(400).json({ error: 'Missing email or password' });
       }
 
       const data = await supabaseService.signIn(email, password);
       res.json(data);
     } catch (error: unknown) {
+      console.error('Login error:', error);
       if (error instanceof Error) {
         res.status(401).json({ error: error.message });
       } else {

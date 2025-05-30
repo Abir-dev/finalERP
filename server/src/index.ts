@@ -13,6 +13,15 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Debug middleware to log request body
+app.use((req, res, next) => {
+  if (req.body) {
+    console.log('Request Body:', JSON.stringify(req.body));
+    console.log('Content-Type:', req.headers['content-type']);
+  }
+  next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
@@ -25,9 +34,11 @@ app.get('/health', (req, res) => {
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({   
+    error: 'Something went wrong!',
+    message: err.message,  });
 });
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-}); 
+});
