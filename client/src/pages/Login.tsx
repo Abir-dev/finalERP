@@ -38,32 +38,32 @@ const Login = () => {
       });
       
       // Navigate based on email address
-      switch (email) {
-        case "md@constructflow.com":
-          navigate("/");
-          break;
-        case "admin@constructflow.com":
-          navigate("/");
-          break;
-        case "client-manager@constructflow.com":
-          navigate("/client-manager");
-          break;
-        case "store@constructflow.com":
-          navigate("/store-manager");
-          break;
-        case "accounts@constructflow.com":
-          navigate("/accounts-manager");
-          break;
-        case "site@constructflow.com":
-          navigate("/site-manager");
-          break;
-        case "client@constructflow.com":
-          navigate("/client-portal");
-          break;
-        default:
-          // Default navigation for any other email
-          navigate("/");
-      }
+      // switch (email) {
+      //   case "md@constructflow.com":
+      //     navigate("/");
+      //     break;
+      //   case "admin@constructflow.com":
+      //     navigate("/");
+      //     break;
+      //   case "client-manager@constructflow.com":
+      //     navigate("/client-manager");
+      //     break;
+      //   case "store@constructflow.com":
+      //     navigate("/store-manager");
+      //     break;
+      //   case "accounts@constructflow.com":
+      //     navigate("/accounts-manager");
+      //     break;
+      //   case "site@constructflow.com":
+      //     navigate("/site-manager");
+      //     break;
+      //   case "client@constructflow.com":
+      //     navigate("/client-portal");
+      //     break;
+      //   default:
+      //     // Default navigation for any other email
+      //     navigate("/");
+      // }
     } catch (err: any) {
       toast({
         title: "Login failed",
