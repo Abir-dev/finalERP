@@ -77,5 +77,10 @@ export const supabaseService = {
     
     if (error) throw error;
     return count && count > 0;
+  },
+
+  async signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   }
 }; 
