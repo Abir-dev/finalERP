@@ -8,7 +8,6 @@ export interface User {
   name: string;
   avatar?: string;
 }
-
 export const supabaseService = {
   async signUp(email: string, password: string, role: UserRole, name: string) {
     const { data: existingUser, error: checkError } = await supabase
@@ -32,7 +31,7 @@ export const supabaseService = {
         emailRedirectTo: `${process.env.CLIENT_URL || 'http://localhost:5000'}/auth/callback`
       }
     });
-    
+
     if (error) throw error;
     return data;
   },
@@ -42,7 +41,7 @@ export const supabaseService = {
       email,
       password
     });
-    
+
     if (error) throw error;
     return data;
   },
@@ -53,7 +52,7 @@ export const supabaseService = {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) throw error;
     return data as User;
   },
@@ -65,7 +64,7 @@ export const supabaseService = {
       .eq('id', id)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data as User;
   },
@@ -74,13 +73,8 @@ export const supabaseService = {
     const { count, error } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true });
-    
+
     if (error) throw error;
     return count && count > 0;
-  },
-
-  async signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
   }
 }; 

@@ -60,39 +60,5 @@ export const authController = {
         res.status(400).json({ error: 'An unknown error occurred' });
       }
     }
-  },
-
-  async logout(req: Request, res: Response) {
-    try {
-      await supabaseService.signOut();
-      res.status(200).json({ message: 'Successfully logged out' });
-    } catch (error: unknown) {
-      console.error('Logout error:', error);
-      if (error instanceof Error) {
-        res.status(500).json({ error: error.message });
-      } else {
-        res.status(500).json({ error: 'An unknown error occurred during logout' });
-      }
-    }
-  },
-
-  async updateProfile(req: Request, res: Response) {
-    try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const updates = req.body;
-      const updatedUser = await supabaseService.updateUser(userId, updates);
-      res.json(updatedUser);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(400).json({ error: error.message });
-      } else {
-        res.status(400).json({ error: 'An unknown error occurred' });
-      }
-    }
-  }
+ }
 }; 
-
