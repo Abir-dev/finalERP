@@ -1,4 +1,4 @@
-
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,15 +11,63 @@ import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 
 const Profile = () => {
-  const { user } = useUser();
+  const { user, updateProfile } = useUser();
   const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    firstName: user?.name.split(' ')[0] || '',
+    lastName: user?.name.split(' ')[1] || '',
+    email: user?.email || '',
+    avatar: user?.avatar || ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSave = () => {
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully.",
-      duration: 3000,
-    });
+  const handleSave = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Validate avatar URL if provided
+      if (formData.avatar && !/^https?:\/\//i.test(formData.avatar)) {
+        toast({
+          title: "Invalid avatar URL",
+          description: "Avatar URL must start with http:// or https://",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const updates = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        avatar: formData.avatar || null
+      };
+
+      await updateProfile(updates);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update profile",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Here you would typically upload the file to your storage service
+      // and get back a URL. For now, we'll just show a success message.
+      toast({
+        title: "Avatar upload",
+        description: "This feature is not implemented yet. Please provide an image URL instead.",
+      });
+    }
   };
 
   if (!user) return null;
@@ -37,12 +85,22 @@ const Profile = () => {
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <Avatar className="h-32 w-32">
-                  <AvatarImage src={user.avatar} />
+                  <AvatarImage src={formData.avatar || undefined} />
                   <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <div className="absolute -right-2 -bottom-2 bg-primary rounded-full p-1.5 cursor-pointer">
+                <label 
+                  htmlFor="avatar-upload" 
+                  className="absolute -right-2 -bottom-2 bg-primary rounded-full p-1.5 cursor-pointer"
+                >
                   <Camera className="h-4 w-4 text-primary-foreground" />
-                </div>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
+                </label>
               </div>
               <div className="text-center">
                 <h3 className="font-semibold text-lg">{user.name}</h3>
@@ -101,30 +159,58 @@ const Profile = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="first-name">First Name</Label>
-                      <Input id="first-name" defaultValue={user.name.split(' ')[0]} />
+                      <Input 
+                        id="first-name" 
+                        value={formData.firstName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="last-name">Last Name</Label>
-                      <Input id="last-name" defaultValue={user.name.split(' ')[1] || ''} />
+                      <Input 
+                        id="last-name" 
+                        value={formData.lastName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue={user.email} />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" placeholder="+91 XXXXX XXXXX" />
+                    <Label htmlFor="avatar">Avatar URL</Label>
+                    <Input 
+                      id="avatar" 
+                      type="url" 
+                      value={formData.avatar}
+                      onChange={(e) => setFormData(prev => ({ ...prev, avatar: e.target.value }))}
+                      placeholder="https://example.com/avatar.jpg"
+                    />
                   </div>
                   
                   <Separator />
                   
                   <div className="flex justify-end">
-                    <Button onClick={handleSave}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
+                    <Button onClick={handleSave} disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Save className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardContent>
@@ -161,7 +247,12 @@ const Profile = () => {
                   <Separator />
                   
                   <div className="flex justify-end">
-                    <Button onClick={handleSave}>
+                    <Button onClick={() => {
+                      toast({
+                        title: "Not implemented",
+                        description: "Password change functionality is not implemented yet.",
+                      });
+                    }}>
                       <Save className="mr-2 h-4 w-4" />
                       Update Password
                     </Button>

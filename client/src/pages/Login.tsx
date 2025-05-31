@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
@@ -9,6 +8,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { useToast } from "@/components/ui/use-toast";
 import { Building2, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,7 +22,15 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Call the backend API for login
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email,
+        password
+      });
+
+      // Update the user context with the response data
       await login(email, password);
+      
       toast({
         title: "Login successful",
         description: "Welcome to ConstructFlow ERP",
@@ -54,10 +64,15 @@ const Login = () => {
           // Default navigation for any other email
           navigate("/");
       }
-    } catch (err) {
-      // Error already handled in context
-  }
-};
+    } catch (err: any) {
+      toast({
+        title: "Login failed",
+        description: err.response?.data?.error || "An error occurred during login",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/10 p-4">
