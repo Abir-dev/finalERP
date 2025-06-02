@@ -240,82 +240,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Login function
   const login = useCallback(
     async (email: string, password: string) => {
-      if (!mountedRef.current) {
-        console.log("Login cancelled: component unmounted");
-        return;
-      }
-
-      // Set loading state
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "SET_ERROR", payload: null });
-
+      console.log("Starting login process...");
       try {
-        console.log("Starting login process...");
+        dispatch({ type: "SET_LOADING", payload: true });
 
-        // Authenticate with Supabase
+        // Backend login
+        const { data } = await axios.post(`${API_URL}/auth/login`, {
+          email,
+          password,
+        });
+
+        // Supabase auth
         const { data: authData, error: authError } =
           await supabase.auth.signInWithPassword({
             email,
             password,
           });
-
-        if (authError) {
-          console.error("Supabase auth error:", authError);
-          throw authError;
-        }
-
-        if (!authData.session?.access_token) {
-          console.error("No session received from authentication");
-          throw new Error("No session received from authentication");
-        }
-
-        // Store the access token temporarily to ensure it's available even if component unmounts
-        const accessToken = authData.session.access_token;
+        if (authError) throw authError;
 
         console.log("Authentication successful, fetching user profile...");
+        const userProfile = await fetchUserProfile(
+          authData.session.access_token
+        );
 
-        // Fetch user profile
-        const userProfile = await fetchUserProfile(accessToken);
+        console.log("Login successful, updating state...");
+        dispatch({
+          type: "SET_USER",
+          payload: userProfile,
+        });
 
-        if (!userProfile) {
-          console.error("Failed to fetch user profile");
-          throw new Error("Failed to fetch user profile");
-        }
-
-        // Complete the login process only if still mounted
-        if (mountedRef.current) {
-          console.log("Login successful, updating state...");
-
-          // Update state synchronously to ensure it's done before navigation
-          dispatch({ type: "SET_USER", payload: userProfile });
-          dispatch({ type: "SET_LOADING", payload: false });
-
-          // Navigate after a short delay to ensure state is updated
-          setTimeout(() => {
-            if (mountedRef.current) {
-              console.log("Navigating to dashboard...");
-              navigateByRole(userProfile.role);
-            }
-          }, 100);
-        } else {
-          console.log(
-            "Login completed but component unmounted, state not updated"
-          );
-        }
+        navigateByRole(userProfile?.role || "client");
       } catch (error) {
         console.error("Login error:", error);
-        if (mountedRef.current) {
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "An error occurred during login";
-          dispatch({ type: "SET_ERROR", payload: errorMessage });
-          dispatch({ type: "SET_LOADING", payload: false });
-        }
-        throw error;
+        dispatch({ type: "SET_ERROR", payload: "Login failed" });
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [fetchUserProfile, navigateByRole]
+    [navigateByRole, fetchUserProfile]
   );
 
   // Update profile function
