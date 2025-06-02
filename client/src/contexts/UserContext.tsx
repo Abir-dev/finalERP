@@ -1,11 +1,26 @@
-import { createContext, useContext, useReducer, ReactNode, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useReducer,
+  ReactNode,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { supabase } from "../lib/supabase";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-export type UserRole = "admin" | "md" | "client-manager" | "store" | "accounts" | "site" | "client";
+export type UserRole =
+  | "admin"
+  | "md"
+  | "client-manager"
+  | "store"
+  | "accounts"
+  | "site"
+  | "client";
 
 interface User {
   id: string;
@@ -23,11 +38,11 @@ interface AuthState {
 }
 
 type AuthAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_USER'; payload: User | null }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_INITIALIZED'; payload: boolean }
-  | { type: 'RESET_AUTH' };
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_USER"; payload: User | null }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_INITIALIZED"; payload: boolean }
+  | { type: "RESET_AUTH" };
 
 const initialState: AuthState = {
   user: null,
@@ -38,15 +53,15 @@ const initialState: AuthState = {
 
 function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
-    case 'SET_LOADING':
+    case "SET_LOADING":
       return { ...state, isLoading: action.payload };
-    case 'SET_USER':
+    case "SET_USER":
       return { ...state, user: action.payload, error: null };
-    case 'SET_ERROR':
+    case "SET_ERROR":
       return { ...state, error: action.payload };
-    case 'SET_INITIALIZED':
+    case "SET_INITIALIZED":
       return { ...state, isInitialized: action.payload, isLoading: false };
-    case 'RESET_AUTH':
+    case "RESET_AUTH":
       return { ...initialState, isLoading: false, isInitialized: true };
     default:
       return state;
@@ -74,272 +89,443 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const mountedRef = useRef(true);
 
   // Centralized navigation logic
-  const navigateByRole = useCallback((role: UserRole) => {
-    const roleRoutes: Record<UserRole, string> = {
-      admin: "/",
-      md: "/md-dashboard",
-      "client-manager": "/client-manager",
-      store: "/store-manager",
-      accounts: "/accounts-manager",
-      site: "/site-manager",
-      client: "/client-portal",
-    };
-    navigate(roleRoutes[role] || "/");
-  }, [navigate]);
+  const navigateByRole = useCallback(
+    (role: UserRole) => {
+      const roleRoutes: Record<UserRole, string> = {
+        admin: "/",
+        md: "/md-dashboard",
+        "client-manager": "/client-manager",
+        store: "/store-manager",
+        accounts: "/accounts-manager",
+        site: "/site-manager",
+        client: "/client-portal",
+      };
+      navigate(roleRoutes[role] || "/");
+    },
+    [navigate]
+  );
 
   // Helper function to check if we're on login page
   const isOnLoginPage = useCallback(() => {
-    return window.location.pathname === '/login';
+    return window.location.pathname === "/login";
   }, []);
 
   // Helper function to get current session
   const getCurrentSession = useCallback(async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (error) throw error;
       return session;
     } catch (error) {
-      console.error('Error getting session:', error);
+      console.error("Error getting session:", error);
       return null;
     }
   }, []);
 
   // Fetch user profile from backend
-  const fetchUserProfile = useCallback(async (accessToken: string): Promise<User | null> => {
-    try {
-      const response = await axios.get(`${API_URL}/auth/profile`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
-        timeout: 10000, // 10 second timeout
-      });
-      return response.data || null;
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      // Don't throw here - let the caller handle the null return
-      return null;
-    }
-  }, []);
+  const fetchUserProfile = useCallback(
+    async (accessToken: string): Promise<User | null> => {
+      try {
+        console.log(
+          "Fetching user profile with token:",
+          accessToken.substring(0, 10) + "..."
+        );
+        const response = await axios.get(`${API_URL}/auth/profile`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          timeout: 10000, // 10 second timeout
+        });
+
+        if (!response.data) {
+          console.error("No data received from profile endpoint");
+          return null;
+        }
+
+        console.log("User profile fetched successfully:", {
+          id: response.data.id,
+          role: response.data.role,
+          email: response.data.email,
+        });
+
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("Error fetching user profile:", {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            headers: error.response?.headers,
+          });
+        } else {
+          console.error("Error fetching user profile:", error);
+        }
+        return null;
+      }
+    },
+    []
+  );
 
   // Clear error function
   const clearError = useCallback(() => {
-    dispatch({ type: 'SET_ERROR', payload: null });
+    dispatch({ type: "SET_ERROR", payload: null });
   }, []);
 
   // Logout function
   const logout = useCallback(async () => {
-    if (isLoggingOutRef.current || !mountedRef.current) return;
+    if (isLoggingOutRef.current) {
+      console.log("Logout already in progress");
+      return Promise.reject(new Error("Logout already in progress"));
+    }
 
+    console.log("Starting logout process...");
     try {
       isLoggingOutRef.current = true;
-      
+
       // Clear user state immediately for better UX
-      dispatch({ type: 'RESET_AUTH' });
-      
+      console.log("Clearing user state...");
+      dispatch({ type: "RESET_AUTH" });
+
       const session = await getCurrentSession();
-      
-      // Try to logout from backend first (don't await to avoid blocking)
+
+      // Call backend logout endpoint
       if (session?.access_token) {
-        axios.post(`${API_URL}/auth/logout`, null, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-          timeout: 5000,
-        }).catch(error => {
-          console.warn('Backend logout failed:', error);
-        });
+        console.log("Attempting to logout from backend...");
+        try {
+          await axios.post(`${API_URL}/auth/logout`, null, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+            timeout: 5000,
+          });
+          console.log("Backend logout successful");
+        } catch (error) {
+          if (axios.isAxiosError(error)) {
+            console.error("Backend logout error:", {
+              status: error.response?.status,
+              data: error.response?.data,
+            });
+          } else {
+            console.error("Backend logout error:", error);
+          }
+          // Continue with Supabase logout even if backend fails
+        }
       }
 
       // Sign out from Supabase
+      console.log("Signing out from Supabase...");
       await supabase.auth.signOut();
-      
+      console.log("Supabase signout successful");
+
       // Navigate to login page
-      if (mountedRef.current && !isOnLoginPage()) {
+      if (!isOnLoginPage()) {
+        console.log("Navigating to login page...");
         navigate("/login", { replace: true });
       }
     } catch (error) {
-      console.error('Logout error:', error);
-      // Even if logout fails, clear the state and redirect
-      if (mountedRef.current) {
-        dispatch({ type: 'RESET_AUTH' });
+      console.error("Logout error:", error);
+      // Even if logout fails, make sure we reset the state
+      dispatch({ type: "RESET_AUTH" });
+      if (!isOnLoginPage()) {
         navigate("/login", { replace: true });
       }
+      return Promise.reject(error);
     } finally {
+      console.log("Logout process completed");
       isLoggingOutRef.current = false;
     }
   }, [navigate, getCurrentSession, isOnLoginPage]);
 
   // Login function
-  const login = useCallback(async (email: string, password: string) => {
-    if (!mountedRef.current) return;
-
-    dispatch({ type: 'SET_LOADING', payload: true });
-    dispatch({ type: 'SET_ERROR', payload: null });
-    
-    try {
-      // Authenticate with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (authError) throw authError;
-      if (!authData.session?.access_token) {
-        throw new Error('No session received from authentication');
-      }
-
-      // Fetch user profile
-      const userProfile = await fetchUserProfile(authData.session.access_token);
-      
-      if (!userProfile) {
-        throw new Error('Failed to fetch user profile');
-      }
-
-      if (mountedRef.current) {
-        dispatch({ type: 'SET_USER', payload: userProfile });
-        navigateByRole(userProfile.role);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An error occurred during login";
-      if (mountedRef.current) {
-        dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      }
-      throw error;
-    } finally {
-      if (mountedRef.current) {
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
-    }
-  }, [fetchUserProfile, navigateByRole]);
-
-  // Update profile function
-  const updateProfile = useCallback(async (updates: Partial<User>) => {
-    try {
-      const session = await getCurrentSession();
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await axios.patch(
-        `${API_URL}/auth/profile`,
-        updates,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`
-          },
-          timeout: 10000,
-        }
-      );
-
-      if (response.data && mountedRef.current) {
-        dispatch({ type: 'SET_USER', payload: response.data });
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An error occurred during profile update";
-      if (mountedRef.current) {
-        dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      }
-      throw error;
-    }
-  }, [getCurrentSession]);
-
-  // Initialize auth state and set up listener
-  useEffect(() => {
-    let authSubscription: { unsubscribe: () => void } | null = null;
-
-    const initializeAuth = async () => {
-      // Skip initialization if on login page
-      if (isOnLoginPage()) {
-        dispatch({ type: 'SET_INITIALIZED', payload: true });
+  const login = useCallback(
+    async (email: string, password: string) => {
+      if (!mountedRef.current) {
+        console.log("Login cancelled: component unmounted");
         return;
       }
 
+      // Set loading state
+      dispatch({ type: "SET_LOADING", payload: true });
+      dispatch({ type: "SET_ERROR", payload: null });
+
+      try {
+        console.log("Starting login process...");
+
+        // Authenticate with Supabase
+        const { data: authData, error: authError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+        if (authError) {
+          console.error("Supabase auth error:", authError);
+          throw authError;
+        }
+
+        if (!authData.session?.access_token) {
+          console.error("No session received from authentication");
+          throw new Error("No session received from authentication");
+        }
+
+        // Store the access token temporarily to ensure it's available even if component unmounts
+        const accessToken = authData.session.access_token;
+
+        console.log("Authentication successful, fetching user profile...");
+
+        // Fetch user profile
+        const userProfile = await fetchUserProfile(accessToken);
+
+        if (!userProfile) {
+          console.error("Failed to fetch user profile");
+          throw new Error("Failed to fetch user profile");
+        }
+
+        // Complete the login process only if still mounted
+        if (mountedRef.current) {
+          console.log("Login successful, updating state...");
+
+          // Update state synchronously to ensure it's done before navigation
+          dispatch({ type: "SET_USER", payload: userProfile });
+          dispatch({ type: "SET_LOADING", payload: false });
+
+          // Navigate after a short delay to ensure state is updated
+          setTimeout(() => {
+            if (mountedRef.current) {
+              console.log("Navigating to dashboard...");
+              navigateByRole(userProfile.role);
+            }
+          }, 100);
+        } else {
+          console.log(
+            "Login completed but component unmounted, state not updated"
+          );
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        if (mountedRef.current) {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "An error occurred during login";
+          dispatch({ type: "SET_ERROR", payload: errorMessage });
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
+        throw error;
+      }
+    },
+    [fetchUserProfile, navigateByRole]
+  );
+
+  // Update profile function
+  const updateProfile = useCallback(
+    async (updates: Partial<User>) => {
       try {
         const session = await getCurrentSession();
-        
+        if (!session?.access_token) {
+          throw new Error("Not authenticated");
+        }
+
+        const response = await axios.patch(`${API_URL}/auth/profile`, updates, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          timeout: 10000,
+        });
+
+        if (response.data && mountedRef.current) {
+          dispatch({ type: "SET_USER", payload: response.data });
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "An error occurred during profile update";
+        if (mountedRef.current) {
+          dispatch({ type: "SET_ERROR", payload: errorMessage });
+        }
+        throw error;
+      }
+    },
+    [getCurrentSession]
+  );
+
+  // Initialize auth state and set up listener
+  useEffect(() => {
+    console.log("Initializing auth state...");
+    mountedRef.current = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
+
+    const initializeAuth = async () => {
+      if (!mountedRef.current) return;
+
+      try {
+        console.log("Checking current session...");
+        const session = await getCurrentSession();
+
         if (session?.access_token && mountedRef.current) {
+          console.log("Valid session found, fetching user profile...");
           const userProfile = await fetchUserProfile(session.access_token);
-          
+
           if (userProfile && mountedRef.current) {
-            dispatch({ type: 'SET_USER', payload: userProfile });
+            console.log("User profile found, updating state...");
+            dispatch({ type: "SET_USER", payload: userProfile });
+
+            // If we're on login page and have a valid user, redirect to appropriate page
+            if (isOnLoginPage()) {
+              console.log(
+                "Valid user found on login page, navigating to dashboard..."
+              );
+              navigateByRole(userProfile.role);
+            }
           } else if (mountedRef.current) {
-            // Profile fetch failed, but we have a session - logout
-            await logout();
-            return;
+            console.log("No user profile found, clearing state...");
+            dispatch({ type: "RESET_AUTH" });
+            if (!isOnLoginPage()) {
+              console.log("Redirecting to login...");
+              navigate("/login", { replace: true });
+            }
           }
         } else if (mountedRef.current && !isOnLoginPage()) {
-          // No session and not on login page - redirect
+          console.log("No valid session, redirecting to login...");
           navigate("/login", { replace: true });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error("Auth initialization error:", error);
         if (mountedRef.current && !isOnLoginPage()) {
           navigate("/login", { replace: true });
         }
       } finally {
         if (mountedRef.current) {
-          dispatch({ type: 'SET_INITIALIZED', payload: true });
+          console.log("Auth initialization completed");
+          dispatch({ type: "SET_INITIALIZED", payload: true });
         }
       }
     };
 
-    const setupAuthListener = () => {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (!mountedRef.current || isLoggingOutRef.current || isOnLoginPage()) {
-          return;
-        }
-
-        try {
-          if (event === 'SIGNED_IN' && session?.access_token) {
-            const userProfile = await fetchUserProfile(session.access_token);
-            
-            if (userProfile && mountedRef.current) {
-              dispatch({ type: 'SET_USER', payload: userProfile });
-              navigateByRole(userProfile.role);
-            } else if (mountedRef.current) {
-              dispatch({ type: 'RESET_AUTH' });
-              navigate("/login", { replace: true });
-            }
-          } else if (event === 'SIGNED_OUT' && mountedRef.current) {
-            dispatch({ type: 'RESET_AUTH' });
-            navigate("/login", { replace: true });
-          } else if (event === 'TOKEN_REFRESHED' && session?.access_token) {
-            // Optionally refresh user profile on token refresh
-            const userProfile = await fetchUserProfile(session.access_token);
-            if (userProfile && mountedRef.current) {
-              dispatch({ type: 'SET_USER', payload: userProfile });
-            }
-          }
-        } catch (error) {
-          console.error('Auth state change error:', error);
-          if (mountedRef.current) {
-            dispatch({ type: 'SET_ERROR', payload: 'Authentication error occurred' });
-          }
-        } finally {
-          if (mountedRef.current) {
-            dispatch({ type: 'SET_LOADING', payload: false });
-          }
-        }
+    // Set up auth state change listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state change:", {
+        event,
+        hasSession: !!session,
+        isLoginPage: isOnLoginPage(),
+        isLoggedIn: !!state.user,
       });
 
-      authSubscription = subscription;
-    };
+      if (!mountedRef.current) {
+        console.log("Auth state change ignored: component unmounted");
+        return;
+      }
+
+      if (isLoggingOutRef.current) {
+        console.log("Auth state change ignored: logout in progress");
+        return;
+      }
+
+      // Don't process events if we already have a user (except for SIGNED_OUT)
+      if (state.user && event !== "SIGNED_OUT") {
+        console.log("Auth state change ignored: user already logged in");
+        return;
+      }
+
+      try {
+        if (event === "SIGNED_IN" && session?.access_token) {
+          console.log("Processing SIGNED_IN event...");
+          try {
+            const userProfile = await fetchUserProfile(session.access_token);
+
+            if (userProfile && mountedRef.current) {
+              console.log("Updating user profile after sign in");
+              // Update state synchronously
+              dispatch({ type: "SET_USER", payload: userProfile });
+
+              // Navigate after a short delay
+              setTimeout(() => {
+                if (mountedRef.current) {
+                  navigateByRole(userProfile.role);
+                }
+              }, 100);
+              return;
+            } else if (mountedRef.current) {
+              console.log(
+                "No user profile found after sign in, resetting auth"
+              );
+              dispatch({ type: "RESET_AUTH" });
+              if (!isOnLoginPage()) {
+                navigate("/login", { replace: true });
+              }
+              return;
+            }
+          } catch (error) {
+            console.error("Error processing SIGNED_IN event:", error);
+            if (mountedRef.current) {
+              dispatch({
+                type: "SET_ERROR",
+                payload: "Authentication error occurred",
+              });
+            }
+            return;
+          }
+        } else if (event === "SIGNED_OUT") {
+          console.log("Processing SIGNED_OUT event");
+          if (mountedRef.current) {
+            dispatch({ type: "RESET_AUTH" });
+            if (!isOnLoginPage()) {
+              navigate("/login", { replace: true });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Auth state change error:", error);
+        if (mountedRef.current) {
+          dispatch({
+            type: "SET_ERROR",
+            payload: "Authentication error occurred",
+          });
+        }
+      } finally {
+        if (mountedRef.current) {
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
+      }
+    });
 
     initializeAuth();
-    setupAuthListener();
+    authSubscription = subscription;
 
     return () => {
-      mountedRef.current = false;
-      if (authSubscription) {
-        authSubscription.unsubscribe();
-      }
-    };
-  }, [getCurrentSession, fetchUserProfile, navigateByRole, navigate, logout, isOnLoginPage]);
+      // Don't set mountedRef to false immediately
+      const cleanup = async () => {
+        console.log("Starting cleanup process...");
+        if (authSubscription) {
+          console.log("Unsubscribing from auth changes");
+          authSubscription.unsubscribe();
+        }
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
+        // Wait for any pending state updates
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        if (mountedRef.current) {
+          console.log("Completing cleanup, setting mounted ref to false");
+          mountedRef.current = false;
+        }
+      };
+
+      cleanup().catch((error) => {
+        console.error("Error during cleanup:", error);
+      });
     };
-  }, []);
+  }, [
+    getCurrentSession,
+    fetchUserProfile,
+    navigateByRole,
+    navigate,
+    logout,
+    isOnLoginPage,
+  ]);
 
   const contextValue: UserContextType = {
     user: state.user,
@@ -354,9 +540,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={contextValue}>
-      {children}
-    </UserContext.Provider>
+    <UserContext.Provider value={contextValue}>{children}</UserContext.Provider>
   );
 }
 

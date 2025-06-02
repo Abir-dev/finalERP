@@ -4,13 +4,20 @@ import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Building2, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -22,52 +29,36 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Attempting login for:", email);
+
       // Call the backend API for login
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
-        password
+        password,
       });
+
+      console.log("Backend login successful");
 
       // Update the user context with the response data
       await login(email, password);
-      
+
+      console.log("User context updated successfully");
+
       toast({
         title: "Login successful",
         description: "Welcome to ConstructFlow ERP",
         duration: 3000,
       });
-      
-      // Navigate based on email address
-      // switch (email) {
-      //   case "md@constructflow.com":
-      //     navigate("/");
-      //     break;
-      //   case "admin@constructflow.com":
-      //     navigate("/");
-      //     break;
-      //   case "client-manager@constructflow.com":
-      //     navigate("/client-manager");
-      //     break;
-      //   case "store@constructflow.com":
-      //     navigate("/store-manager");
-      //     break;
-      //   case "accounts@constructflow.com":
-      //     navigate("/accounts-manager");
-      //     break;
-      //   case "site@constructflow.com":
-      //     navigate("/site-manager");
-      //     break;
-      //   case "client@constructflow.com":
-      //     navigate("/client-portal");
-      //     break;
-      //   default:
-      //     // Default navigation for any other email
-      //     navigate("/");
-      // }
+
+      // The navigation will be handled by the UserContext after successful login
     } catch (err: any) {
+      console.error("Login error:", err);
       toast({
         title: "Login failed",
-        description: err.response?.data?.error || "An error occurred during login",
+        description:
+          err.response?.data?.error ||
+          err.message ||
+          "An error occurred during login",
         variant: "destructive",
         duration: 3000,
       });
@@ -79,16 +70,14 @@ const Login = () => {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
             <Building2 className="h-8 w-8" />
           </div>
           <CardTitle className="text-2xl">ConstructFlow ERP</CardTitle>
-          <CardDescription>
-            Sign in to access your dashboard
-          </CardDescription>
+          <CardDescription>Sign in to access your dashboard</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
@@ -119,7 +108,8 @@ const Login = () => {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing
+                    in...
                   </>
                 ) : (
                   "Sign In"

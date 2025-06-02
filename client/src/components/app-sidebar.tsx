@@ -18,7 +18,7 @@ import {
   Receipt,
   PanelLeftClose,
   PanelLeft,
-} from "lucide-react"
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -32,13 +32,13 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { useUser } from "@/contexts/UserContext"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+} from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { useUser } from "@/contexts/UserContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,14 +46,15 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
   const { user, logout } = useUser();
   const navigate = useNavigate();
   const [activeItem, setActiveItem] = useState("/");
   const { state, toggleSidebar } = useSidebar();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const items = [
     {
@@ -78,7 +79,7 @@ export function AppSidebar() {
       title: "Design Dashboard",
       url: "/design-dashboard",
       icon: PaintBucket,
-      allowedRoles: ["admin", "md",  "client-manager", "site"],
+      allowedRoles: ["admin", "md", "client-manager", "site"],
     },
     {
       title: "Client Dashboard",
@@ -150,13 +151,29 @@ export function AppSidebar() {
       title: "Documents",
       url: "/documents",
       icon: FileText,
-      allowedRoles: ["admin", "md", "client-manager", "store", "accounts", "site", "client"],
+      allowedRoles: [
+        "admin",
+        "md",
+        "client-manager",
+        "store",
+        "accounts",
+        "site",
+        "client",
+      ],
     },
     {
       title: "Calendar",
       url: "/calendar",
       icon: Calendar,
-      allowedRoles: ["admin", "md", "client-manager", "store", "accounts", "site", "client"],
+      allowedRoles: [
+        "admin",
+        "md",
+        "client-manager",
+        "store",
+        "accounts",
+        "site",
+        "client",
+      ],
     },
     {
       title: "System Settings",
@@ -166,8 +183,8 @@ export function AppSidebar() {
     },
   ];
 
-  const filteredItems = user 
-    ? items.filter(item => item.allowedRoles.includes(user.role)) 
+  const filteredItems = user
+    ? items.filter((item) => item.allowedRoles.includes(user.role))
     : [];
 
   const handleMenuItemClick = (url: string) => {
@@ -175,9 +192,19 @@ export function AppSidebar() {
     navigate(url);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      console.log("Starting logout process...");
+      await logout();
+      console.log("Logout completed, navigating to login...");
+      navigate("/login");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   if (!user) return null;
@@ -201,7 +228,9 @@ export function AppSidebar() {
             ) : (
               <>
                 <Building2 className="h-6 w-6 flex-shrink-0" />
-                <span className="text-lg font-semibold truncate">ConstructFlow</span>
+                <span className="text-lg font-semibold truncate">
+                  ConstructFlow
+                </span>
               </>
             )}
           </div>
@@ -219,9 +248,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          {!isCollapsed && (
-            <SidebarGroupLabel>ERP Modules</SidebarGroupLabel>
-          )}
+          {!isCollapsed && <SidebarGroupLabel>ERP Modules</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredItems.map((item) => (
@@ -234,14 +261,18 @@ export function AppSidebar() {
                     onClick={() => handleMenuItemClick(item.url)}
                     tooltip={isCollapsed ? item.title : undefined}
                   >
-                    <div className={cn(
-                      "flex items-center gap-2",
-                      isCollapsed && "justify-center"
-                    )}>
-                      <item.icon className={cn(
-                        "flex-shrink-0",
-                        isCollapsed ? "h-4 w-4" : "h-4 w-4"
-                      )} />
+                    <div
+                      className={cn(
+                        "flex items-center gap-2",
+                        isCollapsed && "justify-center"
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "flex-shrink-0",
+                          isCollapsed ? "h-4 w-4" : "h-4 w-4"
+                        )}
+                      />
                       {!isCollapsed && (
                         <span className="truncate text-base">{item.title}</span>
                       )}
@@ -253,10 +284,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className={cn(
-        "border-t",
-        isCollapsed ? "p-2" : "p-4"
-      )}>
+      <SidebarFooter className={cn("border-t", isCollapsed ? "p-2" : "p-4")}>
         <div className="flex flex-col gap-4">
           {!isCollapsed && (
             <div className="flex items-center justify-between">
@@ -267,25 +295,36 @@ export function AppSidebar() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className={cn(
-                "w-full justify-start p-2 h-auto",
-                isCollapsed && "w-full flex justify-center"
-              )}>
-                <div className={cn(
-                  "flex items-center gap-2",
-                  isCollapsed && "justify-center"
-                )}>
-                  <Avatar className={cn(
-                    "flex-shrink-0",
-                    isCollapsed ? "h-6 w-6" : "h-6 w-6"
-                  )}>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start p-2 h-auto",
+                  isCollapsed && "w-full flex justify-center"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex items-center gap-2",
+                    isCollapsed && "justify-center"
+                  )}
+                >
+                  <Avatar
+                    className={cn(
+                      "flex-shrink-0",
+                      isCollapsed ? "h-6 w-6" : "h-6 w-6"
+                    )}
+                  >
                     <AvatarImage src={user.avatar} />
                     <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   {!isCollapsed && (
                     <div className="flex flex-col items-start min-w-0">
-                      <span className="text-sm font-medium truncate">{user.name}</span>
-                      <span className="text-xs text-muted-foreground truncate">{user.role}</span>
+                      <span className="text-sm font-medium truncate">
+                        {user.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {user.role}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -301,9 +340,13 @@ export function AppSidebar() {
                 Notifications
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive"
+                disabled={isLoggingOut}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

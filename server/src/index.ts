@@ -14,7 +14,7 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || "http://localhost:8080",
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Set-Cookie']
 }));
 app.use(express.json());
