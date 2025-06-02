@@ -97,11 +97,16 @@ const ITDashboard = () => {
   const [generatedApiKey, setGeneratedApiKey] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [users, setUsers] = useState<User[]>(usersData)
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    status: 'Active' | 'Inactive';
+  }>({
     name: '',
     email: '',
     role: '',
-    status: 'Active' as const,
+    status: 'Active',
   })
 
   const handleAddUser = () => {
@@ -426,14 +431,14 @@ const ITDashboard = () => {
                   </Select>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Switch 
+                  {/* <Switch 
                     id="status" 
                     checked={newUser.status === 'Active'}
                     onCheckedChange={(checked) => 
                       setNewUser(prev => ({ ...prev, status: checked ? 'Active' : 'Inactive' }))
                     }
-                  />
-                  <Label htmlFor="status">Active</Label>
+                  /> */}
+                  {/* <Label htmlFor="status">Active</Label> */}
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => {
