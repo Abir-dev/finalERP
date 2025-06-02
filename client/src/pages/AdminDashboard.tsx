@@ -221,11 +221,11 @@ const ITDashboard = () => {
       </div>
 
       <Tabs defaultValue="monitoring" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="monitoring">System Monitoring</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="modules">Modules & API</TabsTrigger>
-          <TabsTrigger value="workflows">Workflows</TabsTrigger>
+          {/* <TabsTrigger value="workflows">Workflows</TabsTrigger> */}
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="logs">Logs & Audit</TabsTrigger>
         </TabsList>
