@@ -172,13 +172,13 @@ const Settings = () => {
                   <Switch id="email-notifications" defaultChecked />
                 </div>
                 
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <BellRing className="h-4 w-4 text-muted-foreground" />
                     <Label htmlFor="app-notifications">In-App Notifications</Label>
                   </div>
                   <Switch id="app-notifications" defaultChecked />
-                </div>
+                </div> */}
                 
                 <Separator />
                 
