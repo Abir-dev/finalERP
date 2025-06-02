@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { BellRing, Mail, Save, Server, Shield, User, Users } from "lucide-react";
+import { BellRing, Cloud, Database, Link, Mail, Save, Server, Shield, User, Users, Zap } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -20,6 +21,42 @@ const Settings = () => {
     });
   };
 
+  // Mock integration status
+  const integrations = [
+    {
+      id: "google-workspace",
+      name: "Google Workspace",
+      description: "Connect with Gmail, Drive, and Calendar",
+      icon: <Cloud className="h-5 w-5" />,
+      connected: true,
+      lastSynced: "2 hours ago"
+    },
+    {
+      id: "microsoft-365",
+      name: "Microsoft 365",
+      description: "Integrate with Outlook, OneDrive, and Teams",
+      icon: <Database className="h-5 w-5" />,
+      connected: false,
+      lastSynced: null
+    },
+    {
+      id: "slack",
+      name: "Slack",
+      description: "Get notifications and updates in your Slack channels",
+      icon: <Zap className="h-5 w-5" />,
+      connected: true,
+      lastSynced: "5 minutes ago"
+    },
+    {
+      id: "quickbooks",
+      name: "QuickBooks",
+      description: "Sync financial data with your accounting system",
+      icon: <Link className="h-5 w-5" />,
+      connected: false,
+      lastSynced: null
+    }
+  ];
+
   return (
     <div className="space-y-4">
       <div>
@@ -28,10 +65,10 @@ const Settings = () => {
       </div>
       
       <Tabs defaultValue="general">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+          {/* <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger> */}
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
@@ -102,7 +139,7 @@ const Settings = () => {
           </TabsContent>
           
           <TabsContent value="users">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Users className="mr-2 h-5 w-5" />
@@ -115,11 +152,11 @@ const Settings = () => {
               <CardContent>
                 <p className="text-sm text-muted-foreground">User management features coming soon.</p>
               </CardContent>
-            </Card>
+            </Card> */}
           </TabsContent>
           
           <TabsContent value="security">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Shield className="mr-2 h-5 w-5" />
@@ -132,7 +169,7 @@ const Settings = () => {
               <CardContent>
                 <p className="text-sm text-muted-foreground">Security management features coming soon.</p>
               </CardContent>
-            </Card>
+            </Card> */}
           </TabsContent>
           
           <TabsContent value="integrations">
@@ -143,11 +180,141 @@ const Settings = () => {
                   Integrations
                 </CardTitle>
                 <CardDescription>
-                  Connect with external services and APIs
+                  Connect with external services and APIs. Manage active connections and configure new ones.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Integration features coming soon.</p>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {integrations.map((integration) => (
+                    <Card key={integration.id}>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className="text-muted-foreground">
+                            {integration.icon}
+                          </div>
+                          <CardTitle className="text-lg font-medium">
+                            {integration.name}
+                          </CardTitle>
+                        </div>
+                        <Badge variant={integration.connected ? "default" : "outline"}>
+                          {integration.connected ? "Connected" : "Not Connected"}
+                        </Badge>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {integration.description}
+                        </p>
+                        {integration.connected && (
+                          <p className="text-xs text-muted-foreground">
+                            Last synced: {integration.lastSynced}
+                          </p>
+                        )}
+                        <div className="mt-4 flex space-x-2">
+                          <Button variant={integration.connected ? "outline" : "default"} size="sm">
+                            {integration.connected ? "Configure" : "Connect"}
+                          </Button>
+                          {integration.connected && (
+                            <Button variant="ghost" size="sm" className="text-destructive">
+                              Disconnect
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="text-lg font-medium mb-4">API Configuration</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="api-key">API Key</Label>
+                      <div className="flex space-x-2">
+                        <Input
+                          id="api-key"
+                          defaultValue="sk_test_51Nf...XrF3"
+                          type="password"
+                          className="flex-1"
+                        />
+                        <Button variant="outline">Show</Button>
+                        <Button variant="outline">Regenerate</Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Keep this key secure. Do not share it publicly.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="webhook-url">Webhook URL</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="webhook-url"
+                          defaultValue="https://api.constructflow.com/webhooks"
+                          className="flex-1 font-mono text-sm"
+                          readOnly
+                          onClick={(e) => {
+                            // Select all text when clicked
+                            (e.target as HTMLInputElement).select();
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText("https://api.constructflow.com/webhooks");
+                            toast({
+                              title: "Copied!",
+                              description: "Webhook URL copied to clipboard",
+                              duration: 2000,
+                            });
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Configure external services to send events to this endpoint.
+                      </p>
+                    </div>
+
+
+                    <div className="space-y-2">
+                      <Label>Webhook Events</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch id="project-updates" defaultChecked />
+                          <Label htmlFor="project-updates">Project Updates</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="task-completion" defaultChecked />
+                          <Label htmlFor="task-completion">Task Completion</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="invoice-created" />
+                          <Label htmlFor="invoice-created">Invoice Created</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch id="payment-received" defaultChecked />
+                          <Label htmlFor="payment-received">Payment Received</Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-end">
+                  {/* <Button variant="outline">
+                    Test All Connections
+                  </Button> */}
+                  <Button onClick={handleSave}>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
