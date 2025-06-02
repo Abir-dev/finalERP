@@ -88,7 +88,7 @@ const Profile = () => {
                   <AvatarImage src={formData.avatar || undefined} />
                   <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <label 
+                {/* <label 
                   htmlFor="avatar-upload" 
                   className="absolute -right-2 -bottom-2 bg-primary rounded-full p-1.5 cursor-pointer"
                 >
@@ -100,7 +100,7 @@ const Profile = () => {
                     className="hidden"
                     onChange={handleAvatarUpload}
                   />
-                </label>
+                </label> */}
               </div>
               <div className="text-center">
                 <h3 className="font-semibold text-lg">{user.name}</h3>
@@ -138,10 +138,10 @@ const Profile = () => {
                 <Key className="mr-2 h-4 w-4" />
                 Password
               </TabsTrigger>
-              <TabsTrigger value="notifications">
+              {/* <TabsTrigger value="notifications">
                 <BellRing className="mr-2 h-4 w-4" />
                 Notifications
-              </TabsTrigger>
+              </TabsTrigger> */}
             </TabsList>
             
             <TabsContent value="personal" className="mt-4">
@@ -185,7 +185,7 @@ const Profile = () => {
                     />
                   </div>
                   
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label htmlFor="avatar">Avatar URL</Label>
                     <Input 
                       id="avatar" 
@@ -194,7 +194,7 @@ const Profile = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, avatar: e.target.value }))}
                       placeholder="https://example.com/avatar.jpg"
                     />
-                  </div>
+                  </div> */}
                   
                   <Separator />
                   
@@ -261,7 +261,7 @@ const Profile = () => {
               </Card>
             </TabsContent>
             
-            <TabsContent value="notifications" className="mt-4">
+            {/* <TabsContent value="notifications" className="mt-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -276,7 +276,7 @@ const Profile = () => {
                   <p className="text-sm text-muted-foreground">Notification settings coming soon.</p>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         </div>
       </div>
