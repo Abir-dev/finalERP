@@ -15,6 +15,7 @@ import { useUser } from "@/contexts/UserContext";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import MDDashboard from "./pages/MDDashboard";
@@ -40,6 +41,7 @@ import Notifications from "./pages/Notifications";
 import TenderManagement from "./pages/TenderManagement";
 import BillingManagement from "./pages/BillingManagement";
 import PurchaseManagement from "./pages/PurchaseManagement";
+
 
 const queryClient = new QueryClient();
 
@@ -106,6 +108,7 @@ const App = () => (
           <UserProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
               <Route path="/*" element={<AppLayout />} />
             </Routes>
