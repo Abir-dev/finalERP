@@ -341,13 +341,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
               );
               navigateByRole(userProfile.role);
             }
-          } else if (mountedRef.current) {
-            console.log("No user profile found, clearing state...");
+          } else if (mountedRef.current && !isOnLoginPage()) {
+            console.log(
+              "No user profile found or component unmounted, redirecting to login..."
+            );
             dispatch({ type: "RESET_AUTH" });
-            if (!isOnLoginPage()) {
-              console.log("Redirecting to login...");
-              navigate("/login", { replace: true });
-            }
+            navigate("/login", { replace: true });
           }
         } else if (mountedRef.current && !isOnLoginPage()) {
           console.log("No valid session, redirecting to login...");
@@ -387,49 +386,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Don't process events if we already have a user (except for SIGNED_OUT)
-      if (state.user && event !== "SIGNED_OUT") {
-        console.log("Auth state change ignored: user already logged in");
-        return;
-      }
-
       try {
         if (event === "SIGNED_IN" && session?.access_token) {
           console.log("Processing SIGNED_IN event...");
-          try {
-            const userProfile = await fetchUserProfile(session.access_token);
+          const userProfile = await fetchUserProfile(session.access_token);
 
-            if (userProfile && mountedRef.current) {
-              console.log("Updating user profile after sign in");
-              // Update state synchronously
-              dispatch({ type: "SET_USER", payload: userProfile });
+          if (userProfile && mountedRef.current) {
+            console.log("Updating user profile after sign in");
+            dispatch({ type: "SET_USER", payload: userProfile });
 
-              // Navigate after a short delay
-              setTimeout(() => {
-                if (mountedRef.current) {
-                  navigateByRole(userProfile.role);
-                }
-              }, 100);
-              return;
-            } else if (mountedRef.current) {
-              console.log(
-                "No user profile found after sign in, resetting auth"
-              );
-              dispatch({ type: "RESET_AUTH" });
-              if (!isOnLoginPage()) {
-                navigate("/login", { replace: true });
-              }
-              return;
+            if (isOnLoginPage()) {
+              navigateByRole(userProfile.role);
             }
-          } catch (error) {
-            console.error("Error processing SIGNED_IN event:", error);
-            if (mountedRef.current) {
-              dispatch({
-                type: "SET_ERROR",
-                payload: "Authentication error occurred",
-              });
-            }
-            return;
           }
         } else if (event === "SIGNED_OUT") {
           console.log("Processing SIGNED_OUT event");
@@ -448,10 +416,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
             payload: "Authentication error occurred",
           });
         }
-      } finally {
-        if (mountedRef.current) {
-          dispatch({ type: "SET_LOADING", payload: false });
-        }
       }
     });
 
@@ -459,35 +423,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     authSubscription = subscription;
 
     return () => {
-      // Don't set mountedRef to false immediately
-      const cleanup = async () => {
-        console.log("Starting cleanup process...");
-        if (authSubscription) {
-          console.log("Unsubscribing from auth changes");
-          authSubscription.unsubscribe();
-        }
-
-        // Wait for any pending state updates
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
-        if (mountedRef.current) {
-          console.log("Completing cleanup, setting mounted ref to false");
-          mountedRef.current = false;
-        }
-      };
-
-      cleanup().catch((error) => {
-        console.error("Error during cleanup:", error);
-      });
+      console.log("Cleanup triggered from location:", window.location.pathname);
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
+      mountedRef.current = false;
     };
-  }, [
-    getCurrentSession,
-    fetchUserProfile,
-    navigateByRole,
-    navigate,
-    logout,
-    isOnLoginPage,
-  ]);
+  }, []); // Empty dependency array - this effect should only run once
 
   const contextValue: UserContextType = {
     user: state.user,
