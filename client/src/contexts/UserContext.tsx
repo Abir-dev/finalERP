@@ -110,6 +110,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return window.location.pathname === "/login";
   }, []);
 
+  // Helper function to check if we're on register page with token
+  const isOnRegisterWithTokenPage = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    return window.location.pathname === "/register" && params.has("token");
+  }, []);
+
+  // if(!isOnRegisterWithTokenPage) console.log("lol error");
+
   // Helper function to get current session
   const getCurrentSession = useCallback(async () => {
     try {
@@ -341,14 +349,22 @@ export function UserProvider({ children }: { children: ReactNode }) {
               );
               navigateByRole(userProfile.role);
             }
-          } else if (mountedRef.current && !isOnLoginPage()) {
+          } else if (
+            mountedRef.current &&
+            !isOnLoginPage() &&
+            !isOnRegisterWithTokenPage()
+          ) {
             console.log(
               "No user profile found or component unmounted, redirecting to login..."
             );
             dispatch({ type: "RESET_AUTH" });
             navigate("/login", { replace: true });
           }
-        } else if (mountedRef.current && !isOnLoginPage()) {
+        } else if (
+          mountedRef.current &&
+          !isOnLoginPage() &&
+          !isOnRegisterWithTokenPage()
+        ) {
           console.log("No valid session, redirecting to login...");
           navigate("/login", { replace: true });
         }

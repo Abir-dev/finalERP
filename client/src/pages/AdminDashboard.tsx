@@ -1,52 +1,143 @@
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { StatCard } from "@/components/stat-card"
-import { DataTable } from "@/components/data-table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import { Monitor, Users, Settings, Shield, AlertTriangle, Plus, Edit, Trash, Eye, EyeOff, Copy } from "lucide-react"
-import { employeesData } from "@/lib/dummy-data"
-import { ColumnDef } from "@tanstack/react-table"
-import { toast } from "sonner"
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/stat-card";
+import { DataTable } from "@/components/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import {
+  Monitor,
+  Users,
+  Settings,
+  Shield,
+  AlertTriangle,
+  Plus,
+  Edit,
+  Trash,
+  Eye,
+  EyeOff,
+  Copy,
+  Loader2,
+} from "lucide-react";
+import { employeesData } from "@/lib/dummy-data";
+import { ColumnDef } from "@tanstack/react-table";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 const systemHealthData = [
-  { time: '00:00', uptime: 99.9, apiCalls: 1200 },
-  { time: '04:00', uptime: 99.8, apiCalls: 800 },
-  { time: '08:00', uptime: 99.9, apiCalls: 2500 },
-  { time: '12:00', uptime: 99.7, apiCalls: 3200 },
-  { time: '16:00', uptime: 99.9, apiCalls: 2800 },
-  { time: '20:00', uptime: 99.8, apiCalls: 1800 },
-]
+  { time: "00:00", uptime: 99.9, apiCalls: 1200 },
+  { time: "04:00", uptime: 99.8, apiCalls: 800 },
+  { time: "08:00", uptime: 99.9, apiCalls: 2500 },
+  { time: "12:00", uptime: 99.7, apiCalls: 3200 },
+  { time: "16:00", uptime: 99.9, apiCalls: 2800 },
+  { time: "20:00", uptime: 99.8, apiCalls: 1800 },
+];
 
 const moduleData = [
-  { name: 'Project Management', status: 'Active', usage: 85, lastSync: '2024-01-20 10:30' },
-  { name: 'Financial Module', status: 'Active', usage: 92, lastSync: '2024-01-20 10:25' },
-  { name: 'Inventory System', status: 'Maintenance', usage: 0, lastSync: '2024-01-19 15:20' },
-  { name: 'HR Management', status: 'Active', usage: 78, lastSync: '2024-01-20 10:35' },
-]
+  {
+    name: "Project Management",
+    status: "Active",
+    usage: 85,
+    lastSync: "2024-01-20 10:30",
+  },
+  {
+    name: "Financial Module",
+    status: "Active",
+    usage: 92,
+    lastSync: "2024-01-20 10:25",
+  },
+  {
+    name: "Inventory System",
+    status: "Maintenance",
+    usage: 0,
+    lastSync: "2024-01-19 15:20",
+  },
+  {
+    name: "HR Management",
+    status: "Active",
+    usage: 78,
+    lastSync: "2024-01-20 10:35",
+  },
+];
 
 type User = {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: 'Active' | 'Inactive'
-  lastLogin: string
-}
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: "Active" | "Inactive";
+  lastLogin: string;
+};
 
 const usersData: User[] = [
-  { id: '1', name: 'John Doe', email: 'john@company.com', role: 'Admin', status: 'Active', lastLogin: '2024-01-20 09:30' },
-  { id: '2', name: 'Jane Smith', email: 'jane@company.com', role: 'Manager', status: 'Active', lastLogin: '2024-01-20 08:15' },
-  { id: '3', name: 'Mike Johnson', email: 'mike@company.com', role: 'User', status: 'Inactive', lastLogin: '2024-01-18 16:45' },
-  { id: '4', name: 'Sarah Wilson', email: 'sarah@company.com', role: 'Manager', status: 'Active', lastLogin: '2024-01-20 10:20' },
-]
+  {
+    id: "1",
+    name: "John Doe",
+    email: "john@company.com",
+    role: "Admin",
+    status: "Active",
+    lastLogin: "2024-01-20 09:30",
+  },
+  {
+    id: "2",
+    name: "Jane Smith",
+    email: "jane@company.com",
+    role: "Managing Director",
+    status: "Active",
+    lastLogin: "2024-01-20 08:15",
+  },
+  {
+    id: "3",
+    name: "Mike Johnson",
+    email: "mike@company.com",
+    role: "Client",
+    status: "Inactive",
+    lastLogin: "2024-01-18 16:45",
+  },
+  {
+    id: "4",
+    name: "Sarah Wilson",
+    email: "sarah@company.com",
+    role: "Site Manager",
+    status: "Active",
+    lastLogin: "2024-01-20 10:20",
+  },
+];
 
 const userColumns: ColumnDef<User>[] = [
   {
@@ -61,158 +152,264 @@ const userColumns: ColumnDef<User>[] = [
     accessorKey: "role",
     header: "Role",
     cell: ({ row }) => {
-      const role = row.getValue("role") as string
-      return <Badge variant="outline">{role}</Badge>
+      const role = row.getValue("role") as string;
+      return <Badge variant="outline">{role}</Badge>;
     },
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
+      const status = row.getValue("status") as string;
       return (
-        <Badge variant={status === 'Active' ? 'default' : 'destructive'}>
+        <Badge variant={status === "Active" ? "default" : "destructive"}>
           {status}
         </Badge>
-      )
+      );
     },
   },
   {
     accessorKey: "lastLogin",
     header: "Last Login",
   },
-]
+];
 
 const ITDashboard = () => {
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
-  const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false)
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false)
-  const [showApiKey, setShowApiKey] = useState(false)
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
   const [newApiKey, setNewApiKey] = useState({
-    name: '',
-    description: '',
-    expiresIn: '30',
-    permissions: 'read'
-  })
-  const [generatedApiKey, setGeneratedApiKey] = useState('')
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [users, setUsers] = useState<User[]>(usersData)
+    name: "",
+    description: "",
+    expiresIn: "30",
+    permissions: "read",
+  });
+  const [generatedApiKey, setGeneratedApiKey] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>(usersData);
   const [newUser, setNewUser] = useState<{
     name: string;
     email: string;
     role: string;
-    status: 'Active' | 'Inactive';
+    status: "Active" | "Inactive";
   }>({
-    name: '',
-    email: '',
-    role: '',
-    status: 'Active',
-  })
+    name: "",
+    email: "",
+    role: "",
+    status: "Active",
+  });
+  const [invitationLink, setInvitationLink] = useState("");
+  const [showInvitationLink, setShowInvitationLink] = useState(false);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+
+  //   type User = {
+  //   id: string // UUID
+  //   email: string
+  //   name: string
+  //   role: string
+  //   avatar?: string | null
+  //   created_at?: string
+  //   updated_at?: string
+  // }
+
+  //  async function fetchAllUsers(): Promise<User[]> {
+  //   const { data, error } = await supabase
+  //     .from('users')
+  //     .select('*')
+  //     .order('created_at', { ascending: false })
+  //  console.log("Fetched users:", data);
+  //   if (error) throw error
+  //   return data
+  // }
+
+  //  useEffect(() => {
+  //     // Fetch users from Supabase on component mount
+  //     fetchAllUsers();
+  //   }, []);
+
+  // Add this function to generate invitation links with Supabase
+  const generateInvitationLink = async () => {
+    if (!newUser.email || !newUser.name || !newUser.role) {
+      toast.error("Please fill in all user details first");
+      return;
+    }
+
+    setIsGeneratingLink(true);
+    try {
+      // Generate a secure random token
+      const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .substring(0, 32);
+
+      // Create an invitation object with user details
+      const invitationData = {
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+      };
+
+      // Encrypt the invitation data (using AES encryption)
+      // In a real implementation, you'd use a proper encryption library
+      // This is a simplified example using a custom encryption key
+      const encryptionKey = "YOUR_SECURE_ENCRYPTION_KEY"; // Store this securely, not in client code
+      const dataStr = JSON.stringify(invitationData);
+
+      // For demo purposes, we're using a simple encryption method
+      // In production, use a proper encryption library
+      const encryptedData = btoa(dataStr); // Replace with actual encryption
+
+      // Store in Supabase
+      const { data, error } = await supabase.from("user_invitations").insert({
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        token: token,
+        encrypted_data: encryptedData,
+        expires_at: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toISOString(), // 7 days
+      });
+
+      if (error) throw error;
+
+      // Create the invitation link with just the token
+      const link = `${window.location.origin}/register?token=${token}`;
+      setInvitationLink(link);
+      setShowInvitationLink(true);
+
+      toast.success("Invitation link generated successfully!");
+    } catch (error) {
+      console.error("Error generating invitation:", error);
+      toast.error("Failed to generate invitation link");
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
+  const handleCopyInvitationLink = () => {
+    navigator.clipboard.writeText(invitationLink);
+    toast.success("Invitation link copied to clipboard!");
+  };
 
   const handleAddUser = () => {
-    setSelectedUser(null)
+    setSelectedUser(null);
     setNewUser({
-      name: '',
-      email: '',
-      role: '',
-      status: 'Active'
-    })
-    setIsUserModalOpen(true)
-  }
+      name: "",
+      email: "",
+      role: "",
+      status: "Active",
+    });
+    setIsUserModalOpen(true);
+  };
 
   const handleEditUser = (user: User) => {
-    setSelectedUser(user)
+    setSelectedUser(user);
     setNewUser({
       name: user.name,
       email: user.email,
       role: user.role,
-      status: user.status
-    })
-    setIsUserModalOpen(true)
-  }
+      status: user.status,
+    });
+    setIsUserModalOpen(true);
+  };
 
   const handleDeleteUser = (user: User) => {
-    setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id))
-    toast.success("User deleted successfully!")
-  }
+    setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
+    toast.success("User deleted successfully!");
+  };
 
   const handleSaveUser = () => {
     if (!newUser.name || !newUser.email || !newUser.role) {
-      toast.error("Please fill in all required fields")
-      return
+      toast.error("Please fill in all required fields");
+      return;
     }
 
     if (selectedUser) {
       // Edit existing user
-      setUsers(prevUsers => prevUsers.map(user => 
-        user.id === selectedUser.id 
-          ? {
-              ...user,
-              name: newUser.name,
-              email: newUser.email,
-              role: newUser.role,
-              status: newUser.status
-            }
-          : user
-      ))
-      toast.success("User updated successfully!")
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === selectedUser.id
+            ? {
+                ...user,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                status: newUser.status,
+              }
+            : user
+        )
+      );
+      toast.success("User updated successfully!");
     } else {
       // Create new user
-      const newId = (Math.max(...users.map(u => parseInt(u.id))) + 1).toString()
-      setUsers(prevUsers => [...prevUsers, {
-        id: newId,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        status: newUser.status,
-        lastLogin: 'Never'
-      }])
-      toast.success("User created successfully!")
+      const newId = (
+        Math.max(...users.map((u) => parseInt(u.id))) + 1
+      ).toString();
+      setUsers((prevUsers) => [
+        ...prevUsers,
+        {
+          id: newId,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role,
+          status: newUser.status,
+          lastLogin: "Never",
+        },
+      ]);
+      toast.success("User created successfully!");
     }
-    setIsUserModalOpen(false)
-    setSelectedUser(null)
+    setIsUserModalOpen(false);
+    setSelectedUser(null);
     setNewUser({
-      name: '',
-      email: '',
-      role: '',
-      status: 'Active'
-    })
-  }
+      name: "",
+      email: "",
+      role: "",
+      status: "Active",
+    });
+  };
 
   const handleManualSync = () => {
-    toast.success("Manual sync initiated successfully!")
-  }
+    toast.success("Manual sync initiated successfully!");
+  };
 
   const handleViewSchema = () => {
-    setIsSchemaModalOpen(true)
-  }
+    setIsSchemaModalOpen(true);
+  };
 
   const handleAddApiKey = () => {
-    setIsApiKeyModalOpen(true)
-  }
+    setIsApiKeyModalOpen(true);
+  };
 
   const handleGenerateApiKey = () => {
     // Generate a random API key (in real app, this would come from backend)
-    const key = 'nf_' + Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-      .substring(0, 32)
-    
-    setGeneratedApiKey(key)
-    toast.success("API key generated successfully!")
-  }
+    const key =
+      "nf_" +
+      Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .substring(0, 32);
+
+    setGeneratedApiKey(key);
+    toast.success("API key generated successfully!");
+  };
 
   const handleCopyApiKey = () => {
-    navigator.clipboard.writeText(generatedApiKey)
-    toast.success("API key copied to clipboard!")
-  }
+    navigator.clipboard.writeText(generatedApiKey);
+    toast.success("API key copied to clipboard!");
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin & IT Dashboard</h1>
-          <p className="text-muted-foreground">System administration and IT operations</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Admin & IT Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            System administration and IT operations
+          </p>
         </div>
         <Button onClick={handleManualSync} className="gap-2">
           <Settings className="h-4 w-4" />
@@ -278,8 +475,20 @@ const ITDashboard = () => {
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip />
-                    <Line yAxisId="left" type="monotone" dataKey="uptime" stroke="#3b82f6" strokeWidth={2} />
-                    <Line yAxisId="right" type="monotone" dataKey="apiCalls" stroke="#10b981" strokeWidth={2} />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="uptime"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="apiCalls"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -293,22 +502,53 @@ const ITDashboard = () => {
               <CardContent>
                 <div className="space-y-3">
                   {[
-                    { time: '10:30', event: 'User login: john@company.com', status: 'success' },
-                    { time: '10:25', event: 'API sync completed', status: 'success' },
-                    { time: '10:20', event: 'Failed login attempt', status: 'warning' },
-                    { time: '10:15', event: 'Backup completed', status: 'success' },
-                    { time: '10:10', event: 'System maintenance started', status: 'info' },
+                    {
+                      time: "10:30",
+                      event: "User login: john@company.com",
+                      status: "success",
+                    },
+                    {
+                      time: "10:25",
+                      event: "API sync completed",
+                      status: "success",
+                    },
+                    {
+                      time: "10:20",
+                      event: "Failed login attempt",
+                      status: "warning",
+                    },
+                    {
+                      time: "10:15",
+                      event: "Backup completed",
+                      status: "success",
+                    },
+                    {
+                      time: "10:10",
+                      event: "System maintenance started",
+                      status: "info",
+                    },
                   ].map((log, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${
-                          log.status === 'success' ? 'bg-green-500' :
-                          log.status === 'warning' ? 'bg-yellow-500' :
-                          log.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                        }`}></div>
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            log.status === "success"
+                              ? "bg-green-500"
+                              : log.status === "warning"
+                              ? "bg-yellow-500"
+                              : log.status === "error"
+                              ? "bg-red-500"
+                              : "bg-blue-500"
+                          }`}
+                        ></div>
                         <span className="text-sm">{log.event}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">{log.time}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {log.time}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -346,7 +586,9 @@ const ITDashboard = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>User Management</CardTitle>
-                <CardDescription>Manage user accounts and permissions</CardDescription>
+                <CardDescription>
+                  Manage user accounts and permissions
+                </CardDescription>
               </div>
               <Button onClick={handleAddUser} className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -354,7 +596,7 @@ const ITDashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <DataTable 
+              <DataTable
                 columns={[
                   ...userColumns,
                   {
@@ -362,15 +604,15 @@ const ITDashboard = () => {
                     header: "Actions",
                     cell: ({ row }) => (
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleEditUser(row.original)}
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDeleteUser(row.original)}
                         >
@@ -380,8 +622,8 @@ const ITDashboard = () => {
                     ),
                   },
                 ]}
-                data={users} 
-                searchKey="name" 
+                data={users}
+                searchKey="name"
               />
             </CardContent>
           </Card>
@@ -389,47 +631,63 @@ const ITDashboard = () => {
           <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{selectedUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+                <DialogTitle>
+                  {selectedUser ? "Edit User" : "Add New User"}
+                </DialogTitle>
                 <DialogDescription>
-                  {selectedUser ? 'Update user information and permissions' : 'Create a new user account'}
+                  {selectedUser
+                    ? "Update user information and permissions"
+                    : "Create a new user account"}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="name">Name</Label>
-                  <Input 
-                    id="name" 
+                  <Input
+                    id="name"
                     value={newUser.name}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, name: e.target.value }))
+                    }
                     placeholder="Enter user's name"
                   />
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
+                  <Input
+                    id="email"
+                    type="email"
                     value={newUser.email}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, email: e.target.value }))
+                    }
                     placeholder="Enter user's email"
                   />
                 </div>
                 <div>
                   <Label htmlFor="role">Role</Label>
-                  <Select 
+                  <Select
                     value={newUser.role}
-                    onValueChange={(value) => setNewUser(prev => ({ ...prev, role: value }))}
+                    onValueChange={(value) =>
+                      setNewUser((prev) => ({ ...prev, role: value }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Admin">Admin</SelectItem>
-                      <SelectItem value="Manager">Manager</SelectItem>
-                      <SelectItem value="User">User</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="md">Managing Director</SelectItem>
+                      <SelectItem value="client-manager">
+                        Client Manager
+                      </SelectItem>
+                      <SelectItem value="store">Store Manager</SelectItem>
+                      <SelectItem value="accounts">Accounts Manager</SelectItem>
+                      <SelectItem value="site">Site Manager</SelectItem>
+                      <SelectItem value="client">Client</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div>{" "}
                 <div className="flex items-center space-x-2">
                   {/* <Switch 
                     id="status" 
@@ -440,21 +698,67 @@ const ITDashboard = () => {
                   /> */}
                   {/* <Label htmlFor="status">Active</Label> */}
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => {
-                    setIsUserModalOpen(false)
-                    setSelectedUser(null)
-                    setNewUser({
-                      name: '',
-                      email: '',
-                      role: '',
-                      status: 'Active'
-                    })
-                  }}>
+                {!selectedUser && (
+                  <div className="mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={generateInvitationLink}
+                      disabled={
+                        isGeneratingLink ||
+                        !newUser.email ||
+                        !newUser.name ||
+                        !newUser.role
+                      }
+                      className="w-full"
+                    >
+                      {isGeneratingLink ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                          Generating...
+                        </>
+                      ) : (
+                        "Generate Invitation Link"
+                      )}
+                    </Button>
+                  </div>
+                )}
+                {showInvitationLink && (
+                  <div className="mt-4 space-y-2">
+                    <Label>Invitation Link</Label>
+                    <div className="flex items-center gap-2">
+                      <Input type={"text"} value={invitationLink} readOnly />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleCopyInvitationLink}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This link will expire in 7 days
+                    </p>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsUserModalOpen(false);
+                      setSelectedUser(null);
+                      setNewUser({
+                        name: "",
+                        email: "",
+                        role: "",
+                        status: "Active",
+                      });
+                    }}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={handleSaveUser}>
-                    {selectedUser ? 'Update' : 'Create'} User
+                    {selectedUser ? "Update" : "Create"} User
                   </Button>
                 </div>
               </div>
@@ -467,7 +771,9 @@ const ITDashboard = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Module Control</CardTitle>
-                <CardDescription>Manage system modules and API tokens</CardDescription>
+                <CardDescription>
+                  Manage system modules and API tokens
+                </CardDescription>
               </div>
               <Button onClick={handleAddApiKey} className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -480,7 +786,11 @@ const ITDashboard = () => {
                   <div key={module.name} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-medium">{module.name}</h3>
-                      <Badge variant={module.status === 'Active' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={
+                          module.status === "Active" ? "default" : "secondary"
+                        }
+                      >
                         {module.status}
                       </Badge>
                     </div>
@@ -490,8 +800,8 @@ const ITDashboard = () => {
                         <span>{module.usage}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full" 
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
                           style={{ width: `${module.usage}%` }}
                         ></div>
                       </div>
@@ -501,24 +811,6 @@ const ITDashboard = () => {
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="workflows" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Configuration</CardTitle>
-              <CardDescription>Manage automated workflows and business processes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Settings className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Workflow designer coming soon</p>
-                <Button className="mt-4" onClick={() => toast.info("Workflow feature in development")}>
-                  Create Workflow
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -552,7 +844,9 @@ const ITDashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle>Security & Schema Manager</CardTitle>
-              <CardDescription>Manage database schema and security settings</CardDescription>
+              <CardDescription>
+                Manage database schema and security settings
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -570,7 +864,10 @@ const ITDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Automated backups are scheduled daily at 2 AM
                   </p>
-                  <Button variant="outline" onClick={() => toast.info("Starting manual backup")}>
+                  <Button
+                    variant="outline"
+                    onClick={() => toast.info("Starting manual backup")}
+                  >
                     Manual Backup
                   </Button>
                 </div>
@@ -588,20 +885,47 @@ const ITDashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { user: 'John Doe', action: 'Created new project', module: 'Project Management', timestamp: '2024-01-20 10:30:15' },
-                  { user: 'Jane Smith', action: 'Updated invoice status', module: 'Finance', timestamp: '2024-01-20 10:25:30' },
-                  { user: 'Mike Johnson', action: 'Uploaded design file', module: 'Design', timestamp: '2024-01-20 10:20:45' },
-                  { user: 'Admin', action: 'System backup completed', module: 'System', timestamp: '2024-01-20 02:00:00' },
+                  {
+                    user: "John Doe",
+                    action: "Created new project",
+                    module: "Project Management",
+                    timestamp: "2024-01-20 10:30:15",
+                  },
+                  {
+                    user: "Jane Smith",
+                    action: "Updated invoice status",
+                    module: "Finance",
+                    timestamp: "2024-01-20 10:25:30",
+                  },
+                  {
+                    user: "Mike Johnson",
+                    action: "Uploaded design file",
+                    module: "Design",
+                    timestamp: "2024-01-20 10:20:45",
+                  },
+                  {
+                    user: "Admin",
+                    action: "System backup completed",
+                    module: "System",
+                    timestamp: "2024-01-20 02:00:00",
+                  },
                 ].map((log, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center gap-4">
                         <span className="font-medium">{log.user}</span>
                         <Badge variant="outline">{log.module}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{log.action}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {log.action}
+                      </p>
                     </div>
-                    <span className="text-xs text-muted-foreground">{log.timestamp}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {log.timestamp}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -621,23 +945,39 @@ const ITDashboard = () => {
           <div className="space-y-4">
             {[
               {
-                name: 'users',
+                name: "users",
                 fields: [
-                  { name: 'id', type: 'string', required: true },
-                  { name: 'email', type: 'string', required: true },
-                  { name: 'name', type: 'string', required: true },
-                  { name: 'role', type: 'enum', values: ['admin', 'user', 'manager'] },
-                  { name: 'createdAt', type: 'timestamp' },
+                  { name: "id", type: "string", required: true },
+                  { name: "email", type: "string", required: true },
+                  { name: "name", type: "string", required: true },
+                  {
+                    name: "role",
+                    type: "enum",
+                    values: [
+                      "admin",
+                      "md",
+                      "site",
+                      "store",
+                      "client",
+                      "accounts",
+                      "client-manager",
+                    ],
+                  },
+                  { name: "createdAt", type: "timestamp" },
                 ],
               },
               {
-                name: 'projects',
+                name: "projects",
                 fields: [
-                  { name: 'id', type: 'string', required: true },
-                  { name: 'title', type: 'string', required: true },
-                  { name: 'description', type: 'text' },
-                  { name: 'status', type: 'enum', values: ['active', 'archived', 'deleted'] },
-                  { name: 'ownerId', type: 'string', references: 'users.id' },
+                  { name: "id", type: "string", required: true },
+                  { name: "title", type: "string", required: true },
+                  { name: "description", type: "text" },
+                  {
+                    name: "status",
+                    type: "enum",
+                    values: ["active", "archived", "deleted"],
+                  },
+                  { name: "ownerId", type: "string", references: "users.id" },
                 ],
               },
             ].map((collection) => (
@@ -645,7 +985,10 @@ const ITDashboard = () => {
                 <h3 className="font-medium text-lg mb-2">{collection.name}</h3>
                 <div className="space-y-2">
                   {collection.fields.map((field) => (
-                    <div key={field.name} className="flex items-center gap-4 text-sm">
+                    <div
+                      key={field.name}
+                      className="flex items-center gap-4 text-sm"
+                    >
                       <span className="font-medium w-24">{field.name}</span>
                       <Badge variant="outline">{field.type}</Badge>
                       {field.required && (
@@ -653,7 +996,7 @@ const ITDashboard = () => {
                       )}
                       {field.values && (
                         <span className="text-muted-foreground">
-                          [{field.values.join(', ')}]
+                          [{field.values.join(", ")}]
                         </span>
                       )}
                       {field.references && (
@@ -684,7 +1027,9 @@ const ITDashboard = () => {
               <Input
                 id="keyName"
                 value={newApiKey.name}
-                onChange={(e) => setNewApiKey(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) =>
+                  setNewApiKey((prev) => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="e.g., Production API Key"
               />
             </div>
@@ -693,7 +1038,12 @@ const ITDashboard = () => {
               <Input
                 id="keyDescription"
                 value={newApiKey.description}
-                onChange={(e) => setNewApiKey(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setNewApiKey((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="What is this API key for?"
               />
             </div>
@@ -701,7 +1051,9 @@ const ITDashboard = () => {
               <Label htmlFor="expiresIn">Expires In</Label>
               <Select
                 value={newApiKey.expiresIn}
-                onValueChange={(value) => setNewApiKey(prev => ({ ...prev, expiresIn: value }))}
+                onValueChange={(value) =>
+                  setNewApiKey((prev) => ({ ...prev, expiresIn: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select expiration" />
@@ -718,7 +1070,9 @@ const ITDashboard = () => {
               <Label htmlFor="permissions">Permissions</Label>
               <Select
                 value={newApiKey.permissions}
-                onValueChange={(value) => setNewApiKey(prev => ({ ...prev, permissions: value }))}
+                onValueChange={(value) =>
+                  setNewApiKey((prev) => ({ ...prev, permissions: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select permissions" />
@@ -744,7 +1098,11 @@ const ITDashboard = () => {
                     size="icon"
                     onClick={() => setShowApiKey(!showApiKey)}
                   >
-                    {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showApiKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                   <Button
                     variant="outline"
@@ -757,16 +1115,19 @@ const ITDashboard = () => {
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => {
-                setIsApiKeyModalOpen(false)
-                setGeneratedApiKey('')
-                setNewApiKey({
-                  name: '',
-                  description: '',
-                  expiresIn: '30',
-                  permissions: 'read'
-                })
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsApiKeyModalOpen(false);
+                  setGeneratedApiKey("");
+                  setNewApiKey({
+                    name: "",
+                    description: "",
+                    expiresIn: "30",
+                    permissions: "read",
+                  });
+                }}
+              >
                 Cancel
               </Button>
               <Button onClick={handleGenerateApiKey} disabled={!newApiKey.name}>
@@ -776,8 +1137,52 @@ const ITDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
 
-export default ITDashboard
+      {!selectedUser && (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={generateInvitationLink}
+            disabled={
+              isGeneratingLink ||
+              !newUser.email ||
+              !newUser.name ||
+              !newUser.role
+            }
+            className="w-full"
+          >
+            {isGeneratingLink ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...
+              </>
+            ) : (
+              "Generate Invitation Link"
+            )}
+          </Button>
+        </div>
+      )}
+
+      {showInvitationLink && (
+        <div className="mt-4 space-y-2">
+          <Label>Invitation Link</Label>
+          <div className="flex items-center gap-2">
+            <Input type={"text"} value={invitationLink} readOnly />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleCopyInvitationLink}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            This link will expire in 7 days
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ITDashboard;

@@ -4,28 +4,48 @@ import { UserRole } from "../utils/constants";
 
 export const authController = {
   async register(req: Request, res: Response) {
-  try {
-    const { email, password, role, name } = req.body;
+    try {
+      const { email, password, role, name, invitationToken } = req.body;
 
-    if (!email || !password || !name) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+      if (!email || !password || !name) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
 
-    const data = await supabaseService.signUp(
-      email,
-      password,
-      role as UserRole,
-      name
-    );
-    res.status(201).json(data);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      res.status(400).json({ error: error.message });
-    } else {
-      res.status(400).json({ error: "An unknown error occurred" });
+      // If invitation token is provided, verify it
+      if (invitationToken) {
+        const invitationData = await supabaseService.validateInvitationToken(
+          invitationToken
+        );
+        if (!invitationData) {
+          return res.status(400).json({ error: "Invalid invitation token" });
+        }
+
+        // Ensure email and role match the invitation
+        if (invitationData.email !== email || invitationData.role !== role) {
+          return res
+            .status(400)
+            .json({
+              error:
+                "Invalid registration details. Please use the email and role from your invitation.",
+            });
+        }
+      }
+
+      const data = await supabaseService.signUp(
+        email,
+        password,
+        role as UserRole,
+        name
+      );
+      res.status(201).json(data);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "An unknown error occurred" });
+      }
     }
-  }
-},
+  },
 
   async login(req: Request, res: Response) {
     try {
@@ -70,18 +90,20 @@ export const authController = {
     }
   },
   async logout(req: Request, res: Response) {
-  try {
-    await supabaseService.signOut();
-    res.status(200).json({ message: 'Successfully logged out' });
-  } catch (error: unknown) {
-    console.error('Logout error:', error);
-    if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred during logout' });
+    try {
+      await supabaseService.signOut();
+      res.status(200).json({ message: "Successfully logged out" });
+    } catch (error: unknown) {
+      console.error("Logout error:", error);
+      if (error instanceof Error) {
+        res.status(500).json({ error: error.message });
+      } else {
+        res
+          .status(500)
+          .json({ error: "An unknown error occurred during logout" });
+      }
     }
-  }
-},
+  },
   async updateProfile(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
@@ -101,31 +123,37 @@ export const authController = {
     }
   },
   async createUserInvitation(req: Request, res: Response) {
-      try {
-        const { email, role, name } = req.body;
-  
-        if (!email || !role || !name) {
-          return res.status(400).json({ error: "Missing required fields" });
-        }
-  
-        // Generate a unique token for this invitation
-        const invitationToken = await supabaseService.createUserInvitation(email, role as UserRole, name);
-        
-        // Construct the registration URL with the token
-        const registrationUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/register?token=${invitationToken}`;
-        
-        res.status(201).json({ 
-          message: "User invitation created successfully", 
-          registrationUrl 
-        });
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          res.status(400).json({ error: error.message });
-        } else {
-          res.status(400).json({ error: "An unknown error occurred" });
-        }
+    try {
+      const { email, role, name } = req.body;
+
+      if (!email || !role || !name) {
+        return res.status(400).json({ error: "Missing required fields" });
       }
-    },
+
+      // Generate a unique token for this invitation
+      const invitationToken = await supabaseService.createUserInvitation(
+        email,
+        role as UserRole,
+        name
+      );
+
+      // Construct the registration URL with the token
+      const registrationUrl = `${
+        process.env.CLIENT_URL || "http://localhost:5173"
+      }/register?token=${invitationToken}`;
+
+      res.status(201).json({
+        message: "User invitation created successfully",
+        registrationUrl,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "An unknown error occurred" });
+      }
+    }
+  },
   async validateInvitationToken(req: Request, res: Response) {
     try {
       const { token } = req.body;

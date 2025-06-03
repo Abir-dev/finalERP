@@ -30,58 +30,86 @@ const Register = () => {
   const [token, setToken] = useState("");
   const [isTokenValid, setIsTokenValid] = useState(false);
   const [isValidatingToken, setIsValidatingToken] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { isLoading, error } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
-
-  // Extract token from URL query parameters
+  const { toast } = useToast(); // Extract token from URL query parameters and validate it
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const inviteToken = params.get("token");
-    
+
     if (inviteToken) {
       setToken(inviteToken);
       validateToken(inviteToken);
+    } else {
+      // No token, reset validation states
+      setIsTokenValid(false);
+      setIsValidatingToken(false);
     }
   }, [location]);
-
   // Validate the invitation token
   const validateToken = async (inviteToken: string) => {
     setIsValidatingToken(true);
     try {
+      // First validate token format
+      if (!inviteToken.match(/^[a-zA-Z0-9]{32}$/)) {
+        throw new Error("Invalid token format");
+      }
+
       // Query Supabase for the invitation with this token
       const { data: invitation, error } = await supabase
-        .from('user_invitations')
-        .select('*')
-        .eq('token', inviteToken)
-        .eq('used', false)
+        .from("user_invitations")
+        .select("*")
+        .eq("token", inviteToken)
+        .eq("used", false)
         .single();
 
       if (error || !invitation) {
-        throw new Error("Invalid invitation token");
+        throw new Error("Invalid or already used invitation token");
       }
 
       // Check if the invitation has expired
-      if (new Date(invitation.expires_at) < new Date()) {
-        throw new Error("Invitation has expired");
+      const expiryDate = new Date(invitation.expires_at);
+      const now = new Date();
+      if (expiryDate < now) {
+        const hoursDiff = Math.round(
+          (now.getTime() - expiryDate.getTime()) / (1000 * 60 * 60)
+        );
+        throw new Error(`Invitation expired ${hoursDiff} hours ago`);
       }
 
       // Decrypt the data (replace with actual decryption)
       // In a real implementation, use a proper decryption method
       const decryptedData = atob(invitation.encrypted_data); // Replace with actual decryption
-      const userData = JSON.parse(decryptedData);
-
-      // Pre-fill the form with user data
-      setName(invitation.name || "");
-      setEmail(invitation.email || "");
-      setRole(invitation.role || "client");
-      setIsTokenValid(true);
-    } catch (err) {
+      const userData = JSON.parse(decryptedData); // Pre-fill the form with user data from invitation
+      if (invitation.name && invitation.email && invitation.role) {
+        setName(invitation.name);
+        setEmail(invitation.email);
+        setRole(invitation.role);
+        setIsTokenValid(true);
+      } else {
+        throw new Error("Invalid invitation data");
+      }
+    } catch (err: any) {
       console.error("Token validation error:", err);
       setIsTokenValid(false);
-      // Redirect to unauthorized page if token is invalid
-      navigate("/unauthorized");
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Invalid invitation token";
+      toast({
+        title: "Invalid Invitation",
+        description: errorMessage,
+        variant: "destructive",
+        duration: 5000,
+      });
+
+      // Redirect to unauthorized page after showing the error
+      setTimeout(() => {
+        navigate("/unauthorized", {
+          state: { error: errorMessage },
+        });
+      }, 2000);
     } finally {
       setIsValidatingToken(false);
     }
@@ -108,28 +136,50 @@ const Register = () => {
       });
       return;
     }
-
     try {
+      setIsSubmitting(true);
       console.log("Attempting registration for:", email);
 
-      // If token is present, mark the invitation as used in Supabase
-      if (token && isTokenValid) {
-        const { error } = await supabase
-          .from('user_invitations')
-          .update({ used: true })
-          .eq('token', token);
-
-        if (error) {
-          console.error("Error marking invitation as used:", error);
+      // Additional validation when using invitation token
+      if (token) {
+        if (!isTokenValid) {
+          throw new Error("Invalid or expired invitation token");
         }
-      }
 
-      // Call the backend API for registration
+        // Re-validate token just before registration to prevent race conditions
+        const { data: invitation } = await supabase
+          .from("user_invitations")
+          .select("*")
+          .eq("token", token)
+          .eq("used", false)
+          .single();
+
+        if (!invitation) {
+          throw new Error("Invitation has already been used or is invalid");
+        }
+
+        // Mark invitation as used in a transaction-like manner
+        const { error: updateError } = await supabase
+          .from("user_invitations")
+          .update({
+            used: true,
+            // used_at: new Date().toISOString(),
+            email: email,
+          })
+          .eq("token", token)
+          .eq("used", false);
+
+        if (updateError) {
+          console.error("Error marking invitation as used:", updateError);
+          throw new Error("Failed to complete registration. Please try again.");
+        }
+      } // Call the backend API for registration
       const response = await axios.post(`${API_URL}/auth/register`, {
         name,
         email,
         password,
-        role
+        role,
+        invitationToken: token, // Pass token to backend for verification
       });
 
       console.log("Registration successful");
@@ -141,17 +191,28 @@ const Register = () => {
       });
 
       // Redirect to login page after successful registration
-      navigate("/login");
+      navigate("/login", {
+        state: {
+          email, // Pass email to pre-fill login form
+          message:
+            "Registration successful! Please log in with your credentials.",
+        },
+      });
     } catch (err: any) {
       console.error("Registration error:", err);
+
+      let errorMessage = "An error occurred during registration";
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       toast({
         title: "Registration failed",
-        description:
-          err.response?.data?.error ||
-          err.message ||
-          "An error occurred during registration",
+        description: errorMessage,
         variant: "destructive",
-        duration: 3000,
+        duration: 5000,
       });
     }
   };
@@ -250,14 +311,15 @@ const Register = () => {
                 />
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isLoading || !!passwordError}
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating
+                    account...
                   </>
                 ) : (
                   "Register"
@@ -270,9 +332,9 @@ const Register = () => {
           <div className="text-sm text-muted-foreground mt-4 text-center">
             <p>
               Already have an account?{" "}
-              <Button 
-                variant="link" 
-                className="p-0 h-auto" 
+              <Button
+                variant="link"
+                className="p-0 h-auto"
                 onClick={() => navigate("/login")}
               >
                 Sign in
