@@ -7,7 +7,7 @@ export const authController = {
     try {
       const { email, password, role, name } = req.body;
 
-      if (!email || !password || !role || !name) {
+      if (!email || !password || !name) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
@@ -92,6 +92,50 @@ export const authController = {
       const updates = req.body;
       const updatedUser = await supabaseService.updateUser(userId, updates);
       res.json(updatedUser);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "An unknown error occurred" });
+      }
+    }
+  },
+  async createUserInvitation(req: Request, res: Response) {
+      try {
+        const { email, role, name } = req.body;
+  
+        if (!email || !role || !name) {
+          return res.status(400).json({ error: "Missing required fields" });
+        }
+  
+        // Generate a unique token for this invitation
+        const invitationToken = await supabaseService.createUserInvitation(email, role as UserRole, name);
+        
+        // Construct the registration URL with the token
+        const registrationUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/register?token=${invitationToken}`;
+        
+        res.status(201).json({ 
+          message: "User invitation created successfully", 
+          registrationUrl 
+        });
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          res.status(400).json({ error: error.message });
+        } else {
+          res.status(400).json({ error: "An unknown error occurred" });
+        }
+      }
+    },
+  async validateInvitationToken(req: Request, res: Response) {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ error: "Token is required" });
+      }
+
+      const userData = await supabaseService.validateInvitationToken(token);
+      res.json(userData);
     } catch (error: unknown) {
       if (error instanceof Error) {
         res.status(400).json({ error: error.message });

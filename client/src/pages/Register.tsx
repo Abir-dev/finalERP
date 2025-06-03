@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,10 +25,48 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
-  const [role] = useState("client"); // Default role, read-only
+  const [role, setRole] = useState("client"); // Default role
+  const [token, setToken] = useState("");
+  const [isTokenValid, setIsTokenValid] = useState(false);
+  const [isValidatingToken, setIsValidatingToken] = useState(false);
   const { isLoading, error } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Extract token from URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const inviteToken = params.get("token");
+    
+    if (inviteToken) {
+      setToken(inviteToken);
+      validateToken(inviteToken);
+    }
+  }, [location]);
+
+  // Validate the invitation token
+  const validateToken = async (inviteToken: string) => {
+    setIsValidatingToken(true);
+    try {
+      const response = await axios.post(`${API_URL}/auth/validate-token`, { token: inviteToken });
+      
+      // If token is valid, pre-fill the form with user data
+      if (response.data) {
+        setName(response.data.name || "");
+        setEmail(response.data.email || "");
+        setRole(response.data.role || "client");
+        setIsTokenValid(true);
+      }
+    } catch (err) {
+      console.error("Token validation error:", err);
+      setIsTokenValid(false);
+      // Redirect to unauthorized page if token is invalid
+      navigate("/unauthorized");
+    } finally {
+      setIsValidatingToken(false);
+    }
+  };
 
   // Validate passwords match in real-time
   useEffect(() => {
@@ -55,12 +93,13 @@ const Register = () => {
     try {
       console.log("Attempting registration for:", email);
 
-      // Call the backend API for registration
+      // Call the backend API for registration with token if available
       const response = await axios.post(`${API_URL}/auth/register`, {
         name,
         email,
         password,
-        role
+        role,
+        token: token || undefined
       });
 
       console.log("Registration successful");
@@ -87,6 +126,18 @@ const Register = () => {
     }
   };
 
+  // Show loading state while validating token
+  if (token && isValidatingToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/10 p-4">
+        <Card className="w-full max-w-md text-center p-6">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Validating your invitation...</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/10 p-4">
       <div className="absolute top-4 right-4">
@@ -99,7 +150,9 @@ const Register = () => {
             <Building2 className="h-8 w-8" />
           </div>
           <CardTitle className="text-2xl">ConstructFlow ERP</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardDescription>
+            {token ? "Complete your account setup" : "Create a new account"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
@@ -113,6 +166,8 @@ const Register = () => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
                   required
+                  readOnly={!!token}
+                  className={token ? "bg-muted cursor-not-allowed" : ""}
                 />
               </div>
               <div className="grid gap-2">
@@ -124,6 +179,8 @@ const Register = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="user@constructflow.com"
                   required
+                  readOnly={!!token}
+                  className={token ? "bg-muted cursor-not-allowed" : ""}
                 />
               </div>
               <div className="grid gap-2">
