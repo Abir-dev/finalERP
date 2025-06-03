@@ -4,28 +4,28 @@ import { UserRole } from "../utils/constants";
 
 export const authController = {
   async register(req: Request, res: Response) {
-    try {
-      const { email, password, role, name } = req.body;
+  try {
+    const { email, password, role, name } = req.body;
 
-      if (!email || !password || !name) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      const data = await supabaseService.signUp(
-        email,
-        password,
-        role as UserRole,
-        name
-      );
-      res.status(201).json(data);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        res.status(400).json({ error: error.message });
-      } else {
-        res.status(400).json({ error: "An unknown error occurred" });
-      }
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
-  },
+
+    const data = await supabaseService.signUp(
+      email,
+      password,
+      role as UserRole,
+      name
+    );
+    res.status(201).json(data);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(400).json({ error: "An unknown error occurred" });
+    }
+  }
+},
 
   async login(req: Request, res: Response) {
     try {
