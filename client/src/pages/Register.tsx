@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Building2, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
+import { supabase } from "@/lib/supabase";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -49,15 +50,33 @@ const Register = () => {
   const validateToken = async (inviteToken: string) => {
     setIsValidatingToken(true);
     try {
-      const response = await axios.post(`${API_URL}/auth/validate-token`, { token: inviteToken });
-      
-      // If token is valid, pre-fill the form with user data
-      if (response.data) {
-        setName(response.data.name || "");
-        setEmail(response.data.email || "");
-        setRole(response.data.role || "client");
-        setIsTokenValid(true);
+      // Query Supabase for the invitation with this token
+      const { data: invitation, error } = await supabase
+        .from('user_invitations')
+        .select('*')
+        .eq('token', inviteToken)
+        .eq('used', false)
+        .single();
+
+      if (error || !invitation) {
+        throw new Error("Invalid invitation token");
       }
+
+      // Check if the invitation has expired
+      if (new Date(invitation.expires_at) < new Date()) {
+        throw new Error("Invitation has expired");
+      }
+
+      // Decrypt the data (replace with actual decryption)
+      // In a real implementation, use a proper decryption method
+      const decryptedData = atob(invitation.encrypted_data); // Replace with actual decryption
+      const userData = JSON.parse(decryptedData);
+
+      // Pre-fill the form with user data
+      setName(invitation.name || "");
+      setEmail(invitation.email || "");
+      setRole(invitation.role || "client");
+      setIsTokenValid(true);
     } catch (err) {
       console.error("Token validation error:", err);
       setIsTokenValid(false);
@@ -79,7 +98,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Registration failed",
@@ -93,13 +112,24 @@ const Register = () => {
     try {
       console.log("Attempting registration for:", email);
 
-      // Call the backend API for registration with token if available
+      // If token is present, mark the invitation as used in Supabase
+      if (token && isTokenValid) {
+        const { error } = await supabase
+          .from('user_invitations')
+          .update({ used: true })
+          .eq('token', token);
+
+        if (error) {
+          console.error("Error marking invitation as used:", error);
+        }
+      }
+
+      // Call the backend API for registration
       const response = await axios.post(`${API_URL}/auth/register`, {
         name,
         email,
         password,
-        role,
-        token: token || undefined
+        role
       });
 
       console.log("Registration successful");
