@@ -328,7 +328,7 @@ const Register = () => {
             </div>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col items-center">
+        {/* <CardFooter className="flex flex-col items-center">
           <div className="text-sm text-muted-foreground mt-4 text-center">
             <p>
               Already have an account?{" "}
@@ -341,7 +341,7 @@ const Register = () => {
               </Button>
             </p>
           </div>
-        </CardFooter>
+        </CardFooter> */}
       </Card>
     </div>
   );
