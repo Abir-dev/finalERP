@@ -376,14 +376,69 @@ const ITDashboard = () => {
     }
   };
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.role) {
       toast.error("Please fill in all required fields");
       return;
     }
 
+  //   if (selectedUser) {
+  //     // Edit existing user
+  //     setUsers((prevUsers) =>
+  //       prevUsers.map((user) =>
+  //         user.id === selectedUser.id
+  //           ? {
+  //               ...user,
+  //               name: newUser.name,
+  //               email: newUser.email,
+  //               role: newUser.role,
+  //               status: newUser.status,
+  //             }
+  //           : user
+  //       )
+  //     );
+  //     toast.success("User updated successfully!");
+  //   } else {
+  //     // Create new user
+  //     const newId = (
+  //       Math.max(...users.map((u) => parseInt(u.id))) + 1
+  //     ).toString();
+  //     setUsers((prevUsers) => [
+  //       ...prevUsers,
+  //       {
+  //         id: newId,
+  //         name: newUser.name,
+  //         email: newUser.email,
+  //         role: newUser.role,
+  //         status: newUser.status,
+  //         last_login: "Never",
+  //       },
+  //     ]);
+  //     toast.success("User created successfully!");
+  //   }
+  //   setIsUserModalOpen(false);
+  //   setSelectedUser(null);
+  //   setNewUser({
+  //     name: "",
+  //     email: "",
+  //     role: "",
+  //     status: "Active",
+  //   });
+  // };
+  try {
     if (selectedUser) {
       // Edit existing user
+      const { error } = await supabase
+        .from("users")
+        .update({
+          name: newUser.name,
+          role: newUser.role,
+          status: newUser.status,
+        })
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.id === selectedUser.id
@@ -399,32 +454,43 @@ const ITDashboard = () => {
       );
       toast.success("User updated successfully!");
     } else {
-      // Create new user
-      const newId = (
-        Math.max(...users.map((u) => parseInt(u.id))) + 1
-      ).toString();
-      setUsers((prevUsers) => [
-        ...prevUsers,
-        {
-          id: newId,
-          name: newUser.name,
+      // Generate invitation for new user
+      const { error: inviteError } = await supabase
+        .from("user_invitations")
+        .insert({
           email: newUser.email,
+          name: newUser.name,
           role: newUser.role,
           status: newUser.status,
-          last_login: "Never",
-        },
-      ]);
-      toast.success("User created successfully!");
+          token: crypto.randomUUID(),
+          expires_at: new Date(
+            Date.now() + 7 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 7 days expiry
+        });
+
+      if (inviteError) throw inviteError;
+
+      // Refresh the users list
+      const updatedUsers = await fetchAllUsers();
+      setUsers(updatedUsers);
+
+      toast.success("User invitation created successfully!");
     }
+
     setIsUserModalOpen(false);
     setSelectedUser(null);
-    setNewUser({
-      name: "",
-      email: "",
-      role: "",
-      status: "Active",
-    });
-  };
+    // setNewUser({
+    //   name: "",
+    //   email: "",
+    //   role: "",
+    //   status: "Active",
+    // });
+  } catch (error: any) {
+    console.error("Error saving user:", error);
+    toast.error(error.message || "Failed to save user");
+  }
+};
+
 
   const handleManualSync = () => {
     toast.success("Manual sync initiated successfully!");
