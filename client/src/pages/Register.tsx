@@ -146,28 +146,15 @@ const Register = () => {
           throw new Error("Invalid or expired invitation token");
         }
 
-        // Re-validate token just before registration to prevent race conditions
-        const { data: invitation } = await supabase
-          .from("user_invitations")
-          .select("*")
-          .eq("token", token)
-          .eq("used", false)
-          .single();
-
-        if (!invitation) {
-          throw new Error("Invitation has already been used or is invalid");
-        }
-
-        // Mark invitation as used in a transaction-like manner
-        const { error: updateError } = await supabase
+        const { data: invitation, error: updateError } = await supabase
           .from("user_invitations")
           .update({
             used: true,
-            // used_at: new Date().toISOString(),
-            email: email,
+            expires_at: new Date().toISOString(),
           })
-          .eq("token", token)
-          .eq("used", false);
+          .eq("token",token)
+          .select("*");
+        console.log("Invitation data:", invitation);
 
         if (updateError) {
           console.error("Error marking invitation as used:", updateError);
