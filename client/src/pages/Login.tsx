@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Building2, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
+import { supabase } from "@/lib/supabase";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -41,8 +42,14 @@ const Login = () => {
 
       // Update the user context with the response data
       await login(email, password);
-
       console.log("User context updated successfully");
+      await supabase
+        .from("users")
+        .update({ 
+          status: "active",
+          last_login: new Date().toISOString()
+        })
+        .eq("email", email);
 
       toast({
         title: "Login successful",
