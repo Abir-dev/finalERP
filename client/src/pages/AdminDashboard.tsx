@@ -162,9 +162,9 @@ const userColumns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <Badge variant={status === "active" ? "default" : "destructive"}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
-        </Badge>
+       <Badge variant={status.toLowerCase() === "active" ? "default" : "destructive"}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </Badge>
       );
     },
   },
@@ -213,30 +213,42 @@ const ITDashboard = () => {
   //   updated_at?: string
   // }
 
-  async function fetchAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false })
-    console.log("Fetched users from Supabase:", data);
-    if (error) {
-      console.error("Error fetching users from Supabase:", error);
-      toast.error("Failed to fetch users from database.");
-      throw error;
+  const totalUsers = users.length;
+  const adminUsers = users.filter(user => user.role === 'admin').length;
+  const activeToday = users.filter(user => {
+    // Convert status to lowercase for case-insensitive comparison
+    const userStatus = user.status?.toLowerCase();
+    return userStatus === 'active';
+  }).length;
+
+    async function fetchAllUsers(): Promise<User[]> {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching users from Supabase:", error);
+        toast.error("Failed to fetch users from database.");
+        throw error;
+      }
+      
+      if (!data) {
+        console.warn("No user data received from Supabase.");
+        return [];
+      }
+      
+      return data.map(dbUser => ({
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        role: dbUser.role,
+        status: dbUser.status === 'active' ? 'Active' : 'Inactive',
+        last_login: dbUser.last_login 
+          ? new Date(dbUser.last_login).toLocaleString() 
+          : "Never",
+      }));
     }
-    if (!data) {
-      console.warn("No user data received from Supabase.");
-      return [];
-    }
-    return data.map(dbUser => ({
-      id: dbUser.id,
-      name: dbUser.name,
-      email: dbUser.email,
-      role: dbUser.role,
-      status: dbUser.status || "Inactive",
-      last_login: dbUser.last_login ? new Date(dbUser.last_login).toLocaleString() : "Never",
-    })) as User[];
-  }
 
   useEffect(() => {
      // Fetch users from Supabase on component mount
@@ -340,9 +352,28 @@ const ITDashboard = () => {
     setIsUserModalOpen(true);
   };
 
-  const handleDeleteUser = (user: User) => {
-    setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
-    toast.success("User deleted successfully!");
+   const handleDeleteUser = async (user: User) => {
+    try {
+      toast.loading("Deleting user...");
+      
+      // Delete the user from Supabase users table
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      // Update local state only after successful deletion
+      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
+      
+      toast.dismiss(); // Dismiss the loading toast
+      toast.success("User deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.dismiss(); // Dismiss the loading toast
+      toast.error("Failed to delete user. Please try again.");
+    }
   };
 
   const handleSaveUser = () => {
@@ -583,30 +614,29 @@ const ITDashboard = () => {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Total Users"
-              value="248"
-              icon={Users}
-              description="Registered users"
-              onClick={() => toast.info("Viewing all users")}
-            />
-            <StatCard
-              title="Admins"
-              value="12"
-              icon={Shield}
-              description="Administrative users"
-              onClick={() => toast.info("Viewing admin list")}
-            />
-            <StatCard
-              title="Active Today"
-              value="147"
-              icon={Monitor}
-              description="Users logged in today"
-              onClick={() => toast.info("Viewing today's activity")}
-            />
-          </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard
+                title="Total Users"
+                value={totalUsers.toString()}
+                icon={Users}
+                description="Registered users"
+                onClick={() => toast.info("Viewing all users")}
+              />
+              <StatCard
+                title="Admins"
+                value={adminUsers.toString()}
+                icon={Shield}
+                description="Administrative users"
+                onClick={() => toast.info("Viewing admin list")}
+              />
+              <StatCard
+                title="Active Today"
+                value={activeToday.toString()}
+                icon={Monitor}
+                description="Users logged in today"
+                onClick={() => toast.info("Viewing today's activity")}
+              />
+            </div>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
