@@ -208,6 +208,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
             timeout: 5000,
           });
           console.log("Backend logout successful");
+          await supabase.from("users").update(
+            { status: "inactive" }
+          ).eq('id', state.user?.id);
         } catch (error) {
           if (axios.isAxiosError(error)) {
             console.error("Backend logout error:", {
