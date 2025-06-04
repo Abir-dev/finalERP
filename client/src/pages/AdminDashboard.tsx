@@ -101,7 +101,7 @@ type User = {
   email: string;
   role: string;
   status: "Active" | "Inactive";
-  lastLogin: string;
+  last_login: string;
 };
 
 const usersData: User[] = [
@@ -111,7 +111,7 @@ const usersData: User[] = [
     email: "john@company.com",
     role: "Admin",
     status: "Active",
-    lastLogin: "2024-01-20 09:30",
+    last_login: "2024-01-20 09:30",
   },
   {
     id: "2",
@@ -119,7 +119,7 @@ const usersData: User[] = [
     email: "jane@company.com",
     role: "Managing Director",
     status: "Active",
-    lastLogin: "2024-01-20 08:15",
+    last_login: "2024-01-20 08:15",
   },
   {
     id: "3",
@@ -127,7 +127,7 @@ const usersData: User[] = [
     email: "mike@company.com",
     role: "Client",
     status: "Inactive",
-    lastLogin: "2024-01-18 16:45",
+    last_login: "2024-01-18 16:45",
   },
   {
     id: "4",
@@ -135,7 +135,7 @@ const usersData: User[] = [
     email: "sarah@company.com",
     role: "Site Manager",
     status: "Active",
-    lastLogin: "2024-01-20 10:20",
+    last_login: "2024-01-20 10:20",
   },
 ];
 
@@ -162,14 +162,14 @@ const userColumns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <Badge variant={status === "Active" ? "default" : "destructive"}>
-          {status}
+        <Badge variant={status === "active" ? "default" : "destructive"}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "lastLogin",
+    accessorKey: "last_login",
     header: "Last Login",
   },
 ];
@@ -218,9 +218,24 @@ const ITDashboard = () => {
       .from('users')
       .select('*')
       .order('created_at', { ascending: false })
-    console.log("Fetched users:", data);
-    if (error) throw error
-    return data
+    console.log("Fetched users from Supabase:", data);
+    if (error) {
+      console.error("Error fetching users from Supabase:", error);
+      toast.error("Failed to fetch users from database.");
+      throw error;
+    }
+    if (!data) {
+      console.warn("No user data received from Supabase.");
+      return [];
+    }
+    return data.map(dbUser => ({
+      id: dbUser.id,
+      name: dbUser.name,
+      email: dbUser.email,
+      role: dbUser.role,
+      status: dbUser.status || "Inactive",
+      last_login: dbUser.last_login ? new Date(dbUser.last_login).toLocaleString() : "Never",
+    })) as User[];
   }
 
   useEffect(() => {
@@ -365,7 +380,7 @@ const ITDashboard = () => {
           email: newUser.email,
           role: newUser.role,
           status: newUser.status,
-          lastLogin: "Never",
+          last_login: "Never",
         },
       ]);
       toast.success("User created successfully!");
