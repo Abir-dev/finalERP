@@ -569,7 +569,7 @@ const ITDashboard = () => {
             />
             <StatCard
               title="Active Users"
-              value="147"
+              value={activeToday.toString()}
               icon={Users}
               description="Currently online"
               onClick={() => toast.info("Viewing active user list")}
