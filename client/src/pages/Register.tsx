@@ -146,7 +146,26 @@ const Register = () => {
           throw new Error("Invalid or expired invitation token");
         }
 
-        const { data: invitation, error: updateError } = await supabase
+        const { data: invitation } = await supabase
+          .from("user_invitations")
+          .select("*")
+          .eq("token", token)
+          .eq("used", false)
+          .single();
+
+        if (!invitation) {
+          throw new Error("Invitation has already been used or is invalid");
+        }
+      } // Call the backend API for registration
+      const response = await axios.post(`${API_URL}/auth/register`, {
+        name,
+        email,
+        password,
+        role,
+        invitationToken: token, // Pass token to backend for verification
+      });
+      console.log("Registration successful");
+       const { data: invitation, error: updateError } = await supabase
           .from("user_invitations")
           .update({
             used: true,
@@ -160,17 +179,8 @@ const Register = () => {
           console.error("Error marking invitation as used:", updateError);
           throw new Error("Failed to complete registration. Please try again.");
         }
-      } // Call the backend API for registration
-      const response = await axios.post(`${API_URL}/auth/register`, {
-        name,
-        email,
-        password,
-        role,
-        invitationToken: token, // Pass token to backend for verification
-      });
-
-      console.log("Registration successful");
-
+      
+      console.log("used state update successful");
       toast({
         title: "Registration successful",
         description: "You can now log in to your account",
