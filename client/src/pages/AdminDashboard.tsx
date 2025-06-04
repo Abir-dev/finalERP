@@ -213,20 +213,30 @@ const ITDashboard = () => {
   //   updated_at?: string
   // }
 
-  //  async function fetchAllUsers(): Promise<User[]> {
-  //   const { data, error } = await supabase
-  //     .from('users')
-  //     .select('*')
-  //     .order('created_at', { ascending: false })
-  //  console.log("Fetched users:", data);
-  //   if (error) throw error
-  //   return data
-  // }
+  async function fetchAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+    console.log("Fetched users:", data);
+    if (error) throw error
+    return data
+  }
 
-  //  useEffect(() => {
-  //     // Fetch users from Supabase on component mount
-  //     fetchAllUsers();
-  //   }, []);
+  useEffect(() => {
+     // Fetch users from Supabase on component mount
+     fetchAllUsers().then(fetchedUsers => {
+       if (fetchedUsers) {
+           // Assuming the fetched data is an array of User objects
+           // and matches the existing User type structure.
+           // If not, transformation might be needed here.
+           setUsers(fetchedUsers);
+       }
+     }).catch(error => {
+       console.error("Error fetching users from Supabase:", error);
+       toast.error("Failed to fetch users from database.");
+     });
+   }, []);
 
   // Add this function to generate invitation links with Supabase
   const generateInvitationLink = async () => {
@@ -1138,7 +1148,7 @@ const ITDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {!selectedUser && (
+      {/* {!selectedUser && (
         <div className="mt-4">
           <Button
             type="button"
@@ -1161,9 +1171,9 @@ const ITDashboard = () => {
             )}
           </Button>
         </div>
-      )}
+      )} */}
 
-      {showInvitationLink && (
+      {/* {showInvitationLink && (
         <div className="mt-4 space-y-2">
           <Label>Invitation Link</Label>
           <div className="flex items-center gap-2">
@@ -1180,7 +1190,7 @@ const ITDashboard = () => {
             This link will expire in 7 days
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
