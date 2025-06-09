@@ -1393,7 +1393,7 @@ const handleNewContractSubmit = async () => {
 </Dialog>
 
         {/* Emergency Procurement Component */}
-        <Card>
+        {/* <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -1421,7 +1421,7 @@ const handleNewContractSubmit = async () => {
               ) : "Create Emergency Order"}
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Contract Management Component */}
         <Card>

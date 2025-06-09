@@ -2325,14 +2325,14 @@ const SiteDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Task Modal */}
-      <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
-        <DialogContent className="max-w-md">
+      {/* Add Task Modal */}      <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
             <DialogDescription>Create a new task for the project</DialogDescription>
           </DialogHeader>
-          <form onSubmit={(e) => {
+          <div className="flex-1 overflow-y-auto p-2">
+            <form onSubmit={(e) => {
             e.preventDefault()
             const formData = new FormData(e.currentTarget)
             handleAddTask({
@@ -2434,12 +2434,12 @@ const SiteDashboard = () => {
             <div className="flex justify-end gap-2">
               <Button variant="outline" type="button" onClick={() => setIsAddTaskModalOpen(false)}>
                 Cancel
-              </Button>
-              <Button type="submit">
+              </Button>              <Button type="submit">
                 Add Task
               </Button>
             </div>
           </form>
+          </div>
         </DialogContent>
       </Dialog>
 
