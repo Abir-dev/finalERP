@@ -385,6 +385,7 @@ const Projects = () => {
   const [editProgress, setEditProgress] = useState(0);
   const [editStatus, setEditStatus] = useState("");
   const [editMilestones, setEditMilestones] = useState([]);
+  const [editSpent, setEditSpent] = useState(0);
   const [newProject, setNewProject] = useState<Partial<Project>>({
     name: '',
     client: '',
@@ -411,6 +412,7 @@ const Projects = () => {
     setSelectedProject(project);
     setEditProgress(project.progress);
     setEditStatus(project.status);
+    setEditSpent(project.spent);
     
     // Initialize milestones based on project progress
     const milestones = [
@@ -427,11 +429,11 @@ const Projects = () => {
   const handleSaveChanges = () => {
     const updatedProjects = projects.map(project => 
       project.id === selectedProject.id 
-        ? { ...project, progress: editProgress, status: editStatus }
+        ? { ...project, progress: editProgress, status: editStatus, spent: editSpent }
         : project
     );
     setProjects(updatedProjects);
-    setSelectedProject({ ...selectedProject, progress: editProgress, status: editStatus });
+    setSelectedProject({ ...selectedProject, progress: editProgress, status: editStatus, spent: editSpent });
     setIsEditing(false);
   };
 
@@ -1073,6 +1075,25 @@ const downloadTextFile = (content: string, filename: string) => {
                             className="flex-1"
                           />
                           <span className="text-sm w-12 text-right">{editProgress}%</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Budget Spent</Label>
+                        <div className="flex items-center gap-4">
+                          <Slider 
+                            value={[editSpent]}
+                            onValueChange={([value]) => setEditSpent(value)}
+                            max={selectedProject?.budget || 100}
+                            step={1000}
+                            className="flex-1"
+                          />
+                          <span className="text-sm w-20 text-right">₹{(editSpent / 100000).toFixed(1)}L</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>Spent: ₹{(editSpent / 100000).toFixed(1)}L</span>
+                          <span>Remaining: ₹{((selectedProject?.budget - editSpent) / 100000).toFixed(1)}L</span>
+                          <span>Total: ₹{(selectedProject?.budget / 100000).toFixed(1)}L</span>
                         </div>
                       </div>
                     </>
