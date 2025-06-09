@@ -361,6 +361,7 @@ const Projects = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editProgress, setEditProgress] = useState(0);
   const [editStatus, setEditStatus] = useState("");
+  const [editMilestones, setEditMilestones] = useState([]);
 
   const filteredProjects = projects.filter(
     project => project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -371,6 +372,16 @@ const Projects = () => {
     setSelectedProject(project);
     setEditProgress(project.progress);
     setEditStatus(project.status);
+    
+    // Initialize milestones based on project progress
+    const milestones = [
+      { name: 'Design Approval', date: '2024-01-15', completed: true },
+      { name: 'Foundation Complete', date: '2024-03-20', completed: project.progress > 20 },
+      { name: 'Structure Complete', date: '2024-06-30', completed: project.progress > 50 },
+      { name: 'Interior Work', date: '2024-09-15', completed: project.progress > 80 },
+      { name: 'Final Inspection', date: project.deadline, completed: project.progress === 100 }
+    ];
+    setEditMilestones(milestones);
     setShowProjectDetailsModal(true);
   };
 
@@ -383,6 +394,15 @@ const Projects = () => {
     setProjects(updatedProjects);
     setSelectedProject({ ...selectedProject, progress: editProgress, status: editStatus });
     setIsEditing(false);
+  };
+
+  const toggleMilestoneStatus = (index) => {
+    const updatedMilestones = [...editMilestones];
+    updatedMilestones[index] = {
+      ...updatedMilestones[index],
+      completed: !updatedMilestones[index].completed
+    };
+    setEditMilestones(updatedMilestones);
   };
 
   const [selectedProjectForResources, setSelectedProjectForResources] = useState("");
@@ -939,13 +959,7 @@ const downloadTextFile = (content: string, filename: string) => {
                   <div className="space-y-2">
                     <Label className="text-muted-foreground">Key Milestones</Label>
                     <div className="space-y-2">
-                      {[
-                        { name: 'Design Approval', date: '2024-01-15', completed: true },
-                        { name: 'Foundation Complete', date: '2024-03-20', completed: true },
-                        { name: 'Structure Complete', date: '2024-06-30', completed: false },
-                        { name: 'Interior Work', date: '2024-09-15', completed: false },
-                        { name: 'Final Inspection', date: selectedProject.deadline, completed: false }
-                      ].map((milestone, index) => (
+                      {editMilestones.map((milestone, index) => (
                         <div key={index} className="flex items-center">
                           <div className={`h-3 w-3 rounded-full mr-3 ${
                             milestone.completed ? 'bg-green-500' : 'bg-gray-300'
@@ -954,13 +968,22 @@ const downloadTextFile = (content: string, filename: string) => {
                             <p className="text-sm">{milestone.name}</p>
                             <p className="text-xs text-muted-foreground">{milestone.date}</p>
                           </div>
-                          {milestone.completed ? (
-                            <Badge variant="outline" className="text-xs">
-                              Completed
-                            </Badge>
+                          {isEditing ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`text-xs cursor-pointer transition-colors ${
+                                milestone.completed 
+                                  ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
+                                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                              }`}
+                              onClick={() => toggleMilestoneStatus(index)}
+                            >
+                              {milestone.completed ? 'Completed' : 'Pending'}
+                            </Button>
                           ) : (
                             <Badge variant="outline" className="text-xs">
-                              Pending
+                              {milestone.completed ? 'Completed' : 'Pending'}
                             </Badge>
                           )}
                         </div>
