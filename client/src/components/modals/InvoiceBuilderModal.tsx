@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 interface InvoiceBuilderModalProps {
   onClose: () => void;
@@ -23,6 +25,9 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
     { id: 1, description: 'Foundation Work - Phase 1', quantity: 1, rate: 500000, amount: 500000 },
     { id: 2, description: 'Material Supply - Cement & Steel', quantity: 1, rate: 300000, amount: 300000 }
   ]);
+  
+  // State to control whether GST should be applied
+  const [applyGst, setApplyGst] = useState<boolean>(true);
 
   const addLineItem = () => {
     const newId = Math.max(...lineItems.map(item => item.id)) + 1;
@@ -54,7 +59,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
   const taxRate = 0.18; // 18% GST
-  const taxAmount = subtotal * taxRate;
+  const taxAmount = applyGst ? subtotal * taxRate : 0;
   const total = subtotal + taxAmount;
 
   return (
@@ -137,6 +142,26 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                       </SelectContent>
                     </Select>
                   </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      GST Options
+                    </label>
+                    <RadioGroup 
+                      defaultValue={applyGst ? "with-gst" : "without-gst"} 
+                      className="flex space-x-4"
+                      onValueChange={(value) => setApplyGst(value === "with-gst")}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="with-gst" id="with-gst" />
+                        <Label htmlFor="with-gst">With GST (18%)</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="without-gst" id="without-gst" />
+                        <Label htmlFor="without-gst">Without GST</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -205,10 +230,12 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                       <span>Subtotal:</span>
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span>GST (18%):</span>
-                      <span>₹{taxAmount.toLocaleString('en-IN')}</span>
-                    </div>
+                    {applyGst && (
+                      <div className="flex justify-between text-sm">
+                        <span>GST (18%):</span>
+                        <span>₹{taxAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-lg font-bold border-t pt-2">
                       <span>Total:</span>
                       <span>₹{total.toLocaleString('en-IN')}</span>
@@ -289,7 +316,17 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                     </div>
 
                     <div className="border-t pt-3">
-                      <div className="flex justify-between text-sm font-medium">
+                      <div className="flex justify-between text-sm">
+                        <span>Subtotal:</span>
+                        <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                      </div>
+                      {applyGst && (
+                        <div className="flex justify-between text-sm">
+                          <span>GST (18%):</span>
+                          <span>₹{taxAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm font-medium mt-1 pt-1 border-t">
                         <span>Total Amount:</span>
                         <span>₹{total.toLocaleString('en-IN')}</span>
                       </div>
