@@ -262,10 +262,14 @@ type Task = {
   status: string;
   progress: number;
   phase: string;
-  dependencies: string[];
+  // dependencies: string[];
 };
 
-type Issue = (typeof issuesData)[0];
+type Issue = (typeof issuesData)[0] & {
+  escalated?: boolean;
+  location?: string;
+  impact?: string;
+};
 
 const taskColumns: ColumnDef<Task>[] = [
   {
@@ -402,6 +406,33 @@ const SiteDashboard = () => {
   const [selectedEquipment, setSelectedEquipment] = useState<
     (typeof equipmentData)[0] | null
   >(null);
+  const [isViewReportModalOpen, setIsViewReportModalOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<{
+    type: string;
+    date: string;
+    weather: string;
+    photos: number;
+    escalated: boolean;
+  } | null>(null);
+  const [isViewIssueModalOpen, setIsViewIssueModalOpen] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [issues, setIssues] = useState(
+    issuesData.map((issue, index) => ({
+      ...issue,
+      location:
+        index === 0
+          ? "North Block, Level 2"
+          : index === 1
+          ? "South Tower Foundation"
+          : "Main Building, East Wing",
+      impact:
+        index === 0
+          ? "High - Work Stoppage"
+          : index === 1
+          ? "Medium - Quality Concern"
+          : "Low - Schedule Impact",
+    }))
+  );
   const [equipmentLogs] = useState([
     {
       date: "2024-01-20",
@@ -475,7 +506,7 @@ const SiteDashboard = () => {
       status: "Completed",
       progress: 100,
       phase: "Foundation",
-      dependencies: [],
+      // dependencies: [],
     },
     {
       id: "TASK-2",
@@ -487,7 +518,7 @@ const SiteDashboard = () => {
       status: "In Progress",
       progress: 75,
       phase: "Structure",
-      dependencies: ["TASK-1"],
+      // dependencies: ["TASK-1"],
     },
     {
       id: "TASK-3",
@@ -499,7 +530,7 @@ const SiteDashboard = () => {
       status: "In Progress",
       progress: 45,
       phase: "Roofing",
-      dependencies: ["TASK-2"],
+      // dependencies: ["TASK-2"],
     },
     {
       id: "TASK-4",
@@ -511,7 +542,7 @@ const SiteDashboard = () => {
       status: "Not Started",
       progress: 0,
       phase: "Finishing",
-      dependencies: ["TASK-3"],
+      // dependencies: ["TASK-3"],
     },
   ]);
   const [progressStats, setProgressStats] = useState({
@@ -587,17 +618,17 @@ const SiteDashboard = () => {
     }
   };
 
-  const handleViewDependencies = (taskId: string) => {
-    const task = tasks.find((t) => t.id === taskId);
-    if (task) {
-      toast.info(`Dependencies for: ${task.name}`, {
-        description: `Predecessor Tasks: ${
-          task.dependencies?.join(", ") || "None"
-        }`,
-        duration: 3000,
-      });
-    }
-  };
+  // const handleViewDependencies = (taskId: string) => {
+  //   const task = tasks.find((t) => t.id === taskId);
+  //   if (task) {
+  //     toast.info(`Dependencies for: ${task.name}`, {
+  //       description: `Predecessor Tasks: ${
+  //         task.dependencies?.join(", ") || "None"
+  //       }`,
+  //       duration: 3000,
+  //     });
+  //   }
+  // };
 
   const handleUpdateProgress = (formData: {
     taskId: string;
@@ -872,7 +903,7 @@ const SiteDashboard = () => {
     startDate: string;
     dueDate: string;
     phase: string;
-    dependencies: string[];
+    // dependencies: string[];
   }) => {
     const newTask: Task = {
       id: `TASK-${tasks.length + 1}`,
@@ -1157,7 +1188,7 @@ const SiteDashboard = () => {
                     header: "Actions",
                     cell: ({ row }) => (
                       <div className="flex gap-2">
-                        <Button
+                        {/* <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewGantt(row.original.id)}
@@ -1172,7 +1203,7 @@ const SiteDashboard = () => {
                           }
                         >
                           Dependencies
-                        </Button>
+                        </Button> */}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1321,11 +1352,10 @@ const SiteDashboard = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          toast.info(
-                            `Viewing ${report.type} from ${report.date}`
-                          )
-                        }
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setIsViewReportModalOpen(true);
+                        }}
                       >
                         View
                       </Button>
@@ -1552,39 +1582,54 @@ const SiteDashboard = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            toast.info(`Viewing details for ${row.original.id}`)
-                          }
+                          onClick={() => {
+                            setSelectedIssue(row.original);
+                            setIsViewIssueModalOpen(true);
+                          }}
                         >
                           View
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
+                          onClick={() => {
+                            setIssues((prevIssues) =>
+                              prevIssues.map((issue) =>
+                                issue.id === row.original.id
+                                  ? { ...issue, status: "Resolved" }
+                                  : issue
+                              )
+                            );
                             toast.success(
                               `${row.original.id} marked as resolved`
-                            )
-                          }
+                            );
+                          }}
                         >
                           Resolve
                         </Button>
-                        {row.original.severity === "High" && (
+                        {/* {row.original.severity === "High" && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              toast.info(`Escalating ${row.original.id}`)
-                            }
+                            onClick={() => {
+                              setIssues((prevIssues) =>
+                                prevIssues.map((issue) =>
+                                  issue.id === row.original.id
+                                    ? { ...issue, escalated: true }
+                                    : issue
+                                )
+                              );
+                              toast.info(`Escalating ${row.original.id}`);
+                            }}
                           >
                             Escalate
                           </Button>
-                        )}
+                        )} */}
                       </div>
                     ),
                   },
                 ]}
-                data={issuesData}
+                data={issues}
                 searchKey="description"
               />
             </CardContent>
@@ -2911,7 +2956,7 @@ const SiteDashboard = () => {
                   startDate: formData.get("startDate") as string,
                   dueDate: formData.get("dueDate") as string,
                   phase: formData.get("phase") as string,
-                  dependencies: formData.getAll("dependencies") as string[],
+                  // dependencies: formData.getAll("dependencies") as string[],
                 });
               }}
               className="space-y-4"
@@ -2974,7 +3019,7 @@ const SiteDashboard = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dependencies">Dependencies</Label>
+                {/* <Label htmlFor="dependencies">Dependencies</Label>
                 <Select name="dependencies">
                   <SelectTrigger>
                     <SelectValue placeholder="Select dependencies" />
@@ -2990,7 +3035,7 @@ const SiteDashboard = () => {
                 <p className="text-sm text-muted-foreground">
                   Optional: Select a predecessor task that must be completed
                   before this one
-                </p>
+                </p> */}
               </div>
 
               <div className="flex justify-end gap-2">
@@ -3778,6 +3823,214 @@ const SiteDashboard = () => {
               <Button type="submit">Submit Adjustment</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+      {/* View Issue Modal */}
+      <Dialog
+        open={isViewIssueModalOpen}
+        onOpenChange={setIsViewIssueModalOpen}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Issue Details - {selectedIssue?.id}</DialogTitle>
+            <DialogDescription>View and manage site issue</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 items-center">
+              <Badge variant="outline">{selectedIssue?.type}</Badge>
+              <Badge
+                variant={
+                  selectedIssue?.severity === "High"
+                    ? "destructive"
+                    : selectedIssue?.severity === "Medium"
+                    ? "default"
+                    : "secondary"
+                }
+              >
+                {selectedIssue?.severity}
+              </Badge>
+              <Badge
+                variant={
+                  selectedIssue?.status === "Resolved"
+                    ? "default"
+                    : selectedIssue?.status === "In Progress"
+                    ? "secondary"
+                    : "outline"
+                }
+              >
+                {selectedIssue?.status}
+              </Badge>
+              {selectedIssue?.escalated && (
+                <Badge variant="destructive">Escalated</Badge>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2">Description</h4>
+                <div className="p-4 border rounded-md">
+                  <p className="text-sm">{selectedIssue?.description}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Details</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between p-2 border-b">
+                    <span className="text-sm font-medium">Reported By</span>
+                    <span className="text-sm">{selectedIssue?.reportedBy}</span>
+                  </div>
+                  <div className="flex justify-between p-2 border-b">
+                    <span className="text-sm font-medium">Reported Date</span>
+                    <span className="text-sm">{selectedIssue?.dateLogged}</span>
+                  </div>
+                  <div className="flex justify-between p-2 border-b">
+                    <span className="text-sm font-medium">Location</span>
+                    <span className="text-sm">{selectedIssue?.location}</span>
+                  </div>
+                  <div className="flex justify-between p-2">
+                    <span className="text-sm font-medium">Impact</span>
+                    <span className="text-sm">
+                      {selectedIssue?.impact || "Moderate"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end space-x-2">
+              {selectedIssue?.status !== "Resolved" && (
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    setIssues((prevIssues) =>
+                      prevIssues.map((issue) =>
+                        issue.id === selectedIssue?.id
+                          ? { ...issue, status: "Resolved" }
+                          : issue
+                      )
+                    );
+                    setIsViewIssueModalOpen(false);
+                    toast.success(
+                      `Issue ${selectedIssue?.id} marked as resolved`
+                    );
+                  }}
+                >
+                  Resolve Issue
+                </Button>
+              )}
+              {selectedIssue?.severity === "High" &&
+                !selectedIssue?.escalated && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      setIssues((prevIssues) =>
+                        prevIssues.map((issue) =>
+                          issue.id === selectedIssue?.id
+                            ? { ...issue, escalated: true }
+                            : issue
+                        )
+                      );
+                      setIsViewIssueModalOpen(false);
+                      toast.info(
+                        `Issue ${selectedIssue?.id} has been escalated`
+                      );
+                    }}
+                  >
+                    Escalate
+                  </Button>
+                )}
+              <Button
+                variant="outline"
+                onClick={() => setIsViewIssueModalOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* View Report Modal */}
+      <Dialog
+        open={isViewReportModalOpen}
+        onOpenChange={setIsViewReportModalOpen}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedReport?.type} - {selectedReport?.date}
+            </DialogTitle>
+            <DialogDescription>
+              Report details and attached photos
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">{selectedReport?.type}</Badge>
+              <Badge variant="secondary">{selectedReport?.weather}</Badge>
+              {selectedReport?.escalated && (
+                <Badge variant="destructive">Escalated</Badge>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2">Report Summary</h4>
+                <div className="p-4 border rounded-md">
+                  <p className="text-sm">
+                    This is a {selectedReport?.type} submitted on{" "}
+                    {selectedReport?.date}. Weather conditions were{" "}
+                    {selectedReport?.weather}.
+                    {selectedReport?.escalated &&
+                      " This report was escalated for management review."}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">
+                  Activities Completed
+                </h4>
+                <div className="p-4 border rounded-md">
+                  <ul className="text-sm space-y-1">
+                    <li>• Foundation work at Block A</li>
+                    <li>• Material inspection and quality check</li>
+                    <li>• Team coordination meeting</li>
+                    <li>• Safety inspection rounds</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium mb-2">
+                Photos ({selectedReport?.photos})
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Array.from({
+                  length: Math.min(selectedReport?.photos || 0, 8) || 0,
+                }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-square bg-muted rounded-md flex items-center justify-center"
+                  >
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setIsViewReportModalOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
