@@ -77,6 +77,29 @@ const projectsData = [
   }
 ];
 
+interface Project {
+  id: number;
+  name: string;
+  client: string;
+  status: string;
+  progress: number;
+  budget: number;
+  spent: number;
+  deadline: string;
+  location: string;
+  manager: string;
+  designDate?: string;
+  foundationDate?: string;
+  structureDate?: string;
+  interiorDate?: string;
+  finalDate?: string;
+  milestones?: Array<{
+    name: string;
+    date: string;
+    completed: boolean;
+  }>;
+}
+
 const StatCard = ({ title, value, icon: Icon, trend }) => (
   <Card>
     <CardContent className="p-6">
@@ -362,6 +385,22 @@ const Projects = () => {
   const [editProgress, setEditProgress] = useState(0);
   const [editStatus, setEditStatus] = useState("");
   const [editMilestones, setEditMilestones] = useState([]);
+  const [newProject, setNewProject] = useState<Partial<Project>>({
+    name: '',
+    client: '',
+    status: 'Planning',
+    progress: 0,
+    budget: 0,
+    spent: 0,
+    deadline: '',
+    location: '',
+    manager: '',
+    designDate: '',
+    foundationDate: '',
+    structureDate: '',
+    interiorDate: '',
+    finalDate: ''
+  });
 
   const filteredProjects = projects.filter(
     project => project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -528,81 +567,220 @@ const downloadTextFile = (content: string, filename: string) => {
                 New Project
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">Create New Project</DialogTitle>
                 <DialogDescription>
-                  Fill in the details to create a new construction project
+                  Fill in the details to create a new construction project with key milestones
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="grid gap-4 py-4 px-4 overflow-y-auto flex-1">
-                <div className="space-y-2">
-                  <Label htmlFor="project-name">Project Name</Label>
-                  <Input id="project-name" placeholder="Enter project name" />
+              <div className="grid gap-6 py-4 px-4 overflow-y-auto flex-1">
+                {/* Basic Project Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Project Information</h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="project-name">Project Name</Label>
+                    <Input 
+                      id="project-name" 
+                      placeholder="Enter project name"
+                      value={newProject.name || ''}
+                      onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="client">Client</Label>
+                      <Input 
+                        id="client" 
+                        placeholder="Enter client name"
+                        value={newProject.client || ''}
+                        onChange={(e) => setNewProject({...newProject, client: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="budget">Budget (₹)</Label>
+                      <Input 
+                        id="budget" 
+                        type="number" 
+                        placeholder="Enter project budget"
+                        value={newProject.budget || ''}
+                        onChange={(e) => setNewProject({...newProject, budget: parseInt(e.target.value) || 0})}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location</Label>
+                      <Input 
+                        id="location" 
+                        placeholder="Enter project location"
+                        value={newProject.location || ''}
+                        onChange={(e) => setNewProject({...newProject, location: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="manager">Project Manager</Label>
+                      <Input 
+                        id="manager" 
+                        placeholder="Assign project manager"
+                        value={newProject.manager || ''}
+                        onChange={(e) => setNewProject({...newProject, manager: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="deadline">Project Deadline</Label>
+                    <Input 
+                      id="deadline" 
+                      type="date"
+                      value={newProject.deadline || ''}
+                      onChange={(e) => setNewProject({...newProject, deadline: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Project Type</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Residential', 'Commercial', 'Industrial', 'Infrastructure'].map((type) => (
+                        <Button
+                          key={type}
+                          variant={projectType === type ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setProjectType(type)}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Project Status</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Planning', 'In Progress', 'On Hold'].map((status) => (
+                        <Button
+                          key={status}
+                          variant={newProject.status === status ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setNewProject({...newProject, status})}
+                        >
+                          {status}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+
+                {/* Key Milestones Section */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Key Milestones</h3>
                   <div className="space-y-2">
-                    <Label htmlFor="client">Client</Label>
-                    <Input id="client" placeholder="Enter client name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="budget">Budget (₹)</Label>
-                    <Input id="budget" type="number" placeholder="Enter project budget" />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input id="location" placeholder="Enter project location" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="manager">Project Manager</Label>
-                    <Input id="manager" placeholder="Assign project manager" />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date</Label>
-                    <Input id="start-date" type="date" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="deadline">Deadline</Label>
-                    <Input id="deadline" type="date" />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Project Description</Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Enter project details, scope, and requirements" 
-                    className="min-h-[100px]"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Project Type</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Residential', 'Commercial', 'Industrial', 'Infrastructure'].map((type) => (
-                      <Button
-                        key={type}
-                        variant={projectType === type ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setProjectType(type)}
-                      >
-                        {type}
-                      </Button>
+                    {[
+                      { name: 'Design Approval', dateKey: 'designDate' },
+                      { name: 'Foundation Complete', dateKey: 'foundationDate' },
+                      { name: 'Structure Complete', dateKey: 'structureDate' },
+                      { name: 'Interior Work', dateKey: 'interiorDate' },
+                      { name: 'Final Inspection', dateKey: 'finalDate' }
+                    ].map((milestone, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-32">
+                          <p className="text-sm">{milestone.name}</p>
+                        </div>
+                        <Input 
+                          type="date" 
+                          className="flex-1"
+                          value={newProject[milestone.dateKey] || ''}
+                          onChange={(e) => setNewProject({
+                            ...newProject, 
+                            [milestone.dateKey]: e.target.value
+                          })}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
               </div>
               
               <DialogFooter className="pt-4 border-t">
-                <Button type="submit" className="w-full">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setNewProject({
+                    name: '',
+                    client: '',
+                    status: 'Planning',
+                    progress: 0,
+                    budget: 0,
+                    spent: 0,
+                    deadline: '',
+                    location: '',
+                    manager: '',
+                    designDate: '',
+                    foundationDate: '',
+                    structureDate: '',
+                    interiorDate: '',
+                    finalDate: ''
+                  })}
+                >
+                  Clear
+                </Button>
+                <Button 
+                  onClick={() => {
+                    // Create the new project object
+                    const projectToAdd: Project = {
+                      id: Math.max(...projects.map(p => p.id)) + 1,
+                      name: newProject.name || '',
+                      client: newProject.client || '',
+                      status: newProject.status || 'Planning',
+                      progress: newProject.progress || 0,
+                      budget: newProject.budget || 0,
+                      spent: newProject.spent || 0,
+                      deadline: newProject.deadline || '',
+                      location: newProject.location || '',
+                      manager: newProject.manager || '',
+                      milestones: [
+                        { name: 'Design Approval', date: newProject.designDate || '', completed: false },
+                        { name: 'Foundation Complete', date: newProject.foundationDate || '', completed: false },
+                        { name: 'Structure Complete', date: newProject.structureDate || '', completed: false },
+                        { name: 'Interior Work', date: newProject.interiorDate || '', completed: false },
+                        { name: 'Final Inspection', date: newProject.finalDate || newProject.deadline || '', completed: false }
+                      ]
+                    };
+                    
+                    // Add to projects list
+                    setProjects([...projects, projectToAdd]);
+                    
+                    // Reset form
+                    setNewProject({
+                      name: '',
+                      client: '',
+                      status: 'Planning',
+                      progress: 0,
+                      budget: 0,
+                      spent: 0,
+                      deadline: '',
+                      location: '',
+                      manager: '',
+                      designDate: '',
+                      foundationDate: '',
+                      structureDate: '',
+                      interiorDate: '',
+                      finalDate: ''
+                    });
+                    
+                    // Show success message
+                    toast({
+                      title: "Project Created",
+                      description: `${projectToAdd.name} has been added to your projects`,
+                    });
+                  }}
+                  disabled={!newProject.name || !newProject.client}
+                  className="flex-1"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Project
                 </Button>
