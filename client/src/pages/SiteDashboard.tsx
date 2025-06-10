@@ -86,17 +86,24 @@ const materialUsageData = [
 
 // Cost Data
 const costData = [
-  { category: "Labor", planned: 250000, actual: 275000 },
+  { category: "Productive Labor", planned: 175000, actual: 190000 },
+  { category: "Non-Productive Labor", planned: 75000, actual: 85000 },
   { category: "Materials", planned: 450000, actual: 425000 },
   { category: "Equipment", planned: 180000, actual: 195000 },
   { category: "Overhead", planned: 120000, actual: 115000 },
 ];
 
 const laborData = [
-  { trade: "Electricians", planned: 450, actual: 420 },
-  { trade: "Plumbers", planned: 380, actual: 400 },
-  { trade: "Carpenters", planned: 520, actual: 480 },
-  { trade: "Masons", planned: 600, actual: 580 },
+  // Productive Labor
+  { trade: "Electricians", planned: 450, actual: 420, type: "productive" },
+  { trade: "Plumbers", planned: 380, actual: 400, type: "productive" },
+  { trade: "Carpenters", planned: 520, actual: 480, type: "productive" },
+  { trade: "Masons", planned: 600, actual: 580, type: "productive" },
+  // Non-Productive Labor
+  { trade: "Site Supervision", planned: 200, actual: 210, type: "non-productive" },
+  { trade: "Safety Officers", planned: 160, actual: 170, type: "non-productive" },
+  { trade: "Material Handlers", planned: 240, actual: 250, type: "non-productive" },
+  { trade: "Quality Control", planned: 180, actual: 190, type: "non-productive" },
 ];
 
 const purchaseOrdersData = [
@@ -1786,7 +1793,7 @@ const SiteDashboard = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Labor Cost Dashboard</CardTitle>
-                  <CardDescription>Crew-Level Productivity</CardDescription>
+                  <CardDescription>Productive vs Non-Productive Labor</CardDescription>
                 </div>
                 <Button onClick={() => setIsLaborModalOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -1794,46 +1801,102 @@ const SiteDashboard = () => {
                 </Button>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={laborData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="trade" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar
-                      dataKey="planned"
-                      fill="#3b82f6"
-                      name="Planned Hours"
-                    />
-                    <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="mt-4 space-y-4">
-                  {laborData.map((item) => (
-                    <div
-                      key={item.trade}
-                      className="flex items-center justify-between p-2 border rounded-lg"
-                    >
-                      <div>
-                        <div className="font-medium">{item.trade}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {item.actual} / {item.planned} hours
+                {/* Productive Labor Section */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <span className="h-3 w-3 rounded-full bg-blue-500 mr-2"></span>
+                    Productive Labor
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={laborData.filter(item => item.type === "productive")}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="trade" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar
+                        dataKey="planned"
+                        fill="#3b82f6"
+                        name="Planned Hours"
+                      />
+                      <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="mt-2 space-y-2">
+                    {laborData.filter(item => item.type === "productive").map((item) => (
+                      <div
+                        key={item.trade}
+                        className="flex items-center justify-between p-2 border rounded-lg"
+                      >
+                        <div>
+                          <div className="font-medium">{item.trade}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {item.actual} / {item.planned} hours
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {item.actual > item.planned * 1.15 && (
+                            <Badge variant="destructive">OT Alert</Badge>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewLaborDetails(item.trade)}
+                          >
+                            Details
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {item.actual > item.planned * 1.15 && (
-                          <Badge variant="destructive">OT Alert</Badge>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewLaborDetails(item.trade)}
-                        >
-                          Details
-                        </Button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Non-Productive Labor Section */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center">
+                    <span className="h-3 w-3 rounded-full bg-purple-500 mr-2"></span>
+                    Non-Productive Labor
+                  </h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={laborData.filter(item => item.type === "non-productive")}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="trade" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar
+                        dataKey="planned"
+                        fill="#8b5cf6"
+                        name="Planned Hours"
+                      />
+                      <Bar dataKey="actual" fill="#d946ef" name="Actual Hours" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="mt-2 space-y-2">
+                    {laborData.filter(item => item.type === "non-productive").map((item) => (
+                      <div
+                        key={item.trade}
+                        className="flex items-center justify-between p-2 border rounded-lg"
+                      >
+                        <div>
+                          <div className="font-medium">{item.trade}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {item.actual} / {item.planned} hours
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {item.actual > item.planned * 1.15 && (
+                            <Badge variant="destructive">OT Alert</Badge>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewLaborDetails(item.trade)}
+                          >
+                            Details
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -3072,6 +3135,12 @@ const SiteDashboard = () => {
                   <p className="font-medium">{selectedLabor.trade}</p>
                 </div>
                 <div>
+                  <Label className="text-muted-foreground">Labor Type</Label>
+                  <Badge className={selectedLabor.type === "productive" ? "bg-blue-500" : "bg-purple-500"}>
+                    {selectedLabor.type === "productive" ? "Productive" : "Non-Productive"}
+                  </Badge>
+                </div>
+                <div>
                   <Label className="text-muted-foreground">Utilization</Label>
                   <p className="font-medium">
                     {(
@@ -3114,6 +3183,12 @@ const SiteDashboard = () => {
                     {Math.abs(
                       (selectedLabor.actual - selectedLabor.planned) * 500
                     ).toLocaleString()}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Productivity Coefficient</Label>
+                  <p className="font-medium">
+                    {selectedLabor.type === "productive" ? "1.0" : "0.7"} 
                   </p>
                 </div>
               </div>

@@ -18,12 +18,13 @@ interface LineItem {
   quantity: number;
   rate: number;
   amount: number;
+  laborType?: 'productive' | 'non-productive' | null;
 }
 
 const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) => {
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { id: 1, description: 'Foundation Work - Phase 1', quantity: 1, rate: 500000, amount: 500000 },
-    { id: 2, description: 'Material Supply - Cement & Steel', quantity: 1, rate: 300000, amount: 300000 }
+    { id: 1, description: 'Foundation Work - Phase 1', quantity: 1, rate: 500000, amount: 500000, laborType: 'productive' },
+    { id: 2, description: 'Material Supply - Cement & Steel', quantity: 1, rate: 300000, amount: 300000, laborType: null }
   ]);
   
   // State to control whether GST should be applied
@@ -36,7 +37,8 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
       description: '',
       quantity: 1,
       rate: 0,
-      amount: 0
+      amount: 0,
+      laborType: null
     }]);
   };
 
@@ -57,6 +59,20 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
     }));
   };
 
+  const productiveLabor = lineItems
+    .filter(item => item.laborType === 'productive')
+    .reduce((sum, item) => sum + item.amount, 0);
+  
+  const nonProductiveLabor = lineItems
+    .filter(item => item.laborType === 'non-productive')
+    .reduce((sum, item) => sum + item.amount, 0);
+  
+  const totalLabor = productiveLabor + nonProductiveLabor;
+  
+  const nonLaborItems = lineItems
+    .filter(item => item.laborType === null)
+    .reduce((sum, item) => sum + item.amount, 0);
+  
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
   const taxRate = 0.18; // 18% GST
   const taxAmount = applyGst ? subtotal * taxRate : 0;
@@ -180,7 +196,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                   <div className="space-y-4">
                     {lineItems.map((item) => (
                       <div key={item.id} className="grid grid-cols-12 gap-2 items-center p-3 border rounded-lg">
-                        <div className="col-span-5">
+                        <div className="col-span-4">
                           <Input
                             placeholder="Description"
                             value={item.description}
@@ -188,6 +204,24 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                           />
                         </div>
                         <div className="col-span-2">
+                          <Select
+                            value={item.laborType || ''}
+                            onValueChange={(value) => {
+                              const laborType = value === '' ? null : (value as 'productive' | 'non-productive');
+                              updateLineItem(item.id, 'laborType', laborType);
+                            }}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Labor Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">Not Labor</SelectItem>
+                              <SelectItem value="productive">Productive</SelectItem>
+                              <SelectItem value="non-productive">Non-Productive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-1">
                           <Input
                             type="number"
                             placeholder="Qty"
@@ -226,6 +260,29 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
 
                   {/* Totals */}
                   <div className="mt-6 space-y-2">
+                    {/* Labor Breakdown */}
+                    <div className="border p-3 rounded-md bg-gray-50 mb-4">
+                      <h4 className="font-medium text-sm mb-2">Labor Breakdown:</h4>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span>Productive Labor:</span>
+                          <span>₹{productiveLabor.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Non-Productive Labor:</span>
+                          <span>₹{nonProductiveLabor.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-medium border-t pt-1 mt-1">
+                          <span>Total Labor:</span>
+                          <span>₹{totalLabor.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between text-sm">
+                      <span>Materials & Other Items:</span>
+                      <span>₹{nonLaborItems.toLocaleString('en-IN')}</span>
+                    </div>
                     <div className="flex justify-between text-sm">
                       <span>Subtotal:</span>
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
@@ -316,6 +373,23 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                     </div>
 
                     <div className="border-t pt-3">
+                      {/* Labor breakdown in preview */}
+                      <div className="mb-2">
+                        <div className="text-xs font-medium">Labor Summary:</div>
+                        <div className="grid grid-cols-2 text-xs">
+                          <span>Productive:</span>
+                          <span className="text-right">₹{productiveLabor.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="grid grid-cols-2 text-xs">
+                          <span>Non-Productive:</span>
+                          <span className="text-right">₹{nonProductiveLabor.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="grid grid-cols-2 text-xs font-medium">
+                          <span>Total Labor:</span>
+                          <span className="text-right">₹{totalLabor.toLocaleString('en-IN')}</span>
+                        </div>
+                      </div>
+                      
                       <div className="flex justify-between text-sm">
                         <span>Subtotal:</span>
                         <span>₹{subtotal.toLocaleString('en-IN')}</span>
