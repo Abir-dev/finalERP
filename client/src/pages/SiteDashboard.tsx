@@ -423,6 +423,12 @@ const SiteDashboard = () => {
   } | null>(null);
   const [isViewIssueModalOpen, setIsViewIssueModalOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [storeStaff, setStoreStaff] = useState([
+    { name: 'John Doe', role: 'Store Manager', status: 'On Duty', availability: 'Full-time', experience: '5 years', certifications: ['Inventory Management', 'Supply Chain'] },
+    { name: 'Jane Smith', role: 'Assistant Manager', status: 'On Duty', availability: 'Full-time', experience: '3 years', certifications: ['Material Handling', 'RFID Systems'] },
+    { name: 'Mike Johnson', role: 'Inventory Clerk', status: 'Off Duty', availability: 'Part-time', experience: '2 years', certifications: ['Basic Inventory'] },
+  ]);
   const [issues, setIssues] = useState(
     issuesData.map((issue, index) => ({
       ...issue,
@@ -1039,12 +1045,13 @@ const SiteDashboard = () => {
         </div>
       </div>
       <Tabs defaultValue="timeline" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
           <TabsTrigger value="materials">Material Flow</TabsTrigger>
           <TabsTrigger value="issues">Issue Tracker</TabsTrigger>
           <TabsTrigger value="cost">Cost Analysis</TabsTrigger>
+          <TabsTrigger value="store-manager">Store Manager</TabsTrigger>
         </TabsList>
 
         <TabsContent value="timeline" className="space-y-6">
@@ -2042,6 +2049,522 @@ const SiteDashboard = () => {
                 data={purchaseOrders}
                 searchKey="id"
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="store-manager" className="space-y-6">
+          {/* Store Manager Dashboard */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <StatCard
+              title="Active Personnel"
+              value="24"
+              icon={Package}
+              description="Currently on duty"
+              onClick={() => toast.info("Viewing personnel details")}
+            />
+            <StatCard
+              title="Store Performance"
+              value="94%"
+              icon={CheckCircle2}
+              description="Fulfillment rate"
+              onClick={() => toast.info("Viewing performance metrics")}
+            />
+            <StatCard
+              title="Pending Actions"
+              value="12"
+              icon={Clock}
+              description="Need attention"
+              onClick={() => toast.info("Viewing pending actions")}
+            />
+            <StatCard
+              title="Active Sites"
+              value="8"
+              icon={Building2}
+              description="Receiving supplies"
+              onClick={() => toast.info("Viewing active sites")}
+            />
+          </div>
+
+          {/* Store Manager Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Staff Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Staff Management</CardTitle>
+                <CardDescription>Manage store personnel and responsibilities</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {storeStaff.map((staff, index) => (
+                    <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium">{staff.name}</h3>
+                          <p className="text-sm text-muted-foreground">{staff.role}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {staff.certifications.map((cert, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">{cert}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={staff.status === 'On Duty' ? 'default' : 'secondary'}>
+                            {staff.status}
+                          </Badge>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Show confirmation dialog using toast
+                              toast.promise(
+                                new Promise((resolve) => {
+                                  // Simulate a brief delay for visual feedback
+                                  setTimeout(() => {
+                                    // Remove the staff member
+                                    setStoreStaff(prevStaff => 
+                                      prevStaff.filter((_, i) => i !== index)
+                                    );
+                                    resolve(true);
+                                  }, 300);
+                                }),
+                                {
+                                  loading: 'Removing staff member...',
+                                  success: `${staff.name} has been removed from the staff list`,
+                                  error: 'Failed to remove staff member'
+                                }
+                              );
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                              <line x1="10" y1="11" x2="10" y2="17"></line>
+                              <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
+                        <div>Availability: {staff.availability}</div>
+                        <div>Experience: {staff.experience}</div>
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => toast.info(`Scheduling ${staff.name}`, {
+                            description: `Opening scheduler for ${staff.availability} staff member`
+                          })}
+                        >
+                          Schedule
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => toast.info(`${staff.name}'s Performance Metrics`, {
+                            description: `Viewing detailed performance history and metrics`
+                          })}
+                        >
+                          Performance
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={() => setIsAddStaffModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Staff
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Advanced Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Performance Analytics</CardTitle>
+                <CardDescription>Detailed performance metrics and indicators</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Store Response Time</h3>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'Urgent Requests', value: 45, unit: 'minutes', target: 60, status: 'good' },
+                        { label: 'Regular Requests', value: 4.5, unit: 'hours', target: 6, status: 'good' },
+                        { label: 'Inter-site Transfers', value: 28, unit: 'hours', target: 24, status: 'warning' },
+                      ].map((metric, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span>{metric.label}</span>
+                            <span className={metric.status === 'good' ? 'text-green-600' : 'text-amber-600'}>
+                              {metric.value} {metric.unit} (Target: {metric.target} {metric.unit})
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full ${metric.status === 'good' ? 'bg-green-600' : 'bg-amber-600'}`}
+                              style={{ width: `${Math.min(100, (metric.value / metric.target) * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Order Fulfillment Rate</h3>
+                    <ResponsiveContainer width="100%" height={120}>
+                      <LineChart data={[
+                        { month: 'Jan', rate: 92 },
+                        { month: 'Feb', rate: 94 },
+                        { month: 'Mar', rate: 91 },
+                        { month: 'Apr', rate: 95 },
+                        { month: 'May', rate: 97 },
+                        { month: 'Jun', rate: 94 },
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis domain={[85, 100]} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="rate" stroke="#10b981" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => toast.success("Report Generated", {
+                      description: "Store performance report has been exported to Excel"
+                    })}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export Detailed Report
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Store Operations and Processes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Store Operations & Process Management</CardTitle>
+              <CardDescription>Standard operating procedures and workflow management</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Process Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[
+                    { name: 'Goods Receiving', status: 'Optimized', efficiency: 92, lastReview: '2023-05-15', owner: 'Jane Smith', documents: 4 },
+                    { name: 'Order Fulfillment', status: 'Under Review', efficiency: 78, lastReview: '2023-04-10', owner: 'Mike Johnson', documents: 6 },
+                    { name: 'Quality Control', status: 'Optimized', efficiency: 95, lastReview: '2023-05-20', owner: 'John Doe', documents: 3 },
+                    { name: 'Material Transfer', status: 'Needs Improvement', efficiency: 68, lastReview: '2023-03-25', owner: 'Jane Smith', documents: 5 },
+                    { name: 'Returns Processing', status: 'Optimized', efficiency: 88, lastReview: '2023-05-05', owner: 'Mike Johnson', documents: 4 },
+                    { name: 'Inventory Counting', status: 'Under Review', efficiency: 82, lastReview: '2023-04-15', owner: 'John Doe', documents: 7 }
+                  ].map((process, idx) => (
+                    <div key={idx} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-medium">{process.name}</h3>
+                        <Badge variant={
+                          process.status === 'Optimized' ? 'default' :
+                          process.status === 'Under Review' ? 'outline' : 'destructive'
+                        }>
+                          {process.status}
+                        </Badge>
+                      </div>
+                      <div className="mb-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Process Efficiency</span>
+                          <span className={
+                            process.efficiency > 85 ? 'text-green-600' :
+                            process.efficiency > 70 ? 'text-amber-600' : 'text-red-600'
+                          }>
+                            {process.efficiency}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              process.efficiency > 85 ? 'bg-green-600' :
+                              process.efficiency > 70 ? 'bg-amber-600' : 'bg-red-600'
+                            }`}
+                            style={{ width: `${process.efficiency}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2">
+                        <div>Last Review: {process.lastReview}</div>
+                        <div>Process Owner: {process.owner}</div>
+                        <div>Documents: {process.documents}</div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-3"
+                        onClick={() => toast.info(`Managing ${process.name} Process`, {
+                          description: `Opening process workflow editor with ${process.documents} associated documents`
+                        })}
+                      >
+                        Manage Process
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Process Improvement Initiatives */}
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm">Active Process Improvement Initiatives</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { name: 'Digital Receiving Implementation', completion: 65, dueDate: '2023-07-15', status: 'On Track', owner: 'Jane Smith' },
+                        { name: 'Barcode System Upgrade', completion: 40, dueDate: '2023-08-10', status: 'Delayed', owner: 'Mike Johnson' },
+                        { name: 'Cross-Store Inventory Standardization', completion: 85, dueDate: '2023-06-30', status: 'On Track', owner: 'John Doe' }
+                      ].map((initiative, idx) => (
+                        <div key={idx} className="flex items-center p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm">{initiative.name}</h4>
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1 mb-2">
+                              <span>Due: {initiative.dueDate}</span>
+                              <span>Owner: {initiative.owner}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full ${initiative.status === 'On Track' ? 'bg-green-600' : 'bg-amber-600'}`}
+                                style={{ width: `${initiative.completion}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <Badge variant={initiative.status === 'On Track' ? 'outline' : 'destructive'} className="ml-4">
+                            {initiative.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Store Compliance & Documentation */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Compliance & Documentation Management</CardTitle>
+              <CardDescription>Manage regulatory compliance and documentation</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Compliance Status */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { area: 'Safety & Hazmat', status: 'Compliant', lastAudit: '2023-05-10', nextAudit: '2023-08-10', documents: 12 },
+                    { area: 'Environmental', status: 'Needs Review', lastAudit: '2023-04-15', nextAudit: '2023-07-15', documents: 8 },
+                    { area: 'Quality Management', status: 'Compliant', lastAudit: '2023-05-20', nextAudit: '2023-08-20', documents: 15 },
+                    { area: 'Inventory Controls', status: 'Compliant', lastAudit: '2023-05-05', nextAudit: '2023-08-05', documents: 10 }
+                  ].map((area, idx) => (
+                    <div key={idx} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-medium">{area.area}</h3>
+                        <Badge variant={area.status === 'Compliant' ? 'default' : 'destructive'}>
+                          {area.status}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <div>Last Audit: {area.lastAudit}</div>
+                        <div>Next Audit: {area.nextAudit}</div>
+                        <div>{area.documents} Documents</div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-3"
+                        onClick={() => toast.info(`Viewing ${area.area} Documents`, {
+                          description: `Opening document repository with ${area.documents} compliance documents`
+                        })}
+                      >
+                        View Documents
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Recent Document Activity */}
+                <div>
+                  <h3 className="font-medium mb-3">Recent Document Activity</h3>
+                  <div className="space-y-2">
+                    {[
+                      { type: 'Update', document: 'Material Handling Procedure v2.3', user: 'John Doe', timestamp: '2 hours ago' },
+                      { type: 'Upload', document: 'Q2 Safety Inspection Report', user: 'Jane Smith', timestamp: '5 hours ago' },
+                      { type: 'Review', document: 'Hazardous Materials Storage Guidelines', user: 'Mike Johnson', timestamp: '1 day ago' },
+                      { type: 'Update', document: 'Receiving Procedure v1.8', user: 'Jane Smith', timestamp: '2 days ago' }
+                    ].map((activity, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center">
+                          <div className={`w-2 h-2 rounded-full mr-3 ${
+                            activity.type === 'Update' ? 'bg-blue-500' :
+                            activity.type === 'Upload' ? 'bg-green-500' : 'bg-amber-500'
+                          }`}></div>
+                          <div>
+                            <p className="font-medium text-sm">{activity.document}</p>
+                            <p className="text-xs text-muted-foreground">{activity.type} by {activity.user}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground">{activity.timestamp}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast.info("Upload New Document", {
+                        description: "Opening document upload form"
+                      })}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Upload Document
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast.info("Document Repository", {
+                        description: "Opening the complete document management system"
+                      })}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Document Repository
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Inventory Status Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory Status Overview</CardTitle>
+              <CardDescription>Current stock levels and inventory movements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { category: 'Critical Materials', stockLevel: '92%', items: 35, value: '₹8.2M', trend: '+2%' },
+                    { category: 'Regular Supplies', stockLevel: '78%', items: 120, value: '₹4.5M', trend: '-5%' },
+                    { category: 'Consumables', stockLevel: '65%', items: 210, value: '₹2.3M', trend: '+1%' },
+                    { category: 'Equipment & Tools', stockLevel: '88%', items: 65, value: '₹12.7M', trend: '0%' }
+                  ].map((category, idx) => (
+                    <div key={idx} className="border rounded-lg p-4">
+                      <h3 className="font-medium">{category.category}</h3>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Stock Level:</span>
+                          <span className="font-medium">{category.stockLevel}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Items:</span>
+                          <span>{category.items}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Value:</span>
+                          <span>{category.value}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Trend:</span>
+                          <span className={
+                            category.trend.startsWith('+') ? 'text-green-600' : 
+                            category.trend.startsWith('-') ? 'text-red-600' : 'text-gray-600'
+                          }>{category.trend}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Recent Stock Movements</h3>
+                    <div className="space-y-2">
+                      {[
+                        { type: 'In', material: 'Steel Reinforcement', quantity: '2.5 tons', destination: 'North Block', timestamp: '3 hours ago' },
+                        { type: 'Out', material: 'Portland Cement', quantity: '120 bags', destination: 'South Tower', timestamp: '5 hours ago' },
+                        { type: 'In', material: 'PVC Pipes', quantity: '350 units', destination: 'Main Warehouse', timestamp: '1 day ago' },
+                        { type: 'Out', material: 'Electrical Fittings', quantity: '85 boxes', destination: 'East Wing', timestamp: '1 day ago' }
+                      ].map((movement, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center">
+                            <Badge variant={movement.type === 'In' ? 'default' : 'secondary'} className="mr-3">
+                              {movement.type}
+                            </Badge>
+                            <div>
+                              <p className="font-medium text-sm">{movement.material}</p>
+                              <p className="text-xs text-muted-foreground">{movement.quantity} • {movement.destination}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{movement.timestamp}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Low Stock Alerts</h3>
+                    <div className="space-y-2">
+                      {[
+                        { material: 'Waterproofing Compound', currentStock: '5 barrels', threshold: '10 barrels', priority: 'High' },
+                        { material: 'Electrical Conduits', currentStock: '120 units', threshold: '200 units', priority: 'Medium' },
+                        { material: 'Concrete Admixture', currentStock: '15 containers', threshold: '25 containers', priority: 'Medium' },
+                        { material: 'Safety Gloves', currentStock: '30 pairs', threshold: '50 pairs', priority: 'Low' }
+                      ].map((alert, idx) => (
+                        <div key={idx} className="p-3 border rounded-lg">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-sm">{alert.material}</p>
+                              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                                <span>Current: {alert.currentStock}</span>
+                                <span>Threshold: {alert.threshold}</span>
+                              </div>
+                            </div>
+                            <Badge variant={
+                              alert.priority === 'High' ? 'destructive' : 
+                              alert.priority === 'Medium' ? 'default' : 'outline'
+                            }>
+                              {alert.priority}
+                            </Badge>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full mt-2"
+                            onClick={() => toast.success(`Purchase Request Created`, {
+                              description: `Request for ${alert.material} (${alert.currentStock} → ${alert.threshold}) has been submitted`
+                            })}
+                          >
+                            Create Purchase Request
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -4106,6 +4629,305 @@ const SiteDashboard = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Staff Modal */}
+      <Dialog open={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen}>
+        <DialogContent className="max-w-xl sm:max-w-2xl">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Add New Staff Member
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Enter staff details to register a new store team member
+            </DialogDescription>
+          </DialogHeader>
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              
+              // Get role display name from value
+              const roleValue = formData.get("role") as string;
+              const roleMap: Record<string, string> = {
+                "store-manager": "Store Manager",
+                "assistant-manager": "Assistant Manager",
+                "inventory-clerk": "Inventory Clerk",
+                "logistics-coordinator": "Logistics Coordinator",
+                "warehouse-staff": "Warehouse Staff",
+                "material-specialist": "Material Specialist",
+                "inventory-analyst": "Inventory Analyst",
+                "quality-inspector": "Quality Inspector"
+              };
+              
+              // Get availability display name
+              const availabilityValue = formData.get("availability") as string;
+              const availabilityMap: Record<string, string> = {
+                "full-time": "Full-time",
+                "part-time": "Part-time",
+                "contract": "Contract",
+                "seasonal": "Seasonal",
+                "on-call": "On-Call"
+              };
+              
+              // Parse certifications
+              const certificationString = formData.get("certifications") as string;
+              const certifications = certificationString
+                ? certificationString.split(',').map(cert => cert.trim())
+                : [];
+              
+              // Create new staff member object
+              const newStaffMember = {
+                name: formData.get("fullName") as string,
+                role: roleMap[roleValue] || roleValue,
+                status: 'On Duty',
+                availability: availabilityMap[availabilityValue] || availabilityValue,
+                experience: `${formData.get("experience")} years`,
+                certifications,
+                contactNumber: formData.get("contactNumber") as string,
+                email: formData.get("email") as string,
+                specialization: formData.get("specialization") as string,
+                shiftPreference: formData.get("shiftPreference") as string,
+                emergencyContact: formData.get("emergencyContact") as string,
+                notes: formData.get("notes") as string
+              };
+              
+              // Add to staff list
+              setStoreStaff(prevStaff => [...prevStaff, newStaffMember]);
+              
+              // Show success message
+              toast.success("Staff Member Added Successfully", {
+                description: `${newStaffMember.name} has been added as a ${newStaffMember.role}`
+              });
+              
+              // Close the modal
+              setIsAddStaffModalOpen(false);
+            }}
+            className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2"
+          >
+            {/* Staff Information Tab Panel */}
+            <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="professional">Professional</TabsTrigger>
+                <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
+              </TabsList>
+            
+              {/* Personal Information Tab */}
+              <TabsContent value="personal" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="fullName" className="text-xs flex items-center gap-1">
+                      Full Name <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input 
+                      id="fullName" 
+                      name="fullName" 
+                      placeholder="John Doe" 
+                      required 
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="contactNumber" className="text-xs flex items-center gap-1">
+                      Contact <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input 
+                      id="contactNumber" 
+                      name="contactNumber" 
+                      placeholder="+91 98765 43210" 
+                      required 
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="email" className="text-xs flex items-center gap-1">
+                      Email <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      type="email" 
+                      placeholder="john.doe@example.com" 
+                      required 
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="emergencyContact" className="text-xs">
+                      Emergency Contact
+                    </Label>
+                    <Input 
+                      id="emergencyContact" 
+                      name="emergencyContact" 
+                      placeholder="+91 98765 43210" 
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="address" className="text-xs">Address</Label>
+                  <Textarea 
+                    id="address" 
+                    name="address" 
+                    placeholder="Full address"
+                    className="resize-none text-sm"
+                    rows={2}
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Professional Information Tab */}
+              <TabsContent value="professional" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="role" className="text-xs flex items-center gap-1">
+                      Position/Role <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Select name="role" required>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="store-manager">Store Manager</SelectItem>
+                        <SelectItem value="assistant-manager">Assistant Manager</SelectItem>
+                        <SelectItem value="inventory-clerk">Inventory Clerk</SelectItem>
+                        <SelectItem value="logistics-coordinator">Logistics Coordinator</SelectItem>
+                        <SelectItem value="warehouse-staff">Warehouse Staff</SelectItem>
+                        <SelectItem value="material-specialist">Material Specialist</SelectItem>
+                        <SelectItem value="inventory-analyst">Inventory Analyst</SelectItem>
+                        <SelectItem value="quality-inspector">Quality Inspector</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="experience" className="text-xs flex items-center gap-1">
+                      Experience (Years) <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input 
+                      id="experience" 
+                      name="experience" 
+                      type="number" 
+                      min="0" 
+                      step="0.5" 
+                      placeholder="2" 
+                      required 
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="availability" className="text-xs flex items-center gap-1">
+                      Availability <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Select name="availability" required>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select availability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="seasonal">Seasonal</SelectItem>
+                        <SelectItem value="on-call">On-Call</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <Label htmlFor="shiftPreference" className="text-xs">Shift Preference</Label>
+                    <Select name="shiftPreference">
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select shift" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="morning">Morning (6AM-2PM)</SelectItem>
+                        <SelectItem value="day">Day (9AM-5PM)</SelectItem>
+                        <SelectItem value="evening">Evening (2PM-10PM)</SelectItem>
+                        <SelectItem value="night">Night (10PM-6AM)</SelectItem>
+                        <SelectItem value="flexible">Flexible</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="joiningDate" className="text-xs">Joining Date</Label>
+                  <Input 
+                    id="joiningDate" 
+                    name="joiningDate" 
+                    type="date"
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </TabsContent>
+              
+              {/* Qualifications Tab */}
+              <TabsContent value="qualifications" className="space-y-3 mt-0">
+                <div className="space-y-1">
+                  <Label htmlFor="certifications" className="text-xs">Certifications & Licenses</Label>
+                  <Input 
+                    id="certifications" 
+                    name="certifications" 
+                    placeholder="Inventory Management, Supply Chain, etc."
+                    className="h-8 text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">Separate multiple certifications with commas</p>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="specialization" className="text-xs">Area of Specialization</Label>
+                  <Input 
+                    id="specialization" 
+                    name="specialization" 
+                    placeholder="Procurement, Inventory Control, etc."
+                    className="h-8 text-sm"
+                  />
+                </div>
+                
+                <div className="space-y-1">
+                  <Label htmlFor="notes" className="text-xs">Notes & Special Considerations</Label>
+                  <Textarea 
+                    id="notes" 
+                    name="notes" 
+                    placeholder="Additional information, special skills, etc."
+                    rows={3}
+                    className="resize-none text-sm"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+            
+            <div className="flex items-center pt-2 border-t">
+              <p className="text-xs text-muted-foreground mr-auto">
+                <span className="text-red-500">*</span> Required fields
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsAddStaffModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm">
+                  Add Staff
+                </Button>
+              </div>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
