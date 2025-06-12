@@ -69,6 +69,52 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+interface StockAlert {
+  id: number;
+  item: string;
+  quantity: string;
+  reorderPoint: string;
+  status: string;
+}
+
+interface MaterialMovement {
+  id: number;
+  type: "Inbound" | "Outbound";
+  material: string;
+  quantity: string;
+  time: string;
+  site: string;
+}
+
+interface StorageSection {
+  id: number;
+  zone: string;
+  occupancy: number;
+  type: string;
+}
+interface StockAlert {
+  id: number;
+  item: string;
+  quantity: string;
+  reorderPoint: string;
+  status: string;
+}
+
+interface MaterialMovement {
+  id: number;
+  type: "Inbound" | "Outbound";
+  material: string;
+  quantity: string;
+  time: string;
+  site: string;
+}
+
+interface StorageSection {
+  id: number;
+  zone: string;
+  occupancy: number;
+  type: string;
+}
 
 const progressData = [
   { week: "W1", planned: 15, actual: 12 },
@@ -501,6 +547,24 @@ const SiteDashboard = () => {
       status: "Idle",
       operator: "John Smith",
     },
+  ]);
+  const [stockAlerts] = useState<StockAlert[]>([
+    { id: 1, item: "Cement", quantity: "50 bags", reorderPoint: "100 bags", status: "Low Stock" },
+    { id: 2, item: "Steel Bars (12mm)", quantity: "2.5 tons", reorderPoint: "5 tons", status: "Low Stock" },
+    { id: 3, item: "Bricks", quantity: "850 pcs", reorderPoint: "1000 pcs", status: "Reorder" }
+  ]);
+
+  const [materialMovements] = useState<MaterialMovement[]>([
+    { id: 1, type: "Outbound", material: "Ready Mix Concrete", quantity: "18 mÂ³", time: "2 hours ago", site: "Block A" },
+    { id: 2, type: "Inbound", material: "Steel Reinforcement", quantity: "5 tons", time: "5 hours ago", site: "Central Store" },
+    { id: 3, type: "Outbound", material: "Shuttering Plates", quantity: "45 pcs", time: "8 hours ago", site: "Block B" }
+  ]);
+
+  const [storageSections] = useState<StorageSection[]>([
+    { id: 1, zone: "Zone A", occupancy: 85, type: "Heavy Materials" },
+    { id: 2, zone: "Zone B", occupancy: 65, type: "Finishing Items" },
+    { id: 3, zone: "Zone C", occupancy: 92, type: "Tools & Equipment" },
+    { id: 4, zone: "Zone D", occupancy: 45, type: "Electrical & Plumbing" }
   ]);
 
   // Data states
@@ -1045,13 +1109,14 @@ const SiteDashboard = () => {
         </div>
       </div>
       <Tabs defaultValue="timeline" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
           <TabsTrigger value="materials">Material Flow</TabsTrigger>
           <TabsTrigger value="issues">Issue Tracker</TabsTrigger>
           <TabsTrigger value="cost">Cost Analysis</TabsTrigger>
           <TabsTrigger value="store-manager">Store Manager</TabsTrigger>
+          <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger>
         </TabsList>
 
         <TabsContent value="timeline" className="space-y-6">
@@ -2567,6 +2632,121 @@ const SiteDashboard = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="central-warehouse" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <StatCard
+              title="Stock Availability"
+              value="92%"
+              icon={Warehouse}
+              description="Materials in stock"
+              trend={{ value: 2, label: "this week" }}
+              onClick={() => toast.info("Viewing stock details")}
+            />
+            <StatCard
+              title="Pending Deliveries"
+              value="14"
+              icon={Package}
+              description="Inbound materials"
+              onClick={() => toast.info("Viewing incoming deliveries")}
+            />
+            <StatCard
+              title="Storage Capacity"
+              value="78%"
+              icon={Building2}
+              description="Warehouse utilization"
+              onClick={() => toast.info("Viewing capacity details")}
+            />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Critical Stock Alerts</CardTitle>
+              <CardDescription>Materials requiring immediate attention</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stockAlerts.map((alert) => (
+                  <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{alert.item}</h3>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Current: {alert.quantity} • Reorder Point: {alert.reorderPoint}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <Badge variant="destructive">{alert.status}</Badge>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsMaterialRequestModalOpen(true)}
+                      >
+                        Request
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Material Movements</CardTitle>
+                <CardDescription>Last 24 hours activity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {materialMovements.map((movement) => (
+                    <div key={movement.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={movement.type === "Inbound" ? "default" : "secondary"}>
+                            {movement.type}
+                          </Badge>
+                          <span className="font-medium">{movement.material}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {movement.quantity} • {movement.time} • {movement.site}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Storage Location Map</CardTitle>
+                <CardDescription>Warehouse section occupancy</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  {storageSections.map((section) => (
+                    <div key={section.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-medium">{section.zone}</h3>
+                        <Badge variant={section.occupancy > 80 ? "destructive" : "secondary"}>
+                          {section.occupancy}% Full
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{section.type}</p>
+                      <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${
+                            section.occupancy > 80 ? "bg-red-600" : "bg-blue-600"
+                          }`}
+                          style={{ width: `${section.occupancy}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
       {/* DPR Upload Modal */}
