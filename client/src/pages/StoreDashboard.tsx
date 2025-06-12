@@ -432,13 +432,13 @@ const StoreDashboard = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+      <Tabs defaultValue="overview" className="space-y-6 sticky top-0 z-10 bg-background">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="transfers">Transfers</TabsTrigger>
           <TabsTrigger value="procurement">Procurement</TabsTrigger>
-          <TabsTrigger value="warehouse">Warehouse</TabsTrigger>
+          {/* <TabsTrigger value="warehouse">Warehouse</TabsTrigger> */}
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger>
         </TabsList>
