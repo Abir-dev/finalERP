@@ -97,7 +97,7 @@ const mockTasks = [
 // Add the form schema
 const addItemFormSchema = z.object({
   name: z.string().min(2, "Item name must be at least 2 characters"),
-  category: z.string().min(1, "Please select a category"),
+  category: z.array(z.string()).min(1, "Please select at least one category"),
   quantity: z.number().min(0, "Quantity must be 0 or greater"),
   unit: z.string().min(1, "Please select a unit"),
   location: z.string().min(1, "Please select a location"),
@@ -533,8 +533,20 @@ const Inventory = () => {
       </div>
 
       {/* Add Item Dialog */}
-      <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog 
+        open={isAddItemOpen} 
+        onOpenChange={(open) => {
+          setIsAddItemOpen(open);
+          if (!open) {
+            form.reset();
+          }
+        }}
+      >
+        <DialogContent 
+          className="max-w-2xl overflow-y-auto max-h-[90vh]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Add New Inventory Item</DialogTitle>
             <DialogDescription>
@@ -565,19 +577,15 @@ const Inventory = () => {
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <Select
-                        onValueChange={(value) => {
-                          field.onChange([value]);
-                        }}
-                        value={field.value?.[0] || ''}
+                        onValueChange={(value) => field.onChange([value])}
+                        defaultValue={field.value?.[0]}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a category">
-                              {field.value?.[0] || "Select a category..."}
-                            </SelectValue>
+                            <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="max-h-[200px] overflow-y-auto">
+                        <SelectContent>
                           {CATEGORY_OPTIONS.map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
@@ -748,12 +756,20 @@ const Inventory = () => {
                   )}
                 />
               </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddItemOpen(false)}>
+              <DialogFooter className="mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddItemOpen(false);
+                    form.reset();
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button type="submit">Add Item</Button>
+                <Button type="submit" className="ml-3">
+                  Add Item
+                </Button>
               </DialogFooter>
             </form>
           </Form>
