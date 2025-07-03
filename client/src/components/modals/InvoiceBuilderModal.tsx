@@ -215,7 +215,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                               <SelectValue placeholder="Labor Type" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Not Labor</SelectItem>
+                              <SelectItem value="no-labor">Not Labor</SelectItem>
                               <SelectItem value="productive">Productive</SelectItem>
                               <SelectItem value="non-productive">Non-Productive</SelectItem>
                             </SelectContent>
