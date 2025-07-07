@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, FileText, Calendar, DollarSign, Users } from "lucide-react";
+import { Download, Plus, FileText, Calendar, DollarSign, Users, Edit, Eye } from "lucide-react";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { TenderDashboard } from "@/components/tender-management/tender-dashboard";
 import BidPreparationModal from "@/components/modals/BidPreparationModal";
@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 
 const TenderManagement = () => {
   const [isGRNModalOpen, setIsGRNModalOpen] = useState(false)
@@ -24,6 +26,16 @@ const TenderManagement = () => {
   const [isResourceModalOpen, setIsResourceModalOpen] = useState(false)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false)
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false)
+  const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false)
+  const [selectedSubmission, setSelectedSubmission] = useState(null)
+  const [isViewMode, setIsViewMode] = useState(true)
+  const [submissionData, setSubmissionData] = useState({
+    status: '',
+    notes: '',
+    followUpDate: '',
+    contactPerson: '',
+    submissionStatus: ''
+  })
 
   // Mock tender data (should match the dashboard for demo)
   const tenders = [
@@ -128,6 +140,41 @@ const TenderManagement = () => {
       title: "Opening Team Builder",
       description: "Loading organization chart tools..."
     })
+  }
+
+  const handleViewSubmission = (submission) => {
+    setSelectedSubmission(submission)
+    setSubmissionData({
+      status: submission.status,
+      notes: submission.notes || '',
+      followUpDate: submission.followUpDate || '',
+      contactPerson: submission.contactPerson || '',
+      submissionStatus: submission.submissionStatus || 'submitted'
+    })
+    setIsViewMode(true)
+    setIsSubmissionModalOpen(true)
+  }
+
+  const handleEditSubmission = (submission) => {
+    setSelectedSubmission(submission)
+    setSubmissionData({
+      status: submission.status,
+      notes: submission.notes || '',
+      followUpDate: submission.followUpDate || '',
+      contactPerson: submission.contactPerson || '',
+      submissionStatus: submission.submissionStatus || 'submitted'
+    })
+    setIsViewMode(false)
+    setIsSubmissionModalOpen(true)
+  }
+
+  const handleSaveSubmission = () => {
+    // Update the submission data in the mock data
+    toast({
+      title: "Submission Updated",
+      description: "Tender submission has been updated successfully"
+    })
+    setIsSubmissionModalOpen(false)
   }
 
   return (
@@ -311,7 +358,10 @@ const TenderManagement = () => {
                     status: 'Under Evaluation',
                     value: '₹25Cr',
                     daysElapsed: 15,
-                    nextAction: 'Follow up call'
+                    submissionStatus: 'submitted',
+                    notes: 'Initial submission completed. Awaiting client response.',
+                    followUpDate: '2024-02-01',
+                    contactPerson: 'John Smith'
                   },
                   {
                     tender: 'Residential Towers',
@@ -320,7 +370,10 @@ const TenderManagement = () => {
                     status: 'Technical Evaluation',
                     value: '₹45Cr',
                     daysElapsed: 10,
-                    nextAction: 'Submit clarifications'
+                    submissionStatus: 'submitted',
+                    notes: 'Technical evaluation in progress. Client may require clarifications.',
+                    followUpDate: '2024-01-30',
+                    contactPerson: 'Sarah Johnson'
                   },
                   {
                     tender: 'Infrastructure Development',
@@ -329,7 +382,10 @@ const TenderManagement = () => {
                     status: 'Financial Evaluation',
                     value: '₹80Cr',
                     daysElapsed: 5,
-                    nextAction: 'Await results'
+                    submissionStatus: 'submitted',
+                    notes: 'Financial evaluation phase. All documents submitted.',
+                    followUpDate: '2024-02-05',
+                    contactPerson: 'Michael Brown'
                   }
                 ].map((submission, index) => (
                   <div key={index} className="p-4 border rounded-lg">
@@ -344,7 +400,12 @@ const TenderManagement = () => {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Status</p>
-                        <p className="font-medium">{submission.status}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={submission.submissionStatus === 'submitted' ? 'default' : 'secondary'}>
+                            {submission.submissionStatus}
+                          </Badge>
+                          <p className="font-medium">{submission.status}</p>
+                        </div>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Value</p>
@@ -352,9 +413,16 @@ const TenderManagement = () => {
                         <p className="text-xs text-muted-foreground">{submission.daysElapsed} days ago</p>
                       </div>
                       <div>
-                        <Button variant="outline" size="sm" className="w-full">
-                          {submission.nextAction}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleViewSubmission(submission)}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleEditSubmission(submission)}>
+                            <Edit className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1570,6 +1638,177 @@ const TenderManagement = () => {
                   setIsTeamModalOpen(false)
                 }}>Create Structure</Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submission View/Edit Modal */}
+      <Dialog open={isSubmissionModalOpen} onOpenChange={setIsSubmissionModalOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {isViewMode ? 'View Submission' : 'Edit Submission'} - {selectedSubmission?.tender}
+            </DialogTitle>
+            <DialogDescription>
+              {isViewMode ? 'View submission details and status' : 'Update submission status and details'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Submission Overview */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Project</Label>
+                <div className="p-2 bg-gray-50 rounded border">
+                  <p className="font-medium">{selectedSubmission?.tender}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSubmission?.client}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Submission Date</Label>
+                <div className="p-2 bg-gray-50 rounded border">
+                  <p className="font-medium">{selectedSubmission?.submissionDate}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Status and Submission Status */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Current Status</Label>
+                {isViewMode ? (
+                  <div className="p-2 bg-gray-50 rounded border">
+                    <p className="font-medium">{submissionData.status}</p>
+                  </div>
+                ) : (
+                  <Select value={submissionData.status} onValueChange={(value) => setSubmissionData({...submissionData, status: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Under Evaluation">Under Evaluation</SelectItem>
+                      <SelectItem value="Technical Evaluation">Technical Evaluation</SelectItem>
+                      <SelectItem value="Financial Evaluation">Financial Evaluation</SelectItem>
+                      <SelectItem value="Awarded">Awarded</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                      <SelectItem value="Clarification Required">Clarification Required</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Submission Status</Label>
+                {isViewMode ? (
+                  <div className="p-2 bg-gray-50 rounded border">
+                    <Badge variant={submissionData.submissionStatus === 'submitted' ? 'default' : 'secondary'}>
+                      {submissionData.submissionStatus}
+                    </Badge>
+                  </div>
+                ) : (
+                  <Select value={submissionData.submissionStatus} onValueChange={(value) => setSubmissionData({...submissionData, submissionStatus: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select submission status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="submitted">Submitted</SelectItem>
+                      <SelectItem value="not-submitted">Not Submitted</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="resubmitted">Resubmitted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+
+            {/* Contact Person and Follow-up Date */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Contact Person</Label>
+                {isViewMode ? (
+                  <div className="p-2 bg-gray-50 rounded border">
+                    <p className="font-medium">{submissionData.contactPerson}</p>
+                  </div>
+                ) : (
+                  <Input
+                    value={submissionData.contactPerson}
+                    onChange={(e) => setSubmissionData({...submissionData, contactPerson: e.target.value})}
+                    placeholder="Enter contact person name"
+                  />
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Follow-up Date</Label>
+                {isViewMode ? (
+                  <div className="p-2 bg-gray-50 rounded border">
+                    <p className="font-medium">{submissionData.followUpDate}</p>
+                  </div>
+                ) : (
+                  <Input
+                    type="date"
+                    value={submissionData.followUpDate}
+                    onChange={(e) => setSubmissionData({...submissionData, followUpDate: e.target.value})}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              {isViewMode ? (
+                <div className="p-2 bg-gray-50 rounded border min-h-20">
+                  <p>{submissionData.notes}</p>
+                </div>
+              ) : (
+                <Textarea
+                  value={submissionData.notes}
+                  onChange={(e) => setSubmissionData({...submissionData, notes: e.target.value})}
+                  placeholder="Enter notes about the submission..."
+                  rows={4}
+                />
+              )}
+            </div>
+
+            {/* Project Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Project Value</Label>
+                <div className="p-2 bg-gray-50 rounded border">
+                  <p className="font-medium">{selectedSubmission?.value}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Days Since Submission</Label>
+                <div className="p-2 bg-gray-50 rounded border">
+                  <p className="font-medium">{selectedSubmission?.daysElapsed} days</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between pt-4">
+            <div className="flex gap-2">
+              {isViewMode ? (
+                <Button variant="outline" onClick={() => setIsViewMode(false)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Submission
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => setIsViewMode(true)}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Mode
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsSubmissionModalOpen(false)}>
+                Cancel
+              </Button>
+              {!isViewMode && (
+                <Button onClick={handleSaveSubmission}>
+                  Save Changes
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
