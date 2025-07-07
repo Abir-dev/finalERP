@@ -99,6 +99,38 @@ const ClientPortal = () => {
     setIsServiceDetailsModalOpen(true)
   }
 
+  const handleDownloadReports = () => {
+    // Download milestoneData as CSV
+    const csvRows = [
+      ['Milestone', 'Planned', 'Actual', 'Status'],
+      ...milestoneData.map(m => [m.milestone, m.planned, m.actual || '', m.status])
+    ];
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'project-milestones-report.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadInvoice = (invoice) => {
+    // Simulate invoice download as a text file
+    const content = `INVOICE\n=======\n\nInvoice ID: ${invoice.id}\nClient: ${invoice.clientName || ''}\nAmount: ₹${invoice.amount}\nDue Date: ${invoice.dueDate}\nStatus: ${invoice.status}`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${invoice.id}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -111,7 +143,7 @@ const ClientPortal = () => {
             <Wrench className="h-4 w-4" />
             New Service Request
           </Button>
-          <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" onClick={handleDownloadReports}>
             <Download className="h-4 w-4" />
             Download Reports
           </Button>
@@ -277,7 +309,7 @@ const ClientPortal = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => toast.info(`Downloading invoice ${invoice.id}`)}
+                        onClick={() => handleDownloadInvoice(invoice)}
                       >
                         <Download className="h-3 w-3" />
                       </Button>
