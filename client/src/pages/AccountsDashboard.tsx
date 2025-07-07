@@ -18,6 +18,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 import TaxCalculatorModal from "@/components/modals/TaxCalculatorModal"
 import ReconciliationPanel from "@/components/panels/ReconciliationPanel"
+import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal"
 
 const collectionData = [
   { month: 'Jan', invoiced: 4500000, collected: 4200000, outstanding: 300000 },
@@ -487,59 +488,12 @@ const AccountsDashboard = () => {
       {/* Modals */}
       {showTaxModal && <TaxCalculatorModal onClose={() => setShowTaxModal(false)} />}
       
-      {/* Existing modals */}
-      <Dialog open={isInvoiceModalOpen} onOpenChange={setIsInvoiceModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Generate New Invoice</DialogTitle>
-            <DialogDescription>Create and send invoice to client</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="client">Client</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="abc-developers">ABC Developers</SelectItem>
-                  <SelectItem value="xyz-corp">XYZ Corp</SelectItem>
-                  <SelectItem value="home-builders">Home Builders</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="project">Project</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="villa-complex">Villa Complex</SelectItem>
-                  <SelectItem value="commercial-tower">Commercial Tower</SelectItem>
-                  <SelectItem value="apartments">Apartments</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="amount">Amount</Label>
-              <Input id="amount" type="number" placeholder="Enter amount" />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Invoice description..." />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsInvoiceModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleGenerateInvoice}>
-                Generate & Send
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Replace old Generate Invoice modal with InvoiceBuilderModal */}
+      {isInvoiceModalOpen && (
+        <div className="-top-10 ">
+          <InvoiceBuilderModal onClose={() => setIsInvoiceModalOpen(false)} />
+        </div>
+      )}
 
       <Dialog open={isPayrollModalOpen} onOpenChange={setIsPayrollModalOpen}>
         <DialogContent>
