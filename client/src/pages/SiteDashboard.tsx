@@ -945,15 +945,39 @@ const SiteDashboard = () => {
     weather: string;
     photos: FileList;
     notes: string;
+    workSections: string[];
+    manpower: string;
+    manpowerRoles: string;
+    equipmentUsed: string[];
+    safetyIncident: string;
+    safetyDetails: string;
+    qualityCheck: string;
+    qualityDetails: string;
+    delayIssue: string;
+    delayDetails: string;
+    materials: { material: string; qty: string; remarks: string }[];
+    subcontractor: string;
   }) => {
     toast.success("DPR uploaded successfully!");
     setIsDPRModalOpen(false);
   };
 
   const handleUploadWPR = (formData: {
+    weekStart: string;
     weekEnding: string;
     milestones: string;
+    plannedProgress: string;
+    actualProgress: string;
+    progressRemarks: string;
+    issues: string;
+    risks: string;
+    safetySummary: string;
+    qualitySummary: string;
+    manpower: { role: string; planned: string; actual: string }[];
+    equipment: { equipment: string; uptime: string; downtime: string; remarks: string }[];
+    materials: { material: string; planned: string; actual: string; remarks: string }[];
     teamPerformance: string;
+    attachments: FileList;
   }) => {
     toast.success("WPR uploaded successfully!");
     setIsWPRModalOpen(false);
@@ -2766,140 +2790,380 @@ const SiteDashboard = () => {
       </Tabs>
       {/* DPR Upload Modal */}
       <Dialog open={isDPRModalOpen} onOpenChange={setIsDPRModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Upload Daily Progress Report (DPR)</DialogTitle>
             <DialogDescription>
               Submit today's work progress and updates
             </DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              handleUploadDPR({
-                workDone: formData.get("workDone") as string,
-                weather: formData.get("weather") as string,
-                photos: formData.get("photos") as unknown as FileList,
-                notes: formData.get("notes") as string,
-              });
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="workDone">Work Done Today</Label>
-              <Textarea
-                id="workDone"
-                name="workDone"
-                placeholder="Describe today's work progress..."
-                rows={4}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="weather">Weather Conditions</Label>
-              <Select name="weather" required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select weather" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="clear">Clear</SelectItem>
-                  <SelectItem value="rain">Rain</SelectItem>
-                  <SelectItem value="wind">Windy</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="photos">Upload Photos</Label>
-              <Input
-                id="photos"
-                name="photos"
-                type="file"
-                multiple
-                accept="image/*"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="notes">Site Engineer Notes</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                placeholder="Additional notes or concerns..."
-                rows={3}
-                required
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setIsDPRModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">Submit DPR</Button>
-            </div>
-          </form>
+          <div className="overflow-y-auto max-h-[70vh] bg-muted/40 rounded-md p-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleUploadDPR({
+                  workDone: formData.get("workDone") as string,
+                  weather: formData.get("weather") as string,
+                  photos: formData.get("photos") as unknown as FileList,
+                  notes: formData.get("notes") as string,
+                  workSections: formData.getAll("workSections").map(v => v.toString()),
+                  manpower: formData.get("manpower") as string,
+                  manpowerRoles: formData.get("manpowerRoles") as string,
+                  equipmentUsed: formData.getAll("equipmentUsed").map(v => v.toString()),
+                  safetyIncident: formData.get("safetyIncident") as string,
+                  safetyDetails: formData.get("safetyDetails") as string,
+                  qualityCheck: formData.get("qualityCheck") as string,
+                  qualityDetails: formData.get("qualityDetails") as string,
+                  delayIssue: formData.get("delayIssue") as string,
+                  delayDetails: formData.get("delayDetails") as string,
+                  materials: Array.from({length: 5}).map((_,i) => ({
+                    material: formData.get(`material${i}`) as string,
+                    qty: formData.get(`materialQty${i}`) as string,
+                    remarks: formData.get(`materialRemarks${i}`) as string,
+                  })),
+                  subcontractor: formData.get("subcontractor") as string,
+                });
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="workSections">Work Sections/Areas Covered</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {[
+                    "Foundation", "Structure", "Roofing", "Finishing", "External Works", "MEP", "Other"
+                  ].map((section) => (
+                    <label key={section} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" name="workSections" value={section} className="accent-blue-600" />
+                      {section}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="manpower">Manpower Deployed</Label>
+                  <Input id="manpower" name="manpower" type="number" min="0" placeholder="Total number" required />
+                </div>
+                <div>
+                  <Label htmlFor="manpowerRoles">Roles (comma separated)</Label>
+                  <Input id="manpowerRoles" name="manpowerRoles" placeholder="e.g. Mason, Electrician, Supervisor" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="equipmentUsed">Equipment Used</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {[
+                    "Crane", "Excavator", "Concrete Mixer", "Scaffolding", "Lift", "Other"
+                  ].map((eq) => (
+                    <label key={eq} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" name="equipmentUsed" value={eq} className="accent-blue-600" />
+                      {eq}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
+                  <Select name="safetyIncident" required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="safetyDetails">If Yes, Details</Label>
+                  <Input id="safetyDetails" name="safetyDetails" placeholder="Describe incident (if any)" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
+                  <Select name="qualityCheck" required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yes">Yes</SelectItem>
+                      <SelectItem value="no">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="qualityDetails">If Yes, Details</Label>
+                  <Input id="qualityDetails" name="qualityDetails" placeholder="Describe checks (if any)" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
+                  <Select name="delayIssue" required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no">No</SelectItem>
+                      <SelectItem value="yes">Yes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="delayDetails">If Yes, Details</Label>
+                  <Input id="delayDetails" name="delayDetails" placeholder="Describe delay/issue (if any)" />
+                </div>
+              </div>
+              <div>
+                <Label>Materials Consumed</Label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {[0,1,2,3,4].map(i => (
+                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
+                      <Input name={`material${i}`} placeholder="Material" className="text-xs" />
+                      <Input name={`materialQty${i}`} placeholder="Qty" className="text-xs" />
+                      <Input name={`materialRemarks${i}`} placeholder="Remarks" className="text-xs" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="subcontractor">Subcontractor Activities</Label>
+                <Textarea id="subcontractor" name="subcontractor" placeholder="Describe any subcontractor work..." rows={2} />
+              </div>
+              <div>
+                <Label htmlFor="workDone">Work Done Today</Label>
+                <Textarea
+                  id="workDone"
+                  name="workDone"
+                  placeholder="Describe today's work progress..."
+                  rows={4}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="weather">Weather Conditions</Label>
+                <Select name="weather" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select weather" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="clear">Clear</SelectItem>
+                    <SelectItem value="rain">Rain</SelectItem>
+                    <SelectItem value="wind">Windy</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="photos">Upload Photos</Label>
+                <Input
+                  id="photos"
+                  name="photos"
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Site Engineer Notes</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  placeholder="Additional notes or concerns..."
+                  rows={3}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsDPRModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Submit DPR</Button>
+              </div>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
       {/* WPR Upload Modal */}
       <Dialog open={isWPRModalOpen} onOpenChange={setIsWPRModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Upload Weekly Progress Report (WPR)</DialogTitle>
             <DialogDescription>
               Submit weekly milestone progress
             </DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              handleUploadWPR({
-                weekEnding: formData.get("weekEnding") as string,
-                milestones: formData.get("milestones") as string,
-                teamPerformance: formData.get("teamPerformance") as string,
-              });
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <Label htmlFor="weekEnding">Week Ending</Label>
-              <Input id="weekEnding" name="weekEnding" type="date" required />
-            </div>
-            <div>
-              <Label htmlFor="milestones">Milestone Progress</Label>
-              <Textarea
-                id="milestones"
-                name="milestones"
-                placeholder="Describe milestone achievements..."
-                rows={4}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="teamPerformance">Team Performance</Label>
-              <Textarea
-                id="teamPerformance"
-                name="teamPerformance"
-                placeholder="Team performance comments..."
-                rows={3}
-                required
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setIsWPRModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">Submit WPR</Button>
-            </div>
-          </form>
+          <div className="overflow-y-auto max-h-[70vh] bg-muted/40 rounded-md p-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleUploadWPR({
+                  weekStart: formData.get("weekStart") as string,
+                  weekEnding: formData.get("weekEnding") as string,
+                  milestones: formData.get("milestones") as string,
+                  plannedProgress: formData.get("plannedProgress") as string,
+                  actualProgress: formData.get("actualProgress") as string,
+                  progressRemarks: formData.get("progressRemarks") as string,
+                  issues: formData.get("issues") as string,
+                  risks: formData.get("risks") as string,
+                  safetySummary: formData.get("safetySummary") as string,
+                  qualitySummary: formData.get("qualitySummary") as string,
+                  manpower: Array.from({length: 4}).map((_,i) => ({
+                    role: formData.get(`wprRole${i}`) as string,
+                    planned: formData.get(`wprRolePlanned${i}`) as string,
+                    actual: formData.get(`wprRoleActual${i}`) as string,
+                  })),
+                  equipment: Array.from({length: 4}).map((_,i) => ({
+                    equipment: formData.get(`wprEq${i}`) as string,
+                    uptime: formData.get(`wprEqUptime${i}`) as string,
+                    downtime: formData.get(`wprEqDowntime${i}`) as string,
+                    remarks: formData.get(`wprEqRemarks${i}`) as string,
+                  })),
+                  materials: Array.from({length: 4}).map((_,i) => ({
+                    material: formData.get(`wprMat${i}`) as string,
+                    planned: formData.get(`wprMatPlanned${i}`) as string,
+                    actual: formData.get(`wprMatActual${i}`) as string,
+                    remarks: formData.get(`wprMatRemarks${i}`) as string,
+                  })),
+                  teamPerformance: formData.get("teamPerformance") as string,
+                  attachments: formData.get("attachments") as unknown as FileList,
+                });
+              }}
+              className="space-y-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="weekStart">Week Start</Label>
+                  <Input id="weekStart" name="weekStart" type="date" required />
+                </div>
+                <div>
+                  <Label htmlFor="weekEnding">Week Ending</Label>
+                  <Input id="weekEnding" name="weekEnding" type="date" required />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="milestones">Key Milestones Achieved</Label>
+                <Textarea
+                  id="milestones"
+                  name="milestones"
+                  placeholder="Describe milestone achievements..."
+                  rows={3}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="plannedProgress">Planned Progress (%)</Label>
+                  <Input id="plannedProgress" name="plannedProgress" type="number" min="0" max="100" required />
+                </div>
+                <div>
+                  <Label htmlFor="actualProgress">Actual Progress (%)</Label>
+                  <Input id="actualProgress" name="actualProgress" type="number" min="0" max="100" required />
+                </div>
+                <div>
+                  <Label htmlFor="progressRemarks">Remarks</Label>
+                  <Input id="progressRemarks" name="progressRemarks" placeholder="Progress remarks" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="issues">Major Issues</Label>
+                  <Textarea id="issues" name="issues" placeholder="Describe major issues..." rows={2} />
+                </div>
+                <div>
+                  <Label htmlFor="risks">Major Risks</Label>
+                  <Textarea id="risks" name="risks" placeholder="Describe major risks..." rows={2} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="safetySummary">Safety Summary</Label>
+                  <Textarea id="safetySummary" name="safetySummary" placeholder="Incidents, toolbox talks, etc." rows={2} />
+                </div>
+                <div>
+                  <Label htmlFor="qualitySummary">Quality Summary</Label>
+                  <Textarea id="qualitySummary" name="qualitySummary" placeholder="Checks, NCRs, etc." rows={2} />
+                </div>
+              </div>
+              <div>
+                <Label>Manpower Summary</Label>
+                <div className="grid grid-cols-4 gap-2 mt-1">
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
+                      <Input name={`wprRole${i}`} placeholder="Role" className="text-xs" />
+                      <Input name={`wprRolePlanned${i}`} placeholder="Planned" className="text-xs" />
+                      <Input name={`wprRoleActual${i}`} placeholder="Actual" className="text-xs" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Equipment Summary</Label>
+                <div className="grid grid-cols-4 gap-2 mt-1">
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
+                      <Input name={`wprEq${i}`} placeholder="Equipment" className="text-xs" />
+                      <Input name={`wprEqUptime${i}`} placeholder="Uptime (hrs)" className="text-xs" />
+                      <Input name={`wprEqDowntime${i}`} placeholder="Downtime (hrs)" className="text-xs" />
+                      <Input name={`wprEqRemarks${i}`} placeholder="Remarks" className="text-xs" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Materials Summary</Label>
+                <div className="grid grid-cols-4 gap-2 mt-1">
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
+                      <Input name={`wprMat${i}`} placeholder="Material" className="text-xs" />
+                      <Input name={`wprMatPlanned${i}`} placeholder="Planned" className="text-xs" />
+                      <Input name={`wprMatActual${i}`} placeholder="Actual" className="text-xs" />
+                      <Input name={`wprMatRemarks${i}`} placeholder="Remarks" className="text-xs" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="teamPerformance">Team Performance</Label>
+                <Textarea
+                  id="teamPerformance"
+                  name="teamPerformance"
+                  placeholder="Team performance comments..."
+                  rows={3}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="attachments">Attachments (Photos, Documents)</Label>
+                <Input
+                  id="attachments"
+                  name="attachments"
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsWPRModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Submit WPR</Button>
+              </div>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
       {/* Material Request Modal */}
