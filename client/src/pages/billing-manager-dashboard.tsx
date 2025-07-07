@@ -391,11 +391,51 @@ const BillingManagerDashboard = () => {
   const handleDownload = async (doc: Document) => {
     setDocumentLoadingStates(prev => ({ ...prev, [doc.id]: true }));
     try {
-      // Simulate download delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create a sample file based on document type
+      let fileContent = '';
+      let mimeType = '';
+      let fileName = doc.name;
+
+      switch (doc.type) {
+        case 'Invoice':
+          fileContent = generateInvoiceContent(doc);
+          mimeType = 'application/pdf';
+          break;
+        case 'Contract':
+          fileContent = generateContractContent(doc);
+          mimeType = 'application/msword';
+          break;
+        case 'Receipt':
+          fileContent = generateReceiptContent(doc);
+          mimeType = 'application/pdf';
+          break;
+        case 'Tax':
+          fileContent = generateTaxContent(doc);
+          mimeType = 'application/pdf';
+          break;
+        case 'Audit':
+          fileContent = generateAuditContent(doc);
+          mimeType = 'application/pdf';
+          break;
+        default:
+          fileContent = generateGenericContent(doc);
+          mimeType = 'text/plain';
+      }
+
+      // Create and trigger download
+      const blob = new Blob([fileContent], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       toast({
-        title: "Download Started",
-        description: `${doc.name} is being downloaded.`,
+        title: "Download Completed",
+        description: `${doc.name} has been downloaded successfully.`,
       });
     } catch (error) {
       toast({
@@ -440,6 +480,131 @@ const BillingManagerDashboard = () => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const generateInvoiceContent = (doc: Document): string => {
+    return `INVOICE DOCUMENT
+    
+Document Name: ${doc.name}
+Invoice Type: ${doc.type}
+Date: ${doc.date}
+Client: ${doc.client || 'N/A'}
+Project: ${doc.project || 'N/A'}
+Amount: ${doc.amount || 'N/A'}
+
+INVOICE DETAILS:
+================
+This is a sample invoice document for demonstration purposes.
+Generated from billing management system.
+
+Uploaded by: ${doc.uploadedBy}
+Status: ${doc.status}
+File Size: ${doc.size}
+
+Thank you for your business!`;
+  };
+
+  const generateContractContent = (doc: Document): string => {
+    return `CONTRACT AGREEMENT
+    
+Document Name: ${doc.name}
+Contract Type: ${doc.type}
+Date: ${doc.date}
+Client: ${doc.client || 'N/A'}
+Amount: ${doc.amount || 'N/A'}
+
+CONTRACT TERMS:
+===============
+This is a sample contract document for demonstration purposes.
+Generated from billing management system.
+
+Terms and Conditions:
+- Payment terms as agreed
+- Project delivery schedule
+- Quality standards
+
+Uploaded by: ${doc.uploadedBy}
+Status: ${doc.status}
+File Size: ${doc.size}`;
+  };
+
+  const generateReceiptContent = (doc: Document): string => {
+    return `PAYMENT RECEIPT
+    
+Document Name: ${doc.name}
+Receipt Type: ${doc.type}
+Date: ${doc.date}
+Payment Method: ${doc.method || 'N/A'}
+
+PAYMENT DETAILS:
+================
+This is a sample payment receipt for demonstration purposes.
+Generated from billing management system.
+
+Receipt confirms payment received.
+
+Uploaded by: ${doc.uploadedBy}
+Status: ${doc.status}
+File Size: ${doc.size}
+
+Thank you for your payment!`;
+  };
+
+  const generateTaxContent = (doc: Document): string => {
+    return `TAX DOCUMENT
+    
+Document Name: ${doc.name}
+Tax Document Type: ${doc.type}
+Date: ${doc.date}
+
+TAX INFORMATION:
+================
+This is a sample tax document for demonstration purposes.
+Generated from billing management system.
+
+Tax calculation and filing information.
+
+Uploaded by: ${doc.uploadedBy}
+Status: ${doc.status}
+File Size: ${doc.size}`;
+  };
+
+  const generateAuditContent = (doc: Document): string => {
+    return `AUDIT REPORT
+    
+Document Name: ${doc.name}
+Audit Type: ${doc.type}
+Date: ${doc.date}
+
+AUDIT FINDINGS:
+===============
+This is a sample audit document for demonstration purposes.
+Generated from billing management system.
+
+Audit findings and recommendations.
+
+Uploaded by: ${doc.uploadedBy}
+Status: ${doc.status}
+File Size: ${doc.size}`;
+  };
+
+  const generateGenericContent = (doc: Document): string => {
+    return `DOCUMENT
+    
+Document Name: ${doc.name}
+Document Type: ${doc.type}
+Date: ${doc.date}
+
+DOCUMENT DETAILS:
+=================
+This is a sample document for demonstration purposes.
+Generated from billing management system.
+
+Document information and content.
+
+Uploaded by: ${doc.uploadedBy}
+Status: ${doc.status}
+File Size: ${doc.size}`;
   };
 
   const filteredDocuments = documents.filter(doc => {
