@@ -315,7 +315,12 @@ type Task = {
   status: string;
   progress: number;
   phase: string;
-  // dependencies: string[];
+  // New: Progress history
+  progressHistory: {
+    progress: number;
+    remarks: string;
+    timestamp: string;
+  }[];
 };
 
 type Issue = (typeof issuesData)[0] & {
@@ -583,7 +588,11 @@ const SiteDashboard = () => {
       status: "Completed",
       progress: 100,
       phase: "Foundation",
-      // dependencies: [],
+      progressHistory: [
+        { progress: 0, remarks: "Task created", timestamp: "2024-01-01" },
+        { progress: 50, remarks: "Halfway done", timestamp: "2024-01-08" },
+        { progress: 100, remarks: "Completed", timestamp: "2024-01-15" },
+      ],
     },
     {
       id: "TASK-2",
@@ -595,7 +604,11 @@ const SiteDashboard = () => {
       status: "In Progress",
       progress: 75,
       phase: "Structure",
-      // dependencies: ["TASK-1"],
+      progressHistory: [
+        { progress: 0, remarks: "Task created", timestamp: "2024-01-16" },
+        { progress: 40, remarks: "Initial assembly", timestamp: "2024-01-25" },
+        { progress: 75, remarks: "Main frame done", timestamp: "2024-02-10" },
+      ],
     },
     {
       id: "TASK-3",
@@ -607,7 +620,10 @@ const SiteDashboard = () => {
       status: "In Progress",
       progress: 45,
       phase: "Roofing",
-      // dependencies: ["TASK-2"],
+      progressHistory: [
+        { progress: 0, remarks: "Task created", timestamp: "2024-02-01" },
+        { progress: 45, remarks: "Started installation", timestamp: "2024-02-15" },
+      ],
     },
     {
       id: "TASK-4",
@@ -619,7 +635,9 @@ const SiteDashboard = () => {
       status: "Not Started",
       progress: 0,
       phase: "Finishing",
-      // dependencies: ["TASK-3"],
+      progressHistory: [
+        { progress: 0, remarks: "Task created", timestamp: "2024-02-20" },
+      ],
     },
   ]);
   const [progressStats, setProgressStats] = useState({
@@ -684,6 +702,9 @@ const SiteDashboard = () => {
   });
   const [materialUsage, setMaterialUsage] = useState(materialUsageData);
 
+  const [isTaskViewModalOpen, setIsTaskViewModalOpen] = useState(false);
+  const [selectedTaskView, setSelectedTaskView] = useState<Task | null>(null);
+
   // Task Management Functions
   const handleViewGantt = (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId);
@@ -695,38 +716,40 @@ const SiteDashboard = () => {
     }
   };
 
-  // const handleViewDependencies = (taskId: string) => {
-  //   const task = tasks.find((t) => t.id === taskId);
-  //   if (task) {
-  //     toast.info(`Dependencies for: ${task.name}`, {
-  //       description: `Predecessor Tasks: ${
-  //         task.dependencies?.join(", ") || "None"
-  //       }`,
-  //       duration: 3000,
-  //     });
-  //   }
-  // };
+  const openTaskViewModal = (task: Task) => {
+    setSelectedTaskView(task);
+    setIsTaskViewModalOpen(true);
+  };
 
   const handleUpdateProgress = (formData: {
     taskId: string;
     progress: number;
     notes: string;
   }) => {
-    // Update task progress
-    const updatedTasks = tasks.map((task) =>
-      task.id === formData.taskId
-        ? {
-            ...task,
-            progress: formData.progress,
-            status:
-              formData.progress === 100
-                ? "Completed"
-                : formData.progress > 0
-                ? "In Progress"
-                : "Not Started",
-          }
-        : task
-    );
+    // Update task progress and append to progressHistory
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === formData.taskId) {
+        return {
+          ...task,
+          progress: formData.progress,
+          status:
+            formData.progress === 100
+              ? "Completed"
+              : formData.progress > 0
+              ? "In Progress"
+              : "Not Started",
+          progressHistory: [
+            ...task.progressHistory,
+            {
+              progress: formData.progress,
+              remarks: formData.notes,
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        };
+      }
+      return task;
+    });
     setTasks(updatedTasks);
 
     // Update progress stats
@@ -987,6 +1010,7 @@ const SiteDashboard = () => {
       ...formData,
       status: "Not Started",
       progress: 0,
+      progressHistory: [],
     };
 
     setTasks((prev) => [...prev, newTask]);
@@ -1267,22 +1291,13 @@ const SiteDashboard = () => {
                     header: "Actions",
                     cell: ({ row }) => (
                       <div className="flex gap-2">
-                        {/* <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewGantt(row.original.id)}
-                        >
-                          Gantt
-                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            handleViewDependencies(row.original.id)
-                          }
+                          onClick={() => openTaskViewModal(row.original)}
                         >
-                          Dependencies
-                        </Button> */}
+                          View
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -5108,6 +5123,89 @@ const SiteDashboard = () => {
               </div>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+      {/* Task View Modal */}
+      <Dialog open={isTaskViewModalOpen} onOpenChange={setIsTaskViewModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Task Details - {selectedTaskView?.name}</DialogTitle>
+            <DialogDescription>View all details and progress history</DialogDescription>
+          </DialogHeader>
+          {selectedTaskView && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Task Name</Label>
+                  <p className="font-medium">{selectedTaskView.name}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Project</Label>
+                  <p className="font-medium">{selectedTaskView.project}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Assigned To</Label>
+                  <p className="font-medium">{selectedTaskView.assignedTo}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Phase</Label>
+                  <p className="font-medium">{selectedTaskView.phase}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Start Date</Label>
+                  <p className="font-medium">{selectedTaskView.startDate}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Due Date</Label>
+                  <p className="font-medium">{selectedTaskView.dueDate}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <Badge variant={
+                    selectedTaskView.status === "Completed"
+                      ? "default"
+                      : selectedTaskView.status === "In Progress"
+                      ? "secondary"
+                      : "outline"
+                  }>
+                    {selectedTaskView.status}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Progress</Label>
+                  <p className="font-medium">{selectedTaskView.progress}%</p>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium mb-2">Progress Update History</h4>
+                <div className="border rounded-md overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted">
+                        <th className="p-2 text-left">Date/Time</th>
+                        <th className="p-2 text-left">Progress (%)</th>
+                        <th className="p-2 text-left">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedTaskView.progressHistory.map((entry, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{new Date(entry.timestamp).toLocaleString()}</td>
+                          <td className="p-2">{entry.progress}</td>
+                          <td className="p-2">{entry.remarks}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end border-t mt-6 px-2">
+                <Button variant="outline" onClick={() => setIsTaskViewModalOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
