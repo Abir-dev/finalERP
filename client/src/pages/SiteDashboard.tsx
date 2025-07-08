@@ -1294,7 +1294,7 @@ const SiteDashboard = () => {
                   <Plus className="h-4 w-4" />
                   Add Task
                 </Button>
-                <Button
+                {/* <Button
                   onClick={() => {
                     const task = tasks[0];
                     openProgressModal(task);
@@ -1303,7 +1303,7 @@ const SiteDashboard = () => {
                 >
                   <Edit className="h-4 w-4" />
                   Update Progress
-                </Button>
+                </Button> */}
               </div>
             </CardHeader>
             <CardContent>
