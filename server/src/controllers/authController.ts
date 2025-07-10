@@ -139,7 +139,7 @@ export const authController = {
 
       // Construct the registration URL with the token
       const registrationUrl = `${
-        process.env.CLIENT_URL || "https://test-board-zeta.vercel.app"
+        process.env.CLIENT_URL || "https://testboard-1.onrender.com"
       }/register?token=${invitationToken}`;
 
       res.status(201).json({
