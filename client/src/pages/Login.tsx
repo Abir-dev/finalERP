@@ -36,6 +36,7 @@ const Login = () => {
       const response = await axios.post(`${API_URL}/auth/login`, {
         email,
         password,
+        withCredentials: true,
       });
 
       console.log("Backend login successful");
