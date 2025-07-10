@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
 import { supabase } from "@/lib/supabase";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://test-board-ag1d.vercel.app/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const Register = () => {
   const [name, setName] = useState("");
