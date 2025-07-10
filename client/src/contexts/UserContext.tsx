@@ -11,7 +11,7 @@ import { supabase } from "../lib/supabase";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://test-board-ag1d.vercel.app/api";
 
 export type UserRole =
   | "admin"

@@ -29,7 +29,7 @@ export const supabaseService = {
           role,
           name
         },
-        emailRedirectTo: `${process.env.CLIENT_URL || 'http://localhost:5000'}/auth/callback`
+        emailRedirectTo: `${process.env.CLIENT_URL || 'https://test-board-ag1d.vercel.app/api'}/auth/callback`
       }
     });
 
