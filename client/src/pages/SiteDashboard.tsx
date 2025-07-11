@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -435,7 +436,9 @@ const issueColumns: ColumnDef<Issue>[] = [
   },
 ];
 
+// Add subview state and selected task state
 const SiteDashboard = () => {
+  const navigate = useNavigate();
   // Modal states
   const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
   const [isWPRModalOpen, setIsWPRModalOpen] = useState(false);
@@ -704,6 +707,18 @@ const SiteDashboard = () => {
 
   const [isTaskViewModalOpen, setIsTaskViewModalOpen] = useState(false);
   const [selectedTaskView, setSelectedTaskView] = useState<Task | null>(null);
+
+  // Add subview state and selected task state
+  const [timelineSubview, setTimelineSubview] = useState<
+    'main' | 'activeTasks' | 'taskDetail' | 'completedTasks' | 'onSchedule' | 'resourceUtilization'
+  >('main');
+  const [selectedTimelineTask, setSelectedTimelineTask] = useState<Task | null>(null);
+
+  // Reports tab subview state
+  const [reportsSubview, setReportsSubview] = useState<'mainReports' | 'dprList' | 'wprList' | 'reportQuality'>('mainReports');
+
+  // Issue Tracker tab subview state
+  const [issuesSubview, setIssuesSubview] = useState<'mainIssues' | 'openIssues' | 'highPriority' | 'resolvedThisWeek'>('mainIssues');
 
   // Task Management Functions
   const handleViewGantt = (taskId: string) => {
@@ -1130,6 +1145,392 @@ const SiteDashboard = () => {
     setIsEquipmentTrackingModalOpen(true);
   };
 
+  // Active Tasks List component
+  const ActiveTasksList = () => {
+    const activeTasks = tasks.filter((t) => t.status === "In Progress");
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Active Tasks</h2>
+          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="p-2 text-left">Task Name</th>
+                <th className="p-2 text-left">Assigned To</th>
+                <th className="p-2 text-left">Progress</th>
+                <th className="p-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeTasks.map((task) => (
+                <tr key={task.id} className="border-t">
+                  <td className="p-2">{task.name}</td>
+                  <td className="p-2">{task.assignedTo}</td>
+                  <td className="p-2">{task.progress}%</td>
+                  <td className="p-2">
+                    <Button size="sm" variant="outline" onClick={() => { setSelectedTimelineTask(task); setTimelineSubview('taskDetail'); }}>
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // Task Detail component
+  const TaskDetailView = () => {
+    const task = selectedTimelineTask;
+    if (!task) return <div>Task not found</div>;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Task Details</h2>
+          <Button variant="outline" onClick={() => setTimelineSubview('activeTasks')}>Back to Active Tasks</Button>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div><strong>Task Name:</strong> {task.name}</div>
+          <div><strong>Assigned To:</strong> {task.assignedTo}</div>
+          <div><strong>Project:</strong> {task.project}</div>
+          <div><strong>Phase:</strong> {task.phase}</div>
+          <div><strong>Start Date:</strong> {task.startDate}</div>
+          <div><strong>Due Date:</strong> {task.dueDate}</div>
+          <div><strong>Status:</strong> {task.status}</div>
+          <div><strong>Progress:</strong> {task.progress}%</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Completed Tasks List component
+  const CompletedTasksList = () => {
+    const completedTasks = tasks.filter((t) => t.status === "Completed");
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Completed Tasks</h2>
+          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="p-2 text-left">Task Name</th>
+                <th className="p-2 text-left">Assigned To</th>
+                <th className="p-2 text-left">Progress</th>
+                <th className="p-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {completedTasks.map((task) => (
+                <tr key={task.id} className="border-t">
+                  <td className="p-2">{task.name}</td>
+                  <td className="p-2">{task.assignedTo}</td>
+                  <td className="p-2">{task.progress}%</td>
+                  <td className="p-2">
+                    <Button size="sm" variant="outline" onClick={() => { setSelectedTimelineTask(task); setTimelineSubview('taskDetail'); }}>
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // On Schedule Tasks List component
+  const OnScheduleTasksList = () => {
+    const onScheduleTasks = tasks.filter((t) => new Date(t.dueDate) >= new Date() || t.progress === 100);
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">On Schedule Tasks</h2>
+          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="p-2 text-left">Task Name</th>
+                <th className="p-2 text-left">Assigned To</th>
+                <th className="p-2 text-left">Progress</th>
+                <th className="p-2 text-left">Due Date</th>
+                <th className="p-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {onScheduleTasks.map((task) => (
+                <tr key={task.id} className="border-t">
+                  <td className="p-2">{task.name}</td>
+                  <td className="p-2">{task.assignedTo}</td>
+                  <td className="p-2">{task.progress}%</td>
+                  <td className="p-2">{task.dueDate}</td>
+                  <td className="p-2">
+                    <Button size="sm" variant="outline" onClick={() => { setSelectedTimelineTask(task); setTimelineSubview('taskDetail'); }}>
+                      View
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // Resource Utilization View component
+  const ResourceUtilizationView = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Resource Utilization</h2>
+          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+        </div>
+        <div>
+          <p className="mb-4">Team efficiency based on completed vs planned work hours.</p>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={laborData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="trade" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="planned" fill="#3b82f6" name="Planned Hours" />
+              <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  };
+
+  // DPR List View
+  const DPRListView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Daily Progress Reports (DPRs)</h2>
+        <Button variant="outline" onClick={() => setReportsSubview('mainReports')}>Back to Reports</Button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-muted">
+              <th className="p-2 text-left">Date</th>
+              <th className="p-2 text-left">Weather</th>
+              <th className="p-2 text-left">Photos</th>
+              <th className="p-2 text-left">Escalated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { type: "DPR", date: "2024-01-20", weather: "Clear", photos: 8, escalated: false },
+              { type: "DPR", date: "2024-01-18", weather: "Clear", photos: 6, escalated: true },
+              { type: "DPR", date: "2024-01-17", weather: "Wind", photos: 10, escalated: false },
+            ].map((report, idx) => (
+              <tr key={idx} className="border-t">
+                <td className="p-2">{report.date}</td>
+                <td className="p-2">{report.weather}</td>
+                <td className="p-2">{report.photos}</td>
+                <td className="p-2">{report.escalated ? 'Yes' : 'No'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // WPR List View
+  const WPRListView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Weekly Progress Reports (WPRs)</h2>
+        <Button variant="outline" onClick={() => setReportsSubview('mainReports')}>Back to Reports</Button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="bg-muted">
+              <th className="p-2 text-left">Date</th>
+              <th className="p-2 text-left">Weather</th>
+              <th className="p-2 text-left">Photos</th>
+              <th className="p-2 text-left">Escalated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { type: "WPR", date: "2024-01-19", weather: "Rain", photos: 12, escalated: false },
+            ].map((report, idx) => (
+              <tr key={idx} className="border-t">
+                <td className="p-2">{report.date}</td>
+                <td className="p-2">{report.weather}</td>
+                <td className="p-2">{report.photos}</td>
+                <td className="p-2">{report.escalated ? 'Yes' : 'No'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Report Quality View
+  const ReportQualityView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Report Quality Metrics</h2>
+        <Button variant="outline" onClick={() => setReportsSubview('mainReports')}>Back to Reports</Button>
+      </div>
+      <div>
+        <p className="mb-4">Average report score and quality trends.</p>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={[
+            { month: 'Jan', score: 4.1 },
+            { month: 'Feb', score: 4.3 },
+            { month: 'Mar', score: 4.0 },
+            { month: 'Apr', score: 4.4 },
+            { month: 'May', score: 4.2 },
+            { month: 'Jun', score: 4.5 },
+          ]}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis domain={[3.5, 5]} />
+            <Tooltip />
+            <Line type="monotone" dataKey="score" stroke="#10b981" />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
+  // Material Flow tab subview state
+  const [materialsSubview, setMaterialsSubview] = useState<'mainMaterials' | 'pendingRequests' | 'receivedToday' | 'utilizationRate'>(
+    'mainMaterials'
+  );
+
+  // Material Flow StatCard subviews
+  const PendingRequestsView = () => {
+    const pending = materialRequests.filter((r) => r.status === "Pending");
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Pending Material Requests</h2>
+          <Button variant="outline" onClick={() => setMaterialsSubview('mainMaterials')}>Back to Material Flow</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="p-2 text-left">Request ID</th>
+                <th className="p-2 text-left">Item</th>
+                <th className="p-2 text-left">Quantity</th>
+                <th className="p-2 text-left">Request Date</th>
+                <th className="p-2 text-left">Expected Delivery</th>
+                <th className="p-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pending.length === 0 ? (
+                <tr><td colSpan={6} className="p-2 text-center text-muted-foreground">No pending requests</td></tr>
+              ) : (
+                pending.map((req) => (
+                  <tr key={req.id} className="border-t">
+                    <td className="p-2">{req.id}</td>
+                    <td className="p-2">{req.item}</td>
+                    <td className="p-2">{req.quantity}</td>
+                    <td className="p-2">{req.requestDate}</td>
+                    <td className="p-2">{req.expectedDelivery}</td>
+                    <td className="p-2">{req.status}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const ReceivedTodayView = () => {
+    // For demo, show all requests with status 'Approved' or 'In Transit' and expectedDelivery is today
+    const today = new Date().toISOString().split('T')[0];
+    const received = materialRequests.filter((r) => r.expectedDelivery === today);
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold">Materials Received Today</h2>
+          <Button variant="outline" onClick={() => setMaterialsSubview('mainMaterials')}>Back to Material Flow</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="p-2 text-left">Request ID</th>
+                <th className="p-2 text-left">Item</th>
+                <th className="p-2 text-left">Quantity</th>
+                <th className="p-2 text-left">Status</th>
+                <th className="p-2 text-left">Received Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {received.length === 0 ? (
+                <tr><td colSpan={5} className="p-2 text-center text-muted-foreground">No materials received today</td></tr>
+              ) : (
+                received.map((req) => (
+                  <tr key={req.id} className="border-t">
+                    <td className="p-2">{req.id}</td>
+                    <td className="p-2">{req.item}</td>
+                    <td className="p-2">{req.quantity}</td>
+                    <td className="p-2">{req.status}</td>
+                    <td className="p-2">{req.expectedDelivery}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const UtilizationRateView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Material Utilization Rate</h2>
+        <Button variant="outline" onClick={() => setMaterialsSubview('mainMaterials')}>Back to Material Flow</Button>
+      </div>
+      <div className="mb-4">Current Utilization Rate: <span className="font-semibold">{materialStats.utilizationRate}%</span></div>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={materialUsage}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="material" />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey="requested" fill="#3b82f6" name="Requested" />
+          <Bar dataKey="used" fill="#10b981" name="Used" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
+  // Cost Analysis tab subview state
+  const [costSubview, setCostSubview] = useState<'mainCost' | 'totalCost' | 'laborUtilization' | 'equipmentUtilization'>('mainCost');
+
+  // Add this state near the other subview states
+  const [storeManagerSubview, setStoreManagerSubview] = useState<'main' | 'activePersonnel' | 'performance' | 'pendingActions' | 'activeSites'>('main');
+
+  // Add this state near the other subview states
+  const [centralWarehouseSubview, setCentralWarehouseSubview] = useState<'main' | 'stockAvailability' | 'pendingDeliveries' | 'storageCapacity'>('main');
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1168,1029 +1569,1306 @@ const SiteDashboard = () => {
         </TabsList>
 
         <TabsContent value="timeline" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="Active Tasks"
-              value={progressStats.activeTasks.toString()}
-              icon={Calendar}
-              description="Currently in progress"
-              onClick={() => {
-                const active = tasks.filter((t) => t.status === "In Progress");
-                toast.info(`${active.length} tasks in progress`, {
-                  description: active.map((t) => t.name).join(", "),
-                  duration: 3000,
-                });
-              }}
-            />
-            <StatCard
-              title="Completed This Week"
-              value={progressStats.completedThisWeek.toString()}
-              icon={HardHat}
-              description="Tasks finished"
-              trend={{ value: 12, label: "vs last week" }}
-              onClick={() => {
-                const completed = tasks.filter((t) => t.status === "Completed");
-                toast.info(`${completed.length} tasks completed`, {
-                  description: completed.map((t) => t.name).join(", "),
-                  duration: 3000,
-                });
-              }}
-            />
-            <StatCard
-              title="On Schedule"
-              value={`${progressStats.onSchedule}%`}
-              icon={Calendar}
-              description="Timeline adherence"
-              onClick={() => {
-                const delayed = tasks.filter(
-                  (t) => new Date(t.dueDate) < new Date() && t.progress < 100
-                );
-                toast.info(`Schedule Analysis`, {
-                  description: `${delayed.length} tasks delayed: ${delayed
-                    .map((t) => t.name)
-                    .join(", ")}`,
-                  duration: 3000,
-                });
-              }}
-            />
-            <StatCard
-              title="Resource Utilization"
-              value={`${progressStats.resourceUtilization}%`}
-              icon={HardHat}
-              description="Team efficiency"
-              onClick={() => {
-                toast.info("Resource Metrics", {
-                  description:
-                    "Team efficiency based on completed vs planned work hours",
-                  duration: 3000,
-                });
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Progress vs Plan</CardTitle>
-                <CardDescription>Weekly execution tracking</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={weeklyProgress}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="planned" fill="#3b82f6" />
-                    <Bar dataKey="actual" fill="#10b981" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Gantt View</CardTitle>
-                <CardDescription>Timeline visualization</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {projectPhases.map((phase) => (
-                    <div key={phase.phase} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium">{phase.phase}</span>
-                        <span>{phase.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div
-                          className="bg-blue-600 h-3 rounded-full transition-all duration-500"
-                          style={{ width: `${phase.progress}%` }}
-                        ></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>{phase.start}</span>
-                        <span>{phase.end}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Task Management</CardTitle>
-                <CardDescription>
-                  Current task assignments and progress
-                </CardDescription>
+          {timelineSubview === 'main' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                  title="Active Tasks"
+                  value={progressStats.activeTasks.toString()}
+                  icon={Calendar}
+                  description="Currently in progress"
+                  onClick={() => setTimelineSubview('activeTasks')}
+                />
+                <StatCard
+                  title="Completed This Week"
+                  value={progressStats.completedThisWeek.toString()}
+                  icon={HardHat}
+                  description="Tasks finished"
+                  trend={{ value: 12, label: "vs last week" }}
+                  onClick={() => setTimelineSubview('completedTasks')}
+                />
+                <StatCard
+                  title="On Schedule"
+                  value={`${progressStats.onSchedule}%`}
+                  icon={Calendar}
+                  description="Timeline adherence"
+                  onClick={() => setTimelineSubview('onSchedule')}
+                />
+                <StatCard
+                  title="Resource Utilization"
+                  value={`${progressStats.resourceUtilization}%`}
+                  icon={HardHat}
+                  description="Team efficiency"
+                  onClick={() => setTimelineSubview('resourceUtilization')}
+                />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setIsAddTaskModalOpen(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Task
-                </Button>
-                {/* <Button
-                  onClick={() => {
-                    const task = tasks[0];
-                    openProgressModal(task);
-                  }}
-                  className="gap-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  Update Progress
-                </Button> */}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                columns={[
-                  ...taskColumns,
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    cell: ({ row }) => (
+              {timelineSubview === 'main' && (
+                <>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Progress vs Plan</CardTitle>
+                        <CardDescription>Weekly execution tracking</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={weeklyProgress}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="week" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="planned" fill="#3b82f6" />
+                            <Bar dataKey="actual" fill="#10b981" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Project Gantt View</CardTitle>
+                        <CardDescription>Timeline visualization</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {projectPhases.map((phase) => (
+                            <div key={phase.phase} className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium">{phase.phase}</span>
+                                <span>{phase.progress}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-3">
+                                <div
+                                  className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                                  style={{ width: `${phase.progress}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>{phase.start}</span>
+                                <span>{phase.end}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div>
+                        <CardTitle>Task Management</CardTitle>
+                        <CardDescription>
+                          Current task assignments and progress
+                        </CardDescription>
+                      </div>
                       <div className="flex gap-2">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openTaskViewModal(row.original)}
+                          onClick={() => setIsAddTaskModalOpen(true)}
+                          className="gap-2"
                         >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openProgressModal(row.original)}
-                        >
-                          Update
+                          <Plus className="h-4 w-4" />
+                          Add Task
                         </Button>
                       </div>
-                    ),
-                  },
-                ]}
-                data={tasks}
-                searchKey="name"
-              />
-            </CardContent>
-          </Card>
+                    </CardHeader>
+                    <CardContent>
+                      <DataTable
+                        columns={[
+                          ...taskColumns,
+                          {
+                            id: "actions",
+                            header: "Actions",
+                            cell: ({ row }) => (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openTaskViewModal(row.original)}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openProgressModal(row.original)}
+                                >
+                                  Update
+                                </Button>
+                              </div>
+                            ),
+                          },
+                        ]}
+                        data={tasks}
+                        searchKey="name"
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </>
+          )}
+          {timelineSubview === 'activeTasks' && <ActiveTasksList />}
+          {timelineSubview === 'completedTasks' && <CompletedTasksList />}
+          {timelineSubview === 'onSchedule' && <OnScheduleTasksList />}
+          {timelineSubview === 'resourceUtilization' && <ResourceUtilizationView />}
+          {timelineSubview === 'taskDetail' && <TaskDetailView />}
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="DPRs Submitted"
-              value="28"
-              icon={FileText}
-              description="This month"
-              onClick={() => toast.info("Viewing DPR history")}
-            />
-            <StatCard
-              title="WPRs Completed"
-              value="7"
-              icon={Calendar}
-              description="This month"
-              onClick={() => toast.info("Viewing WPR history")}
-            />
-            <StatCard
-              title="Average Score"
-              value="4.2/5"
-              icon={HardHat}
-              description="Report quality"
-              onClick={() => toast.info("Viewing quality metrics")}
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Report Upload Panel</CardTitle>
-              <CardDescription>
-                Submit daily and weekly progress reports
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium mb-4">
-                    Daily Progress Report (DPR)
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground">
-                      Upload today's work progress, photos, and notes
-                    </div>
-                    <Button
-                      onClick={() => setIsDPRModalOpen(true)}
-                      className="w-full"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload DPR
-                    </Button>
-                  </div>
-                </div>
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-medium mb-4">
-                    Weekly Progress Report (WPR)
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground">
-                      Submit weekly milestone progress and team performance
-                    </div>
-                    <Button
-                      onClick={() => setIsWPRModalOpen(true)}
-                      className="w-full"
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Upload WPR
-                    </Button>
-                  </div>
-                </div>
+          {reportsSubview === 'mainReports' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="DPRs Submitted"
+                  value="28"
+                  icon={FileText}
+                  description="This month"
+                  onClick={() => setReportsSubview('dprList')}
+                />
+                <StatCard
+                  title="WPRs Completed"
+                  value="7"
+                  icon={Calendar}
+                  description="This month"
+                  onClick={() => setReportsSubview('wprList')}
+                />
+                <StatCard
+                  title="Average Score"
+                  value="4.2/5"
+                  icon={HardHat}
+                  description="Report quality"
+                  onClick={() => setReportsSubview('reportQuality')}
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Report History</CardTitle>
-              <CardDescription>Previously submitted reports</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    type: "DPR",
-                    date: "2024-01-20",
-                    weather: "Clear",
-                    photos: 8,
-                    escalated: false,
-                  },
-                  {
-                    type: "WPR",
-                    date: "2024-01-19",
-                    weather: "Rain",
-                    photos: 12,
-                    escalated: false,
-                  },
-                  {
-                    type: "DPR",
-                    date: "2024-01-18",
-                    weather: "Clear",
-                    photos: 6,
-                    escalated: true,
-                  },
-                  {
-                    type: "DPR",
-                    date: "2024-01-17",
-                    weather: "Wind",
-                    photos: 10,
-                    escalated: false,
-                  },
-                ].map((report, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline">{report.type}</Badge>
-                        <span className="font-medium">{report.date}</span>
-                        <Badge variant="secondary">{report.weather}</Badge>
-                        {report.escalated && (
-                          <Badge variant="destructive">Escalated</Badge>
-                        )}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Report Upload Panel</CardTitle>
+                  <CardDescription>
+                    Submit daily and weekly progress reports
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-medium mb-4">
+                        Daily Progress Report (DPR)
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                          Upload today's work progress, photos, and notes
+                        </div>
+                        <Button
+                          onClick={() => setIsDPRModalOpen(true)}
+                          className="w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload DPR
+                        </Button>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {report.photos} photos attached
-                      </p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedReport(report);
-                          setIsViewReportModalOpen(true);
-                        }}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          toast.info(
-                            `Downloading ${report.type} from ${report.date}`
-                          )
-                        }
-                      >
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="materials" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Pending Requests"
-              value={materialStats.pendingRequests.toString()}
-              icon={Package}
-              description="Material requests"
-              onClick={() => {
-                const pending = materialRequests.filter(
-                  (r) => r.status === "Pending"
-                );
-                toast.info(`${pending.length} pending requests`, {
-                  description: pending
-                    .map((r) => `${r.item} (${r.quantity})`)
-                    .join("\n"),
-                  duration: 3000,
-                });
-              }}
-            />
-            <StatCard
-              title="Received Today"
-              value={materialStats.receivedToday.toString()}
-              icon={Package}
-              description="Material deliveries"
-              onClick={() => {
-                toast.info("Today's deliveries", {
-                  description: "Click on material items to log new deliveries",
-                  duration: 3000,
-                });
-              }}
-            />
-            <StatCard
-              title="Utilization Rate"
-              value={`${materialStats.utilizationRate}%`}
-              icon={Package}
-              description="Material efficiency"
-              onClick={() => {
-                toast.info("Material efficiency", {
-                  description: "Based on planned vs actual usage",
-                  duration: 3000,
-                });
-              }}
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Material Usage vs Request</CardTitle>
-              <CardDescription>
-                Consumption tracking and efficiency
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={materialUsage}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="material" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="requested" fill="#3b82f6" />
-                  <Bar dataKey="used" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
-                {materialUsage.map((material) => (
-                  <Button
-                    key={material.material}
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleReceiveMaterial(material.material)}
-                  >
-                    Log {material.material} Delivery
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Material Requests</CardTitle>
-                <CardDescription>
-                  Current and pending material requirements
-                </CardDescription>
-              </div>
-              <Button
-                onClick={() => setIsMaterialRequestModalOpen(true)}
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Raise Request
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {materialRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4">
-                        <h3 className="font-medium">{request.id}</h3>
-                        <Badge
-                          variant={
-                            request.status === "Approved"
-                              ? "default"
-                              : request.status === "In Transit"
-                              ? "secondary"
-                              : request.status === "Expedited"
-                              ? "destructive"
-                              : "outline"
-                          }
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-medium mb-4">
+                        Weekly Progress Report (WPR)
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                          Submit weekly milestone progress and team performance
+                        </div>
+                        <Button
+                          onClick={() => setIsWPRModalOpen(true)}
+                          className="w-full"
                         >
-                          {request.status}
-                        </Badge>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Upload WPR
+                        </Button>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {request.item} • {request.quantity}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Requested: {request.requestDate} • Expected:{" "}
-                        {request.expectedDelivery}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleTrackRequest(request.id)}
-                      >
-                        Track
-                      </Button>
-                      {request.status === "Pending" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRemindRequest(request.id)}
-                        >
-                          Remind
-                        </Button>
-                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="issues" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Open Issues"
-              value="12"
-              icon={AlertTriangle}
-              description="Requiring attention"
-              onClick={() => toast.info("Viewing open issues")}
-            />
-            <StatCard
-              title="High Priority"
-              value="3"
-              icon={AlertTriangle}
-              description="Critical issues"
-              onClick={() => toast.info("Viewing critical issues")}
-            />
-            <StatCard
-              title="Resolved This Week"
-              value="8"
-              icon={HardHat}
-              description="Issues fixed"
-              onClick={() => toast.info("Viewing resolution metrics")}
-            />
-          </div>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Site Issue Tracker</CardTitle>
-                <CardDescription>
-                  Safety, quality, and operational issues
-                </CardDescription>
-              </div>
-              <Button
-                onClick={() => setIsIssueModalOpen(true)}
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Issue
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                columns={[
-                  ...issueColumns,
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    cell: ({ row }) => (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedIssue(row.original);
-                            setIsViewIssueModalOpen(true);
-                          }}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setIssues((prevIssues) =>
-                              prevIssues.map((issue) =>
-                                issue.id === row.original.id
-                                  ? { ...issue, status: "Resolved" }
-                                  : issue
-                              )
-                            );
-                            toast.success(
-                              `${row.original.id} marked as resolved`
-                            );
-                          }}
-                        >
-                          Resolve
-                        </Button>
-                        {/* {row.original.severity === "High" && (
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Report History</CardTitle>
+                  <CardDescription>Previously submitted reports</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      {
+                        type: "DPR",
+                        date: "2024-01-20",
+                        weather: "Clear",
+                        photos: 8,
+                        escalated: false,
+                      },
+                      {
+                        type: "WPR",
+                        date: "2024-01-19",
+                        weather: "Rain",
+                        photos: 12,
+                        escalated: false,
+                      },
+                      {
+                        type: "DPR",
+                        date: "2024-01-18",
+                        weather: "Clear",
+                        photos: 6,
+                        escalated: true,
+                      },
+                      {
+                        type: "DPR",
+                        date: "2024-01-17",
+                        weather: "Wind",
+                        photos: 10,
+                        escalated: false,
+                      },
+                    ].map((report, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4">
+                            <Badge variant="outline">{report.type}</Badge>
+                            <span className="font-medium">{report.date}</span>
+                            <Badge variant="secondary">{report.weather}</Badge>
+                            {report.escalated && (
+                              <Badge variant="destructive">Escalated</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {report.photos} photos attached
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setIssues((prevIssues) =>
-                                prevIssues.map((issue) =>
-                                  issue.id === row.original.id
-                                    ? { ...issue, escalated: true }
-                                    : issue
-                                )
-                              );
-                              toast.info(`Escalating ${row.original.id}`);
+                              setSelectedReport(report);
+                              setIsViewReportModalOpen(true);
                             }}
-                          >
-                            Escalate
-                          </Button>
-                        )} */}
-                      </div>
-                    ),
-                  },
-                ]}
-                data={issues}
-                searchKey="description"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Risk Heatmap</CardTitle>
-              <CardDescription>
-                Issue severity and impact analysis
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                {["Low", "Medium", "High"].map((severity) => (
-                  <div key={severity} className="space-y-2">
-                    <h3 className="font-medium text-center">
-                      {severity} Severity
-                    </h3>
-                    {["Schedule", "Cost", "Safety"].map((impact) => (
-                      <div
-                        key={impact}
-                        className={`p-4 rounded-lg text-center cursor-pointer transition-colors ${
-                          severity === "High"
-                            ? "bg-red-100 hover:bg-red-200"
-                            : severity === "Medium"
-                            ? "bg-yellow-100 hover:bg-yellow-200"
-                            : "bg-green-100 hover:bg-green-200"
-                        }`}
-                        onClick={() =>
-                          toast.info(
-                            `Viewing ${severity} severity ${impact} issues`
-                          )
-                        }
-                      >
-                        <div className="font-medium">{impact}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {severity === "High"
-                            ? "3"
-                            : severity === "Medium"
-                            ? "2"
-                            : "1"}{" "}
-                          issues
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="cost" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Total Cost"
-              value="₹1,250,000"
-              icon={DollarSign}
-              description="Projected vs Actual"
-              trend={{ value: -2.5, label: "vs budget" }}
-              onClick={() => toast.info("Viewing cost analysis")}
-            />
-            <StatCard
-              title="Labor Utilization"
-              value="92%"
-              icon={Users}
-              description="Team efficiency"
-              trend={{ value: 3, label: "vs last week" }}
-              onClick={() => toast.info("Viewing labor metrics")}
-            />
-            <StatCard
-              title="Equipment Utilization"
-              value="85%"
-              icon={Truck}
-              description="Equipment efficiency"
-              trend={{ value: -1, label: "vs target" }}
-              onClick={() => toast.info("Viewing equipment metrics")}
-            />
-          </div>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Cost Analysis</CardTitle>
-                <CardDescription>Budget vs. Actual Matrix</CardDescription>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => toast.info("Exporting cost report")}
-                >
-                  Export Report
-                </Button>
-                <Button onClick={() => setIsBudgetAdjustModalOpen(true)}>
-                  Adjust Budget
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={costData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="planned" fill="#3b82f6" name="Planned" />
-                    <Bar dataKey="actual" fill="#10b981" name="Actual" />
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="grid grid-cols-2 gap-4">
-                  {costData.map((item) => (
-                    <div key={item.category} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <h3 className="font-medium">{item.category}</h3>
-                        <Badge
-                          variant={
-                            item.actual > item.planned
-                              ? "destructive"
-                              : "default"
-                          }
-                        >
-                          {item.actual > item.planned
-                            ? "Over Budget"
-                            : "Under Budget"}
-                        </Badge>
-                      </div>
-                      <div className="mt-2 space-y-1">
-                        <div className="text-sm text-muted-foreground">
-                          Planned: ₹{item.planned.toLocaleString()}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Actual: ₹{item.actual.toLocaleString()}
-                        </div>
-                        <div className="text-sm font-medium">
-                          Variance:{" "}
-                          {(
-                            ((item.actual - item.planned) / item.planned) *
-                            100
-                          ).toFixed(1)}
-                          %
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Labor Cost Dashboard</CardTitle>
-                  <CardDescription>Productive vs Non-Productive Labor</CardDescription>
-                </div>
-                <Button onClick={() => setIsLaborModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Log Hours
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {/* Productive Labor Section */}
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 flex items-center">
-                    <span className="h-3 w-3 rounded-full bg-blue-500 mr-2"></span>
-                    Productive Labor
-                  </h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={laborData.filter(item => item.type === "productive")}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="trade" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar
-                        dataKey="planned"
-                        fill="#3b82f6"
-                        name="Planned Hours"
-                      />
-                      <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="mt-2 space-y-2">
-                    {laborData.filter(item => item.type === "productive").map((item) => (
-                      <div
-                        key={item.trade}
-                        className="flex items-center justify-between p-2 border rounded-lg"
-                      >
-                        <div>
-                          <div className="font-medium">{item.trade}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {item.actual} / {item.planned} hours
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {item.actual > item.planned * 1.15 && (
-                            <Badge variant="destructive">OT Alert</Badge>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewLaborDetails(item.trade)}
-                          >
-                            Details
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Non-Productive Labor Section */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center">
-                    <span className="h-3 w-3 rounded-full bg-purple-500 mr-2"></span>
-                    Non-Productive Labor
-                  </h3>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={laborData.filter(item => item.type === "non-productive")}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="trade" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar
-                        dataKey="planned"
-                        fill="#8b5cf6"
-                        name="Planned Hours"
-                      />
-                      <Bar dataKey="actual" fill="#d946ef" name="Actual Hours" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="mt-2 space-y-2">
-                    {laborData.filter(item => item.type === "non-productive").map((item) => (
-                      <div
-                        key={item.trade}
-                        className="flex items-center justify-between p-2 border rounded-lg"
-                      >
-                        <div>
-                          <div className="font-medium">{item.trade}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {item.actual} / {item.planned} hours
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {item.actual > item.planned * 1.15 && (
-                            <Badge variant="destructive">OT Alert</Badge>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewLaborDetails(item.trade)}
-                          >
-                            Details
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Equipment & Fleet Control</CardTitle>
-                  <CardDescription>Maintenance and Utilization</CardDescription>
-                </div>
-                <Button onClick={() => setIsEquipmentModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Log Maintenance
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {equipmentList.map((item) => (
-                    <div key={item.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="font-medium">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {item.id}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            item.status === "Active"
-                              ? "default"
-                              : item.status === "Warning"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {item.status}
-                        </Badge>
-                      </div>
-                      <div className="mt-2 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Hours Used:</span>
-                          <span>{item.hours}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Next Service:</span>
-                          <Badge
-                            variant={
-                              item.nextService === "Due Now"
-                                ? "destructive"
-                                : "outline"
-                            }
-                          >
-                            {item.nextService}
-                          </Badge>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleViewEquipmentLogs(item)}
-                          >
-                            View Logs
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => handleTrackEquipment(item)}
-                          >
-                            Track Location
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Purchase Orders</CardTitle>
-                <CardDescription>
-                  Procurement & Approval Workflow
-                </CardDescription>
-              </div>
-              <Button onClick={() => setIsPOModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create PO
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                columns={[
-                  ...purchaseOrderColumns,
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    cell: ({ row }) => {
-                      const po = row.original;
-                      const status = po.status;
-                      return (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePOView(po)}
                           >
                             View
                           </Button>
-                          {status === "Pending" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              toast.info(
+                                `Downloading ${report.type} from ${report.date}`
+                              )
+                            }
+                          >
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+          {reportsSubview === 'dprList' && <DPRListView />}
+          {reportsSubview === 'wprList' && <WPRListView />}
+          {reportsSubview === 'reportQuality' && <ReportQualityView />}
+
+        </TabsContent>
+
+        <TabsContent value="materials" className="space-y-6">
+          {materialsSubview === 'mainMaterials' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="Pending Requests"
+                  value={materialStats.pendingRequests.toString()}
+                  icon={Package}
+                  description="Material requests"
+                  onClick={() => setMaterialsSubview('pendingRequests')}
+                />
+                <StatCard
+                  title="Received Today"
+                  value={materialStats.receivedToday.toString()}
+                  icon={Package}
+                  description="Material deliveries"
+                  onClick={() => setMaterialsSubview('receivedToday')}
+                />
+                <StatCard
+                  title="Utilization Rate"
+                  value={`${materialStats.utilizationRate}%`}
+                  icon={Package}
+                  description="Material efficiency"
+                  onClick={() => setMaterialsSubview('utilizationRate')}
+                />
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Material Usage vs Request</CardTitle>
+                  <CardDescription>
+                    Consumption tracking and efficiency
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={materialUsage}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="material" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="requested" fill="#3b82f6" />
+                      <Bar dataKey="used" fill="#10b981" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {materialUsage.map((material) => (
+                      <Button
+                        key={material.material}
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleReceiveMaterial(material.material)}
+                      >
+                        Log {material.material} Delivery
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Material Requests</CardTitle>
+                    <CardDescription>
+                      Current and pending material requirements
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setIsMaterialRequestModalOpen(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Raise Request
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {materialRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4">
+                            <h3 className="font-medium">{request.id}</h3>
+                            <Badge
+                              variant={
+                                request.status === "Approved"
+                                  ? "default"
+                                  : request.status === "In Transit"
+                                  ? "secondary"
+                                  : request.status === "Expedited"
+                                  ? "destructive"
+                                  : "outline"
+                              }
+                            >
+                              {request.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {request.item} • {request.quantity}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Requested: {request.requestDate} • Expected: {" "}
+                            {request.expectedDelivery}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTrackRequest(request.id)}
+                          >
+                            Track
+                          </Button>
+                          {request.status === "Pending" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                setSelectedPO(po);
-                                setIsPOApproveModalOpen(true);
-                              }}
+                              onClick={() => handleRemindRequest(request.id)}
                             >
-                              Approve
-                            </Button>
-                          )}
-                          {status === "Escalated" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPO(po);
-                                setIsPOExpediteModalOpen(true);
-                              }}
-                            >
-                              Expedite
+                              Remind
                             </Button>
                           )}
                         </div>
-                      );
-                    },
-                  },
-                ]}
-                data={purchaseOrders}
-                searchKey="id"
-              />
-            </CardContent>
-          </Card>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+          {materialsSubview === 'pendingRequests' && <PendingRequestsView />}
+          {materialsSubview === 'receivedToday' && <ReceivedTodayView />}
+          {materialsSubview === 'utilizationRate' && <UtilizationRateView />}
+        </TabsContent>
+
+        <TabsContent value="issues" className="space-y-6">
+          {issuesSubview === 'mainIssues' ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="Open Issues"
+                  value="12"
+                  icon={AlertTriangle}
+                  description="Requiring attention"
+                  onClick={() => setIssuesSubview('openIssues')}
+                />
+                <StatCard
+                  title="High Priority"
+                  value="3"
+                  icon={AlertTriangle}
+                  description="Critical issues"
+                  onClick={() => setIssuesSubview('highPriority')}
+                />
+                <StatCard
+                  title="Resolved This Week"
+                  value="8"
+                  icon={HardHat}
+                  description="Issues fixed"
+                  onClick={() => setIssuesSubview('resolvedThisWeek')}
+                />
+              </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Site Issue Tracker</CardTitle>
+                    <CardDescription>
+                      Safety, quality, and operational issues
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setIsIssueModalOpen(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Issue
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    columns={[
+                      ...issueColumns,
+                      {
+                        id: "actions",
+                        header: "Actions",
+                        cell: ({ row }) => (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedIssue(row.original);
+                                setIsViewIssueModalOpen(true);
+                              }}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setIssues((prevIssues) =>
+                                  prevIssues.map((issue) =>
+                                    issue.id === row.original.id
+                                      ? { ...issue, status: "Resolved" }
+                                      : issue
+                                  )
+                                );
+                                toast.success(
+                                  `${row.original.id} marked as resolved`
+                                );
+                              }}
+                            >
+                              Resolve
+                            </Button>
+                          </div>
+                        ),
+                      },
+                    ]}
+                    data={issues}
+                    searchKey="description"
+                  />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Risk Heatmap</CardTitle>
+                  <CardDescription>
+                    Issue severity and impact analysis
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4">
+                    {["Low", "Medium", "High"].map((severity) => (
+                      <div key={severity} className="space-y-2">
+                        <h3 className="font-medium text-center">
+                          {severity} Severity
+                        </h3>
+                        {["Schedule", "Cost", "Safety"].map((impact) => (
+                          <div
+                            key={impact}
+                            className={`p-4 rounded-lg text-center cursor-pointer transition-colors ${
+                              severity === "High"
+                                ? "bg-red-100 hover:bg-red-200"
+                                : severity === "Medium"
+                                ? "bg-yellow-100 hover:bg-yellow-200"
+                                : "bg-green-100 hover:bg-green-200"
+                            }`}
+                            onClick={() =>
+                              toast.info(
+                                `Viewing ${severity} severity ${impact} issues`
+                              )
+                            }
+                          >
+                            <div className="font-medium">{impact}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {severity === "High"
+                                ? "3"
+                                : severity === "Medium"
+                                ? "2"
+                                : "1"}{" "}
+                              issues
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            // Subview content
+            <>
+              {issuesSubview === 'openIssues' && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Open Issues</h2>
+                    <Button variant="outline" onClick={() => setIssuesSubview('mainIssues')}>Back to Issues</Button>
+                  </div>
+                  <Card>
+                    <CardContent>
+                      <DataTable
+                        columns={[
+                          ...issueColumns,
+                          {
+                            id: "actions",
+                            header: "Actions",
+                            cell: ({ row }) => (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedIssue(row.original);
+                                    setIsViewIssueModalOpen(true);
+                                  }}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setIssues((prevIssues) =>
+                                      prevIssues.map((issue) =>
+                                        issue.id === row.original.id
+                                          ? { ...issue, status: "Resolved" }
+                                          : issue
+                                      )
+                                    );
+                                    toast.success(
+                                      `${row.original.id} marked as resolved`
+                                    );
+                                  }}
+                                >
+                                  Resolve
+                                </Button>
+                              </div>
+                            ),
+                          },
+                        ]}
+                        data={issues.filter(issue => issue.status === 'Open')}
+                        searchKey="description"
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              {issuesSubview === 'highPriority' && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">High Priority Issues</h2>
+                    <Button variant="outline" onClick={() => setIssuesSubview('mainIssues')}>Back to Issues</Button>
+                  </div>
+                  <Card>
+                    <CardContent>
+                      <DataTable
+                        columns={[
+                          ...issueColumns,
+                          {
+                            id: "actions",
+                            header: "Actions",
+                            cell: ({ row }) => (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedIssue(row.original);
+                                    setIsViewIssueModalOpen(true);
+                                  }}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setIssues((prevIssues) =>
+                                      prevIssues.map((issue) =>
+                                        issue.id === row.original.id
+                                          ? { ...issue, status: "Resolved" }
+                                          : issue
+                                      )
+                                    );
+                                    toast.success(
+                                      `${row.original.id} marked as resolved`
+                                    );
+                                  }}
+                                >
+                                  Resolve
+                                </Button>
+                              </div>
+                            ),
+                          },
+                        ]}
+                        data={issues.filter(issue => issue.severity === 'High')}
+                        searchKey="description"
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              {issuesSubview === 'resolvedThisWeek' && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Resolved This Week</h2>
+                    <Button variant="outline" onClick={() => setIssuesSubview('mainIssues')}>Back to Issues</Button>
+                  </div>
+                  <Card>
+                    <CardContent>
+                      <DataTable
+                        columns={[
+                          ...issueColumns,
+                          {
+                            id: "actions",
+                            header: "Actions",
+                            cell: ({ row }) => (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedIssue(row.original);
+                                    setIsViewIssueModalOpen(true);
+                                  }}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setIssues((prevIssues) =>
+                                      prevIssues.map((issue) =>
+                                        issue.id === row.original.id
+                                          ? { ...issue, status: "Resolved" }
+                                          : issue
+                                      )
+                                    );
+                                    toast.success(
+                                      `${row.original.id} marked as resolved`
+                                    );
+                                  }}
+                                >
+                                  Resolve
+                                </Button>
+                              </div>
+                            ),
+                          },
+                        ]}
+                        data={issues.filter(issue => issue.status === 'Resolved')}
+                        searchKey="description"
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="cost" className="space-y-6">
+          {costSubview === 'mainCost' ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="Total Cost"
+                  value="₹1,250,000"
+                  icon={DollarSign}
+                  description="Projected vs Actual"
+                  trend={{ value: -2.5, label: "vs budget" }}
+                  onClick={() => setCostSubview('totalCost')}
+                />
+                <StatCard
+                  title="Labor Utilization"
+                  value="92%"
+                  icon={Users}
+                  description="Team efficiency"
+                  trend={{ value: 3, label: "vs last week" }}
+                  onClick={() => setCostSubview('laborUtilization')}
+                />
+                <StatCard
+                  title="Equipment Utilization"
+                  value="85%"
+                  icon={Truck}
+                  description="Equipment efficiency"
+                  trend={{ value: -1, label: "vs target" }}
+                  onClick={() => setCostSubview('equipmentUtilization')}
+                />
+              </div>
+              {/* Main Cost Analysis Content (unchanged) */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Cost Analysis</CardTitle>
+                    <CardDescription>Budget vs. Actual Matrix</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => toast.info("Exporting cost report")}
+                    >
+                      Export Report
+                    </Button>
+                    <Button onClick={() => setIsBudgetAdjustModalOpen(true)}>
+                      Adjust Budget
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={costData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="category" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="planned" fill="#3b82f6" name="Planned" />
+                        <Bar dataKey="actual" fill="#10b981" name="Actual" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="grid grid-cols-2 gap-4">
+                      {costData.map((item) => (
+                        <div key={item.category} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-medium">{item.category}</h3>
+                            <Badge
+                              variant={
+                                item.actual > item.planned
+                                  ? "destructive"
+                                  : "default"
+                              }
+                            >
+                              {item.actual > item.planned
+                                ? "Over Budget"
+                                : "Under Budget"}
+                            </Badge>
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            <div className="text-sm text-muted-foreground">
+                              Planned: ₹{item.planned.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Actual: ₹{item.actual.toLocaleString()}
+                            </div>
+                            <div className="text-sm font-medium">
+                              Variance: {(
+                                ((item.actual - item.planned) / item.planned) *
+                                100
+                              ).toFixed(1)}%
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Labor Cost Dashboard</CardTitle>
+                      <CardDescription>Productive vs Non-Productive Labor</CardDescription>
+                    </div>
+                    <Button onClick={() => setIsLaborModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Log Hours
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Productive Labor Section */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3 flex items-center">
+                        <span className="h-3 w-3 rounded-full bg-blue-500 mr-2"></span>
+                        Productive Labor
+                      </h3>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={laborData.filter(item => item.type === "productive")}> 
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="trade" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar
+                            dataKey="planned"
+                            fill="#3b82f6"
+                            name="Planned Hours"
+                          />
+                          <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="mt-2 space-y-2">
+                        {laborData.filter(item => item.type === "productive").map((item) => (
+                          <div
+                            key={item.trade}
+                            className="flex items-center justify-between p-2 border rounded-lg"
+                          >
+                            <div>
+                              <div className="font-medium">{item.trade}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {item.actual} / {item.planned} hours
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {item.actual > item.planned * 1.15 && (
+                                <Badge variant="destructive">OT Alert</Badge>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewLaborDetails(item.trade)}
+                              >
+                                Details
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Non-Productive Labor Section */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 flex items-center">
+                        <span className="h-3 w-3 rounded-full bg-purple-500 mr-2"></span>
+                        Non-Productive Labor
+                      </h3>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={laborData.filter(item => item.type === "non-productive")}> 
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="trade" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar
+                            dataKey="planned"
+                            fill="#8b5cf6"
+                            name="Planned Hours"
+                          />
+                          <Bar dataKey="actual" fill="#d946ef" name="Actual Hours" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="mt-2 space-y-2">
+                        {laborData.filter(item => item.type === "non-productive").map((item) => (
+                          <div
+                            key={item.trade}
+                            className="flex items-center justify-between p-2 border rounded-lg"
+                          >
+                            <div>
+                              <div className="font-medium">{item.trade}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {item.actual} / {item.planned} hours
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {item.actual > item.planned * 1.15 && (
+                                <Badge variant="destructive">OT Alert</Badge>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewLaborDetails(item.trade)}
+                              >
+                                Details
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>Equipment & Fleet Control</CardTitle>
+                      <CardDescription>Maintenance and Utilization</CardDescription>
+                    </div>
+                    <Button onClick={() => setIsEquipmentModalOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Log Maintenance
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {equipmentList.map((item) => (
+                        <div key={item.id} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h3 className="font-medium">{item.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.id}
+                              </p>
+                            </div>
+                            <Badge
+                              variant={
+                                item.status === "Active"
+                                  ? "default"
+                                  : item.status === "Warning"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
+                              {item.status}
+                            </Badge>
+                          </div>
+                          <div className="mt-2 space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Hours Used:</span>
+                              <span>{item.hours}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Next Service:</span>
+                              <Badge
+                                variant={
+                                  item.nextService === "Due Now"
+                                    ? "destructive"
+                                    : "outline"
+                                }
+                              >
+                                {item.nextService}
+                              </Badge>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => handleViewEquipmentLogs(item)}
+                              >
+                                View Logs
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => handleTrackEquipment(item)}
+                              >
+                                Track Location
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Purchase Orders</CardTitle>
+                    <CardDescription>
+                      Procurement & Approval Workflow
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setIsPOModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create PO
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    columns={[
+                      ...purchaseOrderColumns,
+                      {
+                        id: "actions",
+                        header: "Actions",
+                        cell: ({ row }) => {
+                          const po = row.original;
+                          const status = po.status;
+                          return (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePOView(po)}
+                              >
+                                View
+                              </Button>
+                              {status === "Pending" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPO(po);
+                                    setIsPOApproveModalOpen(true);
+                                  }}
+                                >
+                                  Approve
+                                </Button>
+                              )}
+                              {status === "Escalated" && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedPO(po);
+                                    setIsPOExpediteModalOpen(true);
+                                  }}
+                                >
+                                  Expedite
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        },
+                      },
+                    ]}
+                    data={purchaseOrders}
+                    searchKey="id"
+                  />
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            // Subview content
+            <>
+              {costSubview === 'totalCost' && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Total Cost</h2>
+                    <Button variant="outline" onClick={() => setCostSubview('mainCost')}>Back to Cost Analysis</Button>
+                  </div>
+                  <Card>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={costData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="category" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="planned" fill="#3b82f6" name="Planned" />
+                          <Bar dataKey="actual" fill="#10b981" name="Actual" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        {costData.map((item) => (
+                          <div key={item.category} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <h3 className="font-medium">{item.category}</h3>
+                              <Badge
+                                variant={
+                                  item.actual > item.planned
+                                    ? "destructive"
+                                    : "default"
+                                }
+                              >
+                                {item.actual > item.planned
+                                  ? "Over Budget"
+                                  : "Under Budget"}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-1">
+                              <div className="text-sm text-muted-foreground">
+                                Planned: ₹{item.planned.toLocaleString()}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Actual: ₹{item.actual.toLocaleString()}
+                              </div>
+                              <div className="text-sm font-medium">
+                                Variance: {(
+                                  ((item.actual - item.planned) / item.planned) *
+                                  100
+                                ).toFixed(1)}%
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              {costSubview === 'laborUtilization' && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Labor Utilization</h2>
+                    <Button variant="outline" onClick={() => setCostSubview('mainCost')}>Back to Cost Analysis</Button>
+                  </div>
+                  <Card>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={laborData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="trade" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="planned" fill="#3b82f6" name="Planned Hours" />
+                          <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        {laborData.map((item) => (
+                          <div key={item.trade} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <h3 className="font-medium">{item.trade}</h3>
+                              <Badge
+                                variant={
+                                  item.actual > item.planned * 1.15
+                                    ? "destructive"
+                                    : "default"
+                                }
+                              >
+                                {item.actual > item.planned * 1.15
+                                  ? "OT Alert"
+                                  : "Normal"}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-1">
+                              <div className="text-sm text-muted-foreground">
+                                Planned: {item.planned}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Actual: {item.actual}
+                              </div>
+                              <div className="text-sm font-medium">
+                                Variance: {item.actual - item.planned}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+              {costSubview === 'equipmentUtilization' && (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Equipment Utilization</h2>
+                    <Button variant="outline" onClick={() => setCostSubview('mainCost')}>Back to Cost Analysis</Button>
+                  </div>
+                  <Card>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={equipmentList}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="hours" fill="#3b82f6" name="Hours Used" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="grid grid-cols-2 gap-4 mt-6">
+                        {equipmentList.map((item) => (
+                          <div key={item.id} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <h3 className="font-medium">{item.name}</h3>
+                              <Badge
+                                variant={
+                                  item.status === "Active"
+                                    ? "default"
+                                    : item.status === "Warning"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                              >
+                                {item.status}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 space-y-1">
+                              <div className="text-sm text-muted-foreground">
+                                Hours Used: {item.hours}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Next Service: {item.nextService}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="store-manager" className="space-y-6">
-          {/* Store Manager Dashboard */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <StatCard
-              title="Active Personnel"
-              value="24"
-              icon={Package}
-              description="Currently on duty"
-              onClick={() => toast.info("Viewing personnel details")}
-            />
-            <StatCard
-              title="Store Performance"
-              value="94%"
-              icon={CheckCircle2}
-              description="Fulfillment rate"
-              onClick={() => toast.info("Viewing performance metrics")}
-            />
-            <StatCard
-              title="Pending Actions"
-              value="12"
-              icon={Clock}
-              description="Need attention"
-              onClick={() => toast.info("Viewing pending actions")}
-            />
-            <StatCard
-              title="Active Sites"
-              value="8"
-              icon={Building2}
-              description="Receiving supplies"
-              onClick={() => toast.info("Viewing active sites")}
-            />
-          </div>
-
-          {/* Store Manager Cards */}
+          {storeManagerSubview === 'main' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <StatCard
+                  title="Active Personnel"
+                  value="24"
+                  icon={Package}
+                  description="Currently on duty"
+                  onClick={() => setStoreManagerSubview('activePersonnel')}
+                />
+                <StatCard
+                  title="Store Performance"
+                  value="94%"
+                  icon={CheckCircle2}
+                  description="Fulfillment rate"
+                  onClick={() => setStoreManagerSubview('performance')}
+                />
+                <StatCard
+                  title="Pending Actions"
+                  value="12"
+                  icon={Clock}
+                  description="Need attention"
+                  onClick={() => setStoreManagerSubview('pendingActions')}
+                />
+                <StatCard
+                  title="Active Sites"
+                  value="8"
+                  icon={Building2}
+                  description="Receiving supplies"
+                  onClick={() => setStoreManagerSubview('activeSites')}
+                />
+              </div>
+              {/* Render all detailed cards/components below the StatCards row */}
+              {/* Store Manager Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Staff Management */}
             <Card>
@@ -2671,121 +3349,482 @@ const SiteDashboard = () => {
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
+          {storeManagerSubview === 'activePersonnel' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Active Personnel</h2>
+                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+              </div>
+              {/* Store Staff Management Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Store Staff Management</CardTitle>
+                  <CardDescription>Manage store personnel and responsibilities</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {storeStaff.map((staff, index) => (
+                      <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium">{staff.name}</h3>
+                            <p className="text-sm text-muted-foreground">{staff.role}</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {staff.certifications.map((cert, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">{cert}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={staff.status === 'On Duty' ? 'default' : 'secondary'}>
+                              {staff.status}
+                            </Badge>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toast.promise(
+                                  new Promise((resolve) => {
+                                    setTimeout(() => {
+                                      setStoreStaff(prevStaff => 
+                                        prevStaff.filter((_, i) => i !== index)
+                                      );
+                                      resolve(true);
+                                    }, 300);
+                                  }),
+                                  {
+                                    loading: 'Removing staff member...',
+                                    success: `${staff.name} has been removed from the staff list`,
+                                    error: 'Failed to remove staff member'
+                                  }
+                                );
+                              }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                              </svg>
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
+                          <div>Availability: {staff.availability}</div>
+                          <div>Experience: {staff.experience}</div>
+                        </div>
+                        <div className="mt-3 flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => toast.info(`Scheduling ${staff.name}`, {
+                              description: `Opening scheduler for ${staff.availability} staff member`
+                            })}
+                          >
+                            Schedule
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => toast.info(`${staff.name}'s Performance Metrics`, {
+                              description: `Viewing detailed performance history and metrics`
+                            })}
+                          >
+                            Performance
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4"
+                    onClick={() => setIsAddStaffModalOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New Staff
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {storeManagerSubview === 'performance' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Store Performance</h2>
+                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+              </div>
+              {/* Store Performance Analytics Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Store Performance Analytics</CardTitle>
+                  <CardDescription>Detailed performance metrics and indicators</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Store Response Time</h3>
+                      <div className="space-y-2">
+                        {[
+                          { label: 'Urgent Requests', value: 45, unit: 'minutes', target: 60, status: 'good' },
+                          { label: 'Regular Requests', value: 4.5, unit: 'hours', target: 6, status: 'good' },
+                          { label: 'Inter-site Transfers', value: 28, unit: 'hours', target: 24, status: 'warning' },
+                        ].map((metric, idx) => (
+                          <div key={idx} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>{metric.label}</span>
+                              <span className={metric.status === 'good' ? 'text-green-600' : 'text-amber-600'}>
+                                {metric.value} {metric.unit} (Target: {metric.target} {metric.unit})
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${metric.status === 'good' ? 'bg-green-600' : 'bg-amber-600'}`}
+                                style={{ width: `${Math.min(100, (metric.value / metric.target) * 100)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Order Fulfillment Rate</h3>
+                      <ResponsiveContainer width="100%" height={120}>
+                        <LineChart data={[
+                          { month: 'Jan', rate: 92 },
+                          { month: 'Feb', rate: 94 },
+                          { month: 'Mar', rate: 91 },
+                          { month: 'Apr', rate: 95 },
+                          { month: 'May', rate: 97 },
+                          { month: 'Jun', rate: 94 },
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis domain={[85, 100]} />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="rate" stroke="#10b981" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => toast.success("Report Generated", {
+                        description: "Store performance report has been exported to Excel"
+                      })}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Export Detailed Report
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {storeManagerSubview === 'pendingActions' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Pending Actions</h2>
+                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+              </div>
+              {/* For demo, show a filtered list of staff who are Off Duty or a placeholder */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pending Actions</CardTitle>
+                  <CardDescription>Staff not currently on duty</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {storeStaff.filter(staff => staff.status !== 'On Duty').length === 0 ? (
+                      <div className="text-muted-foreground">No pending actions for staff.</div>
+                    ) : (
+                      storeStaff.filter(staff => staff.status !== 'On Duty').map((staff, index) => (
+                        <div key={index} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <h3 className="font-medium">{staff.name}</h3>
+                              <p className="text-sm text-muted-foreground">{staff.role}</p>
+                            </div>
+                            <Badge variant="secondary">{staff.status}</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-2">Availability: {staff.availability}</div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {storeManagerSubview === 'activeSites' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Active Sites</h2>
+                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+              </div>
+              {/* For demo, show a placeholder for active sites overview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Active Sites Overview</CardTitle>
+                  <CardDescription>Sites currently receiving supplies</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Example: List of active sites (static for now) */}
+                    {[
+                      { name: 'North Block', status: 'Receiving', supplies: 'Steel, Cement' },
+                      { name: 'South Tower', status: 'Receiving', supplies: 'Bricks, Sand' },
+                      { name: 'Main Warehouse', status: 'Idle', supplies: '-' },
+                      { name: 'East Wing', status: 'Receiving', supplies: 'Electrical Fittings' },
+                    ].filter(site => site.status === 'Receiving').map((site, idx) => (
+                      <div key={idx} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <h3 className="font-medium">{site.name}</h3>
+                          <Badge variant="default">{site.status}</Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-2">Supplies: {site.supplies}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="central-warehouse" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard
-              title="Stock Availability"
-              value="92%"
-              icon={Warehouse}
-              description="Materials in stock"
-              trend={{ value: 2, label: "this week" }}
-              onClick={() => toast.info("Viewing stock details")}
-            />
-            <StatCard
-              title="Pending Deliveries"
-              value="14"
-              icon={Package}
-              description="Inbound materials"
-              onClick={() => toast.info("Viewing incoming deliveries")}
-            />
-            <StatCard
-              title="Storage Capacity"
-              value="78%"
-              icon={Building2}
-              description="Warehouse utilization"
-              onClick={() => toast.info("Viewing capacity details")}
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Critical Stock Alerts</CardTitle>
-              <CardDescription>Materials requiring immediate attention</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {stockAlerts.map((alert) => (
-                  <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{alert.item}</h3>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        Current: {alert.quantity} • Reorder Point: {alert.reorderPoint}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Badge variant="destructive">{alert.status}</Badge>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setIsMaterialRequestModalOpen(true)}
-                      >
-                        Request
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+          {centralWarehouseSubview === 'main' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="Stock Availability"
+                  value="92%"
+                  icon={Warehouse}
+                  description="Materials in stock"
+                  trend={{ value: 2, label: "this week" }}
+                  onClick={() => setCentralWarehouseSubview('stockAvailability')}
+                />
+                <StatCard
+                  title="Pending Deliveries"
+                  value="14"
+                  icon={Package}
+                  description="Inbound materials"
+                  onClick={() => setCentralWarehouseSubview('pendingDeliveries')}
+                />
+                <StatCard
+                  title="Storage Capacity"
+                  value="78%"
+                  icon={Building2}
+                  description="Warehouse utilization"
+                  onClick={() => setCentralWarehouseSubview('storageCapacity')}
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Material Movements</CardTitle>
-                <CardDescription>Last 24 hours activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {materialMovements.map((movement) => (
-                    <div key={movement.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={movement.type === "Inbound" ? "default" : "secondary"}>
-                            {movement.type}
+              {/* Render all detailed cards/components below the StatCards row */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Critical Stock Alerts</CardTitle>
+                  <CardDescription>Materials requiring immediate attention</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {stockAlerts.map((alert) => (
+                      <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <h3 className="font-medium">{alert.item}</h3>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            Current: {alert.quantity} • Reorder Point: {alert.reorderPoint}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="destructive">{alert.status}</Badge>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setIsMaterialRequestModalOpen(true)}
+                          >
+                            Request
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Material Movements</CardTitle>
+                    <CardDescription>Last 24 hours activity</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {materialMovements.map((movement) => (
+                        <div key={movement.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={movement.type === "Inbound" ? "default" : "secondary"}>
+                                {movement.type}
+                              </Badge>
+                              <span className="font-medium">{movement.material}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {movement.quantity} • {movement.time} • {movement.site}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Storage Location Map</CardTitle>
+                    <CardDescription>Warehouse section occupancy</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      {storageSections.map((section) => (
+                        <div key={section.id} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-medium">{section.zone}</h3>
+                            <Badge variant={section.occupancy > 80 ? "destructive" : "secondary"}>
+                              {section.occupancy}% Full
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{section.type}</p>
+                          <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full ${
+                                section.occupancy > 80 ? "bg-red-600" : "bg-blue-600"
+                              }`}
+                              style={{ width: `${section.occupancy}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+          {centralWarehouseSubview === 'stockAvailability' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Stock Availability</h2>
+                <Button variant="outline" onClick={() => setCentralWarehouseSubview('main')}>Back to Central Warehouse</Button>
+              </div>
+              {/* Show only the Critical Stock Alerts card */}
+              <Card>
+                {/* <CardHeader>
+                  <CardTitle>Critical Stock Alerts</CardTitle>
+                  <CardDescription>Materials requiring immediate attention</CardDescription>
+                </CardHeader> */}
+                <CardContent>
+                  <div className="pt-4 space-y-4">
+                    {stockAlerts.map((alert) => (
+                      <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <h3 className="font-medium">{alert.item}</h3>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            Current: {alert.quantity} • Reorder Point: {alert.reorderPoint}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="destructive">{alert.status}</Badge>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setIsMaterialRequestModalOpen(true)}
+                          >
+                            Request
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {centralWarehouseSubview === 'pendingDeliveries' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Pending Deliveries</h2>
+                <Button variant="outline" onClick={() => setCentralWarehouseSubview('main')}>Back to Central Warehouse</Button>
+              </div>
+              {/* Show only the Recent Material Movements card */}
+              <Card>
+                {/* <CardHeader>
+                  <CardTitle>Recent Material Movements</CardTitle>
+                  <CardDescription>Last 24 hours activity</CardDescription>
+                </CardHeader> */}
+                <CardContent>
+                  <div className="pt-4 space-y-4">
+                    {materialMovements.map((movement) => (
+                      <div key={movement.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={movement.type === "Inbound" ? "default" : "secondary"}>
+                              {movement.type}
+                            </Badge>
+                            <span className="font-medium">{movement.material}</span>
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {movement.quantity} • {movement.time} • {movement.site}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {centralWarehouseSubview === 'storageCapacity' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Storage Capacity</h2>
+                <Button variant="outline" onClick={() => setCentralWarehouseSubview('main')}>Back to Central Warehouse</Button>
+              </div>
+              {/* Show only the Storage Location Map card */}
+              <Card>
+                {/* <CardHeader>
+                  <CardTitle>Storage Location Map</CardTitle>
+                  <CardDescription>Warehouse section occupancy</CardDescription>
+                </CardHeader> */}
+                <CardContent>
+                  <div className="pt-4 grid grid-cols-2 gap-4">
+                    {storageSections.map((section) => (
+                      <div key={section.id} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium">{section.zone}</h3>
+                          <Badge variant={section.occupancy > 80 ? "destructive" : "secondary"}>
+                            {section.occupancy}% Full
                           </Badge>
-                          <span className="font-medium">{movement.material}</span>
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {movement.quantity} • {movement.time} • {movement.site}
+                        <p className="text-sm text-muted-foreground">{section.type}</p>
+                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              section.occupancy > 80 ? "bg-red-600" : "bg-blue-600"
+                            }`}
+                            style={{ width: `${section.occupancy}%` }}
+                          ></div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Storage Location Map</CardTitle>
-                <CardDescription>Warehouse section occupancy</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  {storageSections.map((section) => (
-                    <div key={section.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-medium">{section.zone}</h3>
-                        <Badge variant={section.occupancy > 80 ? "destructive" : "secondary"}>
-                          {section.occupancy}% Full
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{section.type}</p>
-                      <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${
-                            section.occupancy > 80 ? "bg-red-600" : "bg-blue-600"
-                          }`}
-                          style={{ width: `${section.occupancy}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
       {/* DPR Upload Modal */}

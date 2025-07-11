@@ -26,6 +26,8 @@ import StoreDashboard from "./pages/StoreDashboard";
 import AccountsDashboard from "./pages/AccountsDashboard";
 import SiteDashboard from "./pages/SiteDashboard";
 import ClientPortal from "./pages/ClientPortal";
+import ActiveTasksPage from "./pages/ActiveTasksPage";
+import TaskDetailPage from "./pages/TaskDetailPage";
 
 // ERP Module Pages
 import Projects from "./pages/Projects";
@@ -74,6 +76,8 @@ const AppLayout = () => {
               <Route path="/store-manager" element={<StoreDashboard />} />
               <Route path="/accounts-manager" element={<AccountsDashboard />} />
               <Route path="/site-manager" element={<SiteDashboard />} />
+              <Route path="/active-tasks" element={<ActiveTasksPage />} />
+              <Route path="/active-tasks/:taskId" element={<TaskDetailPage />} />
               <Route path="/client-portal" element={<ClientPortal />} />
               
               {/* ERP module pages */}
