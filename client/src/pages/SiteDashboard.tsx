@@ -1449,7 +1449,19 @@ const SiteDashboard = () => {
                     <td className="p-2">{req.quantity}</td>
                     <td className="p-2">{req.requestDate}</td>
                     <td className="p-2">{req.expectedDelivery}</td>
-                    <td className="p-2">{req.status}</td>
+                    <td className="p-2 flex gap-2 items-center">
+                      {req.status}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedMaterialRequest(req);
+                          setIsMaterialRequestUpdateModalOpen(true);
+                        }}
+                      >
+                        Update
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -1530,6 +1542,21 @@ const SiteDashboard = () => {
 
   // Add this state near the other subview states
   const [centralWarehouseSubview, setCentralWarehouseSubview] = useState<'main' | 'stockAvailability' | 'pendingDeliveries' | 'storageCapacity'>('main');
+
+  // Add state for update modal and selected request
+  const [isMaterialRequestUpdateModalOpen, setIsMaterialRequestUpdateModalOpen] = useState(false);
+  const [selectedMaterialRequest, setSelectedMaterialRequest] = useState<any>(null);
+
+  // Handler to update material request status
+  const handleUpdateMaterialRequestStatus = (requestId: string, newStatus: string) => {
+    setMaterialRequests((prev) =>
+      prev.map((req) =>
+        req.id === requestId ? { ...req, status: newStatus } : req
+      )
+    );
+    setIsMaterialRequestUpdateModalOpen(false);
+    toast.success(`Status updated for ${requestId}`);
+  };
 
   return (
     <div className="space-y-6">
@@ -1985,9 +2012,12 @@ const SiteDashboard = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleTrackRequest(request.id)}
+                            onClick={() => {
+                              setSelectedMaterialRequest(request);
+                              setIsMaterialRequestUpdateModalOpen(true);
+                            }}
                           >
-                            Track
+                            Update
                           </Button>
                           {request.status === "Pending" && (
                             <Button
@@ -6508,6 +6538,53 @@ const SiteDashboard = () => {
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Material Request Update Modal */}
+      <Dialog open={isMaterialRequestUpdateModalOpen} onOpenChange={setIsMaterialRequestUpdateModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Material Request Status</DialogTitle>
+            <DialogDescription>
+              Change the status of material request {selectedMaterialRequest?.id}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMaterialRequest && (
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleUpdateMaterialRequestStatus(
+                  selectedMaterialRequest.id,
+                  formData.get("status") as string
+                );
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select name="status" defaultValue={selectedMaterialRequest.status} required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Approved">Approved</SelectItem>
+                    <SelectItem value="In Transit">In Transit</SelectItem>
+                    <SelectItem value="Expedited">Expedited</SelectItem>
+                    <SelectItem value="Delivered">Delivered</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" type="button" onClick={() => setIsMaterialRequestUpdateModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Update Status</Button>
+              </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>
