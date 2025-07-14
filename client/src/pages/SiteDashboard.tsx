@@ -1436,11 +1436,12 @@ const SiteDashboard = () => {
                 <th className="p-2 text-left">Request Date</th>
                 <th className="p-2 text-left">Expected Delivery</th>
                 <th className="p-2 text-left">Status</th>
+                <th className="p-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
               {pending.length === 0 ? (
-                <tr><td colSpan={6} className="p-2 text-center text-muted-foreground">No pending requests</td></tr>
+                <tr><td colSpan={7} className="p-2 text-center text-muted-foreground">No pending requests</td></tr>
               ) : (
                 pending.map((req) => (
                   <tr key={req.id} className="border-t">
@@ -1449,8 +1450,8 @@ const SiteDashboard = () => {
                     <td className="p-2">{req.quantity}</td>
                     <td className="p-2">{req.requestDate}</td>
                     <td className="p-2">{req.expectedDelivery}</td>
-                    <td className="p-2 flex gap-2 items-center">
-                      {req.status}
+                    <td className="p-2">{req.status}</td>
+                    <td className="p-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -3389,11 +3390,11 @@ const SiteDashboard = () => {
               </div>
               {/* Store Staff Management Card */}
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Store Staff Management</CardTitle>
                   <CardDescription>Manage store personnel and responsibilities</CardDescription>
-                </CardHeader>
-                <CardContent>
+                </CardHeader> */}
+                <CardContent className="pt-6">
                   <div className="space-y-4">
                     {storeStaff.map((staff, index) => (
                       <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
@@ -3493,11 +3494,11 @@ const SiteDashboard = () => {
               </div>
               {/* Store Performance Analytics Card */}
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Store Performance Analytics</CardTitle>
                   <CardDescription>Detailed performance metrics and indicators</CardDescription>
-                </CardHeader>
-                <CardContent>
+                </CardHeader> */}
+                <CardContent className="pt-6">
                   <div className="space-y-4">
                     <div>
                       <h3 className="text-sm font-medium mb-2">Store Response Time</h3>
@@ -3566,11 +3567,7 @@ const SiteDashboard = () => {
               </div>
               {/* For demo, show a filtered list of staff who are Off Duty or a placeholder */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Pending Actions</CardTitle>
-                  <CardDescription>Staff not currently on duty</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <div className="space-y-4">
                     {storeStaff.filter(staff => staff.status !== 'On Duty').length === 0 ? (
                       <div className="text-muted-foreground">No pending actions for staff.</div>
@@ -3601,11 +3598,11 @@ const SiteDashboard = () => {
               </div>
               {/* For demo, show a placeholder for active sites overview */}
               <Card>
-                <CardHeader>
+                {/* <CardHeader>
                   <CardTitle>Active Sites Overview</CardTitle>
                   <CardDescription>Sites currently receiving supplies</CardDescription>
-                </CardHeader>
-                <CardContent>
+                </CardHeader> */}
+                <CardContent className="pt-6">
                   <div className="space-y-4">
                     {/* Example: List of active sites (static for now) */}
                     {[
