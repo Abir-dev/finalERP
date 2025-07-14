@@ -14,36 +14,79 @@ interface InvoiceBuilderModalProps {
 
 interface LineItem {
   id: number;
+  serialNumber: string;
   description: string;
+  item: string;
+  unit: string;
   quantity: number;
   rate: number;
   amount: number;
-  laborType?: 'productive' | 'non-productive' | null;
 }
+
+const CONSTRUCTION_ITEMS = [
+  { value: 'concrete', label: 'Concrete' },
+  { value: 'steel', label: 'Steel' },
+  { value: 'cement', label: 'Cement' },
+  { value: 'bricks', label: 'Bricks' },
+  { value: 'sand', label: 'Sand' },
+  { value: 'gravel', label: 'Gravel' },
+  { value: 'tiles', label: 'Tiles' },
+  { value: 'paint', label: 'Paint' },
+  { value: 'wood', label: 'Wood' },
+  { value: 'glass', label: 'Glass' },
+  { value: 'aluminum', label: 'Aluminum' },
+  { value: 'electrical', label: 'Electrical Items' },
+  { value: 'plumbing', label: 'Plumbing Items' },
+  { value: 'labor', label: 'Labor' },
+  { value: 'machinery', label: 'Machinery' },
+  { value: 'other', label: 'Other' }
+];
+
+const UNITS = [
+  { value: 'sq meter', label: 'Square Meter' },
+  { value: 'cubic metre', label: 'Cubic Metre' },
+  { value: 'linear meter', label: 'Linear Meter' },
+  { value: 'tonne', label: 'Tonne' },
+  { value: 'kg', label: 'Kilogram' },
+  { value: 'bag', label: 'Bag' },
+  { value: 'piece', label: 'Piece' },
+  { value: 'litre', label: 'Litre' },
+  { value: 'box', label: 'Box' },
+  { value: 'roll', label: 'Roll' },
+  { value: 'sheet', label: 'Sheet' },
+  { value: 'hours', label: 'Hours' },
+  { value: 'days', label: 'Days' },
+  { value: 'lumpsum', label: 'Lump Sum' }
+];
 
 const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) => {
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { id: 1, description: 'Foundation Work - Phase 1', quantity: 1, rate: 500000, amount: 500000, laborType: 'productive' },
-    { id: 2, description: 'Material Supply - Cement & Steel', quantity: 1, rate: 300000, amount: 300000, laborType: null }
+    { id: 1, serialNumber: '001', description: 'Foundation Work - Phase 1', item: 'concrete', unit: 'cubic metre', quantity: 1, rate: 500000, amount: 500000 },
+    { id: 2, serialNumber: '002', description: 'Material Supply - Cement & Steel', item: 'steel', unit: 'tonne', quantity: 1, rate: 300000, amount: 300000 }
   ]);
   
   // State to control whether GST should be applied
   const [applyGst, setApplyGst] = useState<boolean>(true);
+  
+  // State to control retention (5% deduction)
+  const [applyRetention, setApplyRetention] = useState<boolean>(false);
 
   const addLineItem = () => {
-    const newId = Math.max(...lineItems.map(item => item.id)) + 1;
+    const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1;
     setLineItems([...lineItems, {
       id: newId,
+      serialNumber: String(newId).padStart(3, '0'),
       description: '',
+      item: '',
+      unit: '',
       quantity: 1,
       rate: 0,
-      amount: 0,
-      laborType: null
+      amount: 0
     }]);
   };
 
   const removeLineItem = (id: number) => {
-    setLineItems(lineItems.filter(item => item.id !== id));
+    setLineItems(prevItems => prevItems.filter(item => item.id !== id));
   };
 
   const updateLineItem = (id: number, field: keyof LineItem, value: string | number) => {
@@ -59,24 +102,15 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
     }));
   };
 
-  const productiveLabor = lineItems
-    .filter(item => item.laborType === 'productive')
-    .reduce((sum, item) => sum + item.amount, 0);
-  
-  const nonProductiveLabor = lineItems
-    .filter(item => item.laborType === 'non-productive')
-    .reduce((sum, item) => sum + item.amount, 0);
-  
-  const totalLabor = productiveLabor + nonProductiveLabor;
-  
-  const nonLaborItems = lineItems
-    .filter(item => item.laborType === null)
-    .reduce((sum, item) => sum + item.amount, 0);
+  const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
   
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const retentionRate = 0.05; // 5% retention
+  const retentionAmount = applyRetention ? subtotal * retentionRate : 0;
+  const baseAfterRetention = subtotal - retentionAmount;
   const taxRate = 0.18; // 18% GST
-  const taxAmount = applyGst ? subtotal * taxRate : 0;
-  const total = subtotal + taxAmount;
+  const taxAmount = applyGst ? baseAfterRetention * taxRate : 0;
+  const total = baseAfterRetention + taxAmount;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -178,6 +212,26 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                       </div>
                     </RadioGroup>
                   </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Retention Options
+                    </label>
+                    <RadioGroup 
+                      defaultValue={applyRetention ? "with-retention" : "without-retention"} 
+                      className="flex space-x-4"
+                      onValueChange={(value) => setApplyRetention(value === "with-retention")}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="with-retention" id="with-retention" />
+                        <Label htmlFor="with-retention">With Retention (5%)</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="without-retention" id="without-retention" />
+                        <Label htmlFor="without-retention">Without Retention</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -194,98 +248,124 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {/* Headers */}
+                    <div className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+                      <div className="col-span-1">S.No</div>
+                      <div className="col-span-3">Description</div>
+                      <div className="col-span-2">Item</div>
+                      <div className="col-span-2">Unit</div>
+                      <div className="col-span-1">Qty</div>
+                      <div className="col-span-1">Rate</div>
+                      <div className="col-span-1">Amount</div>
+                      {/* <div className="col-span-1">Action</div> */}
+                    </div>
+                    
                     {lineItems.map((item) => (
                       <div key={item.id} className="grid grid-cols-12 gap-2 items-center p-3 border rounded-lg">
-                        <div className="col-span-4">
+                        <div className="col-span-1">
+                          <Input
+                            placeholder="001"
+                            value={item.serialNumber}
+                            onChange={(e) => updateLineItem(item.id, 'serialNumber', e.target.value)}
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="col-span-3">
                           <Input
                             placeholder="Description"
                             value={item.description}
                             onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                            className="h-9"
                           />
                         </div>
                         <div className="col-span-2">
                           <Select
-                            value={item.laborType || ''}
-                            onValueChange={(value) => {
-                              const laborType = value === '' ? null : (value as 'productive' | 'non-productive');
-                              updateLineItem(item.id, 'laborType', laborType);
-                            }}
+                            value={item.item}
+                            onValueChange={(value) => updateLineItem(item.id, 'item', value)}
                           >
                             <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Labor Type" />
+                              <SelectValue placeholder="Select item" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="no-labor">Not Labor</SelectItem>
-                              <SelectItem value="productive">Productive</SelectItem>
-                              <SelectItem value="non-productive">Non-Productive</SelectItem>
+                              {CONSTRUCTION_ITEMS.map((constructionItem) => (
+                                <SelectItem key={constructionItem.value} value={constructionItem.value}>
+                                  {constructionItem.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-2">
+                          <Select
+                            value={item.unit}
+                            onValueChange={(value) => updateLineItem(item.id, 'unit', value)}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {UNITS.map((unit) => (
+                                <SelectItem key={unit.value} value={unit.value}>
+                                  {unit.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
                         <div className="col-span-1">
                           <Input
                             type="number"
-                            placeholder="Qty"
+                            placeholder="1"
                             value={item.quantity}
                             onChange={(e) => updateLineItem(item.id, 'quantity', Number(e.target.value))}
+                            className="h-9"
                           />
                         </div>
-                        <div className="col-span-2">
+                        <div className="col-span-1">
                           <Input
                             type="number"
                             placeholder="Rate"
                             value={item.rate}
                             onChange={(e) => updateLineItem(item.id, 'rate', Number(e.target.value))}
+                            className="h-9"
                           />
                         </div>
                         <div className="col-span-2">
                           <Input
                             value={`₹${item.amount.toLocaleString('en-IN')}`}
                             readOnly
-                            className="bg-gray-50"
+                            className="bg-gray-50 h-9"
                           />
                         </div>
-                        <div className="col-span-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeLineItem(item.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                        </div>
+                       <div className="col-span-1">
+                        <Button
+                          variant="ghost"
+                          onClick={() => removeLineItem(item.id)}
+                          className="text-red-500 hover:text-red-700 px-6 py-2"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+
                       </div>
                     ))}
                   </div>
 
                   {/* Totals */}
                   <div className="mt-6 space-y-2">
-                    {/* Labor Breakdown */}
-                    <div className="border p-3 rounded-md bg-gray-50 mb-4">
-                      <h4 className="font-medium text-sm mb-2">Labor Breakdown:</h4>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span>Productive Labor:</span>
-                          <span>₹{productiveLabor.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Non-Productive Labor:</span>
-                          <span>₹{nonProductiveLabor.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="flex justify-between text-sm font-medium border-t pt-1 mt-1">
-                          <span>Total Labor:</span>
-                          <span>₹{totalLabor.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between text-sm">
-                      <span>Materials & Other Items:</span>
-                      <span>₹{nonLaborItems.toLocaleString('en-IN')}</span>
-                    </div>
                     <div className="flex justify-between text-sm">
                       <span>Subtotal:</span>
                       <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                    </div>
+                    {applyRetention && (
+                      <div className="flex justify-between text-sm text-red-600">
+                        <span>Retention (5%):</span>
+                        <span>-₹{retentionAmount.toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span>Base Amount:</span>
+                      <span>₹{baseAfterRetention.toLocaleString('en-IN')}</span>
                     </div>
                     {applyGst && (
                       <div className="flex justify-between text-sm">
@@ -373,26 +453,19 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({ onClose }) =>
                     </div>
 
                     <div className="border-t pt-3">
-                      {/* Labor breakdown in preview */}
-                      <div className="mb-2">
-                        <div className="text-xs font-medium">Labor Summary:</div>
-                        <div className="grid grid-cols-2 text-xs">
-                          <span>Productive:</span>
-                          <span className="text-right">₹{productiveLabor.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="grid grid-cols-2 text-xs">
-                          <span>Non-Productive:</span>
-                          <span className="text-right">₹{nonProductiveLabor.toLocaleString('en-IN')}</span>
-                        </div>
-                        <div className="grid grid-cols-2 text-xs font-medium">
-                          <span>Total Labor:</span>
-                          <span className="text-right">₹{totalLabor.toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                      
                       <div className="flex justify-between text-sm">
                         <span>Subtotal:</span>
                         <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                      </div>
+                      {applyRetention && (
+                        <div className="flex justify-between text-sm text-red-600">
+                          <span>Retention (5%):</span>
+                          <span>-₹{retentionAmount.toLocaleString('en-IN')}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-sm">
+                        <span>Base Amount:</span>
+                        <span>₹{baseAfterRetention.toLocaleString('en-IN')}</span>
                       </div>
                       {applyGst && (
                         <div className="flex justify-between text-sm">
