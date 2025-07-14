@@ -3095,12 +3095,12 @@ const StoreDashboard = () => {
                   </CardContent>
                 </Card>
                 <Card className="bg-muted/50">
-                  <CardHeader className="pb-1 pt-2">
+                  <CardHeader className="pb-2 pt-2">
                     <CardTitle className="text-base">
                       Most Costly Recent Maintenance
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="overflow-x-auto p-0 pl-2">
+                  <CardContent className="overflow-x-auto p-0 pl-2 pr-2">
                     <table className="min-w-full text-sm">
                       <thead>
                         <tr className="bg-muted">
