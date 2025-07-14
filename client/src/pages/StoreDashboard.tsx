@@ -186,6 +186,11 @@ const StoreDashboard = () => {
     { vehicle: 'Excavator 1', last: '2024-05-10', next: '2024-07-10', status: 'Scheduled' },
   ])
   const [selectedAsset, setSelectedAsset] = useState<MaintenanceSchedule | null>(null)
+  const [overviewSubview, setOverviewSubview] = useState<'main' | 'inventoryValue' | 'lowStock' | 'activeTransfers' | 'monthlyConsumption'>('main');
+  const [inventorySubview, setInventorySubview] = useState<'main' | 'lowStock' | 'totalItems' | 'value'>('main');
+  const [transferSubview, setTransferSubview] = useState<'main' | 'active' | 'completed' | 'pending'>('main');
+  const [analyticsSubview, setAnalyticsSubview] = useState<'main' | 'spend' | 'turnover' | 'deadStock' | 'leadTime'>('main');
+  const [vehicleSubview, setVehicleSubview] = useState<'main' | 'active' | 'onSite' | 'maintenance'>('main');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -444,403 +449,843 @@ const StoreDashboard = () => {
         </TabsList>
 
         <TabsContent value="overview">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <StatCard
-              title="Total Inventory Value"
-              value="₹45L"
-              icon={Package}
-              description="Across all locations"
-              onClick={() => toast({
-                title: "Viewing inventory details"
-              })}
-            />
-            <StatCard
-              title="Low Stock Items"
-              value="7"
-              icon={AlertTriangle}
-              description="Need immediate attention"
-              onClick={() => toast({
-                title: "Viewing low stock items"
-              })}
-            />
-            <StatCard
-              title="Active Transfers"
-              value="12"
-              icon={Truck}
-              description="In transit"
-              onClick={() => toast({
-                title: "Viewing active transfers"
-              })}
-            />
-            <StatCard
-              title="Monthly Consumption"
-              value="₹18L"
-              icon={TrendingDown}
-              description="-8% vs last month"
-              onClick={() => toast({
-                title: "Viewing consumption trends"
-              })}
-            />
-          </div>
-
-          {/* Critical Alerts */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
-                Critical Stock Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {inventory.filter(item => item.status === 'Critical' || item.status === 'Low').map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center">
-                      <AlertTriangle className="h-4 w-4 text-red-500 mr-3" />
-                      <div>
-                        <p className="font-medium text-gray-900">{item.item}</p>
-                        <p className="text-sm text-gray-600">
-                          Current: {item.quantity} {item.unit} | Min: {item.minStock} {item.unit}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Badge className={getStatusColor(item.status)}>
-                        {item.status}
-                      </Badge>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleReorder(item)}
-                        disabled={item.status === 'Reordered'}
-                      >
-                        {item.status === 'Reordered' ? 'Reordered' : 'Reorder'}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Transactions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { type: 'IN', item: 'Cement - 50 bags', location: 'From Vendor ABC', time: '2 hours ago' },
-                    { type: 'OUT', item: 'Steel Bars - 5 tons', location: 'To Site A', time: '4 hours ago' },
-                    { type: 'TRANSFER', item: 'Bricks - 10,000 pieces', location: 'Warehouse A → Site B', time: '6 hours ago' }
-                  ].map((transaction, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center">
-                        <div className={`w-2 h-2 rounded-full mr-3 ${transaction.type === 'IN' ? 'bg-green-500' :
-                          transaction.type === 'OUT' ? 'bg-red-500' : 'bg-blue-500'
-                          }`}></div>
-                        <div>
-                          <p className="font-medium text-gray-900">{transaction.item}</p>
-                          <p className="text-sm text-gray-600">{transaction.location}</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-500">{transaction.time}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Storage Utilization</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { location: 'Warehouse A', utilization: 85, capacity: '2000 sqft' },
-                    { location: 'Warehouse B', utilization: 72, capacity: '1500 sqft' },
-                    { location: 'Yard 1', utilization: 60, capacity: '5000 sqft' },
-                    { location: 'Yard 2', utilization: 45, capacity: '3000 sqft' }
-                  ].map((storage, index) => (
-                    <div key={index}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="font-medium">{storage.location}</span>
-                        <span>{storage.utilization}% ({storage.capacity})</span>
-                      </div>
-                      <Progress value={storage.utilization} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="inventory">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard
-                title="Low Stock Items"
-                value="24"
-                icon={AlertTriangle}
-                description="Below reorder level"
-                onClick={() => toast({
-                  title: "Viewing low stock alerts"
-                })}
-              />
-              <StatCard
-                title="Total Items"
-                value="1,247"
-                icon={Package}
-                description="In inventory"
-                onClick={() => toast({
-                  title: "Viewing complete inventory"
-                })}
-              />
-              <StatCard
-                title="Value"
-                value="₹12.5M"
-                icon={Package}
-                description="Total inventory value"
-                onClick={() => toast({
-                  title: "Viewing inventory valuation"
-                })}
-              />
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Stock Category Overview</CardTitle>
-                <CardDescription>Inventory status by category</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={stockData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="inStock" fill="#10b981" />
-                    <Bar dataKey="lowStock" fill="#f59e0b" />
-                    <Bar dataKey="outOfStock" fill="#ef4444" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory Alerts</CardTitle>
-                <CardDescription>Items requiring attention</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { item: 'Steel TMT Bars', category: 'Raw Material', issue: 'Low Stock', level: 'High', action: 'Reorder' },
-                    { item: 'Safety Helmets', category: 'Safety', issue: 'Expiring Soon', level: 'Medium', action: 'Use First' },
-                    { item: 'Electrical Wire', category: 'Electrical', issue: 'High Usage', level: 'Low', action: 'Monitor' },
-                  ].map((alert, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">{alert.item}</h3>
-                        <p className="text-sm text-muted-foreground">{alert.category} • {alert.issue}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={
-                          alert.level === 'High' ? 'destructive' :
-                            alert.level === 'Medium' ? 'default' :
-                              'secondary'
-                        }>
-                          {alert.level}
-                        </Badge>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 w-full"
-                          onClick={() => toast({
-                            title: `${alert.action} action for ${alert.item}`
-                          })}
-                        >
-                          {alert.action}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Site Inventory</CardTitle>
-                  <CardDescription>Current stock levels across locations</CardDescription>
-                </div>
-                <Button onClick={() => setIsIssueModalOpen(true)} className="gap-2">
-                  <Truck className="h-4 w-4" />
-                  Issue to Site
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <DataTable
-                  columns={[
-                    ...inventoryColumns,
-                    {
-                      id: "actions",
-                      header: "Actions",
-                      cell: ({ row }) => (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedItem(row.original)
-                              setIsTransferStockModalOpen(true)
-                            }}
-                          >
-                            Transfer
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedItem(row.original)
-                              setIsUpdateStockModalOpen(true)
-                            }}
-                          >
-                            Update Stock
-                          </Button>
-                        </div>
-                      ),
-                    },
-                  ]}
-                  data={inventoryItems}
-                  searchKey="name"
+          {overviewSubview === 'main' && (
+            <>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <StatCard
+                  title="Total Inventory Value"
+                  value="₹45L"
+                  icon={Package}
+                  description="Across all locations"
+                  onClick={() => setOverviewSubview('inventoryValue')}
                 />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                <StatCard
+                  title="Low Stock Items"
+                  value="7"
+                  icon={AlertTriangle}
+                  description="Need immediate attention"
+                  onClick={() => setOverviewSubview('lowStock')}
+                />
+                <StatCard
+                  title="Active Transfers"
+                  value="12"
+                  icon={Truck}
+                  description="In transit"
+                  onClick={() => setOverviewSubview('activeTransfers')}
+                />
+                <StatCard
+                  title="Monthly Consumption"
+                  value="₹18L"
+                  icon={TrendingDown}
+                  description="-8% vs last month"
+                  onClick={() => setOverviewSubview('monthlyConsumption')}
+                />
+              </div>
 
-        <TabsContent value="transfers">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard
-                title="Active Transfers"
-                value="12"
-                icon={Truck}
-                description="Currently in transit"
-                onClick={() => toast({
-                  title: "Viewing active transfers"
-                })}
-              />
-              <StatCard
-                title="Completed Today"
-                value="8"
-                icon={CheckCircle}
-                description="Successfully delivered"
-                onClick={() => toast({
-                  title: "Viewing completed transfers"
-                })}
-              />
-              <StatCard
-                title="Pending Approval"
-                value="5"
-                icon={Clock}
-                description="Awaiting authorization"
-                onClick={() => toast({
-                  title: "Viewing pending approvals"
-                })}
-              />
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Transfer Status Distribution</CardTitle>
-                <CardDescription>Current transfer status overview</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={transferData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {transferData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex justify-center mt-4">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    {transferData.map((item) => (
-                      <div key={item.name} className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: item.fill }}
-                        ></div>
-                        <span>{item.name}: {item.value}</span>
+              {/* Critical Alerts */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
+                    Critical Stock Alerts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {inventory.filter(item => item.status === 'Critical' || item.status === 'Low').map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center">
+                          <AlertTriangle className="h-4 w-4 text-red-500 mr-3" />
+                          <div>
+                            <p className="font-medium text-gray-900">{item.item}</p>
+                            <p className="text-sm text-gray-600">
+                              Current: {item.quantity} {item.unit} | Min: {item.minStock} {item.unit}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Badge className={getStatusColor(item.status)}>
+                            {item.status}
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleReorder(item)}
+                            disabled={item.status === 'Reordered'}
+                          >
+                            {item.status === 'Reordered' ? 'Reordered' : 'Reorder'}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Transfer Timeline</CardTitle>
-                <CardDescription>Recent transfer activities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { id: 'TR001', status: 'Delivered', time: '2 hours ago', from: 'Warehouse A', to: 'Site 1' },
-                    { id: 'TR002', status: 'In Transit', time: '4 hours ago', from: 'Site 2', to: 'Central' },
-                    { id: 'TR003', status: 'Packed', time: '6 hours ago', from: 'Warehouse B', to: 'Site 3' },
-                    { id: 'TR004', status: 'Requested', time: '8 hours ago', from: 'Site 1', to: 'Warehouse A' },
-                  ].map((transfer) => (
-                    <div key={transfer.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">{transfer.id}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {transfer.from} → {transfer.to}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="outline">{transfer.status}</Badge>
-                        <p className="text-xs text-muted-foreground mt-1">{transfer.time}</p>
-                      </div>
+              {/* Quick Stats */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Transactions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { type: 'IN', item: 'Cement - 50 bags', location: 'From Vendor ABC', time: '2 hours ago' },
+                        { type: 'OUT', item: 'Steel Bars - 5 tons', location: 'To Site A', time: '4 hours ago' },
+                        { type: 'TRANSFER', item: 'Bricks - 10,000 pieces', location: 'Warehouse A → Site B', time: '6 hours ago' }
+                      ].map((transaction, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center">
+                            <div className={`w-2 h-2 rounded-full mr-3 ${transaction.type === 'IN' ? 'bg-green-500' :
+                              transaction.type === 'OUT' ? 'bg-red-500' : 'bg-blue-500'
+                              }`}></div>
+                            <div>
+                              <p className="font-medium text-gray-900">{transaction.item}</p>
+                              <p className="text-sm text-gray-600">{transaction.location}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-500">{transaction.time}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Material Transfers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <DataTable
-                  columns={transferColumns}
-                  data={transfersData}
-                  searchKey="items"
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Storage Utilization</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {[
+                        { location: 'Warehouse A', utilization: 85, capacity: '2000 sqft' },
+                        { location: 'Warehouse B', utilization: 72, capacity: '1500 sqft' },
+                        { location: 'Yard 1', utilization: 60, capacity: '5000 sqft' },
+                        { location: 'Yard 2', utilization: 45, capacity: '3000 sqft' }
+                      ].map((storage, index) => (
+                        <div key={index}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="font-medium">{storage.location}</span>
+                            <span>{storage.utilization}% ({storage.capacity})</span>
+                          </div>
+                          <Progress value={storage.utilization} className="h-2" />
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+          {overviewSubview === 'inventoryValue' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Total Inventory Value</h2>
+                <Button variant="outline" onClick={() => setOverviewSubview('main')}>Back to Overview</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="mb-4">
+                    <div className="text-2xl font-bold mb-1">₹45,00,000</div>
+                    <div className="text-sm text-muted-foreground mb-4">Total value of all inventory across all locations as of today.</div>
+                    <div className="mb-4">
+                      <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+                        <thead>
+                          <tr className="bg-muted">
+                            <th className="p-2 text-left">Category</th>
+                            <th className="p-2 text-left">Value</th>
+                            <th className="p-2 text-left">% of Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { name: 'Raw Materials', value: 2000000, fill: '#3b82f6' },
+                            { name: 'Consumables', value: 1200000, fill: '#10b981' },
+                            { name: 'Tools & Equipment', value: 800000, fill: '#f59e0b' },
+                            { name: 'Safety Items', value: 500000, fill: '#ef4444' }
+                          ].map((cat, idx, arr) => {
+                            const total = arr.reduce((sum, c) => sum + c.value, 0);
+                            return (
+                              <tr key={cat.name}>
+                                <td className="p-2 flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: cat.fill }}></span>{cat.name}</td>
+                                <td className="p-2">₹{cat.value.toLocaleString()}</td>
+                                <td className="p-2">{((cat.value / total) * 100).toFixed(1)}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Raw Materials', value: 2000000, fill: '#3b82f6' },
+                          { name: 'Consumables', value: 1200000, fill: '#10b981' },
+                          { name: 'Tools & Equipment', value: 800000, fill: '#f59e0b' },
+                          { name: 'Safety Items', value: 500000, fill: '#ef4444' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Raw Materials', fill: '#3b82f6' },
+                          { name: 'Consumables', fill: '#10b981' },
+                          { name: 'Tools & Equipment', fill: '#f59e0b' },
+                          { name: 'Safety Items', fill: '#ef4444' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {overviewSubview === 'lowStock' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Low Stock Items</h2>
+                <Button variant="outline" onClick={() => setOverviewSubview('main')}>Back to Overview</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-3">
+                    {inventory.filter(item => item.status === 'Critical' || item.status === 'Low').map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center">
+                          <AlertTriangle className="h-4 w-4 text-red-500 mr-3" />
+                          <div>
+                            <p className="font-medium text-gray-900">{item.item}</p>
+                            <p className="text-sm text-gray-600">
+                              Current: {item.quantity} {item.unit} | Min: {item.minStock} {item.unit}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Badge className={getStatusColor(item.status)}>
+                            {item.status}
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleReorder(item)}
+                            disabled={item.status === 'Reordered'}
+                          >
+                            {item.status === 'Reordered' ? 'Reordered' : 'Reorder'}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {overviewSubview === 'activeTransfers' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Active Transfers</h2>
+                <Button variant="outline" onClick={() => setOverviewSubview('main')}>Back to Overview</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {[
+                      { id: 'TR001', status: 'Delivered', time: '2 hours ago', from: 'Warehouse A', to: 'Site 1' },
+                      { id: 'TR002', status: 'In Transit', time: '4 hours ago', from: 'Site 2', to: 'Central' },
+                      { id: 'TR003', status: 'Packed', time: '6 hours ago', from: 'Warehouse B', to: 'Site 3' },
+                      { id: 'TR004', status: 'Requested', time: '8 hours ago', from: 'Site 1', to: 'Warehouse A' },
+                    ].map((transfer) => (
+                      <div key={transfer.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium">{transfer.id}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {transfer.from} → {transfer.to}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline">{transfer.status}</Badge>
+                          <p className="text-xs text-muted-foreground mt-1">{transfer.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {overviewSubview === 'monthlyConsumption' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Monthly Consumption</h2>
+                <Button variant="outline" onClick={() => setOverviewSubview('main')}>Back to Overview</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={[
+                      { month: 'Sep', value: 2800000 },
+                      { month: 'Oct', value: 3200000 },
+                      { month: 'Nov', value: 2900000 },
+                      { month: 'Dec', value: 3500000 },
+                      { month: 'Jan', value: 3100000 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="inventory">
+          {inventorySubview === 'main' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="Low Stock Items"
+                  value="24"
+                  icon={AlertTriangle}
+                  description="Below reorder level"
+                  onClick={() => setInventorySubview('lowStock')}
                 />
-              </CardContent>
-            </Card>
-          </div>
+                <StatCard
+                  title="Total Items"
+                  value="1,247"
+                  icon={Package}
+                  description="In inventory"
+                  onClick={() => setInventorySubview('totalItems')}
+                />
+                <StatCard
+                  title="Value"
+                  value="₹12.5M"
+                  icon={Package}
+                  description="Total inventory value"
+                  onClick={() => setInventorySubview('value')}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Stock Category Overview</CardTitle>
+                  <CardDescription>Inventory status by category</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={stockData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="category" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="inStock" fill="#10b981" />
+                      <Bar dataKey="lowStock" fill="#f59e0b" />
+                      <Bar dataKey="outOfStock" fill="#ef4444" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventory Alerts</CardTitle>
+                  <CardDescription>Items requiring attention</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {[
+                      { item: 'Steel TMT Bars', category: 'Raw Material', issue: 'Low Stock', level: 'High', action: 'Reorder' },
+                      { item: 'Safety Helmets', category: 'Safety', issue: 'Expiring Soon', level: 'Medium', action: 'Use First' },
+                      { item: 'Electrical Wire', category: 'Electrical', issue: 'High Usage', level: 'Low', action: 'Monitor' },
+                    ].map((alert, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium">{alert.item}</h3>
+                          <p className="text-sm text-muted-foreground">{alert.category} • {alert.issue}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant={
+                            alert.level === 'High' ? 'destructive' :
+                              alert.level === 'Medium' ? 'default' :
+                                'secondary'
+                          }>
+                            {alert.level}
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 w-full"
+                            onClick={() => toast({
+                              title: `${alert.action} action for ${alert.item}`
+                            })}
+                          >
+                            {alert.action}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Site Inventory</CardTitle>
+                    <CardDescription>Current stock levels across locations</CardDescription>
+                  </div>
+                  <Button onClick={() => setIsIssueModalOpen(true)} className="gap-2">
+                    <Truck className="h-4 w-4" />
+                    Issue to Site
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    columns={[
+                      ...inventoryColumns,
+                      {
+                        id: "actions",
+                        header: "Actions",
+                        cell: ({ row }) => (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItem(row.original)
+                                setIsTransferStockModalOpen(true)
+                              }}
+                            >
+                              Transfer
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItem(row.original)
+                                setIsUpdateStockModalOpen(true)
+                              }}
+                            >
+                              Update Stock
+                            </Button>
+                          </div>
+                        ),
+                      },
+                    ]}
+                    data={inventoryItems}
+                    searchKey="name"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {inventorySubview === 'lowStock' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Low Stock Items</h2>
+                <Button variant="outline" onClick={() => setInventorySubview('main')}>Back to Inventory</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-3">
+                    {inventory.filter(item => item.status === 'Critical' || item.status === 'Low').map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center">
+                          <AlertTriangle className="h-4 w-4 text-red-500 mr-3" />
+                          <div>
+                            <p className="font-medium text-gray-900">{item.item}</p>
+                            <p className="text-sm text-gray-600">
+                              Current: {item.quantity} {item.unit} | Min: {item.minStock} {item.unit}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Badge className={getStatusColor(item.status)}>
+                            {item.status}
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleReorder(item)}
+                            disabled={item.status === 'Reordered'}
+                          >
+                            {item.status === 'Reordered' ? 'Reordered' : 'Reorder'}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {inventorySubview === 'totalItems' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Total Items</h2>
+                <Button variant="outline" onClick={() => setInventorySubview('main')}>Back to Inventory</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6 space-y-6">
+                  <div className="mb-4 text-lg">Total number of unique inventory items: <span className="font-bold">1,247</span></div>
+                  <div className="text-sm text-muted-foreground mb-2">This includes all SKUs and item types across all warehouses and sites. Below is a breakdown by category and by site.</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-semibold mb-2">By Category</h3>
+                      <ul className="list-disc pl-6">
+                        <li>Raw Materials: 520 items</li>
+                        <li>Consumables: 320 items</li>
+                        <li>Tools & Equipment: 210 items</li>
+                        <li>Safety Items: 197 items</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-2">By Site</h3>
+                      <ul className="list-disc pl-6">
+                        <li>Warehouse A: 420 items</li>
+                        <li>Warehouse B: 310 items</li>
+                        <li>Yard 1: 280 items</li>
+                        <li>Yard 2: 237 items</li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="mt-6">
+                    <Card className="shadow-none border border-muted-foreground/10">
+                      <CardContent className="p-0">
+                        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+                          <div>
+                            <h3 className="font-semibold text-base">Site Inventory</h3>
+                            <p className="text-xs text-muted-foreground">Current stock levels across locations</p>
+                          </div>
+                          <Button onClick={() => setIsIssueModalOpen(true)} className="gap-2" size="sm">
+                            <Truck className="h-4 w-4" />
+                            Issue to Site
+                          </Button>
+                        </div>
+                        <div className="px-6 pb-6">
+                          <DataTable
+                            columns={[
+                              ...inventoryColumns,
+                              {
+                                id: "actions",
+                                header: "Actions",
+                                cell: ({ row }) => (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedItem(row.original)
+                                        setIsTransferStockModalOpen(true)
+                                      }}
+                                    >
+                                      Transfer
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedItem(row.original)
+                                        setIsUpdateStockModalOpen(true)
+                                      }}
+                                    >
+                                      Update Stock
+                                    </Button>
+                                  </div>
+                                ),
+                              },
+                            ]}
+                            data={inventoryItems}
+                            searchKey="name"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {inventorySubview === 'value' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Inventory Value</h2>
+                <Button variant="outline" onClick={() => setInventorySubview('main')}>Back to Inventory</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="mb-4">
+                    <div className="text-2xl font-bold mb-1">₹12,50,000</div>
+                    <div className="text-sm text-muted-foreground mb-4">Total value of all inventory as of today.</div>
+                    <div className="mb-4">
+                      <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+                        <thead>
+                          <tr className="bg-muted">
+                            <th className="p-2 text-left">Category</th>
+                            <th className="p-2 text-left">Value</th>
+                            <th className="p-2 text-left">% of Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { name: 'Raw Materials', value: 500000, fill: '#3b82f6' },
+                            { name: 'Consumables', value: 350000, fill: '#10b981' },
+                            { name: 'Tools & Equipment', value: 250000, fill: '#f59e0b' },
+                            { name: 'Safety Items', value: 150000, fill: '#ef4444' }
+                          ].map((cat, idx, arr) => {
+                            const total = arr.reduce((sum, c) => sum + c.value, 0);
+                            return (
+                              <tr key={cat.name}>
+                                <td className="p-2 flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: cat.fill }}></span>{cat.name}</td>
+                                <td className="p-2">₹{cat.value.toLocaleString()}</td>
+                                <td className="p-2">{((cat.value / total) * 100).toFixed(1)}%</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Raw Materials', value: 500000, fill: '#3b82f6' },
+                          { name: 'Consumables', value: 350000, fill: '#10b981' },
+                          { name: 'Tools & Equipment', value: 250000, fill: '#f59e0b' },
+                          { name: 'Safety Items', value: 150000, fill: '#ef4444' }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {[
+                          { name: 'Raw Materials', fill: '#3b82f6' },
+                          { name: 'Consumables', fill: '#10b981' },
+                          { name: 'Tools & Equipment', fill: '#f59e0b' },
+                          { name: 'Safety Items', fill: '#ef4444' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="transfers">
+          {transferSubview === 'main' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                  title="Active Transfers"
+                  value="12"
+                  icon={Truck}
+                  description="Currently in transit"
+                  onClick={() => setTransferSubview('active')}
+                />
+                <StatCard
+                  title="Completed Today"
+                  value="8"
+                  icon={CheckCircle}
+                  description="Successfully delivered"
+                  onClick={() => setTransferSubview('completed')}
+                />
+                <StatCard
+                  title="Pending Approval"
+                  value="5"
+                  icon={Clock}
+                  description="Awaiting authorization"
+                  onClick={() => setTransferSubview('pending')}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transfer Status Distribution</CardTitle>
+                  <CardDescription>Current transfer status overview</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={transferData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {transferData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex justify-center mt-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {transferData.map((item) => (
+                        <div key={item.name} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: item.fill }}
+                          ></div>
+                          <span>{item.name}: {item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transfer Timeline</CardTitle>
+                  <CardDescription>Recent transfer activities</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      { id: 'TR001', status: 'Delivered', time: '2 hours ago', from: 'Warehouse A', to: 'Site 1' },
+                      { id: 'TR002', status: 'In Transit', time: '4 hours ago', from: 'Site 2', to: 'Central' },
+                      { id: 'TR003', status: 'Packed', time: '6 hours ago', from: 'Warehouse B', to: 'Site 3' },
+                      { id: 'TR004', status: 'Requested', time: '8 hours ago', from: 'Site 1', to: 'Warehouse A' },
+                    ].map((transfer) => (
+                      <div key={transfer.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium">{transfer.id}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {transfer.from} → {transfer.to}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline">{transfer.status}</Badge>
+                          <p className="text-xs text-muted-foreground mt-1">{transfer.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Material Transfers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    columns={transferColumns}
+                    data={transfersData}
+                    searchKey="items"
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {transferSubview === 'active' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Active Transfers</h2>
+                <Button variant="outline" onClick={() => setTransferSubview('main')}>Back to Transfers</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {transfersData.filter(t => t.status === 'In Transit').map((transfer) => (
+                      <div key={transfer.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium">{transfer.id}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {transfer.items} | {transfer.from} → {transfer.to}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary">{transfer.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {transferSubview === 'completed' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Completed Transfers</h2>
+                <Button variant="outline" onClick={() => setTransferSubview('main')}>Back to Transfers</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {transfersData.filter(t => t.status === 'Completed').map((transfer) => (
+                      <div key={transfer.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium">{transfer.id}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {transfer.items} | {transfer.from} → {transfer.to}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="default">{transfer.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {transferSubview === 'pending' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Pending Transfers</h2>
+                <Button variant="outline" onClick={() => setTransferSubview('main')}>Back to Transfers</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {transfersData.filter(t => t.status === 'Pending').map((transfer) => (
+                      <div key={transfer.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div>
+                          <h3 className="font-medium">{transfer.id}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {transfer.items} | {transfer.from} → {transfer.to}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline">{transfer.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="procurement">
@@ -1033,53 +1478,158 @@ const StoreDashboard = () => {
         </TabsContent>
 
         <TabsContent value="analytics">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <StatCard
-                title="Monthly Spend"
-                value="₹32.5L"
-                icon={BarChart3}
-                description="+12% vs last month"
-                onClick={() => toast({
-                  title: "Viewing spend analytics"
-                })}
-              />
-              <StatCard
-                title="Stock Turnover"
-                value="4.2x"
-                icon={TrendingDown}
-                description="Last 30 days"
-                onClick={() => toast({
-                  title: "Viewing turnover details"
-                })}
-              />
-              <StatCard
-                title="Dead Stock"
-                value="₹8.2L"
-                icon={AlertTriangle}
-                description="No movement > 90 days"
-                onClick={() => toast({
-                  title: "Viewing dead stock"
-                })}
-              />
-              <StatCard
-                title="Avg Lead Time"
-                value="12 days"
-                icon={Clock}
-                description="Order to delivery"
-                onClick={() => toast({
-                  title: "Viewing lead time analysis"
-                })}
-              />
-            </div>
+          {analyticsSubview === 'main' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <StatCard
+                  title="Monthly Spend"
+                  value="₹32.5L"
+                  icon={BarChart3}
+                  description="+12% vs last month"
+                  onClick={() => setAnalyticsSubview('spend')}
+                />
+                <StatCard
+                  title="Stock Turnover"
+                  value="4.2x"
+                  icon={TrendingDown}
+                  description="Last 30 days"
+                  onClick={() => setAnalyticsSubview('turnover')}
+                />
+                <StatCard
+                  title="Dead Stock"
+                  value="₹8.2L"
+                  icon={AlertTriangle}
+                  description="No movement > 90 days"
+                  onClick={() => setAnalyticsSubview('deadStock')}
+                />
+                <StatCard
+                  title="Avg Lead Time"
+                  value="12 days"
+                  icon={Clock}
+                  description="Order to delivery"
+                  onClick={() => setAnalyticsSubview('leadTime')}
+                />
+              </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Monthly Consumption Trend</CardTitle>
+                    <CardDescription>Value of materials consumed</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={[
+                        { month: 'Sep', value: 2800000 },
+                        { month: 'Oct', value: 3200000 },
+                        { month: 'Nov', value: 2900000 },
+                        { month: 'Dec', value: 3500000 },
+                        { month: 'Jan', value: 3100000 }
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#3b82f6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Category-wise Analysis</CardTitle>
+                    <CardDescription>Stock value distribution</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Raw Materials', value: 4500000, fill: '#3b82f6' },
+                            { name: 'Consumables', value: 2800000, fill: '#10b981' },
+                            { name: 'Tools & Equipment', value: 1800000, fill: '#f59e0b' },
+                            { name: 'Safety Items', value: 900000, fill: '#ef4444' }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {[
+                            { name: 'Raw Materials', fill: '#3b82f6' },
+                            { name: 'Consumables', fill: '#10b981' },
+                            { name: 'Tools & Equipment', fill: '#f59e0b' },
+                            { name: 'Safety Items', fill: '#ef4444' }
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      {[
+                        { name: 'Raw Materials', value: '₹45L', fill: '#3b82f6' },
+                        { name: 'Consumables', value: '₹28L', fill: '#10b981' },
+                        { name: 'Tools & Equipment', value: '₹18L', fill: '#f59e0b' },
+                        { name: 'Safety Items', value: '₹9L', fill: '#ef4444' }
+                      ].map((item) => (
+                        <div key={item.name} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: item.fill }}
+                          ></div>
+                          <span className="text-sm">{item.name}: {item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               <Card>
                 <CardHeader>
-                  <CardTitle>Monthly Consumption Trend</CardTitle>
-                  <CardDescription>Value of materials consumed</CardDescription>
+                  <CardTitle>Inventory KPI Metrics</CardTitle>
+                  <CardDescription>Key performance indicators</CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { metric: 'Stock Accuracy', value: '98.5%', trend: '+0.5%', status: 'positive' },
+                      { metric: 'Order Fill Rate', value: '94.2%', trend: '-1.2%', status: 'negative' },
+                      { metric: 'Inventory to Sales', value: '2.4x', trend: '0.0', status: 'neutral' },
+                      { metric: 'Storage Utilization', value: '82%', trend: '+5%', status: 'positive' }
+                    ].map((kpi) => (
+                      <div key={kpi.metric} className="p-4 border rounded-lg">
+                        <p className="text-sm text-gray-600">{kpi.metric}</p>
+                        <div className="flex items-end gap-2 mt-1">
+                          <span className="text-2xl font-semibold">{kpi.value}</span>
+                          <span className={`text-sm ${kpi.status === 'positive' ? 'text-green-600' :
+                            kpi.status === 'negative' ? 'text-red-600' : 'text-gray-600'
+                            }`}>
+                            {kpi.trend}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {analyticsSubview === 'spend' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Monthly Spend</h2>
+                <Button variant="outline" onClick={() => setAnalyticsSubview('main')}>Back to Analytics</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="mb-4 text-lg">Total spend this month: <span className="font-bold">₹32,50,000</span></div>
+                  <div className="text-sm text-muted-foreground mb-4">This is a 12% increase compared to last month. The chart below shows the monthly spend trend.</div>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={[
                       { month: 'Sep', value: 2800000 },
@@ -1097,90 +1647,160 @@ const StoreDashboard = () => {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-
+            </div>
+          )}
+          {analyticsSubview === 'turnover' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Stock Turnover</h2>
+                <Button variant="outline" onClick={() => setAnalyticsSubview('main')}>Back to Analytics</Button>
+              </div>
               <Card>
-                <CardHeader>
-                  <CardTitle>Category-wise Analysis</CardTitle>
-                  <CardDescription>Stock value distribution</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
+                  <div className="mb-4 text-lg">Current stock turnover ratio: <span className="font-bold">4.2x</span></div>
+                  <div className="text-sm text-muted-foreground mb-4">This ratio represents how many times inventory is sold and replaced over the last 30 days.</div>
                   <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Raw Materials', value: 4500000, fill: '#3b82f6' },
-                          { name: 'Consumables', value: 2800000, fill: '#10b981' },
-                          { name: 'Tools & Equipment', value: 1800000, fill: '#f59e0b' },
-                          { name: 'Safety Items', value: 900000, fill: '#ef4444' }
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Raw Materials', fill: '#3b82f6' },
-                          { name: 'Consumables', fill: '#10b981' },
-                          { name: 'Tools & Equipment', fill: '#f59e0b' },
-                          { name: 'Safety Items', fill: '#ef4444' }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
+                    <LineChart data={[
+                      { month: 'Sep', turnover: 3.8 },
+                      { month: 'Oct', turnover: 4.1 },
+                      { month: 'Nov', turnover: 4.0 },
+                      { month: 'Dec', turnover: 4.3 },
+                      { month: 'Jan', turnover: 4.2 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
                       <Tooltip />
-                    </PieChart>
+                      <Line type="monotone" dataKey="turnover" stroke="#6366f1" name="Turnover Ratio" />
+                    </LineChart>
                   </ResponsiveContainer>
-                  <div className="grid grid-cols-2 gap-4 mt-4">
-                    {[
-                      { name: 'Raw Materials', value: '₹45L', fill: '#3b82f6' },
-                      { name: 'Consumables', value: '₹28L', fill: '#10b981' },
-                      { name: 'Tools & Equipment', value: '₹18L', fill: '#f59e0b' },
-                      { name: 'Safety Items', value: '₹9L', fill: '#ef4444' }
-                    ].map((item) => (
-                      <div key={item.name} className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: item.fill }}
-                        ></div>
-                        <span className="text-sm">{item.name}: {item.value}</span>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {analyticsSubview === 'deadStock' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Dead Stock</h2>
+                <Button variant="outline" onClick={() => setAnalyticsSubview('main')}>Back to Analytics</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6 space-y-8">
+                  <div className="mb-2">
+                    <div className="text-2xl font-bold mb-1">₹8,20,000</div>
+                    <div className="text-sm text-muted-foreground mb-4">Total value of dead stock (no movement {">"} 90 days) across all locations.</div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                      <h3 className="font-semibold mb-2">Breakdown by Item</h3>
+                      <table className="min-w-full text-sm border rounded-lg overflow-hidden mb-4">
+                        <thead>
+                          <tr className="bg-muted">
+                            <th className="p-2 text-left">Item</th>
+                            <th className="p-2 text-left">Location</th>
+                            <th className="p-2 text-left">Qty</th>
+                            <th className="p-2 text-left">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { item: 'Cement Bags', location: 'Warehouse B', qty: 120, value: 120000, fill: '#3b82f6' },
+                            { item: 'Old Paint Stock', location: 'Yard 2', qty: 40, value: 40000, fill: '#10b981' },
+                            { item: 'Obsolete Tools', location: 'Warehouse A', qty: 15, value: 15000, fill: '#f59e0b' },
+                            { item: 'Expired Safety Helmets', location: 'Warehouse B', qty: 30, value: 30000, fill: '#ef4444' },
+                            { item: 'Unused Steel Rods', location: 'Yard 1', qty: 10, value: 20000, fill: '#6366f1' }
+                          ].map((row) => (
+                            <tr key={row.item + row.location}>
+                              <td className="p-2 flex items-center gap-2"><span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: row.fill }}></span>{row.item}</td>
+                              <td className="p-2">{row.location}</td>
+                              <td className="p-2">{row.qty}</td>
+                              <td className="p-2">₹{row.value.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-2">Dead Stock Distribution</h3>
+                      <ResponsiveContainer width="100%" height={220}>
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Cement Bags', value: 120000, fill: '#3b82f6' },
+                              { name: 'Old Paint Stock', value: 40000, fill: '#10b981' },
+                              { name: 'Obsolete Tools', value: 15000, fill: '#f59e0b' },
+                              { name: 'Expired Safety Helmets', value: 30000, fill: '#ef4444' },
+                              { name: 'Unused Steel Rods', value: 20000, fill: '#6366f1' }
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={90}
+                            paddingAngle={4}
+                            dataKey="value"
+                          >
+                            {[
+                              { name: 'Cement Bags', fill: '#3b82f6' },
+                              { name: 'Old Paint Stock', fill: '#10b981' },
+                              { name: 'Obsolete Tools', fill: '#f59e0b' },
+                              { name: 'Expired Safety Helmets', fill: '#ef4444' },
+                              { name: 'Unused Steel Rods', fill: '#6366f1' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="grid grid-cols-2 gap-2 mt-4">
+                        {[
+                          { name: 'Cement Bags', value: '₹1.2L', fill: '#3b82f6' },
+                          { name: 'Old Paint Stock', value: '₹0.4L', fill: '#10b981' },
+                          { name: 'Obsolete Tools', value: '₹0.15L', fill: '#f59e0b' },
+                          { name: 'Expired Safety Helmets', value: '₹0.3L', fill: '#ef4444' },
+                          { name: 'Unused Steel Rods', value: '₹0.2L', fill: '#6366f1' }
+                        ].map((item) => (
+                          <div key={item.name} className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }}></div>
+                            <span className="text-sm">{item.name}: {item.value}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory KPI Metrics</CardTitle>
-                <CardDescription>Key performance indicators</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { metric: 'Stock Accuracy', value: '98.5%', trend: '+0.5%', status: 'positive' },
-                    { metric: 'Order Fill Rate', value: '94.2%', trend: '-1.2%', status: 'negative' },
-                    { metric: 'Inventory to Sales', value: '2.4x', trend: '0.0', status: 'neutral' },
-                    { metric: 'Storage Utilization', value: '82%', trend: '+5%', status: 'positive' }
-                  ].map((kpi) => (
-                    <div key={kpi.metric} className="p-4 border rounded-lg">
-                      <p className="text-sm text-gray-600">{kpi.metric}</p>
-                      <div className="flex items-end gap-2 mt-1">
-                        <span className="text-2xl font-semibold">{kpi.value}</span>
-                        <span className={`text-sm ${kpi.status === 'positive' ? 'text-green-600' :
-                          kpi.status === 'negative' ? 'text-red-600' : 'text-gray-600'
-                          }`}>
-                          {kpi.trend}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          )}
+          {analyticsSubview === 'leadTime' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Average Lead Time</h2>
+                <Button variant="outline" onClick={() => setAnalyticsSubview('main')}>Back to Analytics</Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="mb-4 text-lg">Current average lead time: <span className="font-bold">12 days</span></div>
+                  <div className="text-sm text-muted-foreground mb-4">Lead time is the average duration from order placement to delivery. The chart below shows the trend over recent months.</div>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={[
+                      { month: 'Sep', lead: 14 },
+                      { month: 'Oct', lead: 13 },
+                      { month: 'Nov', lead: 12 },
+                      { month: 'Dec', lead: 11 },
+                      { month: 'Jan', lead: 12 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="lead" stroke="#0ea5e9" name="Lead Time (days)" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="vehicle-tracking" className="space-y-6">
@@ -1219,123 +1839,293 @@ const StoreDashboard = () => {
               <Badge variant="outline">RFID/GPS Sync: <span className="text-green-600 ml-1">Active</span></Badge>
             </div>
           </div>
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {vehicleKpis.map((kpi, idx) => (
-              <Card key={kpi.label}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">{kpi.label}</p>
-                      <p className={`text-2xl font-bold text-${kpi.color}-600`}>{kpi.value}</p>
-                    </div>
+          {vehicleSubview === 'main' && (
+            <>
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <StatCard
+                  title="Total Active Vehicles"
+                  value="18"
+                  icon={Truck}
+                  description="Currently operational"
+                  onClick={() => setVehicleSubview('active')}
+                />
+                <StatCard
+                  title="Vehicles on Site"
+                  value="12"
+                  icon={MapPin}
+                  description="Deployed at sites"
+                  onClick={() => setVehicleSubview('onSite')}
+                />
+                <StatCard
+                  title="Under Maintenance"
+                  value="3"
+                  icon={AlertTriangle}
+                  description="Currently in workshop"
+                  onClick={() => setVehicleSubview('maintenance')}
+                />
+              </div>
+              {/* All original vehicle tracking tab content below */}
+              {/* Vehicle Movement Logs Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Vehicle Movement Logs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="p-2 text-left">Date</th>
+                          <th className="p-2 text-left">Time</th>
+                          <th className="p-2 text-left">From → To</th>
+                          <th className="p-2 text-left">Driver</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vehicleMovementLogs.map((log, idx) => (
+                          <tr key={idx} className="border-b">
+                            <td className="p-2">{log.date}</td>
+                            <td className="p-2">{log.time}</td>
+                            <td className="p-2">{log.from} → {log.to}</td>
+                            <td className="p-2">{log.driver}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-          {/* Vehicle Movement Logs Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Vehicle Movement Logs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="p-2 text-left">Date</th>
-                      <th className="p-2 text-left">Time</th>
-                      <th className="p-2 text-left">From → To</th>
-                      <th className="p-2 text-left">Driver</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vehicleMovementLogs.map((log, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="p-2">{log.date}</td>
-                        <td className="p-2">{log.time}</td>
-                        <td className="p-2">{log.from} → {log.to}</td>
-                        <td className="p-2">{log.driver}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Fuel Consumption Trend Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Fuel Consumption Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={fuelTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="Truck1" stroke="#0ea5e9" name="Truck 1" />
-                    <Line type="monotone" dataKey="Truck2" stroke="#22c55e" name="Truck 2" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Maintenance Schedule & History Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Maintenance Schedule & History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="p-2 text-left">Vehicle</th>
-                      <th className="p-2 text-left">Last Serviced</th>
-                      <th className="p-2 text-left">Next Due</th>
-                      <th className="p-2 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {maintenanceSchedules.map((row, idx) => (
-                      <tr key={idx} className="border-b">
-                        <td className="p-2">{row.vehicle}</td>
-                        <td className="p-2">{row.last}</td>
-                        <td className="p-2">{row.next}</td>
-                        <td className="p-2">
-                          <Badge variant={row.status === 'Overdue' ? 'destructive' : 'outline'}>{row.status}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-          {/* Vehicle Utilization by Project */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Vehicle Utilization by Project</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={utilizationByProject} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="project" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="utilization" fill="#6366f1" name="Utilization (%)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+              {/* Fuel Consumption Trend Chart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Fuel Consumption Trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={fuelTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="Truck1" stroke="#0ea5e9" name="Truck 1" />
+                        <Line type="monotone" dataKey="Truck2" stroke="#22c55e" name="Truck 2" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+              {/* Maintenance Schedule & History Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Maintenance Schedule & History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="p-2 text-left">Vehicle</th>
+                          <th className="p-2 text-left">Last Serviced</th>
+                          <th className="p-2 text-left">Next Due</th>
+                          <th className="p-2 text-left">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {maintenanceSchedules.map((row, idx) => (
+                          <tr key={idx} className="border-b">
+                            <td className="p-2">{row.vehicle}</td>
+                            <td className="p-2">{row.last}</td>
+                            <td className="p-2">{row.next}</td>
+                            <td className="p-2">
+                              <Badge variant={row.status === 'Overdue' ? 'destructive' : 'outline'}>{row.status}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+              {/* Vehicle Utilization by Project */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Vehicle Utilization by Project</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={utilizationByProject} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="project" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="utilization" fill="#6366f1" name="Utilization (%)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+          {vehicleSubview === 'active' && (
+            <Card className="shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between pb-4">
+                <CardTitle className="text-xl">Total Active Vehicles</CardTitle>
+                <Button variant="outline" onClick={() => setVehicleSubview('main')}>Back to Vehicle Tracking</Button>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-3xl font-bold mb-1">18</div>
+                    <div className="text-sm text-muted-foreground">Currently active and operational</div>
+                  </div>
+                  <Badge variant="outline" className="ml-4">Last updated: Today</Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="bg-muted/50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">By Type</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        <li><Truck className="inline h-4 w-4 mr-2 text-blue-500" />Trucks: <span className="font-semibold">8</span></li>
+                        <li><Truck className="inline h-4 w-4 mr-2 text-green-500" />Excavators: <span className="font-semibold">5</span></li>
+                        <li><Truck className="inline h-4 w-4 mr-2 text-yellow-500" />Cranes: <span className="font-semibold">3</span></li>
+                        <li><Truck className="inline h-4 w-4 mr-2 text-gray-500" />Others: <span className="font-semibold">2</span></li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-muted/50">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">By Site</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        <li>Site A: <span className="font-semibold">6</span></li>
+                        <li>Site B: <span className="font-semibold">5</span></li>
+                        <li>Site C: <span className="font-semibold">4</span></li>
+                        <li>Depot: <span className="font-semibold">3</span></li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {vehicleSubview === 'onSite' && (
+            <Card className="shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
+                <CardTitle className="text-xl">Vehicles on Site</CardTitle>
+                <Button variant="outline" onClick={() => setVehicleSubview('main')}>Back to Vehicle Tracking</Button>
+              </CardHeader>
+              <CardContent className="space-y-6 pl-4">
+                <div className="mb-4 text-lg">There are <span className="font-bold">12</span> vehicles currently deployed at project sites.</div>
+                <div className="text-sm text-muted-foreground mb-4">See the list of vehicles and their assigned sites below.</div>
+                <Card className="bg-muted/50">
+                  <CardHeader className="pb-1 pt-2">
+                    <CardTitle className="text-base">Site-wise Vehicle Deployment</CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto p-0 pl-2">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="px-4 py-2 text-left">Vehicle</th>
+                          <th className="px-4 py-2 text-left">Type</th>
+                          <th className="px-4 py-2 text-left">Site</th>
+                          <th className="px-4 py-2 text-left">Utilization</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topVehicles.map((v, idx) => (
+                          <tr key={idx} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-2 font-medium">{v.vehicle}</td>
+                            <td className="px-4 py-2">
+                              <Badge variant="outline">{v.vehicle.includes('Truck') ? 'Truck' : v.vehicle.includes('Excavator') ? 'Excavator' : v.vehicle.includes('Crane') ? 'Crane' : 'Other'}</Badge>
+                            </td>
+                            <td className="px-4 py-2">{v.site}</td>
+                            <td className="px-4 py-2">
+                              <Badge variant={v.utilization > 85 ? 'default' : v.utilization > 80 ? 'secondary' : 'outline'}>{v.utilization}%</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+          )}
+          {vehicleSubview === 'maintenance' && (
+            <Card className="shadow-lg">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
+                <CardTitle className="text-xl">Under Maintenance</CardTitle>
+                <Button variant="outline" onClick={() => setVehicleSubview('main')}>Back to Vehicle Tracking</Button>
+              </CardHeader>
+              <CardContent className="space-y-8 pl-4">
+                <div className="mb-4 text-lg">There are <span className="font-bold">3</span> vehicles currently under maintenance.</div>
+                <div className="text-sm text-muted-foreground mb-4">See the maintenance schedule and costliest recent repairs below.</div>
+                <Card className="bg-muted/50 mb-6">
+                  <CardHeader className="pb-1 pt-2">
+                    <CardTitle className="text-base">Maintenance Schedule</CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto p-0 pl-2">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="px-4 py-2 text-left">Vehicle</th>
+                          <th className="px-4 py-2 text-left">Last Serviced</th>
+                          <th className="px-4 py-2 text-left">Next Due</th>
+                          <th className="px-4 py-2 text-left">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {maintenanceSchedules.map((row, idx) => (
+                          <tr key={idx} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-2 font-medium">{row.vehicle}</td>
+                            <td className="px-4 py-2">{row.last}</td>
+                            <td className="px-4 py-2">{row.next}</td>
+                            <td className="px-4 py-2">
+                              <Badge variant={row.status === 'Overdue' ? 'destructive' : 'outline'}>{row.status}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/50">
+                  <CardHeader className="pb-1 pt-2">
+                    <CardTitle className="text-base">Most Costly Recent Maintenance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="overflow-x-auto p-0 pl-2">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="px-4 py-2 text-left">Vehicle</th>
+                          <th className="px-4 py-2 text-left">Date</th>
+                          <th className="px-4 py-2 text-left">Cost</th>
+                          <th className="px-4 py-2 text-left">Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {costlyMaintenance.map((m, idx) => (
+                          <tr key={idx} className="border-b hover:bg-muted/50">
+                            <td className="px-4 py-2 font-medium">{m.vehicle}</td>
+                            <td className="px-4 py-2">{m.date}</td>
+                            <td className="px-4 py-2">₹{m.cost.toLocaleString()}</td>
+                            <td className="px-4 py-2">{m.desc}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
