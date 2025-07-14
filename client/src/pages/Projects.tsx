@@ -100,8 +100,11 @@ interface Project {
   }>;
 }
 
-const StatCard = ({ title, value, icon: Icon, trend }) => (
-  <Card>
+const StatCard = ({ title, value, icon: Icon, trend, onClick = undefined }) => (
+  <Card 
+    className={`transition-all hover:shadow-md ${onClick ? 'cursor-pointer hover:scale-105' : ''}`}
+    onClick={onClick}
+  >
     <CardContent className="p-6">
       <div className="flex items-center justify-between">
         <div>
@@ -119,9 +122,9 @@ const StatCard = ({ title, value, icon: Icon, trend }) => (
   </Card>
 );
 
-const ProjectHeatmap = () => {
+const ProjectHeatmap = ({ projects, handleViewDetails }) => {
   const weeks = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const projects = [
+  const heatmapProjects = [
     { name: 'Residential Complex A', data: [0.8, 0.6, 0.9, 0.7, 0.5, 0.3, 0.1] },
     { name: 'Office Tower B', data: [0.4, 0.7, 0.3, 0.8, 0.6, 0.2, 0.0] },
     { name: 'Shopping Mall C', data: [0.9, 0.8, 0.7, 0.6, 0.8, 0.4, 0.2] },
@@ -153,7 +156,7 @@ const ProjectHeatmap = () => {
       </div>
       
       {/* Heatmap Grid */}
-      {projects.map((project) => (
+      {heatmapProjects.map((project) => (
         <div key={project.name} className="flex items-center">
           <div className="w-40 text-sm font-medium truncate pr-2" title={project.name}>
             {project.name}
@@ -164,6 +167,13 @@ const ProjectHeatmap = () => {
                 key={dayIndex}
                 className={`w-8 h-8 rounded ${getIntensityColor(intensity)} cursor-pointer hover:opacity-80 transition-opacity`}
                 title={`${project.name} - ${weeks[dayIndex]}: ${Math.round(intensity * 100)}% activity`}
+                onClick={() => {
+                  // Find the project and show its details
+                  const projectData = projects.find(p => p.name === project.name);
+                  if (projectData) {
+                    handleViewDetails(projectData);
+                  }
+                }}
               />
             ))}
           </div>
@@ -386,6 +396,9 @@ const Projects = () => {
   const [editStatus, setEditStatus] = useState("");
   const [editMilestones, setEditMilestones] = useState([]);
   const [editSpent, setEditSpent] = useState(0);
+  
+  // Add subview state management
+  const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus' | 'dprSubmissions'>('main');
   const [newProject, setNewProject] = useState<Partial<Project>>({
     name: '',
     client: '',
@@ -792,46 +805,53 @@ const downloadTextFile = (content: string, filename: string) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard 
-          title="Active Projects" 
-          value={projects.filter(p => p.status === "In Progress").length} 
-          icon={Clipboard}
-          trend={{
-            value: 12,
-            label: "vs last month"
-          }}
-        />
-        <StatCard 
-          title="Projects On Schedule" 
-          value={projects.filter(p => p.status === "In Progress" && p.progress >= 50).length} 
-          icon={Calendar}
-          trend={{
-            value: 5,
-            label: "vs last month"
-          }}
-        />
-        <StatCard 
-          title="Total Budget" 
-          value={`₹${(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(1)}Cr`}
-          icon={FileText}
-          trend={{
-            value: 8,
-            label: "vs last month"
-          }}
-        />
-        <StatCard 
-          title="Alerts" 
-          value={projects.filter(p => p.status === "On Hold").length} 
-          icon={AlertTriangle}
-          trend={{
-            value: -2,
-            label: "decrease"
-          }}
-        />
-      </div>
+      {subview === 'main' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard 
+            title="Active Projects" 
+            value={projects.filter(p => p.status === "In Progress").length} 
+            icon={Clipboard}
+            trend={{
+              value: 12,
+              label: "vs last month"
+            }}
+            onClick={() => setSubview('activeProjects')}
+          />
+          <StatCard 
+            title="Projects On Schedule" 
+            value={projects.filter(p => p.status === "In Progress" && p.progress >= 50).length} 
+            icon={Calendar}
+            trend={{
+              value: 5,
+              label: "vs last month"
+            }}
+            onClick={() => setSubview('onSchedule')}
+          />
+          <StatCard 
+            title="Total Budget" 
+            value={`₹${(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(1)}Cr`}
+            icon={FileText}
+            trend={{
+              value: 8,
+              label: "vs last month"
+            }}
+            onClick={() => setSubview('budgetAnalysis')}
+          />
+          <StatCard 
+            title="Alerts" 
+            value={projects.filter(p => p.status === "On Hold").length} 
+            icon={AlertTriangle}
+            trend={{
+              value: -2,
+              label: "decrease"
+            }}
+            onClick={() => setSubview('alerts')}
+          />
+        </div>
+      )}
       
-      <Card>
+      {subview === 'main' && (
+        <Card>
         <CardHeader className="pb-3">
           <CardTitle>Projects</CardTitle>
           <CardDescription>
@@ -926,7 +946,7 @@ const downloadTextFile = (content: string, filename: string) => {
                       {filteredProjects
                         .filter(project => project.status === status)
                         .map(project => (
-                          <div key={project.id} className="rounded-md border p-3 bg-background cursor-pointer hover:shadow transition-all">
+                          <div key={project.id} className="rounded-md border p-3 bg-background cursor-pointer hover:shadow transition-all" onClick={() => handleViewDetails(project)}>
                             <div className="font-medium">{project.name}</div>
                             <div className="text-xs text-muted-foreground">{project.client}</div>
                             <div className="flex items-center text-xs text-muted-foreground mt-1">
@@ -973,7 +993,7 @@ const downloadTextFile = (content: string, filename: string) => {
                   <CardTitle>Project Progress Heatmap</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ProjectHeatmap />
+                  <ProjectHeatmap projects={projects} handleViewDetails={handleViewDetails} />
                 </CardContent>
               </Card>
               
@@ -1347,7 +1367,231 @@ const downloadTextFile = (content: string, filename: string) => {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      )}
+
+      {/* Active Projects Subview */}
+      {subview === 'activeProjects' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Active Projects</CardTitle>
+                <CardDescription>Projects currently in progress</CardDescription>
+              </div>
+              <Button variant="outline" onClick={() => setSubview('main')}>
+                Back to Projects
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {projects.filter(p => p.status === "In Progress").map((project) => (
+                <div key={project.id} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-medium">{project.name}</h3>
+                      <p className="text-sm text-muted-foreground">{project.client}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{project.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{project.manager}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium">{project.progress}%</span>
+                        <Badge variant="secondary">{project.status}</Badge>
+                      </div>
+                      <Progress value={project.progress} className="w-32" />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Due: {new Date(project.deadline).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* On Schedule Projects Subview */}
+      {subview === 'onSchedule' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Projects On Schedule</CardTitle>
+                <CardDescription>Projects meeting their timeline expectations</CardDescription>
+              </div>
+              <Button variant="outline" onClick={() => setSubview('main')}>
+                Back to Projects
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {projects.filter(p => p.status === "In Progress" && p.progress >= 50).map((project) => (
+                <div key={project.id} className="p-4 border rounded-lg border-green-200 bg-green-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-green-800">{project.name}</h3>
+                      <p className="text-sm text-green-600">{project.client}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-green-600" />
+                          <span className="text-sm text-green-700">Due: {new Date(project.deadline).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-green-600" />
+                          <span className="text-sm text-green-700">{project.manager}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-green-800">{project.progress}%</span>
+                        <Badge variant="default" className="bg-green-600">On Track</Badge>
+                      </div>
+                      <Progress value={project.progress} className="w-32" />
+                      <p className="text-sm text-green-600 mt-1">
+                        Budget: ₹{(project.budget / 1000000).toFixed(1)}M
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Budget Analysis Subview */}
+      {subview === 'budgetAnalysis' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Budget Analysis</CardTitle>
+                <CardDescription>Financial overview of all projects</CardDescription>
+              </div>
+              <Button variant="outline" onClick={() => setSubview('main')}>
+                Back to Projects
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="font-medium">Budget Utilization</h3>
+                {projects.map((project) => {
+                  const utilization = (project.spent / project.budget) * 100;
+                  return (
+                    <div key={project.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium">{project.name}</h4>
+                        <span className="text-sm text-muted-foreground">
+                          {utilization.toFixed(1)}%
+                        </span>
+                      </div>
+                      <Progress value={utilization} className="mb-2" />
+                      <div className="flex justify-between text-sm">
+                        <span>Spent: ₹{(project.spent / 1000000).toFixed(1)}M</span>
+                        <span>Budget: ₹{(project.budget / 1000000).toFixed(1)}M</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="space-y-4">
+                <h3 className="font-medium">Financial Summary</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total Budget</p>
+                    <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(1)}Cr</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total Spent</p>
+                    <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.spent, 0) / 10000000).toFixed(1)}Cr</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Remaining</p>
+                    <p className="text-2xl font-bold">₹{((projects.reduce((sum, p) => sum + p.budget, 0) - projects.reduce((sum, p) => sum + p.spent, 0)) / 10000000).toFixed(1)}Cr</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">Avg Utilization</p>
+                    <p className="text-2xl font-bold">{((projects.reduce((sum, p) => sum + p.spent, 0) / projects.reduce((sum, p) => sum + p.budget, 0)) * 100).toFixed(1)}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Alerts Subview */}
+      {subview === 'alerts' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Project Alerts</CardTitle>
+                <CardDescription>Issues and attention-required items</CardDescription>
+              </div>
+              <Button variant="outline" onClick={() => setSubview('main')}>
+                Back to Projects
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {projects.filter(p => p.status === "On Hold").map((project) => (
+                <div key={project.id} className="p-4 border rounded-lg border-red-200 bg-red-50">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-medium text-red-800">{project.name}</h3>
+                      <p className="text-sm text-red-600">{project.client}</p>
+                      <p className="text-sm text-red-700 mt-1">
+                        Project is on hold. Progress: {project.progress}%
+                      </p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-red-600" />
+                          <span className="text-sm text-red-700">{project.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-red-600" />
+                          <span className="text-sm text-red-700">{project.manager}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="destructive">On Hold</Badge>
+                      <p className="text-sm text-red-600 mt-1">
+                        Budget: ₹{(project.budget / 1000000).toFixed(1)}M
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {projects.filter(p => p.status === "On Hold").length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-green-600" />
+                  <p>No active alerts. All projects are running smoothly!</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 {/* Progress Report Modal */}
 <Dialog open={showProgressReportModal} onOpenChange={setShowProgressReportModal}>
   <DialogContent className="sm:max-w-[600px]">
