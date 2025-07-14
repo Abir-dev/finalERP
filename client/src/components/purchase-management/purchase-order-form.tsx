@@ -301,11 +301,11 @@ export function PurchaseOrderForm() {
           onValueChange={setActiveTab}
           className="space-y-6 w-full"
         >
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="address-contact">Address & Contact</TabsTrigger>
             <TabsTrigger value="terms">Terms</TabsTrigger>
-            <TabsTrigger value="more-info">More Info</TabsTrigger>
+            {/* <TabsTrigger value="more-info">More Info</TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="details" className="space-y-6 w-full">
@@ -1313,7 +1313,7 @@ export function PurchaseOrderForm() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="more-info" className="space-y-6">
+          {/* <TabsContent value="more-info" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
@@ -1327,7 +1327,7 @@ export function PurchaseOrderForm() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
 
         {/* Action Buttons */}
