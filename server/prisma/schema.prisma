@@ -1,0 +1,64 @@
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserInvitation {
+  id            String    @id @default(cuid()) @db.Uuid
+  email         String
+  name          String
+  role          String
+  token         String
+  encryptedData String    @map("encrypted_data")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
+  used          Boolean   @default(false)
+
+  @@map("user_invitations")
+}
+
+model User {
+  id        String     @id @db.Uuid
+  email     String     @unique
+  name      String
+  role      UserRole
+  avatar    String?
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status    String     @default("inactive")
+  lastLogin DateTime?  @map("last_login") @db.Timestamptz(6)
+  password  String
+  documents Document[]
+
+  @@map("users")
+}
+
+model Document {
+  id        String   @id @default(cuid()) @db.Uuid
+  title     String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("documents")
+}
+
+enum UserRole {
+  admin
+  md
+  client_manager @map("client-manager")
+  store
+  accounts
+  site
+  client
+
+  @@map("_user_role")
+}

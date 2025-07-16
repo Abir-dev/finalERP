@@ -118,3 +118,14 @@ dist
 .pnp.*
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
+/src/generated/prisma/
+/generated/
+/prisma/migrations/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Database files
+/postgres_data/
+/mysql_data/
