@@ -48,7 +48,59 @@ import PurchaseManagement from "./pages/PurchaseManagement";
 const queryClient = new QueryClient();
 
 const AppLayout = () => {
-  const { user } = useUser();
+  const { user, isLoading, isInitialized, retryAuth } = useUser();
+  
+  // Show loading while initializing authentication
+  if (!isInitialized || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Check if user has a token but no user data (network error scenario)
+  const hasToken = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+  if (!user && hasToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="mb-4">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Connection Issue</h3>
+          <p className="text-gray-600 mb-6">
+            Unable to verify your authentication. This might be due to a temporary network issue.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={retryAuth}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Retry Connection
+            </button>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem("jwt_token");
+                localStorage.removeItem("jwt_token_backup");
+                window.location.href = "/login";
+              }}
+              className="w-full bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Only redirect to login if we're sure the user is not authenticated
   if (!user) return <Navigate to="/login" />;
 
   return (
