@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { supabase } from "../config/supabase";
+import jwt from "jsonwebtoken";
+import prisma from "../config/prisma";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 
 export const authenticateUser = async (
   req: Request,
@@ -23,24 +26,29 @@ export const authenticateUser = async (
     const token = authHeader.split(" ")[1];
     console.log("Verifying token:", token.substring(0, 10) + "...");
 
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-
-    if (error) {
-      console.error("Token verification error:", error);
-      res.status(401).json({ error: "Invalid token" });
-      return;
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      console.error("Token verification error:", err);
+      return res.status(401).json({ error: "Invalid token" });
     }
 
+    // payload should have user id
+    const userId = typeof payload === "object" && payload.id ? payload.id : null;
+    if (!userId) {
+      console.log("No user id in token payload");
+      return res.status(401).json({ error: "Invalid token payload" });
+    }
+
+    // Fetch user from database
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       console.log("No user found for token");
-      res.status(401).json({ error: "User not found" });
-      return;
+      return res.status(401).json({ error: "User not found" });
     }
 
-    console.log("User authenticated:", { id: user.id, email: user.email });
+    // Attach user to request
     req.user = user;
     next();
   } catch (error) {

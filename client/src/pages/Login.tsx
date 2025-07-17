@@ -16,7 +16,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Building2, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
-import { supabase } from "@/lib/supabase";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -33,24 +32,9 @@ const Login = () => {
       console.log("Attempting login for:", email);
 
       // Call the backend API for login
-      const response = await axios.post(`${API_URL}/auth/login`, {
-        email,
-        password,
-        withCredentials: true,
-      });
-
-      console.log("Backend login successful");
-
-      // Update the user context with the response data
+      // (No need to call axios here, UserContext.login will handle it)
       await login(email, password);
       console.log("User context updated successfully");
-      await supabase
-        .from("users")
-        .update({ 
-          status: "active",
-          last_login: new Date().toISOString()
-        })
-        .eq("email", email);
 
       toast({
         title: "Login successful",

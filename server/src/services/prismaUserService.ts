@@ -18,13 +18,14 @@ export const prismaUserService = {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     // If you get a linter error here, run 'npx prisma generate' to sync the client with your schema.
+    const prismaRole = role.replace("-", "_") as any;
     return prisma.user.create({
       data: {
         id: crypto.randomUUID(),
         name,
         email,
         password: hashedPassword, // <-- If error: run 'npx prisma generate'
-        role,
+        role: prismaRole,
         status: 'active',
       },
     });
@@ -45,7 +46,7 @@ export const prismaUserService = {
     }
     await prisma.user.update({
       where: { id: user.id },
-      data: { last_login: new Date() },
+      data: { lastLogin: new Date() }, // ✅ Fixed: Use camelCase
     });
     const payload = {
       id: user.id,
@@ -104,7 +105,7 @@ export const prismaUserService = {
     const invitation = await this.validateInvitationToken(token);
     // @ts-ignore
     await prisma.userInvitation.update({
-      where: { token },
+      where: { id: invitation.id },
       data: { used: true },
     });
     return invitation;
@@ -125,20 +126,18 @@ export const prismaUserService = {
     });
   },
 
-  async updateUser(id: string, updates: Partial<{ name: string; email: string; password: string; avatar?: string; status?: string }>) {
-    const data: any = { ...updates };
-    if (updates.password) {
-      data.password = await bcrypt.hash(updates.password, 10);
-    }
-    if (data.updatedAt) {
-      data.updated_at = data.updatedAt;
-      delete data.updatedAt;
-    }
-    return prisma.user.update({
-      where: { id },
-      data,
-    });
-  },
+  
+async updateUser(id: string, updates: Partial<{ name: string; email: string; password: string; avatar?: string; status?: string }>) {
+  const data: any = { ...updates };
+  if (updates.password) {
+    data.password = await bcrypt.hash(updates.password, 10);
+  }
+  // Remove the updatedAt handling - Prisma handles this automatically
+  return prisma.user.update({
+    where: { id },
+    data,
+  });
+},
 
   async getAllUsers() {
     return prisma.user.findMany({
@@ -149,9 +148,9 @@ export const prismaUserService = {
         role: true,
         avatar: true,
         status: true,
-        created_at: true,
-        updated_at: true,
-        last_login: true,
+        createdAt: true,
+        updatedAt: true,
+        lastLogin: true,
       },
     });
   },
@@ -162,8 +161,9 @@ export const prismaUserService = {
   },
 
   async getUsersByRole(role: UserRole) {
+    const prismaRole = role.replace("-", "_") as any;
     return prisma.user.findMany({
-      where: { role },
+      where: { role: prismaRole },
       select: {
         id: true,
         email: true,
@@ -171,8 +171,8 @@ export const prismaUserService = {
         role: true,
         avatar: true,
         status: true,
-        created_at: true,
-        last_login: true,
+        createdAt: true,
+        lastLogin: true,
       },
     });
   },
