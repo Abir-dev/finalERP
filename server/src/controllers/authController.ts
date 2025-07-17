@@ -89,4 +89,11 @@ export const authController = {
       res.status(400).json({ error: error.message || "An unknown error occurred" });
     }
   },
+
+  async logout(req: Request, res: Response) {
+    // If using cookies for auth, clear the cookie here:
+    // res.clearCookie('token');
+    // For stateless JWT, just return a success message
+    res.status(200).json({ message: "User logged out successfully" });
+  },
 };

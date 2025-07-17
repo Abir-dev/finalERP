@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabaseService } from '../services/supabaseService';
+import { prismaUserService } from '../services/prismaUserService';
 import { UserRole } from '../utils/constants';
 
 export const adminController = {
@@ -8,20 +8,20 @@ export const adminController = {
       const { email, password, role, name } = req.body;
 
       // Only admin can create users
-      const adminRole = req.user?.user_metadata?.role;
+      const adminRole = req.user?.role;
       if (adminRole !== 'admin') {
         res.status(403).json({ error: 'Only admin can create users' });
         return;
       }
 
-      const data = await supabaseService.signUp(email, password, role as UserRole, name);
+      const user = await prismaUserService.register(name, email, password, role as UserRole);
       res.status(201).json({
         message: 'User created successfully',
         user: {
-          id: data.user?.id,
-          email: data.user?.email,
-          role: role,
-          name: name
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.name
         }
       });
     } catch (error: any) {
@@ -34,7 +34,7 @@ export const adminController = {
       const { email, password, name } = req.body;
       
       // Check if any user exists
-      const usersExist = await supabaseService.checkIfUsersExist();
+      const usersExist = await prismaUserService.checkIfUsersExist();
       
       // If users exist, prevent creating initial admin
       if (usersExist) {
@@ -44,14 +44,14 @@ export const adminController = {
         return;
       }
 
-      const data = await supabaseService.signUp(email, password, 'admin', name);
+      const user = await prismaUserService.register(name, email, password, 'admin');
       res.status(201).json({
         message: 'Initial admin created successfully',
         user: {
-          id: data.user?.id,
-          email: data.user?.email,
-          role: 'admin',
-          name: name
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.name
         }
       });
     } catch (error: any) {

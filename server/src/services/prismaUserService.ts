@@ -1,8 +1,9 @@
-import prisma from '../config/prisma';
+
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { UserRole } from '../utils/constants';
+import prisma from '../config/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
