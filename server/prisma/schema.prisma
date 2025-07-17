@@ -13,7 +13,7 @@ model UserInvitation {
   email         String
   name          String
   role          String
-  token         String
+  token         String    @unique
   encryptedData String    @map("encrypted_data")
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)

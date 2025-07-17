@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
+import userRoutes from './routes/user';
+import invitationRoutes from './routes/invitation';
 
 dotenv.config();
 
@@ -31,6 +33,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/invitations', invitationRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {

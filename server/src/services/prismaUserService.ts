@@ -8,7 +8,7 @@ import prisma from '../config/prisma';
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 
 export const prismaUserService = {
-  async register(name: string, email: string, password: string, role: UserRole = 'client') {
+  async register(name: string, email: string, password: string, role: UserRole = 'client', invitationToken?: string) {
     if (!name || !email || !password) {
       throw new Error('Name, email, and password are required');
     }
@@ -19,7 +19,8 @@ export const prismaUserService = {
     const hashedPassword = await bcrypt.hash(password, 10);
     // If you get a linter error here, run 'npx prisma generate' to sync the client with your schema.
     const prismaRole = role.replace("-", "_") as any;
-    return prisma.user.create({
+    
+    const user = await prisma.user.create({
       data: {
         id: crypto.randomUUID(),
         name,
@@ -29,6 +30,13 @@ export const prismaUserService = {
         status: 'active',
       },
     });
+    
+    // If invitation token is provided, mark it as used
+    if (invitationToken) {
+      await this.useInvitation(invitationToken);
+    }
+    
+    return user;
   },
 
   async login(email: string, password: string) {
@@ -88,7 +96,12 @@ export const prismaUserService = {
 
   async validateInvitationToken(token: string) {
     // @ts-ignore
-    const invitation = await prisma.userInvitation.findUnique({ where: { token } });
+    const invitation = await prisma.userInvitation.findFirst({ 
+      where: { 
+        token,
+        used: false 
+      } 
+    });
     if (!invitation) {
       throw new Error('Invalid or expired invitation token');
     }

@@ -16,9 +16,21 @@ import { useToast } from "@/components/ui/use-toast";
 import { Building2, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
-import { supabase } from "@/lib/supabase";
+// Remove: import { supabase } from "@/lib/supabase";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
+interface InvitationData {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  token: string;
+  encryptedData: string;
+  createdAt: string;
+  expiresAt: string;
+  used: boolean;
+}
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -48,63 +60,50 @@ const Register = () => {
       setIsValidatingToken(false);
     }
   }, [location]);
-  // Validate the invitation token
+
+  // Validate the invitation token using backend API
   const validateToken = async (inviteToken: string) => {
     setIsValidatingToken(true);
     try {
-      // First validate token format
-      if (!inviteToken.match(/^[a-zA-Z0-9]{32}$/)) {
+      if (!inviteToken.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
         throw new Error("Invalid token format");
       }
-
-      // Query Supabase for the invitation with this token
-      const { data: invitation, error } = await supabase
-        .from("user_invitations")
-        .select("*")
-        .eq("token", inviteToken)
-        .eq("used", false)
-        .single();
-
-      if (error || !invitation) {
-        throw new Error("Invalid or already used invitation token");
+      // Call backend to validate token
+      const response = await axios.post(`${API_URL}/invitations/validate-token`, { token: inviteToken });
+      const invitation: InvitationData = response.data;
+      
+      if (!invitation) {
+        throw new Error("Invalid invitation token");
       }
-
-      // Check if the invitation has expired
-      const expiryDate = new Date(invitation.expires_at);
-      const now = new Date();
-      if (expiryDate < now) {
-        const hoursDiff = Math.round(
-          (now.getTime() - expiryDate.getTime()) / (1000 * 60 * 60)
-        );
-        throw new Error(`Invitation expired ${hoursDiff} hours ago`);
+      
+      if (!invitation.name || !invitation.email || !invitation.role) {
+        throw new Error("Incomplete invitation data");
       }
-
-      // Decrypt the data (replace with actual decryption)
-      // In a real implementation, use a proper decryption method
-      const decryptedData = atob(invitation.encrypted_data); // Replace with actual decryption
-      const userData = JSON.parse(decryptedData); // Pre-fill the form with user data from invitation
-      if (invitation.name && invitation.email && invitation.role) {
-        setName(invitation.name);
-        setEmail(invitation.email);
-        setRole(invitation.role);
-        setIsTokenValid(true);
-      } else {
-        throw new Error("Invalid invitation data");
+      
+      // Check if invitation has expired
+      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+        throw new Error("Invitation token has expired");
       }
+      
+      // Check if invitation has already been used
+      if (invitation.used) {
+        throw new Error("Invitation token has already been used");
+      }
+      
+      setName(invitation.name);
+      setEmail(invitation.email);
+      setRole(invitation.role);
+      setIsTokenValid(true);
     } catch (err: any) {
       console.error("Token validation error:", err);
       setIsTokenValid(false);
-
-      const errorMessage =
-        err instanceof Error ? err.message : "Invalid invitation token";
+      const errorMessage = err.response?.data?.error || err.message || "Invalid invitation token";
       toast({
         title: "Invalid Invitation",
         description: errorMessage,
         variant: "destructive",
         duration: 5000,
       });
-
-      // Redirect to unauthorized page after showing the error
       setTimeout(() => {
         navigate("/unauthorized", {
           state: { error: errorMessage },
@@ -138,79 +137,48 @@ const Register = () => {
     }
     try {
       setIsSubmitting(true);
-      console.log("Attempting registration for:", email);
-
-      // Additional validation when using invitation token
       if (token) {
         if (!isTokenValid) {
           throw new Error("Invalid or expired invitation token");
         }
-
-        const { data: invitation } = await supabase
-          .from("user_invitations")
-          .select("*")
-          .eq("token", token)
-          .eq("used", false)
-          .single();
-
-        if (!invitation) {
-          throw new Error("Invitation has already been used or is invalid");
-        }
-      } // Call the backend API for registration
+        // Optionally, revalidate token before submit (optional)
+        // await validateToken(token);
+      }
+      // Register user
       const response = await axios.post(`${API_URL}/auth/register`, {
         name,
         email,
         password,
         role,
-        invitationToken: token, // Pass token to backend for verification
+        invitationToken: token,
       });
-      console.log("Registration successful");
-       const { data: invitation, error: updateError } = await supabase
-          .from("user_invitations")
-          .update({
-            used: true,
-            expires_at: new Date().toISOString(),
-          })
-          .eq("token",token)
-          .select("*");
-        console.log("Invitation data:", invitation);
-
-        if (updateError) {
-          console.error("Error marking invitation as used:", updateError);
-          throw new Error("Failed to complete registration. Please try again.");
-        }
-      
-      console.log("used state update successful");
       toast({
         title: "Registration successful",
         description: "You can now log in to your account",
         duration: 3000,
       });
-
-      // Redirect to login page after successful registration
       navigate("/login", {
         state: {
-          email, // Pass email to pre-fill login form
-          message:
-            "Registration successful! Please log in with your credentials.",
+          email,
+          message: "Registration successful! Please log in with your credentials.",
         },
       });
     } catch (err: any) {
       console.error("Registration error:", err);
-
       let errorMessage = "An error occurred during registration";
       if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       } else if (err.message) {
         errorMessage = err.message;
       }
-
       toast({
         title: "Registration failed",
         description: errorMessage,
         variant: "destructive",
         duration: 5000,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -311,9 +279,9 @@ const Register = () => {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || !!passwordError}
+                disabled={isSubmitting || !!passwordError || (token && !isTokenValid)}
               >
-                {isLoading ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating
                     account...

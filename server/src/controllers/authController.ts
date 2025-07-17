@@ -25,7 +25,7 @@ export const authController = {
         }
       }
       
-      const user = await prismaUserService.register(name, email, password, role as UserRole);
+      const user = await prismaUserService.register(name, email, password, role as UserRole, invitationToken);
       res.status(201).json({ 
         message: "User registered successfully",
         user: {

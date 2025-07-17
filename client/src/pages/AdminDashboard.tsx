@@ -57,7 +57,6 @@ import {
 import { employeesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 
 const systemHealthData = [
   { time: "00:00", uptime: 99.9, apiCalls: 1200 },
@@ -101,7 +100,7 @@ type User = {
   email: string;
   role: string;
   status: "Active" | "Inactive";
-  last_login: string;
+  lastLogin: string;
 };
 
 const usersData: User[] = [
@@ -111,7 +110,7 @@ const usersData: User[] = [
     email: "john@company.com",
     role: "Admin",
     status: "Active",
-    last_login: "2024-01-20 09:30",
+    lastLogin: "2024-01-20 09:30",
   },
   {
     id: "2",
@@ -119,7 +118,7 @@ const usersData: User[] = [
     email: "jane@company.com",
     role: "Managing Director",
     status: "Active",
-    last_login: "2024-01-20 08:15",
+    lastLogin: "2024-01-20 08:15",
   },
   {
     id: "3",
@@ -127,7 +126,7 @@ const usersData: User[] = [
     email: "mike@company.com",
     role: "Client",
     status: "Inactive",
-    last_login: "2024-01-18 16:45",
+    lastLogin: "2024-01-18 16:45",
   },
   {
     id: "4",
@@ -135,7 +134,7 @@ const usersData: User[] = [
     email: "sarah@company.com",
     role: "Site Manager",
     status: "Active",
-    last_login: "2024-01-20 10:20",
+    lastLogin: "2024-01-20 10:20",
   },
 ];
 
@@ -169,7 +168,7 @@ const userColumns: ColumnDef<User>[] = [
     },
   },
   {
-    accessorKey: "last_login",
+    accessorKey: "lastLogin",
     header: "Last Login",
   },
 ];
@@ -221,37 +220,28 @@ const ITDashboard = () => {
     return userStatus === 'active';
   }).length;
 
+  const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
     async function fetchAllUsers(): Promise<User[]> {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching users from Supabase:", error);
-        toast.error("Failed to fetch users from database.");
-        throw error;
-      }
-      
-      if (!data) {
-        console.warn("No user data received from Supabase.");
+      const res = await fetch(`${API_URL}/users`);
+      if (!res.ok) {
+        toast.error("Failed to fetch users from server.");
         return [];
       }
-      
+      const data = await res.json();
       return data.map(dbUser => ({
         id: dbUser.id,
         name: dbUser.name,
         email: dbUser.email,
         role: dbUser.role,
         status: dbUser.status === 'active' ? 'Active' : 'Inactive',
-        last_login: dbUser.last_login 
-          ? new Date(dbUser.last_login).toLocaleString() 
+        lastLogin: dbUser.lastLogin 
+          ? new Date(dbUser.lastLogin).toLocaleString() 
           : "Never",
       }));
     }
 
   useEffect(() => {
-     // Fetch users from Supabase on component mount
+     // Fetch users from server on component mount
      fetchAllUsers().then(fetchedUsers => {
        if (fetchedUsers) {
            // Assuming the fetched data is an array of User objects
@@ -260,8 +250,8 @@ const ITDashboard = () => {
            setUsers(fetchedUsers);
        }
      }).catch(error => {
-       console.error("Error fetching users from Supabase:", error);
-       toast.error("Failed to fetch users from database.");
+       console.error("Error fetching users:", error);
+       toast.error("Failed to fetch users from server.");
      });
    }, []);
 
@@ -274,48 +264,20 @@ const ITDashboard = () => {
 
     setIsGeneratingLink(true);
     try {
-      // Generate a secure random token
-      const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")
-        .substring(0, 32);
-
-      // Create an invitation object with user details
-      const invitationData = {
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-      };
-
-      // Encrypt the invitation data (using AES encryption)
-      // In a real implementation, you'd use a proper encryption library
-      // This is a simplified example using a custom encryption key
-      const encryptionKey = "YOUR_SECURE_ENCRYPTION_KEY"; // Store this securely, not in client code
-      const dataStr = JSON.stringify(invitationData);
-
-      // For demo purposes, we're using a simple encryption method
-      // In production, use a proper encryption library
-      const encryptedData = btoa(dataStr); // Replace with actual encryption
-
-      // Store in Supabase
-      const { data, error } = await supabase.from("user_invitations").insert({
-        email: newUser.email,
-        name: newUser.name,
-        role: newUser.role,
-        token: token,
-        encrypted_data: encryptedData,
-        expires_at: new Date(
-          Date.now() + 7 * 24 * 60 * 60 * 1000
-        ).toISOString(), // 7 days
+      const res = await fetch(`${API_URL}/invitations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+        }),
       });
-
-      if (error) throw error;
-
-      // Create the invitation link with just the token
+      if (!res.ok) throw new Error('Failed to create invitation');
+      const { token } = await res.json();
       const link = `${window.location.origin}/register?token=${token}`;
       setInvitationLink(link);
       setShowInvitationLink(true);
-
       toast.success("Invitation link generated successfully!");
     } catch (error) {
       console.error("Error generating invitation:", error);
@@ -355,23 +317,14 @@ const ITDashboard = () => {
    const handleDeleteUser = async (user: User) => {
     try {
       toast.loading("Deleting user...");
-      
-      // Delete the user from Supabase users table
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      // Update local state only after successful deletion
+      const res = await fetch(`${API_URL}/users/${user.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete user');
       setUsers((prevUsers) => prevUsers.filter((u) => u.id !== user.id));
-      
-      toast.dismiss(); // Dismiss the loading toast
+      toast.dismiss();
       toast.success("User deleted successfully!");
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.dismiss(); // Dismiss the loading toast
+      toast.dismiss();
       toast.error("Failed to delete user. Please try again.");
     }
   };
@@ -381,115 +334,61 @@ const ITDashboard = () => {
       toast.error("Please fill in all required fields");
       return;
     }
-
-  //   if (selectedUser) {
-  //     // Edit existing user
-  //     setUsers((prevUsers) =>
-  //       prevUsers.map((user) =>
-  //         user.id === selectedUser.id
-  //           ? {
-  //               ...user,
-  //               name: newUser.name,
-  //               email: newUser.email,
-  //               role: newUser.role,
-  //               status: newUser.status,
-  //             }
-  //           : user
-  //       )
-  //     );
-  //     toast.success("User updated successfully!");
-  //   } else {
-  //     // Create new user
-  //     const newId = (
-  //       Math.max(...users.map((u) => parseInt(u.id))) + 1
-  //     ).toString();
-  //     setUsers((prevUsers) => [
-  //       ...prevUsers,
-  //       {
-  //         id: newId,
-  //         name: newUser.name,
-  //         email: newUser.email,
-  //         role: newUser.role,
-  //         status: newUser.status,
-  //         last_login: "Never",
-  //       },
-  //     ]);
-  //     toast.success("User created successfully!");
-  //   }
-  //   setIsUserModalOpen(false);
-  //   setSelectedUser(null);
-  //   setNewUser({
-  //     name: "",
-  //     email: "",
-  //     role: "",
-  //     status: "Active",
-  //   });
-  // };
-  try {
-    if (selectedUser) {
-      // Edit existing user
-      const { error } = await supabase
-        .from("users")
-        .update({
-          name: newUser.name,
-          role: newUser.role,
-          status: newUser.status,
-        })
-        .eq("id", selectedUser.id);
-
-      if (error) throw error;
-
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === selectedUser.id
-            ? {
-                ...user,
-                name: newUser.name,
-                email: newUser.email,
-                role: newUser.role,
-                status: newUser.status,
-              }
-            : user
-        )
-      );
-      toast.success("User updated successfully!");
-    } else {
-      // Generate invitation for new user
-      const { error: inviteError } = await supabase
-        .from("user_invitations")
-        .insert({
-          email: newUser.email,
-          name: newUser.name,
-          role: newUser.role,
-          status: newUser.status,
-          token: crypto.randomUUID(),
-          expires_at: new Date(
-            Date.now() + 7 * 24 * 60 * 60 * 1000
-          ).toISOString(), // 7 days expiry
+    try {
+      if (selectedUser) {
+        // Edit existing user
+        const res = await fetch(`${API_URL}/users/${selectedUser.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newUser.name,
+            role: newUser.role,
+            status: newUser.status,
+          }),
         });
-
-      if (inviteError) throw inviteError;
-
-      // Refresh the users list
-      const updatedUsers = await fetchAllUsers();
-      setUsers(updatedUsers);
-
-      toast.success("User invitation created successfully!");
+        if (!res.ok) throw new Error('Failed to update user');
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user.id === selectedUser.id
+              ? {
+                  ...user,
+                  name: newUser.name,
+                  email: newUser.email,
+                  role: newUser.role,
+                  status: newUser.status,
+                }
+              : user
+          )
+        );
+        toast.success("User updated successfully!");
+      } else {
+        // Generate invitation for new user
+        const res = await fetch(`${API_URL}/invitations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role,
+          }),
+        });
+        if (!res.ok) throw new Error('Failed to create invitation');
+        const { token } = await res.json();
+        const link = `${window.location.origin}/register?token=${token}`;
+        setInvitationLink(link);
+        setShowInvitationLink(true);
+        // Refresh the users list
+        const updatedUsers = await fetchAllUsers();
+        setUsers(updatedUsers);
+        toast.success("User invitation created successfully!");
+      }
+      setIsUserModalOpen(false);
+      setSelectedUser(null);
+    } catch (error: any) {
+      console.error("Error saving user:", error);
+      toast.error(error.message || "Failed to save user");
     }
-
-    setIsUserModalOpen(false);
-    setSelectedUser(null);
-    // setNewUser({
-    //   name: "",
-    //   email: "",
-    //   role: "",
-    //   status: "Active",
-    // });
-  } catch (error: any) {
-    console.error("Error saving user:", error);
-    toast.error(error.message || "Failed to save user");
-  }
-};
+  };
 
 
   const handleManualSync = () => {
