@@ -188,6 +188,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       } catch (error: any) {
         dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || error.message || "Login failed" });
         dispatch({ type: "SET_USER", payload: null });
+        throw error; // Re-throw the error so the Login component can handle it
       } finally {
         dispatch({ type: "SET_LOADING", payload: false });
       }
