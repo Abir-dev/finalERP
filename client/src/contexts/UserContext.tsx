@@ -25,7 +25,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: string; // was UserRole
   avatar?: string;
 }
 
@@ -82,6 +82,11 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Helper to normalize role (underscore to hyphen)
+function normalizeRole(role: string): string {
+  return role.replace(/_/g, "-");
+}
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const navigate = useNavigate();
@@ -92,8 +97,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // Centralized navigation logic
   const navigateByRole = useCallback(
-    (role: UserRole) => {
-      const roleRoutes: Record<UserRole, string> = {
+    (role: string) => {
+      const roleRoutes: Record<string, string> = {
         admin: "/",
         md: "/md-dashboard",
         "client-manager": "/client-manager",
@@ -137,7 +142,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   // Fetch user profile from backend
   const fetchUserProfile = useCallback(
-    async (token: string): Promise<{ user: User | null; shouldRemoveToken: boolean }> => {
+    async (token: string): Promise<User | null> => {
       try {
         const response = await axios.get(`${API_URL}/auth/profile`, {
           headers: {
@@ -145,17 +150,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
           },
           timeout: 10000,
         });
-        if (!response.data) return { user: null, shouldRemoveToken: true };
-        return { user: response.data, shouldRemoveToken: false };
+        if (!response.data) return null;
+        // Normalize role
+        return { ...response.data, role: normalizeRole(response.data.role) };
       } catch (error: any) {
         // Check if it's an authentication error (401) - token is invalid
         if (error.response?.status === 401) {
-          return { user: null, shouldRemoveToken: true };
+          return null;
         }
         // For network errors, timeouts, or server errors, keep the token
         // The user might still be authenticated, just can't reach the server right now
         console.warn('Failed to fetch user profile, but keeping token:', error.message);
-        return { user: null, shouldRemoveToken: false };
+        return null;
       }
     },
     []
@@ -175,16 +181,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const { token } = response.data;
         if (!token) throw new Error("No token received from server");
         setToken(token);
-        const { user, shouldRemoveToken } = await fetchUserProfile(token);
+        const user = await fetchUserProfile(token);
         if (!user) {
-          if (shouldRemoveToken) {
-            removeToken();
-          }
           throw new Error("Failed to fetch user profile");
         }
-        dispatch({ type: "SET_USER", payload: user });
+        // Normalize role
+        dispatch({ type: "SET_USER", payload: { ...user, role: normalizeRole(user.role) } });
         dispatch({ type: "SET_ERROR", payload: null });
-        navigateByRole(user.role);
+        navigateByRole(normalizeRole(user.role));
       } catch (error: any) {
         dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || error.message || "Login failed" });
         dispatch({ type: "SET_USER", payload: null });
@@ -261,11 +265,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     
     dispatch({ type: "SET_LOADING", payload: true });
-    const { user, shouldRemoveToken } = await fetchUserProfile(token);
+    const user = await fetchUserProfile(token);
     if (user) {
       dispatch({ type: "SET_USER", payload: user });
       dispatch({ type: "SET_ERROR", payload: null });
-    } else if (shouldRemoveToken) {
+    } else {
       removeToken();
       dispatch({ type: "SET_USER", payload: null });
     }
@@ -283,7 +287,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     lastProfileCheckRef.current = now;
 
     try {
-      const { user, shouldRemoveToken } = await fetchUserProfile(token);
+      const user = await fetchUserProfile(token);
       if (!mountedRef.current) return; // Component unmounted during fetch
       
       if (user) {
@@ -291,7 +295,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (JSON.stringify(state.user) !== JSON.stringify(user)) {
           dispatch({ type: "SET_USER", payload: user });
         }
-      } else if (shouldRemoveToken) {
+      } else {
         // Token is invalid, log out the user
         removeToken();
         dispatch({ type: "RESET_AUTH" });
@@ -337,27 +341,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LOADING", payload: true });
       const token = getToken();
       if (token) {
-        let retryCount = 0;
-        const maxRetries = 2;
-        
-        while (retryCount <= maxRetries) {
-          const { user, shouldRemoveToken } = await fetchUserProfile(token);
-          if (user) {
-            dispatch({ type: "SET_USER", payload: user });
-            break;
-          } else if (shouldRemoveToken) {
-            // Token is invalid, don't retry
-            removeToken();
-            dispatch({ type: "SET_USER", payload: null });
-            break;
-          } else if (retryCount < maxRetries) {
-            // Network error, retry after a short delay
-            retryCount++;
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-          } else {
-            // Max retries reached, but keep the token (might be a temporary server issue)
-            dispatch({ type: "SET_USER", payload: null });
-          }
+        const user = await fetchUserProfile(token);
+        if (user) {
+          dispatch({ type: "SET_USER", payload: { ...user, role: normalizeRole(user.role) } });
+        } else {
+          sessionStorage.removeItem("jwt_token");
+          dispatch({ type: "SET_USER", payload: null });
         }
       } else {
         dispatch({ type: "SET_USER", payload: null });

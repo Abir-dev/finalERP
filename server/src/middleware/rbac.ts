@@ -4,7 +4,7 @@ import { ROLE_PERMISSIONS, UserRole } from '../utils/constants';
 export const checkRole = (requiredRole: UserRole) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userRole = req.user?.user_metadata?.role;
+      const userRole = req.user?.role;
 
       if (!userRole) {
         res.status(403).json({ error: 'No role assigned' });
@@ -31,7 +31,7 @@ export const checkRole = (requiredRole: UserRole) => {
 export const checkPermission = (requiredPermission: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userRole = req.user?.user_metadata?.role as UserRole;
+      const userRole = req.user?.role as UserRole;
 
       if (!userRole) {
         res.status(403).json({ error: 'No role assigned' });
