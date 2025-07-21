@@ -28,6 +28,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrderItem {
   id: string;
@@ -245,14 +248,34 @@ export function PurchaseOrderForm() {
     }));
   }, [formData.items, formData.taxesAndCharges]);
 
-  const handleSave = () => {
-    console.log("Saving purchase order:", formData);
-    // Add save logic here
+  const handleSave = async () => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      if (formData.poNumber) {
+        await axios.put(`${API_URL}/purchase-orders/${formData.poNumber}`, formData, { headers });
+      } else {
+        await axios.post(`${API_URL}/purchase-orders`, formData, { headers });
+      }
+      toast.success("Purchase order saved successfully!");
+    } catch (err) {
+      toast.error("Failed to save purchase order.");
+    }
   };
 
-  const handleSubmit = () => {
-    console.log("Submitting purchase order:", formData);
-    // Add submit logic here
+  const handleSubmit = async () => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      if (formData.poNumber) {
+        await axios.put(`${API_URL}/purchase-orders/${formData.poNumber}`, formData, { headers });
+      } else {
+        await axios.post(`${API_URL}/purchase-orders`, formData, { headers });
+      }
+      toast.success("Purchase order submitted successfully!");
+    } catch (err) {
+      toast.error("Failed to submit purchase order.");
+    }
   };
 
   return (

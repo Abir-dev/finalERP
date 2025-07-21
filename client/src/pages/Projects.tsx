@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,70 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/components/ui/use-toast";
+import axios from "axios";
 
-// Enhanced project data with more details
-const projectsData = [
-  {
-    id: 1,
-    name: "Residential Complex A",
-    client: "ABC Developers",
-    status: "In Progress",
-    progress: 65,
-    budget: 2500000,
-    spent: 1600000,
-    deadline: "2024-12-15",
-    location: "Mumbai",
-    manager: "Rajesh Kumar"
-  },
-  {
-    id: 2,
-    name: "Office Tower B",
-    client: "XYZ Corp",
-    status: "Planning",
-    progress: 30,
-    budget: 5200000,
-    spent: 1800000,
-    deadline: "2025-06-30",
-    location: "Delhi",
-    manager: "Priya Sharma"
-  },
-  {
-    id: 3,
-    name: "Shopping Mall C",
-    client: "DEF Enterprises",
-    status: "In Progress",
-    progress: 85,
-    budget: 8100000,
-    spent: 6900000,
-    deadline: "2024-09-20",
-    location: "Bangalore",
-    manager: "Amit Singh"
-  },
-  {
-    id: 4,
-    name: "Luxury Villas",
-    client: "GHI Builders",
-    status: "Completed",
-    progress: 100,
-    budget: 3000000,
-    spent: 2950000,
-    deadline: "2024-03-15",
-    location: "Pune",
-    manager: "Sunita Rao"
-  },
-  {
-    id: 5,
-    name: "Industrial Complex",
-    client: "JKL Industries",
-    status: "On Hold",
-    progress: 45,
-    budget: 6500000,
-    spent: 2800000,
-    deadline: "2025-01-30",
-    location: "Chennai",
-    manager: "Vikram Patel"
-  }
-];
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Project {
   id: number;
@@ -294,7 +233,7 @@ const DPRModal = ({ onClose }) => {
               onChange={(e) => setSelectedProject(e.target.value)}
             >
               <option value="">Select a project</option>
-              {projectsData.map(project => (
+              {projects.map(project => (
                 <option key={project.id} value={project.id}>
                   {project.name} - {project.location}
                 </option>
@@ -390,7 +329,7 @@ const Projects = () => {
   const [showProjectDetailsModal, setShowProjectDetailsModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [projectType, setProjectType] = useState("");
-  const [projects, setProjects] = useState(projectsData);
+  const [projects, setProjects] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editProgress, setEditProgress] = useState(0);
   const [editStatus, setEditStatus] = useState("");
@@ -560,6 +499,19 @@ const downloadTextFile = (content: string, filename: string) => {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
+
+  const [heatmapProjects, setHeatmapProjects] = useState([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/projects`, { headers })
+      .then(res => setProjects(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/projects/activity`, { headers })
+      .then(res => setHeatmapProjects(res.data))
+      .catch(() => {});
+  }, []);
 
   
   return (

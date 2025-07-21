@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -12,25 +12,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Mail } from "lucide-react"
-import { clientsData, invoicesData } from "@/lib/dummy-data"
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
-
-const engagementData = [
-  { month: 'Jan', calls: 45, meetings: 12, quality: 4.2 },
-  { month: 'Feb', calls: 52, meetings: 18, quality: 4.5 },
-  { month: 'Mar', calls: 38, meetings: 15, quality: 4.1 },
-  { month: 'Apr', calls: 61, meetings: 22, quality: 4.7 },
-  { month: 'May', calls: 49, meetings: 16, quality: 4.3 },
-  { month: 'Jun', calls: 55, meetings: 20, quality: 4.6 },
-]
-
-const approvalDelayData = [
-  { client: 'ABC Developers', boq: 2, design: 1, invoice: 0 },
-  { client: 'XYZ Corp', boq: 5, design: 3, invoice: 2 },
-  { client: 'Home Builders', boq: 1, design: 0, invoice: 1 },
-  { client: 'Retail Group', boq: 7, design: 4, invoice: 3 },
-]
 
 type Client = typeof clientsData[0]
 type Invoice = typeof invoicesData[0]
@@ -63,6 +48,11 @@ const clientColumns: ColumnDef<Client>[] = [
 ]
 
 const ClientManagerDashboard = () => {
+  const [clientManagerStats, setClientManagerStats] = useState({ responsiveness: '', pendingApprovals: 0, avgDelay: '', slaBreaches: 0 });
+  const [engagementData, setEngagementData] = useState([]);
+  const [approvalDelayData, setApprovalDelayData] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [approvalQueue, setApprovalQueue] = useState([]);
   const [isInteractionModalOpen, setIsInteractionModalOpen] = useState(false)
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false)
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false)
@@ -70,6 +60,30 @@ const ClientManagerDashboard = () => {
   const [isContactAccountsModalOpen, setIsContactAccountsModalOpen] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [invoices, setInvoices] = useState([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/client-manager/stats`, { headers })
+      .then(res => setClientManagerStats(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/client-manager/engagement`, { headers })
+      .then(res => setEngagementData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/client-manager/approval-delays`, { headers })
+      .then(res => setApprovalDelayData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/clients`, { headers })
+      .then(res => setClients(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/client-manager/approval-queue`, { headers })
+      .then(res => setApprovalQueue(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/billing/invoices`, { headers })
+      .then(res => setInvoices(res.data))
+      .catch(() => {});
+  }, []);
 
   const handleAddInteraction = (client: Client) => {
     setSelectedClient(client)
@@ -279,7 +293,7 @@ Status: ${invoice.status}
                     ),
                   },
                 ]}
-                data={clientsData} 
+                data={clients} 
                 searchKey="name" 
               />
             </CardContent>
@@ -290,14 +304,14 @@ Status: ${invoice.status}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               title="Pending Approvals"
-              value="24"
+              value={clientManagerStats.pendingApprovals}
               icon={FileText}
               description="Awaiting client approval"
               onClick={() => toast.info("Viewing approval queue")}
             />
             <StatCard
               title="Average Delay"
-              value="5.2 days"
+              value={clientManagerStats.avgDelay}
               icon={AlertTriangle}
               description="Approval turnaround"
               trend={{ value: -1.2, label: "improvement" }}
@@ -305,7 +319,7 @@ Status: ${invoice.status}
             />
             <StatCard
               title="SLA Breaches"
-              value="3"
+              value={clientManagerStats.slaBreaches}
               icon={AlertTriangle}
               description="This month"
               onClick={() => toast.info("Viewing SLA report")}
@@ -339,12 +353,7 @@ Status: ${invoice.status}
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { item: 'BOQ-2024-001', client: 'ABC Developers', type: 'BOQ', daysWaiting: 3, amount: '₹2.5M' },
-                  { item: 'DES-2024-005', client: 'XYZ Corp', type: 'Design', daysWaiting: 7, amount: '-' },
-                  { item: 'INV-2024-012', client: 'Home Builders', type: 'Invoice', daysWaiting: 2, amount: '₹750K' },
-                  { item: 'BOQ-2024-003', client: 'Retail Group', type: 'BOQ', daysWaiting: 12, amount: '₹5.2M' },
-                ].map((item, index) => (
+                {approvalQueue.map((item, index) => (
                   <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-4">

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -13,28 +13,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { DollarSign, FileText, Users, Calculator, CreditCard, AlertTriangle, Download, ArrowLeft, Plus, TrendingUp, PieChart, Check, Clock } from "lucide-react"
-import { invoicesData, employeesData } from "@/lib/dummy-data"
+import axios from "axios";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 import TaxCalculatorModal from "@/components/modals/TaxCalculatorModal"
 import ReconciliationPanel from "@/components/panels/ReconciliationPanel"
 import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal"
 
-const collectionData = [
-  { month: 'Jan', invoiced: 4500000, collected: 4200000, outstanding: 300000 },
-  { month: 'Feb', invoiced: 5200000, collected: 4800000, outstanding: 700000 },
-  { month: 'Mar', invoiced: 4800000, collected: 4600000, outstanding: 900000 },
-  { month: 'Apr', invoiced: 6100000, collected: 5800000, outstanding: 1200000 },
-  { month: 'May', invoiced: 5700000, collected: 5200000, outstanding: 1700000 },
-  { month: 'Jun', invoiced: 6500000, collected: 6000000, outstanding: 2200000 },
-]
-
-const budgetData = [
-  { project: 'Villa Complex', budgeted: 5000000, actual: 4750000, variance: -250000 },
-  { project: 'Commercial Tower', budgeted: 12000000, actual: 12500000, variance: 500000 },
-  { project: 'Apartments', budgeted: 8000000, actual: 7800000, variance: -200000 },
-  { project: 'Shopping Mall', budgeted: 15000000, actual: 14200000, variance: -800000 },
-]
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 type Invoice = typeof invoicesData[0]
 type Employee = typeof employeesData[0]
@@ -110,6 +96,40 @@ const AccountsDashboard = () => {
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false)
   const [showTaxModal, setShowTaxModal] = useState(false)
+  const [collections, setCollections] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [collectionTrends, setCollectionTrends] = useState([]);
+  const [budgetData, setBudgetData] = useState([]);
+  const [payrollStats, setPayrollStats] = useState({ totalEmployees: 0, payrollAmount: '', avgSalary: '', compliance: '' });
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/accounts/collections`, { headers })
+      .then(res => setCollections(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/billing/invoices`, { headers })
+      .then(res => setInvoices(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/hr/employees`, { headers })
+      .then(res => setEmployees(res.data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/accounts/collection-trends`, { headers })
+      .then(res => setCollectionTrends(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/accounts/budget`, { headers })
+      .then(res => setBudgetData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/accounts/payroll-stats`, { headers })
+      .then(res => setPayrollStats(res.data))
+      .catch(() => {});
+  }, []);
 
   const handleGenerateInvoice = () => {
     toast.success("Invoice generated and sent successfully!")
@@ -209,7 +229,7 @@ const AccountsDashboard = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={collectionData}>
+                <LineChart data={collectionTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -261,7 +281,7 @@ const AccountsDashboard = () => {
               <CardDescription>Track and manage invoice status</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable columns={invoiceColumns} data={invoicesData} />
+              <DataTable columns={invoiceColumns} data={invoices} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -350,27 +370,27 @@ const AccountsDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Employees"
-              value="148"
+              value={payrollStats.totalEmployees}
               icon={Users}
               description="Active staff"
               trend={{ value: 3, label: "vs last month" }}
             />
             <StatCard
               title="Payroll Amount"
-              value="₹12.5M"
+              value={payrollStats.payrollAmount}
               icon={DollarSign}
               description="This month"
               trend={{ value: 5, label: "vs last month" }}
             />
             <StatCard
               title="Avg. Salary"
-              value="₹84.5K"
+              value={payrollStats.avgSalary}
               icon={TrendingUp}
               description="Per employee"
             />
             <StatCard
               title="Compliance"
-              value="100%"
+              value={payrollStats.compliance}
               icon={Check}
               description="Documents verified"
             />
@@ -383,7 +403,7 @@ const AccountsDashboard = () => {
                 <CardDescription>Manage employee information and payroll</CardDescription>
               </CardHeader>
               <CardContent>
-                <DataTable columns={payrollColumns} data={employeesData} />
+                <DataTable columns={payrollColumns} data={employees} />
               </CardContent>
             </Card>
 

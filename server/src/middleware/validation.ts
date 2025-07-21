@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ROLES, UserRole } from '../utils/constants';
+import { body } from 'express-validator';
+
 export const isValidUrl = (url: string): boolean => {
   return /^https?:\/\//i.test(url);
 };
@@ -102,3 +104,67 @@ export const validateUserUpdate = (
     next(error);
   }
 }
+
+export const validateProject = [
+  body('name').isString().notEmpty(),
+  body('clientId').isString().notEmpty(),
+  body('startDate').isISO8601(),
+  body('endDate').isISO8601(),
+];
+
+export const validateInvoice = [
+  body('projectId').isString().notEmpty(),
+  body('clientId').isString().notEmpty(),
+  body('amount').isFloat({ gt: 0 }),
+  body('dueDate').isISO8601(),
+];
+
+export const validateInventoryItem = [
+  body('name').isString().notEmpty(),
+  body('quantity').isInt({ gt: 0 }),
+  body('unit').isString().notEmpty(),
+];
+
+export const validateMaterialRequest = [
+  body('projectId').isString().notEmpty(),
+  body('itemId').isString().notEmpty(),
+  body('quantity').isInt({ gt: 0 }),
+];
+
+export const validateTender = [
+  body('title').isString().notEmpty(),
+  body('description').isString().notEmpty(),
+  body('deadline').isISO8601(),
+  body('budget').isFloat({ gt: 0 }),
+];
+
+export const validateBid = [
+  body('vendorId').isString().notEmpty(),
+  body('amount').isFloat({ gt: 0 }),
+];
+
+export const validateEmployee = [
+  body('userId').isString().notEmpty(),
+  body('position').isString().notEmpty(),
+  body('department').isString().notEmpty(),
+  body('salary').isFloat({ gt: 0 }),
+  body('joinedAt').isISO8601(),
+];
+
+export const validatePayment = [
+  body('invoiceId').isString().notEmpty(),
+  body('amount').isFloat({ gt: 0 }),
+  body('date').isISO8601(),
+];
+
+export const validateNotification = [
+  body('to').isString().notEmpty(),
+  body('type').isString().notEmpty(),
+  body('message').isString().notEmpty(),
+];
+
+export const validateMessage = [
+  body('from').isString().notEmpty(),
+  body('to').isString().notEmpty(),
+  body('content').isString().notEmpty(),
+];

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -70,6 +70,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
 interface StockAlert {
   id: number;
   item: string;
@@ -117,41 +121,35 @@ interface StorageSection {
   type: string;
 }
 
-const progressData = [
-  { week: "W1", planned: 15, actual: 12 },
-  { week: "W2", planned: 20, actual: 18 },
-  { week: "W3", planned: 25, actual: 24 },
-  { week: "W4", planned: 18, actual: 16 },
-];
-
-const materialUsageData = [
-  { material: "Cement", requested: 200, used: 185 },
-  { material: "Steel", requested: 1500, used: 1450 },
-  { material: "Bricks", requested: 5000, used: 4800 },
-  { material: "Sand", requested: 50, used: 48 },
-];
+// Add backend state
+// const [progressData, setProgressData] = useState([]);
+// const [materialUsageData, setMaterialUsageData] = useState([]);
+// const [costData, setCostData] = useState([]);
+// const [laborData, setLaborData] = useState([]);
+// const [purchaseOrders, setPurchaseOrders] = useState([]);
+// const [equipment, setEquipment] = useState([]);
 
 // Cost Data
-const costData = [
-  { category: "Productive Labor", planned: 175000, actual: 190000 },
-  { category: "Non-Productive Labor", planned: 75000, actual: 85000 },
-  { category: "Materials", planned: 450000, actual: 425000 },
-  { category: "Equipment", planned: 180000, actual: 195000 },
-  { category: "Overhead", planned: 120000, actual: 115000 },
-];
+// const costData = [
+//   { category: "Productive Labor", planned: 175000, actual: 190000 },
+//   { category: "Non-Productive Labor", planned: 75000, actual: 85000 },
+//   { category: "Materials", planned: 450000, actual: 425000 },
+//   { category: "Equipment", planned: 180000, actual: 195000 },
+//   { category: "Overhead", planned: 120000, actual: 115000 },
+// ];
 
-const laborData = [
-  // Productive Labor
-  { trade: "Electricians", planned: 450, actual: 420, type: "productive" },
-  { trade: "Plumbers", planned: 380, actual: 400, type: "productive" },
-  { trade: "Carpenters", planned: 520, actual: 480, type: "productive" },
-  { trade: "Masons", planned: 600, actual: 580, type: "productive" },
-  // Non-Productive Labor
-  { trade: "Site Supervision", planned: 200, actual: 210, type: "non-productive" },
-  { trade: "Safety Officers", planned: 160, actual: 170, type: "non-productive" },
-  { trade: "Material Handlers", planned: 240, actual: 250, type: "non-productive" },
-  { trade: "Quality Control", planned: 180, actual: 190, type: "non-productive" },
-];
+// const laborData = [
+//   // Productive Labor
+//   { trade: "Electricians", planned: 450, actual: 420, type: "productive" },
+//   { trade: "Plumbers", planned: 380, actual: 400, type: "productive" },
+//   { trade: "Carpenters", planned: 520, actual: 480, type: "productive" },
+//   { trade: "Masons", planned: 600, actual: 580, type: "productive" },
+//   // Non-Productive Labor
+//   { trade: "Site Supervision", planned: 200, actual: 210, type: "non-productive" },
+//   { trade: "Safety Officers", planned: 160, actual: 170, type: "non-productive" },
+//   { trade: "Material Handlers", planned: 240, actual: 250, type: "non-productive" },
+//   { trade: "Quality Control", planned: 180, actual: 190, type: "non-productive" },
+// ];
 
 const purchaseOrdersData = [
   {
@@ -500,7 +498,7 @@ const SiteDashboard = () => {
           : "Low - Schedule Impact",
     }))
   );
-  const [equipmentLogs] = useState([
+  const [equipmentLogs, setEquipmentLogs] = useState([
     {
       date: "2024-01-20",
       type: "Maintenance",
@@ -530,7 +528,7 @@ const SiteDashboard = () => {
       notes: "Site clearing work",
     },
   ]);
-  const [equipmentLocations] = useState([
+  const [equipmentLocations, setEquipmentLocations] = useState([
     {
       timestamp: "09:00 AM",
       area: "North Block",
@@ -556,19 +554,19 @@ const SiteDashboard = () => {
       operator: "John Smith",
     },
   ]);
-  const [stockAlerts] = useState<StockAlert[]>([
+  const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([
     { id: 1, item: "Cement", quantity: "50 bags", reorderPoint: "100 bags", status: "Low Stock" },
     { id: 2, item: "Steel Bars (12mm)", quantity: "2.5 tons", reorderPoint: "5 tons", status: "Low Stock" },
     { id: 3, item: "Bricks", quantity: "850 pcs", reorderPoint: "1000 pcs", status: "Reorder" }
   ]);
 
-  const [materialMovements] = useState<MaterialMovement[]>([
+  const [materialMovements, setMaterialMovements] = useState<MaterialMovement[]>([
     { id: 1, type: "Outbound", material: "Ready Mix Concrete", quantity: "18 mÂ³", time: "2 hours ago", site: "Block A" },
     { id: 2, type: "Inbound", material: "Steel Reinforcement", quantity: "5 tons", time: "5 hours ago", site: "Central Store" },
     { id: 3, type: "Outbound", material: "Shuttering Plates", quantity: "45 pcs", time: "8 hours ago", site: "Block B" }
   ]);
 
-  const [storageSections] = useState<StorageSection[]>([
+  const [storageSections, setStorageSections] = useState<StorageSection[]>([
     { id: 1, zone: "Zone A", occupancy: 85, type: "Heavy Materials" },
     { id: 2, zone: "Zone B", occupancy: 65, type: "Finishing Items" },
     { id: 3, zone: "Zone C", occupancy: 92, type: "Tools & Equipment" },
@@ -576,10 +574,10 @@ const SiteDashboard = () => {
   ]);
 
   // Data states
-  const [purchaseOrders, setPurchaseOrders] = useState(purchaseOrdersData);
-  const [equipmentList, setEquipmentList] = useState(equipmentData);
-  const [laborHours, setLaborHours] = useState(laborData);
-  const [budget, setBudget] = useState(costData);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [equipmentList, setEquipmentList] = useState([]);
+  const [laborHours, setLaborHours] = useState([]);
+  const [budget, setBudget] = useState([]);
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "TASK-1",
@@ -649,7 +647,7 @@ const SiteDashboard = () => {
     onSchedule: 85,
     resourceUtilization: 92,
   });
-  const [weeklyProgress, setWeeklyProgress] = useState(progressData);
+  const [weeklyProgress, setWeeklyProgress] = useState([]);
   const [projectPhases, setProjectPhases] = useState([
     {
       phase: "Foundation",
@@ -703,7 +701,7 @@ const SiteDashboard = () => {
     receivedToday: 12,
     utilizationRate: 94,
   });
-  const [materialUsage, setMaterialUsage] = useState(materialUsageData);
+  const [materialUsage, setMaterialUsage] = useState([]);
 
   const [isTaskViewModalOpen, setIsTaskViewModalOpen] = useState(false);
   const [selectedTaskView, setSelectedTaskView] = useState<Task | null>(null);
@@ -1559,6 +1557,59 @@ const SiteDashboard = () => {
     toast.success(`Status updated for ${requestId}`);
   };
 
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    // Fetch purchase orders
+    axios.get(`${API_URL}/purchase-orders`, { headers }).then(res => setPurchaseOrders(res.data)).catch(() => {});
+    // Fetch equipment
+    axios.get(`${API_URL}/site-ops/equipment-maintenance`, { headers }).then(res => setEquipmentList(res.data)).catch(() => {});
+    // Fetch staff (employees)
+    axios.get(`${API_URL}/hr/employees`, { headers }).then(res => setStoreStaff(res.data)).catch(() => {});
+    // Fetch issues
+    axios.get(`${API_URL}/site-ops/issue-reports`, { headers }).then(res => setIssues(res.data)).catch(() => {});
+    // Fetch equipment logs
+    axios.get(`${API_URL}/site-ops/equipment-logs`, { headers }).then(res => setEquipmentLogs(res.data)).catch(() => {});
+    // Fetch equipment locations
+    axios.get(`${API_URL}/site-ops/equipment-locations`, { headers }).then(res => setEquipmentLocations(res.data)).catch(() => {});
+    // Fetch stock alerts
+    axios.get(`${API_URL}/inventory/stock-alerts`, { headers }).then(res => setStockAlerts(res.data)).catch(() => {});
+    // Fetch material movements
+    axios.get(`${API_URL}/inventory/material-movements`, { headers }).then(res => setMaterialMovements(res.data)).catch(() => {});
+    // Fetch storage sections
+    axios.get(`${API_URL}/inventory/storage-sections`, { headers }).then(res => setStorageSections(res.data)).catch(() => {});
+    // Fetch labor hours
+    axios.get(`${API_URL}/site-ops/labor-logs`, { headers }).then(res => setLaborHours(res.data)).catch(() => {});
+    // Fetch budget
+    axios.get(`${API_URL}/site-ops/budget-adjustments`, { headers }).then(res => setBudget(res.data)).catch(() => {});
+    // Fetch tasks
+    axios.get(`${API_URL}/project/tasks`, { headers }).then(res => setTasks(res.data)).catch(() => {});
+    // Fetch material requests
+    axios.get(`${API_URL}/inventory/material-requests`, { headers }).then(res => setMaterialRequests(res.data)).catch(() => {});
+    axios.get(`${API_URL}/site/progress`, { headers })
+      .then(res => setProgressData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/site/material-usage`, { headers })
+      .then(res => setMaterialUsageData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/site/cost`, { headers })
+      .then(res => setCostData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/site/labor`, { headers })
+      .then(res => setLaborData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/purchase-orders`, { headers })
+      .then(res => setPurchaseOrders(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/equipment`, { headers })
+      .then(res => setEquipment(res.data))
+      .catch(() => {});
+  }, []);
+
+  // Ensure costData and laborData are always defined
+  const safeCostData = Array.isArray(costData) ? costData : [];
+  const safeLaborData = Array.isArray(laborData) ? laborData : [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -2400,7 +2451,7 @@ const SiteDashboard = () => {
                 <CardContent>
                   <div className="space-y-6">
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={costData}>
+                      <BarChart data={safeCostData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="category" />
                         <YAxis />
@@ -2410,7 +2461,7 @@ const SiteDashboard = () => {
                       </BarChart>
                     </ResponsiveContainer>
                     <div className="grid grid-cols-2 gap-4">
-                      {costData.map((item) => (
+                      {safeCostData.map((item) => (
                         <div key={item.category} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-center">
                             <h3 className="font-medium">{item.category}</h3>
@@ -2466,7 +2517,7 @@ const SiteDashboard = () => {
                         Productive Labor
                       </h3>
                       <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={laborData.filter(item => item.type === "productive")}> 
+                        <BarChart data={safeLaborData.filter(item => item.type === "productive")}> 
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="trade" />
                           <YAxis />
@@ -2480,7 +2531,7 @@ const SiteDashboard = () => {
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="mt-2 space-y-2">
-                        {laborData.filter(item => item.type === "productive").map((item) => (
+                        {safeLaborData.filter(item => item.type === "productive").map((item) => (
                           <div
                             key={item.trade}
                             className="flex items-center justify-between p-2 border rounded-lg"
@@ -2514,7 +2565,7 @@ const SiteDashboard = () => {
                         Non-Productive Labor
                       </h3>
                       <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={laborData.filter(item => item.type === "non-productive")}> 
+                        <BarChart data={safeLaborData.filter(item => item.type === "non-productive")}> 
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="trade" />
                           <YAxis />
@@ -2528,7 +2579,7 @@ const SiteDashboard = () => {
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="mt-2 space-y-2">
-                        {laborData.filter(item => item.type === "non-productive").map((item) => (
+                        {safeLaborData.filter(item => item.type === "non-productive").map((item) => (
                           <div
                             key={item.trade}
                             className="flex items-center justify-between p-2 border rounded-lg"
@@ -2712,7 +2763,7 @@ const SiteDashboard = () => {
                   <Card>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={costData}>
+                        <BarChart data={safeCostData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="category" />
                           <YAxis />
@@ -2722,7 +2773,7 @@ const SiteDashboard = () => {
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="grid grid-cols-2 gap-4 mt-6">
-                        {costData.map((item) => (
+                        {safeCostData.map((item) => (
                           <div key={item.category} className="p-4 border rounded-lg">
                             <div className="flex justify-between items-center">
                               <h3 className="font-medium">{item.category}</h3>
@@ -2768,7 +2819,7 @@ const SiteDashboard = () => {
                   <Card>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={laborData}>
+                        <BarChart data={safeLaborData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="trade" />
                           <YAxis />
@@ -2778,7 +2829,7 @@ const SiteDashboard = () => {
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="grid grid-cols-2 gap-4 mt-6">
-                        {laborData.map((item) => (
+                        {safeLaborData.map((item) => (
                           <div key={item.trade} className="p-4 border rounded-lg">
                             <div className="flex justify-between items-center">
                               <h3 className="font-medium">{item.trade}</h3>
@@ -4758,7 +4809,7 @@ const SiteDashboard = () => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {costData.map((item) => (
+                  {safeCostData.map((item) => (
                     <SelectItem key={item.category} value={item.category}>
                       {item.category}
                     </SelectItem>
@@ -5864,7 +5915,7 @@ const SiteDashboard = () => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {costData.map((item) => (
+                  {safeCostData.map((item) => (
                     <SelectItem key={item.category} value={item.category}>
                       {item.category}
                     </SelectItem>

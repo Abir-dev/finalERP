@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -50,6 +50,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { PurchaseOrderForm } from "./purchase-order-form";
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
   id: string;
@@ -89,44 +91,15 @@ export function PurchaseDashboard() {
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
 
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([
-    {
-      id: "PO001",
-      poNumber: "PO-2024-001",
-      vendor: "Steel Corp Ltd",
-      items: "TMT Bars, Steel Plates",
-      totalAmount: 250000,
-      orderDate: "2024-01-15",
-      expectedDelivery: "2024-01-25",
-      status: "delivered",
-      priority: "high",
-      project: "Commercial Complex",
-    },
-    {
-      id: "PO002",
-      poNumber: "PO-2024-002",
-      vendor: "Cement Industries",
-      items: "OPC Cement, PPC Cement",
-      totalAmount: 180000,
-      orderDate: "2024-01-18",
-      expectedDelivery: "2024-01-28",
-      status: "acknowledged",
-      priority: "medium",
-      project: "Residential Towers",
-    },
-    {
-      id: "PO003",
-      poNumber: "PO-2024-003",
-      vendor: "Hardware Solutions",
-      items: "Tools, Safety Equipment",
-      totalAmount: 95000,
-      orderDate: "2024-01-20",
-      expectedDelivery: "2024-01-30",
-      status: "sent",
-      priority: "urgent",
-      project: "Infrastructure Dev",
-    },
-  ]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/purchase-orders`, { headers })
+      .then(res => setPurchaseOrders(res.data))
+      .catch(() => {});
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -264,55 +237,65 @@ export function PurchaseDashboard() {
     });
   };
 
-  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([
-    {
-      id: "MR001",
-      requestNumber: "MR-2024-001",
-      requestedBy: "Site Engineer - Team A",
-      items: "Steel Rods",
-      quantity: 500,
-      unit: "kg",
-      requestDate: "2024-01-22",
-      requiredDate: "2024-01-30",
-      status: "approved",
-      project: "Commercial Complex",
-      urgency: "normal",
-    },
-    {
-      id: "MR002",
-      requestNumber: "MR-2024-002",
-      requestedBy: "Project Manager",
-      items: "RMC M25",
-      quantity: 25,
-      unit: "cum",
-      requestDate: "2024-01-23",
-      requiredDate: "2024-01-25",
-      status: "pending",
-      project: "Residential Towers",
-      urgency: "urgent",
-    },
-  ]);
+  // Remove static array
+  // const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([
+  //   {
+  //     id: "MR001",
+  //     requestNumber: "MR-2024-001",
+  //     requestedBy: "Site Engineer - Team A",
+  //     items: "Steel Rods",
+  //     quantity: 500,
+  //     unit: "kg",
+  //     requestDate: "2024-01-22",
+  //     requiredDate: "2024-01-30",
+  //     status: "approved",
+  //     project: "Commercial Complex",
+  //     urgency: "normal",
+  //   },
+  //   {
+  //     id: "MR002",
+  //     requestNumber: "MR-2024-002",
+  //     requestedBy: "Project Manager",
+  //     items: "RMC M25",
+  //     quantity: 25,
+  //     unit: "cum",
+  //     requestDate: "2024-01-23",
+  //     requiredDate: "2024-01-25",
+  //     status: "pending",
+  //     project: "Residential Towers",
+  //     urgency: "urgent",
+  //   },
+  // ]);
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/material-requests`, { headers })
+      .then(res => setMaterialRequests(res.data))
+      .catch(() => {});
+  }, []);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<MaterialRequest | null>(
     null,
   );
 
-  // Add these functions to handle material request operations
-  const handleApproveRequest = (requestId: string) => {
-    setMaterialRequests(
-      materialRequests.map((request) =>
-        request.id === requestId ? { ...request, status: "approved" } : request,
-      ),
-    );
+  // Update approve/reject/create/update/delete to use backend API
+  const handleApproveRequest = async (requestId: string) => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    await axios.patch(`${API_URL}/material-requests/${requestId}/approve`, {}, { headers });
+    const res = await axios.get(`${API_URL}/material-requests`, { headers });
+    setMaterialRequests(res.data);
   };
-
-  const handleRejectRequest = (requestId: string) => {
-    setMaterialRequests(
-      materialRequests.filter((request) => request.id !== requestId),
-    );
+  const handleRejectRequest = async (requestId: string) => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    await axios.delete(`${API_URL}/material-requests/${requestId}`, { headers });
+    const res = await axios.get(`${API_URL}/material-requests`, { headers });
+    setMaterialRequests(res.data);
   };
-
   const handleCreatePOFromRequest = (request: MaterialRequest) => {
     // Create a new PO from the material request
     const newPO: PurchaseOrder = {
@@ -332,11 +315,11 @@ export function PurchaseDashboard() {
     setIsDialogOpen(true);
 
     // Update request status to 'ordered'
-    setMaterialRequests(
-      materialRequests.map((mr) =>
-        mr.id === request.id ? { ...mr, status: "ordered" } : mr,
-      ),
-    );
+    // setMaterialRequests(
+    //   materialRequests.map((mr) =>
+    //     mr.id === request.id ? { ...mr, status: "ordered" } : mr,
+    //   ),
+    // );
   };
 
   const handleCreateNewRequest = () => {
@@ -358,25 +341,17 @@ export function PurchaseDashboard() {
     setIsRequestDialogOpen(true);
   };
 
-  const saveRequest = () => {
+  const saveRequest = async () => {
     if (!currentRequest) return;
-
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     if (currentRequest.id) {
-      // Update existing request
-      setMaterialRequests(
-        materialRequests.map((request) =>
-          request.id === currentRequest.id ? currentRequest : request,
-        ),
-      );
+      await axios.put(`${API_URL}/material-requests/${currentRequest.id}`, currentRequest, { headers });
     } else {
-      // Add new request
-      const newRequest = {
-        ...currentRequest,
-        id: `MR${(materialRequests.length + 1).toString().padStart(3, "0")}`,
-      };
-      setMaterialRequests([...materialRequests, newRequest]);
+      await axios.post(`${API_URL}/material-requests`, currentRequest, { headers });
     }
-
+    const res = await axios.get(`${API_URL}/material-requests`, { headers });
+    setMaterialRequests(res.data);
     setIsRequestDialogOpen(false);
     setCurrentRequest(null);
   };

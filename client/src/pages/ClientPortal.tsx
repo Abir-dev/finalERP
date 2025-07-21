@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -11,9 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Building2, FileText, DollarSign, Wrench, Download, CreditCard, CheckCircle, Clock, X, MessageSquare } from "lucide-react"
-import { designsData, invoicesData } from "@/lib/dummy-data"
+import axios from "axios";
 import { toast } from "sonner"
 import { ScrollArea } from "@/components/ui/scroll-area"
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const milestoneData = [
   { milestone: 'Foundation', planned: '2024-01-15', actual: '2024-01-15', status: 'Completed' },
@@ -40,6 +42,27 @@ const ClientPortal = () => {
   const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false)
   const [isServiceDetailsModalOpen, setIsServiceDetailsModalOpen] = useState(false)
   const [selectedServiceRequest, setSelectedServiceRequest] = useState<any>(null)
+  const [milestones, setMilestones] = useState([]);
+  const [progress, setProgress] = useState([]);
+  const [designs, setDesigns] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/client/milestones`, { headers })
+      .then(res => setMilestones(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/client/progress`, { headers })
+      .then(res => setProgress(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/designs`, { headers })
+      .then(res => setDesigns(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/billing/invoices`, { headers })
+      .then(res => setInvoices(res.data))
+      .catch(() => {});
+  }, []);
 
   const handleApproveDesign = (design: any) => {
     toast.success(`Design "${design.name}" approved successfully!`)
@@ -198,7 +221,7 @@ const ClientPortal = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {designsData.map((design) => (
+                {designs.map((design) => (
                   <div key={design.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="aspect-video bg-muted rounded-lg mb-4 flex items-center justify-center">
                       <FileText className="h-12 w-12 text-muted-foreground" />
@@ -285,7 +308,7 @@ const ClientPortal = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {invoicesData.map((invoice) => (
+                {invoices.map((invoice) => (
                   <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-4">
@@ -393,7 +416,7 @@ const ClientPortal = () => {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={progressData}>
+                  <LineChart data={progress}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -440,7 +463,7 @@ const ClientPortal = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {milestoneData.map((milestone, index) => (
+                {milestones.map((milestone, index) => (
                   <div key={milestone.milestone} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${

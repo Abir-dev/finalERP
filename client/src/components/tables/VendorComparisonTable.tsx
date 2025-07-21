@@ -1,71 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, MapPin, Phone, Mail, TrendingUp, Award, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-
-const vendors = [
-  {
-    id: 1,
-    name: 'ABC Construction Materials',
-    category: 'Building Materials',
-    rating: 4.8,
-    location: 'Mumbai, Maharashtra',
-    contact: '+91 9876543210',
-    email: 'contact@abcmaterials.com',
-    deliveryTime: '3-5 days',
-    paymentTerms: '30 days',
-    certification: 'ISO 9001:2015',
-    pastProjects: 156,
-    reliability: 96,
-    costRating: 4.2,
-    qualityRating: 4.9,
-    serviceRating: 4.6
-  },
-  {
-    id: 2,
-    name: 'XYZ Steel & Iron Works',
-    category: 'Steel & Metal',
-    rating: 4.6,
-    location: 'Delhi, NCR',
-    contact: '+91 9876543211',
-    email: 'sales@xyzsteel.com',
-    deliveryTime: '5-7 days',
-    paymentTerms: '45 days',
-    certification: 'BIS Certified',
-    pastProjects: 89,
-    reliability: 92,
-    costRating: 4.5,
-    qualityRating: 4.7,
-    serviceRating: 4.4
-  },
-  {
-    id: 3,
-    name: 'BuildPro Equipment Rental',
-    category: 'Equipment Rental',
-    rating: 4.4,
-    location: 'Bangalore, Karnataka',
-    contact: '+91 9876543212',
-    email: 'rentals@buildpro.com',
-    deliveryTime: '1-2 days',
-    paymentTerms: '15 days',
-    certification: 'CRISIL Rated',
-    pastProjects: 234,
-    reliability: 89,
-    costRating: 4.0,
-    qualityRating: 4.3,
-    serviceRating: 4.7
-  }
-];
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const VendorComparisonTable = () => {
   const [selectedVendors, setSelectedVendors] = useState<number[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [vendorList, setVendorList] = useState(vendors);
+  const [vendorList, setVendorList] = useState([]);
   const [viewProfileVendor, setViewProfileVendor] = useState(null);
   const [requestQuoteVendor, setRequestQuoteVendor] = useState(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/vendors`, { headers })
+      .then(res => setVendorList(res.data))
+      .catch(() => {});
+  }, []);
 
   const toggleVendorSelection = (vendorId: number) => {
     setSelectedVendors(prev => 
@@ -427,7 +383,7 @@ const VendorComparisonTable = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {selectedVendors.map(vendorId => {
-                const vendor = vendors.find(v => v.id === vendorId);
+                const vendor = vendorList.find(v => v.id === vendorId);
                 if (!vendor) return null;
                 
                 return (

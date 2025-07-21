@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AddEventModal } from "@/components/modals/AddEventModal";
 import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface CalendarEvent {
   name: string;
@@ -23,6 +25,14 @@ const Calendar = () => {
   const [showAddEventModal, setShowAddEventModal] = useState(false);
   const [events, setEvents] = useState<{ [key: string]: CalendarEvent[] }>({});
   const { toast } = useToast();
+  
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/events`, { headers })
+      .then(res => setEvents(res.data))
+      .catch(() => {});
+  }, [currentMonth]);
   
   // Function to get days in month
   const getDaysInMonth = (date: Date) => {
@@ -62,16 +72,26 @@ const Calendar = () => {
       time: eventDetails.time,
       description: eventDetails.description
     };
-
-    setEvents(prev => ({
-      ...prev,
-      [eventDetails.date]: [...(prev[eventDetails.date] || []), newEvent]
-    }));
-
-    toast({
-      title: "Event Added",
-      description: `${eventDetails.name} has been added to your calendar.`,
-    });
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.post(`${API_URL}/events`, { ...eventDetails }, { headers })
+      .then(() => {
+        setEvents(prev => ({
+          ...prev,
+          [eventDetails.date]: [...(prev[eventDetails.date] || []), newEvent]
+        }));
+        toast({
+          title: "Event Added",
+          description: `${eventDetails.name} has been added to your calendar.`,
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Error",
+          description: "Failed to add event.",
+          variant: "destructive"
+        });
+      });
   };
   
   const days = getDaysInMonth(currentMonth);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -62,6 +62,9 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import AddVehicleModal from "@/components/modals/AddVehicleModal";
 import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const inventory = [
   {
@@ -214,69 +217,15 @@ const costlyMaintenance = [
   },
 ];
 
-const transfersData = [
-  {
-    id: "TR001",
-    items: "Steel Rods, Cement",
-    from: "Warehouse A",
-    to: "Site 1",
-    status: "In Transit",
-  },
-  {
-    id: "TR002",
-    items: "Paint, Brushes",
-    from: "Site 2",
-    to: "Warehouse B",
-    status: "Completed",
-  },
-  {
-    id: "TR003",
-    items: "Safety Equipment",
-    from: "Central Store",
-    to: "Site 3",
-    status: "Pending",
-  },
-];
+// Comment out or remove static arrays
+// const transfersData = [...];
+// const vehicleKpis = [...];
+// const vehicleMovementLogs = [...];
+// const fuelTrendData = [...];
+// const utilizationByProject = [...];
+// const purchaseRequests = [...];
+// const maintenanceSchedules = [...];
 
-const vehicleKpis = [
-  { label: "Total Active Vehicles", value: 18, color: "green" },
-  { label: "Vehicles on Site", value: 12, color: "blue" },
-  { label: "Under Maintenance", value: 3, color: "yellow" },
-];
-const vehicleMovementLogs = [
-  {
-    date: "2024-06-01",
-    time: "09:00",
-    from: "Depot",
-    to: "Site A",
-    driver: "John Doe",
-  },
-  {
-    date: "2024-06-01",
-    time: "10:30",
-    from: "Site A",
-    to: "Site B",
-    driver: "Jane Smith",
-  },
-  {
-    date: "2024-06-01",
-    time: "12:00",
-    from: "Site B",
-    to: "Depot",
-    driver: "Mike Brown",
-  },
-];
-const fuelTrendData = [
-  { name: "Site A", Truck1: 120, Truck2: 110 },
-  { name: "Site B", Truck1: 90, Truck2: 100 },
-  { name: "Site C", Truck1: 80, Truck2: 70 },
-  { name: "Depot", Truck1: 60, Truck2: 50 },
-];
-const utilizationByProject = [
-  { project: "Site A", utilization: 80 },
-  { project: "Site B", utilization: 65 },
-  { project: "Site C", utilization: 50 },
-];
 const vehicleTypes = ["All", "Truck", "Excavator", "Crane"];
 const projectSites = ["All", "Site A", "Site B", "Site C", "Depot"];
 const statusOptions = ["All", "Active", "Idle", "Maintenance"];
@@ -308,55 +257,8 @@ const StoreDashboard = () => {
   const [vehicleSite, setVehicleSite] = useState("all");
   const [vehicleStatus, setVehicleStatus] = useState("all");
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
-  const [purchaseRequests, setPurchaseRequests] = useState([
-    {
-      id: "PR001",
-      item: "Steel Bars - 20 tons",
-      project: "Office Tower B",
-      urgency: "High",
-      requestedBy: "Site Engineer",
-      status: "Pending",
-    },
-    {
-      id: "PR002",
-      item: "Cement - 200 bags",
-      project: "Residential Complex A",
-      urgency: "Medium",
-      requestedBy: "Project Manager",
-      status: "Pending",
-    },
-    {
-      id: "PR003",
-      item: "Paint - 50 liters",
-      project: "Shopping Mall C",
-      urgency: "Low",
-      requestedBy: "Supervisor",
-      status: "Pending",
-    },
-  ]);
-  const { toast } = useToast();
-  const [maintenanceSchedules, setMaintenanceSchedules] = useState<
-    MaintenanceSchedule[]
-  >([
-    {
-      vehicle: "Truck 1",
-      last: "2024-05-15",
-      next: "2024-07-15",
-      status: "Scheduled",
-    },
-    {
-      vehicle: "Truck 2",
-      last: "2024-05-20",
-      next: "2024-07-20",
-      status: "Overdue",
-    },
-    {
-      vehicle: "Excavator 1",
-      last: "2024-05-10",
-      next: "2024-07-10",
-      status: "Scheduled",
-    },
-  ]);
+  const [purchaseRequests, setPurchaseRequests] = useState([]);
+  const [maintenanceSchedules, setMaintenanceSchedules] = useState([]);
   const [selectedAsset, setSelectedAsset] =
     useState<MaintenanceSchedule | null>(null);
   const [overviewSubview, setOverviewSubview] = useState<
@@ -378,6 +280,17 @@ const StoreDashboard = () => {
   const [vehicleSubview, setVehicleSubview] = useState<
     "main" | "active" | "onSite" | "maintenance"
   >("main");
+
+  // Add backend state
+  const [transfers, setTransfers] = useState([]);
+  const [vehicleKpis, setVehicleKpis] = useState([]);
+  const [vehicleMovementLogs, setVehicleMovementLogs] = useState([]);
+  const [fuelTrendData, setFuelTrendData] = useState([]);
+  const [utilizationByProject, setUtilizationByProject] = useState([]);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [storageUtilization, setStorageUtilization] = useState([]);
+
+  const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -607,6 +520,50 @@ const StoreDashboard = () => {
     }
   };
 
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/inventory/items`, { headers })
+      .then(res => setInventory(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/stock`, { headers })
+      .then(res => setStockData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/transfers`, { headers })
+      .then(res => setTransfers(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/vehicles/top`, { headers })
+      .then(res => setTopVehicles(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/maintenance/costly`, { headers })
+      .then(res => setCostlyMaintenance(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/vehicles/kpis`, { headers })
+      .then(res => setVehicleKpis(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/vehicles/movements`, { headers })
+      .then(res => setVehicleMovementLogs(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/vehicles/fuel-trends`, { headers })
+      .then(res => setFuelTrendData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/vehicles/utilization`, { headers })
+      .then(res => setUtilizationByProject(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/purchase-requests`, { headers })
+      .then(res => setPurchaseRequests(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/maintenance/schedules`, { headers })
+      .then(res => setMaintenanceSchedules(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/transactions`, { headers })
+      .then(res => setRecentTransactions(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/storage-utilization`, { headers })
+      .then(res => setStorageUtilization(res.data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -744,26 +701,7 @@ const StoreDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {[
-                        {
-                          type: "IN",
-                          item: "Cement - 50 bags",
-                          location: "From Vendor ABC",
-                          time: "2 hours ago",
-                        },
-                        {
-                          type: "OUT",
-                          item: "Steel Bars - 5 tons",
-                          location: "To Site A",
-                          time: "4 hours ago",
-                        },
-                        {
-                          type: "TRANSFER",
-                          item: "Bricks - 10,000 pieces",
-                          location: "Warehouse A → Site B",
-                          time: "6 hours ago",
-                        },
-                      ].map((transaction, index) => (
+                      {recentTransactions.map((transaction, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between p-3 border rounded-lg"
@@ -779,17 +717,11 @@ const StoreDashboard = () => {
                               }`}
                             ></div>
                             <div>
-                              <p className="font-medium text-gray-900">
-                                {transaction.item}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {transaction.location}
-                              </p>
+                              <p className="font-medium text-gray-900">{transaction.item}</p>
+                              <p className="text-sm text-gray-600">{transaction.location}</p>
                             </div>
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {transaction.time}
-                          </span>
+                          <span className="text-xs text-gray-500">{transaction.time}</span>
                         </div>
                       ))}
                     </div>
@@ -802,41 +734,15 @@ const StoreDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {[
-                        {
-                          location: "Warehouse A",
-                          utilization: 85,
-                          capacity: "2000 sqft",
-                        },
-                        {
-                          location: "Warehouse B",
-                          utilization: 72,
-                          capacity: "1500 sqft",
-                        },
-                        {
-                          location: "Yard 1",
-                          utilization: 60,
-                          capacity: "5000 sqft",
-                        },
-                        {
-                          location: "Yard 2",
-                          utilization: 45,
-                          capacity: "3000 sqft",
-                        },
-                      ].map((storage, index) => (
+                      {storageUtilization.map((storage, index) => (
                         <div key={index}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">
-                              {storage.location}
-                            </span>
+                            <span className="font-medium">{storage.location}</span>
                             <span>
                               {storage.utilization}% ({storage.capacity})
                             </span>
                           </div>
-                          <Progress
-                            value={storage.utilization}
-                            className="h-2"
-                          />
+                          <Progress value={storage.utilization} className="h-2" />
                         </div>
                       ))}
                     </div>
@@ -1737,7 +1643,7 @@ const StoreDashboard = () => {
                 <CardContent>
                   <DataTable
                     columns={transferColumns}
-                    data={transfersData}
+                    data={transfers}
                     searchKey="items"
                   />
                 </CardContent>
@@ -1758,8 +1664,7 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {transfersData
-                      .filter((t) => t.status === "In Transit")
+                    {transfers.filter((t) => t.status === "In Transit")
                       .map((transfer) => (
                         <div
                           key={transfer.id}
@@ -1795,8 +1700,7 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {transfersData
-                      .filter((t) => t.status === "Completed")
+                    {transfers.filter((t) => t.status === "Completed")
                       .map((transfer) => (
                         <div
                           key={transfer.id}
@@ -1832,8 +1736,7 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {transfersData
-                      .filter((t) => t.status === "Pending")
+                    {transfers.filter((t) => t.status === "Pending")
                       .map((transfer) => (
                         <div
                           key={transfer.id}
@@ -2083,21 +1986,21 @@ const StoreDashboard = () => {
                           vehicle: "Excavator JCB-001",
                           last: "2024-01-15",
                           next: "2024-04-15",
-                          status: "Scheduled" as const,
+                          status: "Scheduled",
                           vendor: "Mech Services",
                         },
                         {
                           vehicle: "Crane CR-002",
                           last: "2024-01-10",
                           next: "2024-04-10",
-                          status: "Overdue" as const,
+                          status: "Overdue",
                           vendor: "Crane Care",
                         },
                         {
                           vehicle: "Mixer MX-003",
                           last: "2024-01-08",
                           next: "2024-04-08",
-                          status: "Scheduled" as const,
+                          status: "Scheduled",
                           vendor: "Equipment Pro",
                         },
                       ].map((asset) => (
@@ -2681,7 +2584,7 @@ const StoreDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {vehicleTypes.map((type) => (
-                  <SelectItem key={type} value={type.toLowerCase()}>
+                  <SelectItem key={type.toLowerCase()} value={type.toLowerCase()}>
                     {type}
                   </SelectItem>
                 ))}
@@ -2693,7 +2596,7 @@ const StoreDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {projectSites.map((site) => (
-                  <SelectItem key={site} value={site.toLowerCase()}>
+                  <SelectItem key={site.toLowerCase()} value={site.toLowerCase()}>
                     {site}
                   </SelectItem>
                 ))}
@@ -2705,7 +2608,7 @@ const StoreDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {statusOptions.map((status) => (
-                  <SelectItem key={status} value={status.toLowerCase()}>
+                  <SelectItem key={status.toLowerCase()} value={status.toLowerCase()}>
                     {status}
                   </SelectItem>
                 ))}

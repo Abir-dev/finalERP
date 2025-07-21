@@ -57,42 +57,9 @@ import {
 import { employeesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
+import axios from "axios";
 
-const systemHealthData = [
-  { time: "00:00", uptime: 99.9, apiCalls: 1200 },
-  { time: "04:00", uptime: 99.8, apiCalls: 800 },
-  { time: "08:00", uptime: 99.9, apiCalls: 2500 },
-  { time: "12:00", uptime: 99.7, apiCalls: 3200 },
-  { time: "16:00", uptime: 99.9, apiCalls: 2800 },
-  { time: "20:00", uptime: 99.8, apiCalls: 1800 },
-];
-
-const moduleData = [
-  {
-    name: "Project Management",
-    status: "Active",
-    usage: 85,
-    lastSync: "2024-01-20 10:30",
-  },
-  {
-    name: "Financial Module",
-    status: "Active",
-    usage: 92,
-    lastSync: "2024-01-20 10:25",
-  },
-  {
-    name: "Inventory System",
-    status: "Maintenance",
-    usage: 0,
-    lastSync: "2024-01-19 15:20",
-  },
-  {
-    name: "HR Management",
-    status: "Active",
-    usage: 78,
-    lastSync: "2024-01-20 10:35",
-  },
-];
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 type User = {
   id: string;
@@ -201,6 +168,8 @@ const ITDashboard = () => {
   const [invitationLink, setInvitationLink] = useState("");
   const [showInvitationLink, setShowInvitationLink] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [systemHealth, setSystemHealth] = useState([]);
+  const [modules, setModules] = useState([]);
 
   //   type User = {
   //   id: string // UUID
@@ -220,40 +189,31 @@ const ITDashboard = () => {
     return userStatus === 'active';
   }).length;
 
-  const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
-    async function fetchAllUsers(): Promise<User[]> {
-      const res = await fetch(`${API_URL}/users`);
-      if (!res.ok) {
-        toast.error("Failed to fetch users from server.");
-        return [];
-      }
-      const data = await res.json();
-      return data.map(dbUser => ({
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    // Fetch system health
+    axios.get(`${API_URL}/admin/system-health`, { headers })
+      .then(res => setSystemHealth(res.data))
+      .catch(() => {});
+    // Fetch modules
+    axios.get(`${API_URL}/admin/modules`, { headers })
+      .then(res => setModules(res.data))
+      .catch(() => {});
+    // Fetch users
+    axios.get(`${API_URL}/users`, { headers })
+      .then(res => setUsers(res.data.map(dbUser => ({
         id: dbUser.id,
         name: dbUser.name,
         email: dbUser.email,
         role: dbUser.role,
         status: dbUser.status === 'active' ? 'Active' : 'Inactive',
-        lastLogin: dbUser.lastLogin 
-          ? new Date(dbUser.lastLogin).toLocaleString() 
+        lastLogin: dbUser.lastLogin
+          ? new Date(dbUser.lastLogin).toLocaleString()
           : "Never",
-      }));
-    }
-
-  useEffect(() => {
-     // Fetch users from server on component mount
-     fetchAllUsers().then(fetchedUsers => {
-       if (fetchedUsers) {
-           // Assuming the fetched data is an array of User objects
-           // and matches the existing User type structure.
-           // If not, transformation might be needed here.
-           setUsers(fetchedUsers);
-       }
-     }).catch(error => {
-       console.error("Error fetching users:", error);
-       toast.error("Failed to fetch users from server.");
-     });
-   }, []);
+      }))))
+      .catch(() => {});
+  }, []);
 
   // Add this function to generate invitation links with Supabase
   const generateInvitationLink = async () => {
@@ -378,7 +338,19 @@ const ITDashboard = () => {
         setInvitationLink(link);
         setShowInvitationLink(true);
         // Refresh the users list
-        const updatedUsers = await fetchAllUsers();
+        const userToken = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const userHeaders = userToken ? { Authorization: `Bearer ${userToken}` } : {};
+        const updatedUsers = await axios.get(`${API_URL}/users`, { headers: userHeaders })
+          .then(res => res.data.map(dbUser => ({
+            id: dbUser.id,
+            name: dbUser.name,
+            email: dbUser.email,
+            role: dbUser.role,
+            status: dbUser.status === 'active' ? 'Active' : 'Inactive',
+            lastLogin: dbUser.lastLogin
+              ? new Date(dbUser.lastLogin).toLocaleString()
+              : "Never",
+          })));
         setUsers(updatedUsers);
         toast.success("User invitation created successfully!");
       }
@@ -490,7 +462,7 @@ const ITDashboard = () => {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={systemHealthData}>
+                  <LineChart data={systemHealth}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="time" />
                     <YAxis yAxisId="left" />
@@ -802,7 +774,7 @@ const ITDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {moduleData.map((module) => (
+                {modules.map((module) => (
                   <div key={module.name} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-medium">{module.name}</h3>

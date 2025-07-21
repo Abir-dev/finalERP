@@ -5,6 +5,17 @@ import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import userRoutes from './routes/user';
 import invitationRoutes from './routes/invitation';
+import projectRoutes from './routes/project';
+import billingRoutes from './routes/billing';
+import inventoryRoutes from './routes/inventory';
+import tenderRoutes from './routes/tender';
+import hrRoutes from './routes/hr';
+import accountsRoutes from './routes/accounts';
+import notificationRoutes from './routes/notification';
+import reportRoutes from './routes/report';
+import purchaseOrderRoutes from './routes/purchaseOrder';
+import siteOpsRoutes from './routes/siteOps';
+import vendorRoutes from './routes/vendor';
 
 dotenv.config();
 
@@ -35,6 +46,17 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/invitations', invitationRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/tenders', tenderRoutes);
+app.use('/api/hr', hrRoutes);
+app.use('/api/accounts', accountsRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/site-ops', siteOpsRoutes);
+app.use('/api/vendors', vendorRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {
