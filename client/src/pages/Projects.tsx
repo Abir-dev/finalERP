@@ -176,7 +176,7 @@ const GanttChart = () => {
   );
 };
 
-const DPRModal = ({ onClose }) => {
+const DPRModal = ({ onClose, projects }) => {
   const [files, setFiles] = useState([]);
   const [progressNotes, setProgressNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -699,7 +699,7 @@ const downloadTextFile = (content: string, filename: string) => {
                   onClick={() => {
                     // Create the new project object
                     const projectToAdd: Project = {
-                      id: Math.max(...projects.map(p => p.id)) + 1,
+                      id: projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1,
                       name: newProject.name || '',
                       client: newProject.client || '',
                       status: newProject.status || 'Planning',
@@ -1872,7 +1872,7 @@ const downloadTextFile = (content: string, filename: string) => {
 
       {/* DPR Modal */}
       {showDPRModal && (
-        <DPRModal onClose={() => setShowDPRModal(false)} />
+        <DPRModal onClose={() => setShowDPRModal(false)} projects={projects} />
       )}
     </div>
   );

@@ -449,7 +449,7 @@ const SiteDashboard = () => {
   const [isLaborModalOpen, setIsLaborModalOpen] = useState(false);
   const [isLaborDetailsModalOpen, setIsLaborDetailsModalOpen] = useState(false);
   const [selectedLabor, setSelectedLabor] = useState<
-    (typeof laborData)[0] | null
+    (typeof laborHours)[0] | null
   >(null);
   const [isBudgetAdjustModalOpen, setIsBudgetAdjustModalOpen] = useState(false);
   const [selectedBudgetCategory, setSelectedBudgetCategory] = useState("");
@@ -463,7 +463,7 @@ const SiteDashboard = () => {
   const [isEquipmentTrackingModalOpen, setIsEquipmentTrackingModalOpen] =
     useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<
-    (typeof equipmentData)[0] | null
+    (typeof equipmentList)[0] | null
   >(null);
   const [isViewReportModalOpen, setIsViewReportModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<{
@@ -578,6 +578,7 @@ const SiteDashboard = () => {
   const [equipmentList, setEquipmentList] = useState([]);
   const [laborHours, setLaborHours] = useState([]);
   const [budget, setBudget] = useState([]);
+  const [costData, setCostData] = useState([]); // <-- Add this line
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "TASK-1",
@@ -1126,7 +1127,7 @@ const SiteDashboard = () => {
   };
 
   const handleViewLaborDetails = (trade: string) => {
-    const laborDetails = laborData.find((l) => l.trade === trade);
+    const laborDetails = laborHours.find((l) => l.trade === trade);
     if (laborDetails) {
       setSelectedLabor(laborDetails);
       setIsLaborDetailsModalOpen(true);
@@ -1297,7 +1298,7 @@ const SiteDashboard = () => {
         <div>
           <p className="mb-4">Team efficiency based on completed vs planned work hours.</p>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={laborData}>
+            <BarChart data={laborHours}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="trade" />
               <YAxis />
@@ -1587,28 +1588,28 @@ const SiteDashboard = () => {
     // Fetch material requests
     axios.get(`${API_URL}/inventory/material-requests`, { headers }).then(res => setMaterialRequests(res.data)).catch(() => {});
     axios.get(`${API_URL}/site/progress`, { headers })
-      .then(res => setProgressData(res.data))
+      .then(res => setProgressStats(res.data))
       .catch(() => {});
     axios.get(`${API_URL}/site/material-usage`, { headers })
-      .then(res => setMaterialUsageData(res.data))
+      .then(res => setMaterialUsage(res.data))
       .catch(() => {});
     axios.get(`${API_URL}/site/cost`, { headers })
       .then(res => setCostData(res.data))
       .catch(() => {});
     axios.get(`${API_URL}/site/labor`, { headers })
-      .then(res => setLaborData(res.data))
+      .then(res => setLaborHours(res.data))
       .catch(() => {});
     axios.get(`${API_URL}/purchase-orders`, { headers })
       .then(res => setPurchaseOrders(res.data))
       .catch(() => {});
     axios.get(`${API_URL}/equipment`, { headers })
-      .then(res => setEquipment(res.data))
+      .then(res => setEquipmentList(res.data))
       .catch(() => {});
   }, []);
 
   // Ensure costData and laborData are always defined
   const safeCostData = Array.isArray(costData) ? costData : [];
-  const safeLaborData = Array.isArray(laborData) ? laborData : [];
+  const safeLaborData = Array.isArray(laborHours) ? laborHours : [];
 
   return (
     <div className="space-y-6">
