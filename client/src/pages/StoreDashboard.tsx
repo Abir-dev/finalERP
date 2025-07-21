@@ -66,52 +66,6 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-const inventory = [
-  {
-    id: 1,
-    item: "Cement",
-    quantity: 150,
-    unit: "bags",
-    minStock: 50,
-    location: "Warehouse A",
-    status: "Good",
-  },
-  {
-    id: 2,
-    item: "Steel Bars",
-    quantity: 25,
-    unit: "tons",
-    minStock: 30,
-    location: "Warehouse B",
-    status: "Low",
-  },
-  {
-    id: 3,
-    item: "Bricks",
-    quantity: 45000,
-    unit: "pieces",
-    minStock: 20000,
-    location: "Yard 1",
-    status: "Good",
-  },
-  {
-    id: 4,
-    item: "Sand",
-    quantity: 8,
-    unit: "cubic meters",
-    minStock: 15,
-    location: "Yard 2",
-    status: "Critical",
-  },
-];
-
-const stockData = [
-  { category: "Raw Materials", inStock: 1200, lowStock: 80, outOfStock: 15 },
-  { category: "Finishing Items", inStock: 800, lowStock: 45, outOfStock: 8 },
-  { category: "Tools & Equipment", inStock: 350, lowStock: 25, outOfStock: 5 },
-  { category: "Safety Items", inStock: 600, lowStock: 30, outOfStock: 3 },
-];
-
 const transferData = [
   { name: "Completed", value: 45, fill: "#10b981" },
   { name: "In Transit", value: 12, fill: "#3b82f6" },
@@ -234,7 +188,7 @@ type MaintenanceSchedule = {
   vehicle: string;
   last: string;
   next: string;
-  status: "Scheduled" | "Overdue";
+  status: string; // allow any string for compatibility
   vendor?: string;
   notes?: string;
 };
@@ -291,6 +245,11 @@ const StoreDashboard = () => {
   const [storageUtilization, setStorageUtilization] = useState([]);
 
   const { toast } = useToast();
+
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [stockData, setStockData] = useState<any[]>([]);
+  const [topVehicles, setTopVehicles] = useState<any[]>([]);
+  const [costlyMaintenance, setCostlyMaintenance] = useState<any[]>([]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -2023,7 +1982,7 @@ const StoreDashboard = () => {
                             size="sm"
                             className="w-full mt-2"
                             onClick={() => {
-                              setSelectedAsset(asset);
+                              setSelectedAsset(asset as MaintenanceSchedule);
                               setIsMaintenanceModalOpen(true);
                             }}
                           >
