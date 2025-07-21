@@ -76,6 +76,15 @@ const BillingManagerDashboard = () => {
   // Add state for reminder loading
   const [reminderLoadingStates, setReminderLoadingStates] = useState<{ [key: string]: boolean }>({});
 
+  // Add state for document loading
+  const [documentLoadingStates, setDocumentLoadingStates] = useState<{ [key: string]: boolean }>({});
+
+  // Add ref for file input
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Add state for selected tab
+  const [selectedTab, setSelectedTab] = useState<string>('all');
+
   // Replace static arrays with backend data
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [paymentSummary, setPaymentSummary] = useState({

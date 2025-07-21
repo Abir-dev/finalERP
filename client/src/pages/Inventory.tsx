@@ -24,6 +24,7 @@ import * as z from "zod";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import axios from "axios";
+import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 // Add backend state
@@ -184,6 +185,22 @@ const Inventory = () => {
   const [isViewScheduleOpen, setIsViewScheduleOpen] = useState(false);
   const [isReviewProgressOpen, setIsReviewProgressOpen] = useState(false);
 
+  // Add state for inventory items and transfers
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+
+  // Add state for search and filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Add state for Add Item dialog
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+
+  // Add state for View Details dialog
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItemType | null>(null);
+
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -208,7 +225,7 @@ const Inventory = () => {
   }, []);
 
   // Add action handlers
-  const handleInventoryAction = (action: string, item: InventoryItem, updatedData?: any) => {
+  const handleInventoryAction = (action: string, item: InventoryItemType, updatedData?: any) => {
     switch (action) {
       case 'view':
         handleViewDetails(item);
@@ -253,10 +270,11 @@ const Inventory = () => {
 
   // Filter items based on search and filters
   const filteredItems = inventoryItems.filter(item => {
+    const categoryArray = Array.isArray(item.category) ? item.category : [item.category];
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
+      categoryArray.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesLocation = !selectedLocation || selectedLocation === 'all_locations' || item.location === selectedLocation;
-    const matchesCategory = !selectedCategory || item.category.includes(selectedCategory);
+    const matchesCategory = !selectedCategory || categoryArray.includes(selectedCategory);
     return matchesSearch && matchesLocation && matchesCategory;
   });
 
@@ -295,7 +313,7 @@ const Inventory = () => {
       case 'inventory':
         exportData = filteredItems.map(item => ({
           'Item Name': item.name,
-          'Category': item.category.join(', '),
+          'Category': Array.isArray(item.category) ? item.category.join(', ') : item.category,
           'Quantity': item.quantity,
           'Unit': item.unit,
           'Location': item.location,
@@ -444,7 +462,7 @@ const Inventory = () => {
   };
 
   // Add view details handler
-  const handleViewDetails = (item: InventoryItem) => {
+  const handleViewDetails = (item: InventoryItemType) => {
     setSelectedItem(item);
     setIsViewDetailsOpen(true);
   };
@@ -917,7 +935,7 @@ const Inventory = () => {
                 type: 'badge' as const,
                 options: CATEGORY_OPTIONS,
                 multiple: false,
-                render: (value: string[], item: InventoryItem) => (
+                render: (value: string[], item: InventoryItemType) => (
                   <div className="flex flex-wrap gap-1">
                     {value?.[0] ? (
                       <Badge variant="secondary" className="mr-1">
@@ -929,7 +947,7 @@ const Inventory = () => {
               },
               {
                 key: 'quantity', label: 'Quantity',
-                render: (value: number, item: InventoryItem) => (
+                render: (value: number, item: InventoryItemType) => (
                   <Badge variant={value > (item.reorderLevel || 50) ? "default" : "destructive"}>
                     {value} {item.unit}
                   </Badge>
@@ -940,7 +958,7 @@ const Inventory = () => {
               {
                 key: 'status',
                 label: 'Status',
-                render: (_, item: InventoryItem) => (
+                render: (_, item: InventoryItemType) => (
                   <Badge variant={item.quantity > (item.reorderLevel || 50) ? "default" : "destructive"}>
                     {item.quantity > (item.reorderLevel || 50) ? "In Stock" : "Low Stock"}
                   </Badge>
@@ -999,7 +1017,7 @@ const Inventory = () => {
                           </div>
                           <div>
                             <Label>Category</Label>
-                            <p className="text-lg">{selectedItem.category.join(', ')}</p>
+                            <p className="text-lg">{Array.isArray(selectedItem.category) ? selectedItem.category.join(', ') : selectedItem.category}</p>
                           </div>
                         </div>
                         <div className="space-y-2">

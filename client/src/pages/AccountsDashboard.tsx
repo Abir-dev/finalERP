@@ -19,11 +19,13 @@ import { toast } from "sonner"
 import TaxCalculatorModal from "@/components/modals/TaxCalculatorModal"
 import ReconciliationPanel from "@/components/panels/ReconciliationPanel"
 import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal"
+import type { Invoice, Employee } from "@/types/dummy-data-types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-type Invoice = typeof invoicesData[0]
-type Employee = typeof employeesData[0]
+// Remove typeof ...Data[0] types
+// type Invoice = typeof invoicesData[0]
+// type Employee = typeof employeesData[0]
 
 const invoiceColumns: ColumnDef<Invoice>[] = [
   {

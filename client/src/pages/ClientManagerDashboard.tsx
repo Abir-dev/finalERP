@@ -16,9 +16,7 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
-
-type Client = typeof clientsData[0]
-type Invoice = typeof invoicesData[0]
+import type { Client, Invoice } from "@/types/dummy-data-types";
 
 const clientColumns: ColumnDef<Client>[] = [
   {
@@ -426,7 +424,7 @@ Status: ${invoice.status}
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {invoicesData.map((invoice) => (
+                {invoices.map((invoice) => (
                   <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-4">
