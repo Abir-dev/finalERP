@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -19,73 +19,74 @@ enum UserRole {
 }
 
 model User {
-  id          String     @id @default(uuid()) @db.Uuid
-  email       String     @unique
-  name        String
-  role        UserRole
-  avatar      String?
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  status      String     @default("inactive")
-  lastLogin   DateTime?  @map("last_login") @db.Timestamptz(6)
-  password    String
-  documents   Document[]
-  projects    Project[]        @relation("ProjectMembers")
-  managedProjects Project[]    @relation("ProjectManagers")
-  projectsClient Project[]     @relation("ProjectClient")
-  invoices    Invoice[]        @relation("UserInvoices")
-  bids        Bid[]            @relation("UserBids")
-  notifications Notification[] @relation("UserNotifications")
-  messagesSent    Message[]    @relation("MessagesSent")
-  messagesReceived Message[]   @relation("MessagesReceived")
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  name             String
+  role             UserRole
+  avatar           String?
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status           String            @default("inactive")
+  lastLogin        DateTime?         @map("last_login") @db.Timestamptz(6)
+  password         String
+  documents        Document[]
+  projects         Project[]         @relation("ProjectMembers")
+  managedProjects  Project[]         @relation("ProjectManagers")
+  projectsClient   Project[]         @relation("ProjectClient")
+  invoices         Invoice[]         @relation("UserInvoices")
+  bids             Bid[]             @relation("UserBids")
+  notifications    Notification[]    @relation("UserNotifications")
+  messagesSent     Message[]         @relation("MessagesSent")
+  messagesReceived Message[]         @relation("MessagesReceived")
   materialRequests MaterialRequest[] @relation("UserMaterialRequests")
-  employeeProfile Employee?
+  employeeProfile  Employee?
 
   @@map("users")
 }
 
 model UserInvitation {
-  id            String    @id @default(cuid()) @db.Uuid
+  id            String   @id @default(cuid()) @db.Uuid
   email         String
   name          String
   role          String
-  token         String    @unique
-  encryptedData String    @map("encrypted_data")
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(6)
-  used          Boolean   @default(false)
+  token         String   @unique
+  encryptedData String   @map("encrypted_data")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz(6)
+  used          Boolean  @default(false)
 
   @@map("user_invitations")
 }
 
 model Project {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  clientId    String   @db.Uuid
-  client      User     @relation("ProjectClient", fields: [clientId], references: [id])
-  startDate   DateTime
-  endDate     DateTime
-  status      String   @default("active")
-  managers    User[]   @relation("ProjectManagers")
-  members     User[]   @relation("ProjectMembers")
-  tasks       Task[]
-  invoices    Invoice[]
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  clientId         String            @db.Uuid
+  client           User              @relation("ProjectClient", fields: [clientId], references: [id])
+  startDate        DateTime
+  endDate          DateTime
+  status           String            @default("active")
+  managers         User[]            @relation("ProjectManagers")
+  members          User[]            @relation("ProjectMembers")
+  tasks            Task[]
+  invoices         Invoice[]
   materialRequests MaterialRequest[]
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Tender           Tender[]
 }
 
 model Task {
-  id          String   @id @default(uuid()) @db.Uuid
-  projectId   String   @db.Uuid
-  project     Project  @relation(fields: [projectId], references: [id])
+  id          String    @id @default(uuid()) @db.Uuid
+  projectId   String    @db.Uuid
+  project     Project   @relation(fields: [projectId], references: [id])
   name        String
   description String?
   assignedTo  String?
-  status      String   @default("pending")
+  status      String    @default("pending")
   dueDate     DateTime?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model Invoice {
@@ -98,63 +99,63 @@ model Invoice {
   dueDate       DateTime
   sentDate      DateTime?
   paymentMethod String?
-  status        String   @default("created")
-  verified      Boolean  @default(false)
-  paid          Boolean  @default(false)
+  status        String        @default("created")
+  verified      Boolean       @default(false)
+  paid          Boolean       @default(false)
   payments      Payment[]
   items         InvoiceItem[]
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model InvoiceItem {
-  id            String   @id @default(uuid()) @db.Uuid
-  invoiceId     String   @db.Uuid
-  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
-  serialNumber  String
-  description   String
-  item          String
-  unit          String
-  quantity      Int
-  rate          Float
-  amount        Float
+  id           String  @id @default(uuid()) @db.Uuid
+  invoiceId    String  @db.Uuid
+  invoice      Invoice @relation(fields: [invoiceId], references: [id])
+  serialNumber String
+  description  String
+  item         String
+  unit         String
+  quantity     Int
+  rate         Float
+  amount       Float
 }
 
 model Payment {
-  id            String   @id @default(uuid()) @db.Uuid
-  invoiceId     String   @db.Uuid
-  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
-  amount        Float
-  date          DateTime
-  paymentMethod String?
-  status        String   @default("pending")
+  id                    String   @id @default(uuid()) @db.Uuid
+  invoiceId             String   @db.Uuid
+  invoice               Invoice  @relation(fields: [invoiceId], references: [id])
+  amount                Float
+  date                  DateTime
+  paymentMethod         String?
+  status                String   @default("pending")
   confirmationEmailSent Boolean? @default(false)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model InventoryItem {
-  id          String   @id @default(uuid()) @db.Uuid
-  name        String
-  quantity    Int
-  unit        String
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  requests    MaterialRequest[]
+  id        String            @id @default(uuid()) @db.Uuid
+  name      String
+  quantity  Int
+  unit      String
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  requests  MaterialRequest[]
 }
 
 model MaterialRequest {
-  id          String   @id @default(uuid()) @db.Uuid
-  projectId   String   @db.Uuid
-  project     Project  @relation(fields: [projectId], references: [id])
-  itemId      String   @db.Uuid
+  id          String        @id @default(uuid()) @db.Uuid
+  projectId   String        @db.Uuid
+  project     Project       @relation(fields: [projectId], references: [id])
+  itemId      String        @db.Uuid
   item        InventoryItem @relation(fields: [itemId], references: [id])
   quantity    Int
-  requestedBy String   @db.Uuid
-  requester   User     @relation("UserMaterialRequests", fields: [requestedBy], references: [id])
-  status      String   @default("pending")
+  requestedBy String        @db.Uuid
+  requester   User          @relation("UserMaterialRequests", fields: [requestedBy], references: [id])
+  status      String        @default("pending")
   approvedBy  String?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model Tender {
@@ -164,53 +165,55 @@ model Tender {
   deadline    DateTime
   budget      Float
   status      String   @default("open")
+  projectId   String   @db.Uuid
+  project     Project  @relation(fields: [projectId], references: [id])
   bids        Bid[]
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model Bid {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenderId    String   @db.Uuid
-  tender      Tender   @relation(fields: [tenderId], references: [id])
-  vendorId    String   @db.Uuid
-  vendor      User     @relation("UserBids", fields: [vendorId], references: [id])
-  amount      Float
-  status      String   @default("submitted")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String   @id @default(uuid()) @db.Uuid
+  tenderId  String   @db.Uuid
+  tender    Tender   @relation(fields: [tenderId], references: [id])
+  vendorId  String   @db.Uuid
+  vendor    User     @relation("UserBids", fields: [vendorId], references: [id])
+  amount    Float
+  status    String   @default("submitted")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model Employee {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @unique @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-  position    String
-  department  String
-  salary      Float
-  joinedAt    DateTime
-  leftAt      DateTime?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @unique @db.Uuid
+  user       User      @relation(fields: [userId], references: [id])
+  position   String
+  department String
+  salary     Float
+  joinedAt   DateTime
+  leftAt     DateTime?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model Notification {
-  id          String   @id @default(uuid()) @db.Uuid
-  to          String   @db.Uuid
-  user        User     @relation("UserNotifications", fields: [to], references: [id])
-  type        String
-  message     String
-  read        Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String   @id @default(uuid()) @db.Uuid
+  to        String   @db.Uuid
+  user      User     @relation("UserNotifications", fields: [to], references: [id])
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model Message {
-  id          String   @id @default(uuid()) @db.Uuid
-  from        String   @db.Uuid
-  sender      User     @relation("MessagesSent", fields: [from], references: [id])
-  to          String   @db.Uuid
-  receiver    User     @relation("MessagesReceived", fields: [to], references: [id])
-  content     String
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String   @id @default(uuid()) @db.Uuid
+  from      String   @db.Uuid
+  sender    User     @relation("MessagesSent", fields: [from], references: [id])
+  to        String   @db.Uuid
+  receiver  User     @relation("MessagesReceived", fields: [to], references: [id])
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model Document {
@@ -226,146 +229,146 @@ model Document {
 }
 
 model PurchaseOrder {
-  id            String   @id @default(uuid()) @db.Uuid
-  poNumber      String   @unique
-  vendor        String
-  items         PurchaseOrderItem[]
-  totalAmount   Float
-  orderDate     DateTime
+  id               String              @id @default(uuid()) @db.Uuid
+  poNumber         String              @unique
+  vendor           String
+  items            PurchaseOrderItem[]
+  totalAmount      Float
+  orderDate        DateTime
   expectedDelivery DateTime
-  status        String   // draft, sent, acknowledged, delivered, invoiced, paid
-  priority      String   // low, medium, high, urgent
-  project       String
-  grns          GRN[]
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status           String // draft, sent, acknowledged, delivered, invoiced, paid
+  priority         String // low, medium, high, urgent
+  project          String
+  grns             GRN[]
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model PurchaseOrderItem {
-  id            String   @id @default(uuid()) @db.Uuid
-  purchaseOrderId String   @db.Uuid
-  purchaseOrder  PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  itemCode       String
-  description    String
-  requiredBy     String
-  quantity       Int
-  uom            String
-  rate           Float
-  amount         Float
+  id              String        @id @default(uuid()) @db.Uuid
+  purchaseOrderId String        @db.Uuid
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  itemCode        String
+  description     String
+  requiredBy      String
+  quantity        Int
+  uom             String
+  rate            Float
+  amount          Float
 }
 
 model GRN {
-  id            String   @id @default(uuid()) @db.Uuid
-  poId          String   @db.Uuid
+  id            String        @id @default(uuid()) @db.Uuid
+  poId          String        @db.Uuid
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
   receivedDate  DateTime
   items         String // JSON or text for now
   receivedBy    String
   remarks       String?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model EquipmentMaintenance {
-  id            String   @id @default(uuid()) @db.Uuid
-  equipmentId   String
+  id              String   @id @default(uuid()) @db.Uuid
+  equipmentId     String
   maintenanceType String
-  notes         String?
-  nextService   Int?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  notes           String?
+  nextService     Int?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model LaborLog {
-  id            String   @id @default(uuid()) @db.Uuid
-  trade         String
-  workers       Int
-  hours         Int
-  overtime      Int?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String   @id @default(uuid()) @db.Uuid
+  trade     String
+  workers   Int
+  hours     Int
+  overtime  Int?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model BudgetAdjustment {
-  id            String   @id @default(uuid()) @db.Uuid
-  category      String
+  id             String   @id @default(uuid()) @db.Uuid
+  category       String
   adjustmentType String // increase, decrease
-  amount        Float
-  reason        String
-  effectiveDate DateTime
-  approver      String
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  amount         Float
+  reason         String
+  effectiveDate  DateTime
+  approver       String
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model IssueReport {
-  id            String   @id @default(uuid()) @db.Uuid
-  category      String
-  description   String
-  severity      String
+  id               String   @id @default(uuid()) @db.Uuid
+  category         String
+  description      String
+  severity         String
   responsibleParty String
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model DailyProgressReport {
-  id            String   @id @default(uuid()) @db.Uuid
-  projectId     String   @db.Uuid
-  workDone      String
-  weather       String
-  photos        String? // file links, JSON
-  notes         String?
-  workSections  String  // JSON or comma separated
-  manpower      String
-  manpowerRoles String
-  equipmentUsed String  // JSON or comma separated
+  id             String   @id @default(uuid()) @db.Uuid
+  projectId      String   @db.Uuid
+  workDone       String
+  weather        String
+  photos         String? // file links, JSON
+  notes          String?
+  workSections   String // JSON or comma separated
+  manpower       String
+  manpowerRoles  String
+  equipmentUsed  String // JSON or comma separated
   safetyIncident String?
-  safetyDetails String?
-  qualityCheck  String?
+  safetyDetails  String?
+  qualityCheck   String?
   qualityDetails String?
-  delayIssue    String?
-  delayDetails  String?
-  materials     String  // JSON
-  subcontractor String?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  delayIssue     String?
+  delayDetails   String?
+  materials      String // JSON
+  subcontractor  String?
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model WeeklyProgressReport {
-  id            String   @id @default(uuid()) @db.Uuid
-  projectId     String   @db.Uuid
-  weekStart     DateTime
-  weekEnding    DateTime
-  milestones    String
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @db.Uuid
+  weekStart       DateTime
+  weekEnding      DateTime
+  milestones      String
   plannedProgress String
-  actualProgress String
+  actualProgress  String
   progressRemarks String?
-  issues        String?
-  risks         String?
-  safetySummary String?
-  qualitySummary String?
-  manpower      String // JSON
-  equipment     String // JSON
-  materials     String // JSON
+  issues          String?
+  risks           String?
+  safetySummary   String?
+  qualitySummary  String?
+  manpower        String // JSON
+  equipment       String // JSON
+  materials       String // JSON
   teamPerformance String?
-  attachments   String? // file links, JSON
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  attachments     String? // file links, JSON
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model Event {
-  id            String   @id @default(uuid()) @db.Uuid
-  name          String
-  type          String
-  date          DateTime
-  time          String
-  description   String?
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  type        String
+  date        DateTime
+  time        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 }
 
 model Vendor {
-  id            String   @id @default(uuid()) @db.Uuid
-  name          String
-  category      String
-  location      String?
-  contact       String
-  email         String
-  address       String?
-  paymentTerms  String?
-  documents     String? // JSON or comma separated file links
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  category     String
+  location     String?
+  contact      String
+  email        String
+  address      String?
+  paymentTerms String?
+  documents    String? // JSON or comma separated file links
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
