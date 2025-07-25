@@ -75,14 +75,18 @@ export const tenderController = {
   async createBid(req: Request, res: Response) {
     try {
       const bid = await prismaTenderService.createBid(req.params.id, req.body);
-      // Notify tender creator (assuming tender has a creatorId field)
-      const tender = await prisma.tender.findUnique({ where: { id: req.params.id } });
-      if (tender && tender.clientId) {
-        await prismaNotificationService.createNotification({
-          to: tender.clientId,
-          type: 'bid',
-          message: `A new bid has been submitted to your tender.`
-        });
+      // Fetch the tender to get its projectId
+      const tender = await prisma.tender.findUnique({ where: { id: req.params.id } }) as any;
+      if (tender && tender.projectId) {
+        // Fetch the project to get the clientId
+        const project = await prisma.project.findUnique({ where: { id: tender.projectId } });
+        if (project && project.clientId) {
+          await prismaNotificationService.createNotification({
+            to: project.clientId,
+            type: 'bid',
+            message: `A new bid has been submitted to your tender.`
+          });
+        }
       }
       res.status(201).json(bid);
     } catch (error) {
@@ -97,16 +101,24 @@ export const tenderController = {
     try {
       const bids = await prismaTenderService.getBids(req.params.id);
       res.json(bids);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async updateBid(req: Request, res: Response) {
     try {
       const bid = await prismaTenderService.updateBid(req.params.bidId, req.body);
       res.json(bid);
-    } catch (err) {
-      res.status(400).json({ error: err.message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }
 }; 

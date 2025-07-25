@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prismaProjectService } from '../services/prismaProjectService';
 import { prismaNotificationService } from '../services/prismaNotificationService';
 import prisma from '../config/prisma';
+import logger from '../logger/logger';
 
 export const projectController = {
   async createProject(req: Request, res: Response) {
@@ -23,16 +24,24 @@ export const projectController = {
         message: `A new project has been created for you.`
       });
       res.status(201).json(project);
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async listProjects(req: Request, res: Response) {
     try {
       const projects = await prismaProjectService.getProjects();
       res.json(projects);
-    } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async getProject(req: Request, res: Response) {
@@ -40,24 +49,36 @@ export const projectController = {
       const project = await prismaProjectService.getProjectById(req.params.id);
       if (!project) return res.status(404).json({ error: 'Not found' });
       res.json(project);
-    } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async updateProject(req: Request, res: Response) {
     try {
       const project = await prismaProjectService.updateProject(req.params.id, req.body);
       res.json(project);
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async deleteProject(req: Request, res: Response) {
     try {
       await prismaProjectService.deleteProject(req.params.id);
       res.status(204).send();
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   // Task endpoints
@@ -73,24 +94,36 @@ export const projectController = {
         });
       }
       res.status(201).json(task);
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async updateTask(req: Request, res: Response) {
     try {
       const task = await prismaProjectService.updateTask(req.params.taskId, req.body);
       res.json(task);
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   },
   async listTasks(req: Request, res: Response) {
     try {
       const tasks = await prismaProjectService.getTasks(req.params.id);
       res.json(tasks);
-    } catch (err) {
-      res.status(500).json({ error: (err as Error).message });
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }
 }; 
