@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const TenderManagement = () => {
   const [isGRNModalOpen, setIsGRNModalOpen] = useState(false)
@@ -36,43 +38,15 @@ const TenderManagement = () => {
     contactPerson: '',
     submissionStatus: ''
   })
+  const [tenders, setTenders] = useState([]);
 
-  // Mock tender data (should match the dashboard for demo)
-  const tenders = [
-    {
-      id: "TND001",
-      projectName: "Commercial Complex - Phase 1",
-      client: "ABC Developers",
-      estimatedValue: 25000000,
-      submissionDate: "2024-02-15",
-      status: "submitted",
-      completionPercentage: 100,
-      category: "Commercial",
-      location: "Mumbai",
-    },
-    {
-      id: "TND002",
-      projectName: "Residential Towers",
-      client: "XYZ Properties",
-      estimatedValue: 45000000,
-      submissionDate: "2024-02-20",
-      status: "draft",
-      completionPercentage: 75,
-      category: "Residential",
-      location: "Pune",
-    },
-    {
-      id: "TND003",
-      projectName: "Infrastructure Development",
-      client: "Government Agency",
-      estimatedValue: 80000000,
-      submissionDate: "2024-02-25",
-      status: "under-evaluation",
-      completionPercentage: 100,
-      category: "Infrastructure",
-      location: "Delhi",
-    },
-  ];
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/tender`, { headers })
+      .then(res => setTenders(res.data))
+      .catch(() => {});
+  }, []);
 
   function handleExport() {
     const tendersSheet = utils.json_to_sheet(
@@ -1383,27 +1357,19 @@ const TenderManagement = () => {
 
             <div className="border rounded-lg p-4 space-y-4">
               <h4 className="font-medium">Customization Options</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Company Information</Label>
-                  <div className="grid grid-cols-1 gap-2">
-                    <Input placeholder="Company Name" />
-                    <Input placeholder="Project Reference" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Branding</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" className="w-full">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Upload Logo
-                    </Button>
-                    <Button variant="outline" className="w-full">
-                      <FileText className="h-4 w-4 mr-2" />
-                      Style Guide
-                    </Button>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Input placeholder="Company Name" />
+                <Input placeholder="Project Reference" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="w-full">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Upload Logo
+                </Button>
+                <Button variant="outline" className="w-full">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Style Guide
+                </Button>
               </div>
             </div>
 

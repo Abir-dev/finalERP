@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Tender {
   id: string;
@@ -43,41 +45,15 @@ export const TenderDashboard: React.FC<TenderDashboardProps> = ({ onNewTender })
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null);
   const [editedTender, setEditedTender] = useState<Tender | null>(null);
-  const [tenders, setTenders] = useState<Tender[]>([
-    {
-      id: 'TND001',
-      projectName: 'Commercial Complex - Phase 1',
-      client: 'ABC Developers',
-      estimatedValue: 25000000,
-      submissionDate: '2024-02-15',
-      status: 'submitted',
-      completionPercentage: 100,
-      category: 'Commercial',
-      location: 'Mumbai'
-    },
-    {
-      id: 'TND002',
-      projectName: 'Residential Towers',
-      client: 'XYZ Properties',
-      estimatedValue: 45000000,
-      submissionDate: '2024-02-20',
-      status: 'draft',
-      completionPercentage: 75,
-      category: 'Residential',
-      location: 'Pune'
-    },
-    {
-      id: 'TND003',
-      projectName: 'Infrastructure Development',
-      client: 'Government Agency',
-      estimatedValue: 80000000,
-      submissionDate: '2024-02-25',
-      status: 'under-evaluation',
-      completionPercentage: 100,
-      category: 'Infrastructure',
-      location: 'Delhi'
-    }
-  ]);
+  const [tenders, setTenders] = useState<Tender[]>([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/tender`, { headers })
+      .then(res => setTenders(res.data))
+      .catch(() => {});
+  }, []);
 
   const getStatusColor = (status: Tender['status']) => {
     switch (status) {

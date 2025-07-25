@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -17,56 +17,8 @@ import { PaintBucket, FileText, Clock, AlertTriangle, Upload, MessageSquare, Che
 import { designsData } from "@/lib/dummy-data"
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
-
-const approvalTrendData = [
-  { 
-    week: 'W1', 
-    review: 2.5,
-    redesign: 1.5,
-    approval: 1.2,
-    submitted: 12, 
-    approved: 8, 
-    rejected: 2, 
-    pending: 2 
-  },
-  { 
-    week: 'W2', 
-    review: 2.2,
-    redesign: 1.3,
-    approval: 1.0,
-    submitted: 15, 
-    approved: 11, 
-    rejected: 3, 
-    pending: 1 
-  },
-  { 
-    week: 'W3', 
-    review: 2.0,
-    redesign: 1.2,
-    approval: 0.8,
-    submitted: 18, 
-    approved: 14, 
-    rejected: 2, 
-    pending: 2 
-  },
-  { 
-    week: 'W4', 
-    review: 1.8,
-    redesign: 1.0,
-    approval: 0.7,
-    submitted: 20, 
-    approved: 16, 
-    rejected: 1, 
-    pending: 3 
-  },
-]
-
-const turnaroundData = [
-  { designer: 'John Doe', avgDays: 3.2, delays: 2 },
-  { designer: 'Jane Smith', avgDays: 2.8, delays: 1 },
-  { designer: 'Mike Johnson', avgDays: 4.1, delays: 3 },
-  { designer: 'Sarah Wilson', avgDays: 3.5, delays: 2 },
-]
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 type Design = typeof designsData[0]
 
@@ -169,17 +121,37 @@ const designColumns: ColumnDef<Design>[] = [
 ]
 
 const DesignDashboard = () => {
+  const [designStats, setDesignStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [approvalTrendData, setApprovalTrendData] = useState([]);
+  const [turnaroundData, setTurnaroundData] = useState([]);
+  const [designs, setDesigns] = useState([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
-  const [designs, setDesigns] = useState(designsData)
   const [isAnalyticModalOpen, setIsAnalyticModalOpen] = useState(false)
   const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false)
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false)
   const [selectedAnalytic, setSelectedAnalytic] = useState<string | null>(null)
   const [selectedBottleneck, setSelectedBottleneck] = useState<any | null>(null)
   const [selectedEscalation, setSelectedEscalation] = useState<any | null>(null)
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/design/stats`, { headers })
+      .then(res => setDesignStats(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/design/approval-trends`, { headers })
+      .then(res => setApprovalTrendData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/design/turnaround`, { headers })
+      .then(res => setTurnaroundData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/designs`, { headers })
+      .then(res => setDesigns(res.data))
+      .catch(() => {});
+  }, []);
 
   const handleUploadRevision = (design: Design) => {
     setSelectedDesign(design)
@@ -259,7 +231,7 @@ const DesignDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Designs"
-              value="156"
+              value={designStats.total}
               icon={FileText}
               description="All design submissions"
               trend={{ value: 12, label: "this month" }}
@@ -267,14 +239,14 @@ const DesignDashboard = () => {
             />
             <StatCard
               title="Pending Approvals"
-              value="18"
+              value={designStats.pending}
               icon={Clock}
               description="Awaiting review"
               onClick={() => toast.info("Opening pending approvals")}
             />
             <StatCard
               title="Approved This Month"
-              value="42"
+              value={designStats.approved}
               icon={CheckCircle}
               description="Successfully approved"
               trend={{ value: 8, label: "vs last month" }}
@@ -282,7 +254,7 @@ const DesignDashboard = () => {
             />
             <StatCard
               title="Rejected Designs"
-              value="6"
+              value={designStats.rejected}
               icon={AlertTriangle}
               description="Requiring revisions"
               onClick={() => toast.info("Viewing rejection reasons")}

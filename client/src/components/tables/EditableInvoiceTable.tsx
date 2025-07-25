@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Eye, Mail, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import EditInvoiceModal from '@/components/modals/EditInvoiceModal';
 import ViewInvoiceModal from '@/components/modals/ViewInvoiceModal';
 import { toast } from 'sonner';
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Invoice {
   id: string;
@@ -17,44 +19,19 @@ interface Invoice {
   paymentMethod: string;
 }
 
-const initialInvoices: Invoice[] = [
-  {
-    id: 'INV-2024-001',
-    project: 'Residential Complex A',
-    client: 'Green Valley Developers',
-    amount: 1550000,
-    status: 'Paid',
-    dueDate: '2024-05-15',
-    sentDate: '2024-04-15',
-    paymentMethod: 'Bank Transfer'
-  },
-  {
-    id: 'INV-2024-002',
-    project: 'Office Tower B',
-    client: 'Metropolitan Holdings',
-    amount: 875000,
-    status: 'Pending',
-    dueDate: '2024-06-01',
-    sentDate: '2024-05-01',
-    paymentMethod: 'Cheque'
-  },
-  {
-    id: 'INV-2024-003',
-    project: 'Shopping Mall C',
-    client: 'City Center Corp',
-    amount: 2230000,
-    status: 'Overdue',
-    dueDate: '2024-05-20',
-    sentDate: '2024-04-20',
-    paymentMethod: 'RTGS'
-  }
-];
-
 const EditableInvoiceTable = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/billing/invoices`, { headers })
+      .then(res => setInvoices(res.data))
+      .catch(() => {});
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

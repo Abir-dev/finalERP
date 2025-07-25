@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { employeesData } from "@/lib/dummy-data";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { FilterIcon, Plus, Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -11,15 +11,35 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AddEmployeeModal } from "@/components/modals/AddEmployeeModal";
 import { ViewEmployeeModal } from "@/components/modals/ViewEmployeeModal";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
 const HR = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [employees, setEmployees] = useState(employeesData);
+  const [employees, setEmployees] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<typeof employees[0] | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // Add backend state
+  const [hrStats, setHrStats] = useState({ totalEmployees: 0, avgSalary: '' });
   
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/hr/employees`, { headers })
+      .then(res => setEmployees(res.data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/hr/stats`, { headers })
+      .then(res => setHrStats(res.data))
+      .catch(() => {});
+  }, []);
+
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = 
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,7 +89,7 @@ const HR = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard 
           title="Total Employees" 
-          value={employees.length} 
+          value={hrStats.totalEmployees} 
           icon={Users}
           trend={{
             value: 5,
@@ -87,8 +107,8 @@ const HR = () => {
           description="Construction, Design, Management, Admin"
         />
         <StatCard 
-          title="Average Salary" 
-          value={`₹${Math.round(employees.reduce((sum, e) => sum + e.salary, 0) / employees.length).toLocaleString()}`} 
+          title="Avg. Salary" 
+          value={hrStats.avgSalary} 
           trend={{
             value: 3,
             label: "increase"

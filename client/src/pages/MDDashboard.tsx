@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -13,27 +13,29 @@ import {
   TrendingUp, DollarSign, Users, Building2, AlertTriangle, Calendar,
   Download, Target, Zap, Clock, Shield, Activity, BarChart3
 } from "lucide-react"
-import { projectsData, clientsData } from "@/lib/dummy-data"
+import axios from "axios";
 import { toast } from "sonner"
 
-// Enhanced data for hyper-detailed dashboard
-const executiveScorecard = [
-  { metric: 'Revenue Target', current: 85, target: 100, status: 'warning' },
-  { metric: 'Project Delivery', current: 92, target: 90, status: 'good' },
-  { metric: 'Client Satisfaction', current: 96, target: 95, status: 'good' },
-  { metric: 'Cost Control', current: 78, target: 85, status: 'critical' },
-  { metric: 'Team Efficiency', current: 88, target: 85, status: 'good' },
-  { metric: 'Safety Record', current: 99, target: 98, status: 'good' }
-]
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-const revenueData = [
-  { month: 'Jan', revenue: 4500000, expense: 3200000, forecast: 4300000, target: 4600000, trend: 8 },
-  { month: 'Feb', revenue: 5200000, expense: 3800000, forecast: 5100000, target: 5000000, trend: 12 },
-  { month: 'Mar', revenue: 4800000, expense: 3500000, forecast: 4900000, target: 4800000, trend: -2 },
-  { month: 'Apr', revenue: 6100000, expense: 4200000, forecast: 5900000, target: 5500000, trend: 15 },
-  { month: 'May', revenue: 5700000, expense: 4000000, forecast: 5800000, target: 5600000, trend: 3 },
-  { month: 'Jun', revenue: 6500000, expense: 4500000, forecast: 6400000, target: 6200000, trend: 9 }
-]
+// Enhanced data for hyper-detailed dashboard
+// const executiveScorecard = [
+//   { metric: 'Revenue Target', current: 85, target: 100, status: 'warning' },
+//   { metric: 'Project Delivery', current: 92, target: 90, status: 'good' },
+//   { metric: 'Client Satisfaction', current: 96, target: 95, status: 'good' },
+//   { metric: 'Cost Control', current: 78, target: 85, status: 'critical' },
+//   { metric: 'Team Efficiency', current: 88, target: 85, status: 'good' },
+//   { metric: 'Safety Record', current: 99, target: 98, status: 'good' }
+// ]
+
+// const revenueData = [
+//   { month: 'Jan', revenue: 4500000, expense: 3200000, forecast: 4300000, target: 4600000, trend: 8 },
+//   { month: 'Feb', revenue: 5200000, expense: 3800000, forecast: 5100000, target: 5000000, trend: 12 },
+//   { month: 'Mar', revenue: 4800000, expense: 3500000, forecast: 4900000, target: 4800000, trend: -2 },
+//   { month: 'Apr', revenue: 6100000, expense: 4200000, forecast: 5900000, target: 5500000, trend: 15 },
+//   { month: 'May', revenue: 5700000, expense: 4000000, forecast: 5800000, target: 5600000, trend: 3 },
+//   { month: 'Jun', revenue: 6500000, expense: 4500000, forecast: 6400000, target: 6200000, trend: 9 }
+// ]
 
 interface Risk {
   id: string;
@@ -50,78 +52,78 @@ interface Risk {
   isFlagged: boolean;
 }
 
-const projectRiskMatrix: Risk[] = [
-  { 
-    id: '1',
-    project: 'Tower A', 
-    riskLevel: 'High', 
-    probability: 80, 
-    impact: 'Critical', 
-    mitigation: 'Resource reallocation',
-    category: 'Technical',
-    lastAssessment: '2024-02-01',
-    nextReview: '2024-02-15',
-    owner: 'John Smith',
-    mitigationActions: [
-      'Weekly stakeholder reviews',
-      'Additional resource allocation',
-      'Contingency plan activation'
-    ],
-    isFlagged: false
-  },
-  { 
-    id: '2',
-    project: 'Mall Complex', 
-    riskLevel: 'Medium', 
-    probability: 45, 
-    impact: 'Moderate', 
-    mitigation: 'Schedule adjustment',
-    category: 'Operational',
-    lastAssessment: '2024-01-28',
-    nextReview: '2024-02-11',
-    owner: 'Sarah Johnson',
-    mitigationActions: [
-      'Review timeline dependencies',
-      'Adjust resource allocation'
-    ],
-    isFlagged: false
-  },
-  { 
-    id: '3',
-    project: 'Villa Phase 2', 
-    riskLevel: 'Low', 
-    probability: 20, 
-    impact: 'Minor', 
-    mitigation: 'Monitor closely',
-    category: 'Financial',
-    lastAssessment: '2024-01-25',
-    nextReview: '2024-02-08',
-    owner: 'Mike Brown',
-    mitigationActions: [
-      'Weekly progress monitoring',
-      'Resource optimization review'
-    ],
-    isFlagged: false
-  },
-  { 
-    id: '4',
-    project: 'Office Building', 
-    riskLevel: 'High', 
-    probability: 75, 
-    impact: 'Major', 
-    mitigation: 'Stakeholder meeting',
-    category: 'Environmental',
-    lastAssessment: '2024-01-30',
-    nextReview: '2024-02-13',
-    owner: 'Emily Davis',
-    mitigationActions: [
-      'Stakeholder communication plan',
-      'Impact assessment review',
-      'Mitigation strategy update'
-    ],
-    isFlagged: false
-  }
-];
+// const projectRiskMatrix: Risk[] = [
+//   { 
+//     id: '1',
+//     project: 'Tower A', 
+//     riskLevel: 'High', 
+//     probability: 80, 
+//     impact: 'Critical', 
+//     mitigation: 'Resource reallocation',
+//     category: 'Technical',
+//     lastAssessment: '2024-02-01',
+//     nextReview: '2024-02-15',
+//     owner: 'John Smith',
+//     mitigationActions: [
+//       'Weekly stakeholder reviews',
+//       'Additional resource allocation',
+//       'Contingency plan activation'
+//     ],
+//     isFlagged: false
+//   },
+//   { 
+//     id: '2',
+//     project: 'Mall Complex', 
+//     riskLevel: 'Medium', 
+//     probability: 45, 
+//     impact: 'Moderate', 
+//     mitigation: 'Schedule adjustment',
+//     category: 'Operational',
+//     lastAssessment: '2024-01-28',
+//     nextReview: '2024-02-11',
+//     owner: 'Sarah Johnson',
+//     mitigationActions: [
+//       'Review timeline dependencies',
+//       'Adjust resource allocation'
+//     ],
+//     isFlagged: false
+//   },
+//   { 
+//     id: '3',
+//     project: 'Villa Phase 2', 
+//     riskLevel: 'Low', 
+//     probability: 20, 
+//     impact: 'Minor', 
+//     mitigation: 'Monitor closely',
+//     category: 'Financial',
+//     lastAssessment: '2024-01-25',
+//     nextReview: '2024-02-08',
+//     owner: 'Mike Brown',
+//     mitigationActions: [
+//       'Weekly progress monitoring',
+//       'Resource optimization review'
+//     ],
+//     isFlagged: false
+//   },
+//   { 
+//     id: '4',
+//     project: 'Office Building', 
+//     riskLevel: 'High', 
+//     probability: 75, 
+//     impact: 'Major', 
+//     mitigation: 'Stakeholder meeting',
+//     category: 'Environmental',
+//     lastAssessment: '2024-01-30',
+//     nextReview: '2024-02-13',
+//     owner: 'Emily Davis',
+//     mitigationActions: [
+//       'Stakeholder communication plan',
+//       'Impact assessment review',
+//       'Mitigation strategy update'
+//     ],
+//     isFlagged: false
+//   }
+// ];
 
 interface Department {
   department: string;
@@ -132,24 +134,46 @@ interface Department {
   isFlagged?: boolean;
 }
 
-const teamPerformanceData = [
-  { department: 'Construction', efficiency: 92, utilization: 88, issues: 2, trend: 5 },
-  { department: 'Design', efficiency: 89, utilization: 94, issues: 1, trend: 3 },
-  { department: 'Project Management', efficiency: 94, utilization: 90, issues: 0, trend: 8 },
-  { department: 'Quality Assurance', efficiency: 87, utilization: 85, issues: 3, trend: -2 }
-]
+// const teamPerformanceData = [
+//   { department: 'Construction', efficiency: 92, utilization: 88, issues: 2, trend: 5 },
+//   { department: 'Design', efficiency: 89, utilization: 94, issues: 1, trend: 3 },
+//   { department: 'Project Management', efficiency: 94, utilization: 90, issues: 0, trend: 8 },
+//   { department: 'Quality Assurance', efficiency: 87, utilization: 85, issues: 3, trend: -2 }
+// ]
 
 const MDDashboard = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('30d')
   const [selectedProject, setSelectedProject] = useState<any>(null)
-  const [risks, setRisks] = useState<Risk[]>(projectRiskMatrix)
-  const [departments, setDepartments] = useState<Department[]>(teamPerformanceData)
-  const [projects, setProjects] = useState(projectsData.map(p => ({
-    ...p,
-    riskLevel: ['Low', 'Medium', 'High'][Math.floor(Math.random() * 3)],
-    alerts: Math.random() > 0.7 ? ['Budget variance detected', 'Schedule delay risk'] : undefined,
-    isFlagged: false
-  })))
+  // Replace static arrays with backend data
+  const [executiveScorecard, setExecutiveScorecard] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [risks, setRisks] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/md/scorecard`, { headers })
+      .then(res => setExecutiveScorecard(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/md/revenue`, { headers })
+      .then(res => setRevenueData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/md/risks`, { headers })
+      .then(res => setRisks(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/md/team-performance`, { headers })
+      .then(res => setDepartments(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/projects`, { headers })
+      .then(res => setProjects(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/clients`, { headers })
+      .then(res => setClients(res.data))
+      .catch(() => {});
+  }, []);
 
   const handleExportSnapshot = () => {
     // Generate comprehensive dashboard report
@@ -182,7 +206,7 @@ const MDDashboard = () => {
         profitMargin: `${(((item.revenue - item.expense) / item.revenue) * 100).toFixed(1)}%`
       })),
       
-      teamPerformance: teamPerformanceData.map(dept => ({
+      teamPerformance: departments.map(dept => ({
         department: dept.department,
         efficiency: `${dept.efficiency}%`,
         utilization: `${dept.utilization}%`,
@@ -592,7 +616,7 @@ Report End - Generated by MD Dashboard System
             <InteractiveChart
               title="Department Performance Matrix"
               description="Efficiency and utilization by department"
-              data={teamPerformanceData}
+              data={departments}
               type="bar"
               dataKey="efficiency"
               secondaryDataKey="utilization"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { inventoryData } from "@/lib/dummy-data";
@@ -23,76 +23,16 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import axios from "axios";
+import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-// Enhanced inventory data
-const inventoryTrends = [
-  { month: 'Jan', consumption: 850, procurement: 900, stockLevel: 2400, forecast: 880 },
-  { month: 'Feb', consumption: 920, procurement: 950, stockLevel: 2430, forecast: 940 },
-  { month: 'Mar', consumption: 780, procurement: 800, stockLevel: 2450, forecast: 800 },
-  { month: 'Apr', consumption: 1100, procurement: 1150, stockLevel: 2500, forecast: 1080 },
-  { month: 'May', consumption: 950, procurement: 1000, stockLevel: 2550, forecast: 980 },
-  { month: 'Jun', consumption: 1050, procurement: 1100, stockLevel: 2600, forecast: 1020 }
-];
-
-const warehouseUtilization = [
-  { location: 'Warehouse A', capacity: 100, used: 85, efficiency: 92 },
-  { location: 'Warehouse B', capacity: 100, used: 72, efficiency: 88 },
-  { location: 'Site Storage 1', capacity: 100, used: 94, efficiency: 85 },
-  { location: 'Site Storage 2', capacity: 100, used: 68, efficiency: 90 }
-];
-
-const grnData = [
-  { id: 'GRN001', supplier: 'Steel Corp', items: 15, value: 450000, status: 'Verified', date: '2024-01-15', variance: 0 },
-  { id: 'GRN002', supplier: 'Cement Ltd', items: 8, value: 320000, status: 'Pending', date: '2024-01-16', variance: 2 },
-  { id: 'GRN003', supplier: 'Tools Inc', items: 25, value: 180000, status: 'Discrepancy', date: '2024-01-17', variance: 5 },
-  { id: 'GRN004', supplier: 'Hardware Co', items: 12, value: 95000, status: 'Verified', date: '2024-01-18', variance: 0 }
-];
-
-const transferData = [
-  { id: 'TRF001', from: 'Warehouse A', to: 'Site 1', items: 10, status: 'In Transit', driver: 'John Doe', eta: '2 hours' },
-  { id: 'TRF002', from: 'Warehouse B', to: 'Site 2', items: 15, status: 'Delivered', driver: 'Jane Smith', eta: 'Completed' },
-  { id: 'TRF003', from: 'Site 1', to: 'Warehouse A', items: 5, status: 'Pending', driver: 'Mike Johnson', eta: '4 hours' }
-];
-
-// Enhanced mock data for project management features
-const mockTasks = [
-  {
-    id: 'T001',
-    name: 'Foundation Excavation',
-    startDate: '2024-01-15',
-    endDate: '2024-01-25',
-    duration: 10,
-    progress: 85,
-    dependencies: [],
-    assignedTo: 'Site Team A',
-    priority: 'high' as const,
-    status: 'in-progress' as const
-  },
-  {
-    id: 'T002',
-    name: 'Concrete Pouring - Foundation',
-    startDate: '2024-01-26',
-    endDate: '2024-02-05',
-    duration: 10,
-    progress: 0,
-    dependencies: ['T001'],
-    assignedTo: 'Concrete Team',
-    priority: 'critical' as const,
-    status: 'not-started' as const
-  },
-  {
-    id: 'T003',
-    name: 'Steel Framework Installation',
-    startDate: '2024-02-06',
-    endDate: '2024-02-20',
-    duration: 14,
-    progress: 0,
-    dependencies: ['T002'],
-    assignedTo: 'Steel Team',
-    priority: 'high' as const,
-    status: 'not-started' as const
-  }
-];
+// Add backend state
+// const [inventoryTrends, setInventoryTrends] = useState([]);
+// const [warehouseUtilization, setWarehouseUtilization] = useState([]);
+// const [grnData, setGrnData] = useState([]);
+// const [transferData, setTransferData] = useState([]);
+// const [tasks, setTasks] = useState([]);
 
 // Add the form schema
 const addItemFormSchema = z.object({
@@ -233,30 +173,11 @@ const inventoryExpandableContent = (row: InventoryItem) => (
 );
 
 const Inventory = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
-  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(
-    inventoryData.map(item => ({
-      ...item,
-      id: item.id || Math.random().toString(36).substr(2, 9),
-      reorderLevel: 50,
-      maxStock: 500,
-      safetyStock: 20,
-      isFlagged: false,
-      // Convert single category to array
-      category: item.category ? [item.category] : []
-    }))
-  );
-  const [transfers, setTransfers] = useState<Transfer[]>(
-    transferData.map(transfer => ({
-      ...transfer,
-      isFlagged: false
-    }))
-  );
+  const [inventoryTrends, setInventoryTrends] = useState([]);
+  const [warehouseUtilization, setWarehouseUtilization] = useState([]);
+  const [grnData, setGrnData] = useState([]);
+  const [transferData, setTransferData] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
   // Add new state variables for quick action dialogs
   const [isResolveIssuesOpen, setIsResolveIssuesOpen] = useState(false);
@@ -264,8 +185,47 @@ const Inventory = () => {
   const [isViewScheduleOpen, setIsViewScheduleOpen] = useState(false);
   const [isReviewProgressOpen, setIsReviewProgressOpen] = useState(false);
 
+  // Add state for inventory items and transfers
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
+  const [transfers, setTransfers] = useState<Transfer[]>([]);
+
+  // Add state for search and filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  // Add state for Add Item dialog
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+
+  // Add state for View Details dialog
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItemType | null>(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/inventory/items`, { headers })
+      .then(res => setInventoryItems(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/transfers`, { headers })
+      .then(res => setTransfers(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/trends`, { headers })
+      .then(res => setInventoryTrends(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/warehouse-utilization`, { headers })
+      .then(res => setWarehouseUtilization(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/grn`, { headers })
+      .then(res => setGrnData(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/inventory/tasks`, { headers })
+      .then(res => setTasks(res.data))
+      .catch(() => {});
+  }, []);
+
   // Add action handlers
-  const handleInventoryAction = (action: string, item: InventoryItem, updatedData?: any) => {
+  const handleInventoryAction = (action: string, item: InventoryItemType, updatedData?: any) => {
     switch (action) {
       case 'view':
         handleViewDetails(item);
@@ -310,10 +270,11 @@ const Inventory = () => {
 
   // Filter items based on search and filters
   const filteredItems = inventoryItems.filter(item => {
+    const categoryArray = Array.isArray(item.category) ? item.category : [item.category];
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
+      categoryArray.some(cat => cat.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesLocation = !selectedLocation || selectedLocation === 'all_locations' || item.location === selectedLocation;
-    const matchesCategory = !selectedCategory || item.category.includes(selectedCategory);
+    const matchesCategory = !selectedCategory || categoryArray.includes(selectedCategory);
     return matchesSearch && matchesLocation && matchesCategory;
   });
 
@@ -336,7 +297,7 @@ const Inventory = () => {
 
     switch (tabName) {
       case 'project-overview':
-        exportData = mockTasks.map(task => ({
+        exportData = tasks.map(task => ({
           'Task ID': task.id,
           'Task Name': task.name,
           'Start Date': task.startDate,
@@ -352,7 +313,7 @@ const Inventory = () => {
       case 'inventory':
         exportData = filteredItems.map(item => ({
           'Item Name': item.name,
-          'Category': item.category.join(', '),
+          'Category': Array.isArray(item.category) ? item.category.join(', ') : item.category,
           'Quantity': item.quantity,
           'Unit': item.unit,
           'Location': item.location,
@@ -393,17 +354,10 @@ const Inventory = () => {
         const wb = XLSX.utils.book_new();
         
         // Progress data
-        const progressData = [
-          { month: 'Jan', planned: 25, actual: 23, efficiency: 92 },
-          { month: 'Feb', planned: 30, actual: 28, efficiency: 93 },
-          { month: 'Mar', planned: 35, actual: 32, efficiency: 91 },
-          { month: 'Apr', planned: 40, actual: 39, efficiency: 97 },
-          { month: 'May', planned: 45, actual: 44, efficiency: 98 },
-          { month: 'Jun', planned: 50, actual: 48, efficiency: 96 }
-        ].map(data => ({
+        const progressData = inventoryTrends.map(data => ({
           'Month': data.month,
-          'Planned Progress': `${data.planned}%`,
-          'Actual Progress': `${data.actual}%`,
+          'Planned Progress': `${data.forecast}%`,
+          'Actual Progress': `${data.stockLevel}`,
           'Efficiency': `${data.efficiency}%`
         }));
 
@@ -508,7 +462,7 @@ const Inventory = () => {
   };
 
   // Add view details handler
-  const handleViewDetails = (item: InventoryItem) => {
+  const handleViewDetails = (item: InventoryItemType) => {
     setSelectedItem(item);
     setIsViewDetailsOpen(true);
   };
@@ -823,7 +777,7 @@ const Inventory = () => {
           {/* Enhanced Gantt Chart */}
           <GanttChart
             projectId="PROJ001"
-            tasks={mockTasks}
+            tasks={tasks}
             onTaskUpdate={(taskId, updates) => {
               console.log('Task updated:', taskId, updates);
             }}
@@ -981,7 +935,7 @@ const Inventory = () => {
                 type: 'badge' as const,
                 options: CATEGORY_OPTIONS,
                 multiple: false,
-                render: (value: string[], item: InventoryItem) => (
+                render: (value: string[], item: InventoryItemType) => (
                   <div className="flex flex-wrap gap-1">
                     {value?.[0] ? (
                       <Badge variant="secondary" className="mr-1">
@@ -993,7 +947,7 @@ const Inventory = () => {
               },
               {
                 key: 'quantity', label: 'Quantity',
-                render: (value: number, item: InventoryItem) => (
+                render: (value: number, item: InventoryItemType) => (
                   <Badge variant={value > (item.reorderLevel || 50) ? "default" : "destructive"}>
                     {value} {item.unit}
                   </Badge>
@@ -1004,7 +958,7 @@ const Inventory = () => {
               {
                 key: 'status',
                 label: 'Status',
-                render: (_, item: InventoryItem) => (
+                render: (_, item: InventoryItemType) => (
                   <Badge variant={item.quantity > (item.reorderLevel || 50) ? "default" : "destructive"}>
                     {item.quantity > (item.reorderLevel || 50) ? "In Stock" : "Low Stock"}
                   </Badge>
@@ -1063,7 +1017,7 @@ const Inventory = () => {
                           </div>
                           <div>
                             <Label>Category</Label>
-                            <p className="text-lg">{selectedItem.category.join(', ')}</p>
+                            <p className="text-lg">{Array.isArray(selectedItem.category) ? selectedItem.category.join(', ') : selectedItem.category}</p>
                           </div>
                         </div>
                         <div className="space-y-2">
@@ -1348,14 +1302,7 @@ const Inventory = () => {
             <InteractiveChart
               title="Project Progress Analytics"
               description="Real-time project completion trends"
-              data={[
-                { month: 'Jan', planned: 25, actual: 23, efficiency: 92 },
-                { month: 'Feb', planned: 30, actual: 28, efficiency: 93 },
-                { month: 'Mar', planned: 35, actual: 32, efficiency: 91 },
-                { month: 'Apr', planned: 40, actual: 39, efficiency: 97 },
-                { month: 'May', planned: 45, actual: 44, efficiency: 98 },
-                { month: 'Jun', planned: 50, actual: 48, efficiency: 96 }
-              ]}
+              data={inventoryTrends}
               type="line"
               dataKey="actual"
               secondaryDataKey="planned"

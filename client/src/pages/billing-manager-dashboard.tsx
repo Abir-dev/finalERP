@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, FileText, CreditCard, Clock, TrendingUp, DollarSign, Loader2, Download, MoreVertical, Upload, CheckCircle, Mail, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,8 @@ import {
   sendPaymentReminder
 } from '@/utils/billing-actions';
 import { downloadProgressInvoice } from '@/utils/invoice-generator';
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Invoice {
   invoice: string;
@@ -74,126 +76,43 @@ const BillingManagerDashboard = () => {
   // Add state for reminder loading
   const [reminderLoadingStates, setReminderLoadingStates] = useState<{ [key: string]: boolean }>({});
 
-  // Update invoices state to include reminder history
-  const [invoices, setInvoices] = useState<Invoice[]>([
-    { 
-      invoice: 'INV-2024-001',
-      client: 'Green Valley Developers',
-      amount: '₹15,50,000',
-      status: 'Paid' as const,
-      dueDate: '2024-03-15',
-      paidDate: '2024-03-14',
-      reminderCount: 0,
-      lastReminderSent: null
-    },
-    {
-      invoice: 'INV-2024-002',
-      client: 'Metropolitan Holdings',
-      amount: '₹8,75,000',
-      status: 'Pending' as const,
-      dueDate: '2024-03-25',
-      paidDate: null,
-      reminderCount: 0,
-      lastReminderSent: null
-    },
-    {
-      invoice: 'INV-2024-003',
-      client: 'City Center Corp',
-      amount: '₹22,30,000',
-      status: 'Overdue' as const,
-      dueDate: '2024-03-10',
-      paidDate: null,
-      reminderCount: 1,
-      lastReminderSent: '2024-03-15'
-    }
-  ]);
-
-  // Add new state for payment summary
-  const [paymentSummary, setPaymentSummary] = useState({
-    received: { count: 1, amount: '₹15,50,000' },
-    pending: { count: 1, amount: '₹8,75,000' },
-    overdue: { count: 1, amount: '₹22,30,000' }
-  });
-
-  // Add document states
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: 'doc1',
-      name: 'March_2024_Invoice.pdf',
-      type: 'Invoice',
-      size: '2.5 MB',
-      uploadedBy: 'John Doe',
-      date: '2024-03-15',
-      status: 'Verified',
-      project: 'Residential Complex A',
-      amount: '₹15,50,000',
-      client: 'Green Valley Developers'
-    },
-    {
-      id: 'doc2',
-      name: 'Project_Contract_2024.docx',
-      type: 'Contract',
-      size: '1.8 MB',
-      uploadedBy: 'Sarah Smith',
-      date: '2024-03-10',
-      status: 'Pending Review',
-      client: 'Metropolitan Holdings',
-      amount: '₹2.5 Cr'
-    },
-    {
-      id: 'doc3',
-      name: 'Payment_Receipt_123.pdf',
-      type: 'Receipt',
-      size: '500 KB',
-      uploadedBy: 'Mike Johnson',
-      date: '2024-03-08',
-      status: 'Verified',
-      method: 'Bank Transfer'
-    }
-  ]);
-
+  // Add state for document loading
   const [documentLoadingStates, setDocumentLoadingStates] = useState<{ [key: string]: boolean }>({});
-  const [selectedTab, setSelectedTab] = useState<'all' | 'invoices' | 'contracts' | 'receipts' | 'others'>('all');
+
+  // Add ref for file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Add progress billing states
-  const [progressInvoices, setProgressInvoices] = useState<ProgressInvoice[]>([
-    {
-      projectId: 'PRJ001',
-      project: 'Residential Complex A',
-      completed: 65,
-      billed: 60,
-      nextBilling: '₹5L',
-      invoiceDate: '2024-03-15',
-      totalAmount: 1550000,
-      clientName: 'Green Valley Developers',
-      address: '123 Main St, City'
-    },
-    {
-      projectId: 'PRJ002',
-      project: 'Office Tower B',
-      completed: 30,
-      billed: 25,
-      nextBilling: '₹8L',
-      invoiceDate: '2024-03-10',
-      totalAmount: 875000,
-      clientName: 'Metropolitan Holdings',
-      address: '456 Elm St, City'
-    },
-    {
-      projectId: 'PRJ003',
-      project: 'Shopping Mall C',
-      completed: 85,
-      billed: 80,
-      nextBilling: '₹12L',
-      invoiceDate: '2024-03-20',
-      totalAmount: 2230000,
-      clientName: 'City Center Corp',
-      address: '789 Oak St, City'
-    }
-  ]);
+  // Add state for selected tab
+  const [selectedTab, setSelectedTab] = useState<string>('all');
+
+  // Replace static arrays with backend data
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [paymentSummary, setPaymentSummary] = useState({
+    received: { count: 0, amount: '' },
+    pending: { count: 0, amount: '' },
+    overdue: { count: 0, amount: '' }
+  });
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [progressInvoices, setProgressInvoices] = useState<ProgressInvoice[]>([]);
 
   const [generatingInvoice, setGeneratingInvoice] = useState<{ [key: string]: boolean }>({});
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/billing/invoices`, { headers })
+      .then(res => setInvoices(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/billing/payment-summary`, { headers })
+      .then(res => setPaymentSummary(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/billing/documents`, { headers })
+      .then(res => setDocuments(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/billing/progress-invoices`, { headers })
+      .then(res => setProgressInvoices(res.data))
+      .catch(() => {});
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -1,36 +1,23 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
 
-// Dummy data (copy from SiteDashboard for now)
-const tasks = [
-  {
-    id: "TASK-2",
-    name: "Steel Structure",
-    project: "Main Building",
-    assignedTo: "Jane Smith",
-    startDate: "2024-01-16",
-    dueDate: "2024-02-15",
-    status: "In Progress",
-    progress: 75,
-    phase: "Structure",
-  },
-  {
-    id: "TASK-3",
-    name: "Roofing Installation",
-    project: "Main Building",
-    assignedTo: "Mike Johnson",
-    startDate: "2024-02-01",
-    dueDate: "2024-02-28",
-    status: "In Progress",
-    progress: 45,
-    phase: "Roofing",
-  },
-];
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const ActiveTasksPage = () => {
   const navigate = useNavigate();
+  const [tasks, setTasks] = useState([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/tasks/active`, { headers })
+      .then(res => setTasks(res.data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-6">
       <Card>

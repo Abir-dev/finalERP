@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -70,6 +70,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import axios from "axios";
+
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
 interface StockAlert {
   id: number;
   item: string;
@@ -117,41 +122,35 @@ interface StorageSection {
   type: string;
 }
 
-const progressData = [
-  { week: "W1", planned: 15, actual: 12 },
-  { week: "W2", planned: 20, actual: 18 },
-  { week: "W3", planned: 25, actual: 24 },
-  { week: "W4", planned: 18, actual: 16 },
-];
-
-const materialUsageData = [
-  { material: "Cement", requested: 200, used: 185 },
-  { material: "Steel", requested: 1500, used: 1450 },
-  { material: "Bricks", requested: 5000, used: 4800 },
-  { material: "Sand", requested: 50, used: 48 },
-];
+// Add backend state
+// const [progressData, setProgressData] = useState([]);
+// const [materialUsageData, setMaterialUsageData] = useState([]);
+// const [costData, setCostData] = useState([]);
+// const [laborData, setLaborData] = useState([]);
+// const [purchaseOrders, setPurchaseOrders] = useState([]);
+// const [equipment, setEquipment] = useState([]);
 
 // Cost Data
-const costData = [
-  { category: "Productive Labor", planned: 175000, actual: 190000 },
-  { category: "Non-Productive Labor", planned: 75000, actual: 85000 },
-  { category: "Materials", planned: 450000, actual: 425000 },
-  { category: "Equipment", planned: 180000, actual: 195000 },
-  { category: "Overhead", planned: 120000, actual: 115000 },
-];
+// const costData = [
+//   { category: "Productive Labor", planned: 175000, actual: 190000 },
+//   { category: "Non-Productive Labor", planned: 75000, actual: 85000 },
+//   { category: "Materials", planned: 450000, actual: 425000 },
+//   { category: "Equipment", planned: 180000, actual: 195000 },
+//   { category: "Overhead", planned: 120000, actual: 115000 },
+// ];
 
-const laborData = [
-  // Productive Labor
-  { trade: "Electricians", planned: 450, actual: 420, type: "productive" },
-  { trade: "Plumbers", planned: 380, actual: 400, type: "productive" },
-  { trade: "Carpenters", planned: 520, actual: 480, type: "productive" },
-  { trade: "Masons", planned: 600, actual: 580, type: "productive" },
-  // Non-Productive Labor
-  { trade: "Site Supervision", planned: 200, actual: 210, type: "non-productive" },
-  { trade: "Safety Officers", planned: 160, actual: 170, type: "non-productive" },
-  { trade: "Material Handlers", planned: 240, actual: 250, type: "non-productive" },
-  { trade: "Quality Control", planned: 180, actual: 190, type: "non-productive" },
-];
+// const laborData = [
+//   // Productive Labor
+//   { trade: "Electricians", planned: 450, actual: 420, type: "productive" },
+//   { trade: "Plumbers", planned: 380, actual: 400, type: "productive" },
+//   { trade: "Carpenters", planned: 520, actual: 480, type: "productive" },
+//   { trade: "Masons", planned: 600, actual: 580, type: "productive" },
+//   // Non-Productive Labor
+//   { trade: "Site Supervision", planned: 200, actual: 210, type: "non-productive" },
+//   { trade: "Safety Officers", planned: 160, actual: 170, type: "non-productive" },
+//   { trade: "Material Handlers", planned: 240, actual: 250, type: "non-productive" },
+//   { trade: "Quality Control", planned: 180, actual: 190, type: "non-productive" },
+// ];
 
 const purchaseOrdersData = [
   {
@@ -451,7 +450,7 @@ const SiteDashboard = () => {
   const [isLaborModalOpen, setIsLaborModalOpen] = useState(false);
   const [isLaborDetailsModalOpen, setIsLaborDetailsModalOpen] = useState(false);
   const [selectedLabor, setSelectedLabor] = useState<
-    (typeof laborData)[0] | null
+    (typeof laborHours)[0] | null
   >(null);
   const [isBudgetAdjustModalOpen, setIsBudgetAdjustModalOpen] = useState(false);
   const [selectedBudgetCategory, setSelectedBudgetCategory] = useState("");
@@ -465,7 +464,7 @@ const SiteDashboard = () => {
   const [isEquipmentTrackingModalOpen, setIsEquipmentTrackingModalOpen] =
     useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<
-    (typeof equipmentData)[0] | null
+    (typeof equipmentList)[0] | null
   >(null);
   const [isViewReportModalOpen, setIsViewReportModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<{
@@ -479,9 +478,30 @@ const SiteDashboard = () => {
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [storeStaff, setStoreStaff] = useState([
-    { name: 'John Doe', role: 'Store Manager', status: 'On Duty', availability: 'Full-time', experience: '5 years', certifications: ['Inventory Management', 'Supply Chain'] },
-    { name: 'Jane Smith', role: 'Assistant Manager', status: 'On Duty', availability: 'Full-time', experience: '3 years', certifications: ['Material Handling', 'RFID Systems'] },
-    { name: 'Mike Johnson', role: 'Inventory Clerk', status: 'Off Duty', availability: 'Part-time', experience: '2 years', certifications: ['Basic Inventory'] },
+    {
+      name: "John Doe",
+      role: "Store Manager",
+      status: "On Duty",
+      availability: "Full-time",
+      experience: "5 years",
+      certifications: ["Inventory Management", "Supply Chain"],
+    },
+    {
+      name: "Jane Smith",
+      role: "Assistant Manager",
+      status: "On Duty",
+      availability: "Full-time",
+      experience: "3 years",
+      certifications: ["Material Handling", "RFID Systems"],
+    },
+    {
+      name: "Mike Johnson",
+      role: "Inventory Clerk",
+      status: "Off Duty",
+      availability: "Part-time",
+      experience: "2 years",
+      certifications: ["Basic Inventory"],
+    },
   ]);
   const [issues, setIssues] = useState(
     issuesData.map((issue, index) => ({
@@ -500,7 +520,7 @@ const SiteDashboard = () => {
           : "Low - Schedule Impact",
     }))
   );
-  const [equipmentLogs] = useState([
+  const [equipmentLogs, setEquipmentLogs] = useState([
     {
       date: "2024-01-20",
       type: "Maintenance",
@@ -530,7 +550,7 @@ const SiteDashboard = () => {
       notes: "Site clearing work",
     },
   ]);
-  const [equipmentLocations] = useState([
+  const [equipmentLocations, setEquipmentLocations] = useState([
     {
       timestamp: "09:00 AM",
       area: "North Block",
@@ -556,30 +576,72 @@ const SiteDashboard = () => {
       operator: "John Smith",
     },
   ]);
-  const [stockAlerts] = useState<StockAlert[]>([
-    { id: 1, item: "Cement", quantity: "50 bags", reorderPoint: "100 bags", status: "Low Stock" },
-    { id: 2, item: "Steel Bars (12mm)", quantity: "2.5 tons", reorderPoint: "5 tons", status: "Low Stock" },
-    { id: 3, item: "Bricks", quantity: "850 pcs", reorderPoint: "1000 pcs", status: "Reorder" }
+  const [stockAlerts, setStockAlerts] = useState<StockAlert[]>([
+    {
+      id: 1,
+      item: "Cement",
+      quantity: "50 bags",
+      reorderPoint: "100 bags",
+      status: "Low Stock",
+    },
+    {
+      id: 2,
+      item: "Steel Bars (12mm)",
+      quantity: "2.5 tons",
+      reorderPoint: "5 tons",
+      status: "Low Stock",
+    },
+    {
+      id: 3,
+      item: "Bricks",
+      quantity: "850 pcs",
+      reorderPoint: "1000 pcs",
+      status: "Reorder",
+    },
   ]);
 
-  const [materialMovements] = useState<MaterialMovement[]>([
-    { id: 1, type: "Outbound", material: "Ready Mix Concrete", quantity: "18 mÂ³", time: "2 hours ago", site: "Block A" },
-    { id: 2, type: "Inbound", material: "Steel Reinforcement", quantity: "5 tons", time: "5 hours ago", site: "Central Store" },
-    { id: 3, type: "Outbound", material: "Shuttering Plates", quantity: "45 pcs", time: "8 hours ago", site: "Block B" }
+  const [materialMovements, setMaterialMovements] = useState<
+    MaterialMovement[]
+  >([
+    {
+      id: 1,
+      type: "Outbound",
+      material: "Ready Mix Concrete",
+      quantity: "18 mÂ³",
+      time: "2 hours ago",
+      site: "Block A",
+    },
+    {
+      id: 2,
+      type: "Inbound",
+      material: "Steel Reinforcement",
+      quantity: "5 tons",
+      time: "5 hours ago",
+      site: "Central Store",
+    },
+    {
+      id: 3,
+      type: "Outbound",
+      material: "Shuttering Plates",
+      quantity: "45 pcs",
+      time: "8 hours ago",
+      site: "Block B",
+    },
   ]);
 
-  const [storageSections] = useState<StorageSection[]>([
+  const [storageSections, setStorageSections] = useState<StorageSection[]>([
     { id: 1, zone: "Zone A", occupancy: 85, type: "Heavy Materials" },
     { id: 2, zone: "Zone B", occupancy: 65, type: "Finishing Items" },
     { id: 3, zone: "Zone C", occupancy: 92, type: "Tools & Equipment" },
-    { id: 4, zone: "Zone D", occupancy: 45, type: "Electrical & Plumbing" }
+    { id: 4, zone: "Zone D", occupancy: 45, type: "Electrical & Plumbing" },
   ]);
 
   // Data states
-  const [purchaseOrders, setPurchaseOrders] = useState(purchaseOrdersData);
-  const [equipmentList, setEquipmentList] = useState(equipmentData);
-  const [laborHours, setLaborHours] = useState(laborData);
-  const [budget, setBudget] = useState(costData);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [equipmentList, setEquipmentList] = useState([]);
+  const [laborHours, setLaborHours] = useState([]);
+  const [budget, setBudget] = useState([]);
+  const [costData, setCostData] = useState([]); // <-- Add this line
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: "TASK-1",
@@ -625,7 +687,11 @@ const SiteDashboard = () => {
       phase: "Roofing",
       progressHistory: [
         { progress: 0, remarks: "Task created", timestamp: "2024-02-01" },
-        { progress: 45, remarks: "Started installation", timestamp: "2024-02-15" },
+        {
+          progress: 45,
+          remarks: "Started installation",
+          timestamp: "2024-02-15",
+        },
       ],
     },
     {
@@ -649,7 +715,7 @@ const SiteDashboard = () => {
     onSchedule: 85,
     resourceUtilization: 92,
   });
-  const [weeklyProgress, setWeeklyProgress] = useState(progressData);
+  const [weeklyProgress, setWeeklyProgress] = useState([]);
   const [projectPhases, setProjectPhases] = useState([
     {
       phase: "Foundation",
@@ -703,22 +769,33 @@ const SiteDashboard = () => {
     receivedToday: 12,
     utilizationRate: 94,
   });
-  const [materialUsage, setMaterialUsage] = useState(materialUsageData);
+  const [materialUsage, setMaterialUsage] = useState([]);
 
   const [isTaskViewModalOpen, setIsTaskViewModalOpen] = useState(false);
   const [selectedTaskView, setSelectedTaskView] = useState<Task | null>(null);
 
   // Add subview state and selected task state
   const [timelineSubview, setTimelineSubview] = useState<
-    'main' | 'activeTasks' | 'taskDetail' | 'completedTasks' | 'onSchedule' | 'resourceUtilization'
-  >('main');
-  const [selectedTimelineTask, setSelectedTimelineTask] = useState<Task | null>(null);
+    | "main"
+    | "activeTasks"
+    | "taskDetail"
+    | "completedTasks"
+    | "onSchedule"
+    | "resourceUtilization"
+  >("main");
+  const [selectedTimelineTask, setSelectedTimelineTask] = useState<Task | null>(
+    null
+  );
 
   // Reports tab subview state
-  const [reportsSubview, setReportsSubview] = useState<'mainReports' | 'dprList' | 'wprList' | 'reportQuality'>('mainReports');
+  const [reportsSubview, setReportsSubview] = useState<
+    "mainReports" | "dprList" | "wprList" | "reportQuality"
+  >("mainReports");
 
   // Issue Tracker tab subview state
-  const [issuesSubview, setIssuesSubview] = useState<'mainIssues' | 'openIssues' | 'highPriority' | 'resolvedThisWeek'>('mainIssues');
+  const [issuesSubview, setIssuesSubview] = useState<
+    "mainIssues" | "openIssues" | "highPriority" | "resolvedThisWeek"
+  >("mainIssues");
 
   // Task Management Functions
   const handleViewGantt = (taskId: string) => {
@@ -989,8 +1066,18 @@ const SiteDashboard = () => {
     safetySummary: string;
     qualitySummary: string;
     manpower: { role: string; planned: string; actual: string }[];
-    equipment: { equipment: string; uptime: string; downtime: string; remarks: string }[];
-    materials: { material: string; planned: string; actual: string; remarks: string }[];
+    equipment: {
+      equipment: string;
+      uptime: string;
+      downtime: string;
+      remarks: string;
+    }[];
+    materials: {
+      material: string;
+      planned: string;
+      actual: string;
+      remarks: string;
+    }[];
     teamPerformance: string;
     attachments: FileList;
   }) => {
@@ -1128,7 +1215,7 @@ const SiteDashboard = () => {
   };
 
   const handleViewLaborDetails = (trade: string) => {
-    const laborDetails = laborData.find((l) => l.trade === trade);
+    const laborDetails = laborHours.find((l) => l.trade === trade);
     if (laborDetails) {
       setSelectedLabor(laborDetails);
       setIsLaborDetailsModalOpen(true);
@@ -1152,7 +1239,9 @@ const SiteDashboard = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Active Tasks</h2>
-          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+          <Button variant="outline" onClick={() => setTimelineSubview("main")}>
+            Back to Timeline
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -1171,7 +1260,14 @@ const SiteDashboard = () => {
                   <td className="p-2">{task.assignedTo}</td>
                   <td className="p-2">{task.progress}%</td>
                   <td className="p-2">
-                    <Button size="sm" variant="outline" onClick={() => { setSelectedTimelineTask(task); setTimelineSubview('taskDetail'); }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedTimelineTask(task);
+                        setTimelineSubview("taskDetail");
+                      }}
+                    >
                       View
                     </Button>
                   </td>
@@ -1192,17 +1288,38 @@ const SiteDashboard = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Task Details</h2>
-          <Button variant="outline" onClick={() => setTimelineSubview('activeTasks')}>Back to Active Tasks</Button>
+          <Button
+            variant="outline"
+            onClick={() => setTimelineSubview("activeTasks")}
+          >
+            Back to Active Tasks
+          </Button>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div><strong>Task Name:</strong> {task.name}</div>
-          <div><strong>Assigned To:</strong> {task.assignedTo}</div>
-          <div><strong>Project:</strong> {task.project}</div>
-          <div><strong>Phase:</strong> {task.phase}</div>
-          <div><strong>Start Date:</strong> {task.startDate}</div>
-          <div><strong>Due Date:</strong> {task.dueDate}</div>
-          <div><strong>Status:</strong> {task.status}</div>
-          <div><strong>Progress:</strong> {task.progress}%</div>
+          <div>
+            <strong>Task Name:</strong> {task.name}
+          </div>
+          <div>
+            <strong>Assigned To:</strong> {task.assignedTo}
+          </div>
+          <div>
+            <strong>Project:</strong> {task.project}
+          </div>
+          <div>
+            <strong>Phase:</strong> {task.phase}
+          </div>
+          <div>
+            <strong>Start Date:</strong> {task.startDate}
+          </div>
+          <div>
+            <strong>Due Date:</strong> {task.dueDate}
+          </div>
+          <div>
+            <strong>Status:</strong> {task.status}
+          </div>
+          <div>
+            <strong>Progress:</strong> {task.progress}%
+          </div>
         </div>
       </div>
     );
@@ -1215,7 +1332,9 @@ const SiteDashboard = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Completed Tasks</h2>
-          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+          <Button variant="outline" onClick={() => setTimelineSubview("main")}>
+            Back to Timeline
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -1234,7 +1353,14 @@ const SiteDashboard = () => {
                   <td className="p-2">{task.assignedTo}</td>
                   <td className="p-2">{task.progress}%</td>
                   <td className="p-2">
-                    <Button size="sm" variant="outline" onClick={() => { setSelectedTimelineTask(task); setTimelineSubview('taskDetail'); }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedTimelineTask(task);
+                        setTimelineSubview("taskDetail");
+                      }}
+                    >
                       View
                     </Button>
                   </td>
@@ -1249,12 +1375,16 @@ const SiteDashboard = () => {
 
   // On Schedule Tasks List component
   const OnScheduleTasksList = () => {
-    const onScheduleTasks = tasks.filter((t) => new Date(t.dueDate) >= new Date() || t.progress === 100);
+    const onScheduleTasks = tasks.filter(
+      (t) => new Date(t.dueDate) >= new Date() || t.progress === 100
+    );
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">On Schedule Tasks</h2>
-          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+          <Button variant="outline" onClick={() => setTimelineSubview("main")}>
+            Back to Timeline
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -1275,7 +1405,14 @@ const SiteDashboard = () => {
                   <td className="p-2">{task.progress}%</td>
                   <td className="p-2">{task.dueDate}</td>
                   <td className="p-2">
-                    <Button size="sm" variant="outline" onClick={() => { setSelectedTimelineTask(task); setTimelineSubview('taskDetail'); }}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedTimelineTask(task);
+                        setTimelineSubview("taskDetail");
+                      }}
+                    >
                       View
                     </Button>
                   </td>
@@ -1294,12 +1431,16 @@ const SiteDashboard = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Resource Utilization</h2>
-          <Button variant="outline" onClick={() => setTimelineSubview('main')}>Back to Timeline</Button>
+          <Button variant="outline" onClick={() => setTimelineSubview("main")}>
+            Back to Timeline
+          </Button>
         </div>
         <div>
-          <p className="mb-4">Team efficiency based on completed vs planned work hours.</p>
+          <p className="mb-4">
+            Team efficiency based on completed vs planned work hours.
+          </p>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={laborData}>
+            <BarChart data={laborHours}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="trade" />
               <YAxis />
@@ -1318,7 +1459,12 @@ const SiteDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Daily Progress Reports (DPRs)</h2>
-        <Button variant="outline" onClick={() => setReportsSubview('mainReports')}>Back to Reports</Button>
+        <Button
+          variant="outline"
+          onClick={() => setReportsSubview("mainReports")}
+        >
+          Back to Reports
+        </Button>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
@@ -1332,15 +1478,33 @@ const SiteDashboard = () => {
           </thead>
           <tbody>
             {[
-              { type: "DPR", date: "2024-01-20", weather: "Clear", photos: 8, escalated: false },
-              { type: "DPR", date: "2024-01-18", weather: "Clear", photos: 6, escalated: true },
-              { type: "DPR", date: "2024-01-17", weather: "Wind", photos: 10, escalated: false },
+              {
+                type: "DPR",
+                date: "2024-01-20",
+                weather: "Clear",
+                photos: 8,
+                escalated: false,
+              },
+              {
+                type: "DPR",
+                date: "2024-01-18",
+                weather: "Clear",
+                photos: 6,
+                escalated: true,
+              },
+              {
+                type: "DPR",
+                date: "2024-01-17",
+                weather: "Wind",
+                photos: 10,
+                escalated: false,
+              },
             ].map((report, idx) => (
               <tr key={idx} className="border-t">
                 <td className="p-2">{report.date}</td>
                 <td className="p-2">{report.weather}</td>
                 <td className="p-2">{report.photos}</td>
-                <td className="p-2">{report.escalated ? 'Yes' : 'No'}</td>
+                <td className="p-2">{report.escalated ? "Yes" : "No"}</td>
               </tr>
             ))}
           </tbody>
@@ -1354,7 +1518,12 @@ const SiteDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Weekly Progress Reports (WPRs)</h2>
-        <Button variant="outline" onClick={() => setReportsSubview('mainReports')}>Back to Reports</Button>
+        <Button
+          variant="outline"
+          onClick={() => setReportsSubview("mainReports")}
+        >
+          Back to Reports
+        </Button>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
@@ -1368,13 +1537,19 @@ const SiteDashboard = () => {
           </thead>
           <tbody>
             {[
-              { type: "WPR", date: "2024-01-19", weather: "Rain", photos: 12, escalated: false },
+              {
+                type: "WPR",
+                date: "2024-01-19",
+                weather: "Rain",
+                photos: 12,
+                escalated: false,
+              },
             ].map((report, idx) => (
               <tr key={idx} className="border-t">
                 <td className="p-2">{report.date}</td>
                 <td className="p-2">{report.weather}</td>
                 <td className="p-2">{report.photos}</td>
-                <td className="p-2">{report.escalated ? 'Yes' : 'No'}</td>
+                <td className="p-2">{report.escalated ? "Yes" : "No"}</td>
               </tr>
             ))}
           </tbody>
@@ -1388,19 +1563,26 @@ const SiteDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Report Quality Metrics</h2>
-        <Button variant="outline" onClick={() => setReportsSubview('mainReports')}>Back to Reports</Button>
+        <Button
+          variant="outline"
+          onClick={() => setReportsSubview("mainReports")}
+        >
+          Back to Reports
+        </Button>
       </div>
       <div>
         <p className="mb-4">Average report score and quality trends.</p>
         <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={[
-            { month: 'Jan', score: 4.1 },
-            { month: 'Feb', score: 4.3 },
-            { month: 'Mar', score: 4.0 },
-            { month: 'Apr', score: 4.4 },
-            { month: 'May', score: 4.2 },
-            { month: 'Jun', score: 4.5 },
-          ]}>
+          <LineChart
+            data={[
+              { month: "Jan", score: 4.1 },
+              { month: "Feb", score: 4.3 },
+              { month: "Mar", score: 4.0 },
+              { month: "Apr", score: 4.4 },
+              { month: "May", score: 4.2 },
+              { month: "Jun", score: 4.5 },
+            ]}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis domain={[3.5, 5]} />
@@ -1413,9 +1595,9 @@ const SiteDashboard = () => {
   );
 
   // Material Flow tab subview state
-  const [materialsSubview, setMaterialsSubview] = useState<'mainMaterials' | 'pendingRequests' | 'receivedToday' | 'utilizationRate'>(
-    'mainMaterials'
-  );
+  const [materialsSubview, setMaterialsSubview] = useState<
+    "mainMaterials" | "pendingRequests" | "receivedToday" | "utilizationRate"
+  >("mainMaterials");
 
   // Material Flow StatCard subviews
   const PendingRequestsView = () => {
@@ -1424,7 +1606,12 @@ const SiteDashboard = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Pending Material Requests</h2>
-          <Button variant="outline" onClick={() => setMaterialsSubview('mainMaterials')}>Back to Material Flow</Button>
+          <Button
+            variant="outline"
+            onClick={() => setMaterialsSubview("mainMaterials")}
+          >
+            Back to Material Flow
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -1441,7 +1628,14 @@ const SiteDashboard = () => {
             </thead>
             <tbody>
               {pending.length === 0 ? (
-                <tr><td colSpan={7} className="p-2 text-center text-muted-foreground">No pending requests</td></tr>
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="p-2 text-center text-muted-foreground"
+                  >
+                    No pending requests
+                  </td>
+                </tr>
               ) : (
                 pending.map((req) => (
                   <tr key={req.id} className="border-t">
@@ -1475,13 +1669,20 @@ const SiteDashboard = () => {
 
   const ReceivedTodayView = () => {
     // For demo, show all requests with status 'Approved' or 'In Transit' and expectedDelivery is today
-    const today = new Date().toISOString().split('T')[0];
-    const received = materialRequests.filter((r) => r.expectedDelivery === today);
+    const today = new Date().toISOString().split("T")[0];
+    const received = materialRequests.filter(
+      (r) => r.expectedDelivery === today
+    );
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Materials Received Today</h2>
-          <Button variant="outline" onClick={() => setMaterialsSubview('mainMaterials')}>Back to Material Flow</Button>
+          <Button
+            variant="outline"
+            onClick={() => setMaterialsSubview("mainMaterials")}
+          >
+            Back to Material Flow
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -1496,7 +1697,14 @@ const SiteDashboard = () => {
             </thead>
             <tbody>
               {received.length === 0 ? (
-                <tr><td colSpan={5} className="p-2 text-center text-muted-foreground">No materials received today</td></tr>
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="p-2 text-center text-muted-foreground"
+                  >
+                    No materials received today
+                  </td>
+                </tr>
               ) : (
                 received.map((req) => (
                   <tr key={req.id} className="border-t">
@@ -1519,9 +1727,17 @@ const SiteDashboard = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Material Utilization Rate</h2>
-        <Button variant="outline" onClick={() => setMaterialsSubview('mainMaterials')}>Back to Material Flow</Button>
+        <Button
+          variant="outline"
+          onClick={() => setMaterialsSubview("mainMaterials")}
+        >
+          Back to Material Flow
+        </Button>
       </div>
-      <div className="mb-4">Current Utilization Rate: <span className="font-semibold">{materialStats.utilizationRate}%</span></div>
+      <div className="mb-4">
+        Current Utilization Rate:{" "}
+        <span className="font-semibold">{materialStats.utilizationRate}%</span>
+      </div>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={materialUsage}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -1536,20 +1752,37 @@ const SiteDashboard = () => {
   );
 
   // Cost Analysis tab subview state
-  const [costSubview, setCostSubview] = useState<'mainCost' | 'totalCost' | 'laborUtilization' | 'equipmentUtilization'>('mainCost');
+  const [costSubview, setCostSubview] = useState<
+    "mainCost" | "totalCost" | "laborUtilization" | "equipmentUtilization"
+  >("mainCost");
 
   // Add this state near the other subview states
-  const [storeManagerSubview, setStoreManagerSubview] = useState<'main' | 'activePersonnel' | 'performance' | 'pendingActions' | 'activeSites'>('main');
+  const [storeManagerSubview, setStoreManagerSubview] = useState<
+    | "main"
+    | "activePersonnel"
+    | "performance"
+    | "pendingActions"
+    | "activeSites"
+  >("main");
 
   // Add this state near the other subview states
-  const [centralWarehouseSubview, setCentralWarehouseSubview] = useState<'main' | 'stockAvailability' | 'pendingDeliveries' | 'storageCapacity'>('main');
+  const [centralWarehouseSubview, setCentralWarehouseSubview] = useState<
+    "main" | "stockAvailability" | "pendingDeliveries" | "storageCapacity"
+  >("main");
 
   // Add state for update modal and selected request
-  const [isMaterialRequestUpdateModalOpen, setIsMaterialRequestUpdateModalOpen] = useState(false);
-  const [selectedMaterialRequest, setSelectedMaterialRequest] = useState<any>(null);
+  const [
+    isMaterialRequestUpdateModalOpen,
+    setIsMaterialRequestUpdateModalOpen,
+  ] = useState(false);
+  const [selectedMaterialRequest, setSelectedMaterialRequest] =
+    useState<any>(null);
 
   // Handler to update material request status
-  const handleUpdateMaterialRequestStatus = (requestId: string, newStatus: string) => {
+  const handleUpdateMaterialRequestStatus = (
+    requestId: string,
+    newStatus: string
+  ) => {
     setMaterialRequests((prev) =>
       prev.map((req) =>
         req.id === requestId ? { ...req, status: newStatus } : req
@@ -1558,6 +1791,106 @@ const SiteDashboard = () => {
     setIsMaterialRequestUpdateModalOpen(false);
     toast.success(`Status updated for ${requestId}`);
   };
+
+  useEffect(() => {
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    // Fetch purchase orders
+    axios
+      .get(`${API_URL}/purchase-orders`, { headers })
+      .then((res) => setPurchaseOrders(res.data))
+      .catch(() => {});
+    // Fetch equipment
+    axios
+      .get(`${API_URL}/site-ops/equipment-maintenance`, { headers })
+      .then((res) => setEquipmentList(res.data))
+      .catch(() => {});
+    // Fetch staff (employees)
+    axios
+      .get(`${API_URL}/hr/employees`, { headers })
+      .then((res) => setStoreStaff(res.data))
+      .catch(() => {});
+    // Fetch issues
+    axios
+      .get(`${API_URL}/site-ops/issue-reports`, { headers })
+      .then((res) => setIssues(res.data))
+      .catch(() => {});
+    // Fetch equipment logs
+    axios
+      .get(`${API_URL}/site-ops/equipment-logs`, { headers })
+      .then((res) => setEquipmentLogs(res.data))
+      .catch(() => {});
+    // Fetch equipment locations
+    axios
+      .get(`${API_URL}/site-ops/equipment-locations`, { headers })
+      .then((res) => setEquipmentLocations(res.data))
+      .catch(() => {});
+    // Fetch stock alerts
+    axios
+      .get(`${API_URL}/inventory/stock-alerts`, { headers })
+      .then((res) => setStockAlerts(res.data))
+      .catch(() => {});
+    // Fetch material movements
+    axios
+      .get(`${API_URL}/inventory/material-movements`, { headers })
+      .then((res) => setMaterialMovements(res.data))
+      .catch(() => {});
+    // Fetch storage sections
+    axios
+      .get(`${API_URL}/inventory/storage-sections`, { headers })
+      .then((res) => setStorageSections(res.data))
+      .catch(() => {});
+    // Fetch labor hours
+    axios
+      .get(`${API_URL}/site-ops/labor-logs`, { headers })
+      .then((res) => setLaborHours(res.data))
+      .catch(() => {});
+    // Fetch budget
+    axios
+      .get(`${API_URL}/site-ops/budget-adjustments`, { headers })
+      .then((res) => setBudget(res.data))
+      .catch(() => {});
+    // Fetch tasks
+    axios
+      .get(`${API_URL}/project/tasks`, { headers })
+      .then((res) => setTasks(res.data))
+      .catch(() => {});
+    // Fetch material requests
+    axios
+      .get(`${API_URL}/inventory/material-requests`, { headers })
+      .then((res) => setMaterialRequests(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/site/progress`, { headers })
+      .then((res) => setProgressStats(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/site/material-usage`, { headers })
+      .then((res) => setMaterialUsage(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/site/cost`, { headers })
+      .then((res) => setCostData(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/site/labor`, { headers })
+      .then((res) => setLaborHours(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/purchase-orders`, { headers })
+      .then((res) => setPurchaseOrders(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/equipment`, { headers })
+      .then((res) => setEquipmentList(res.data))
+      .catch(() => {});
+  }, []);
+
+  // Ensure costData and laborData are always defined
+  const safeCostData = Array.isArray(costData) ? costData : [];
+  const safeLaborData = Array.isArray(laborHours) ? laborHours : [];
 
   return (
     <div className="space-y-6">
@@ -1597,7 +1930,7 @@ const SiteDashboard = () => {
         </TabsList>
 
         <TabsContent value="timeline" className="space-y-6">
-          {timelineSubview === 'main' && (
+          {timelineSubview === "main" && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
@@ -1605,7 +1938,7 @@ const SiteDashboard = () => {
                   value={progressStats.activeTasks.toString()}
                   icon={Calendar}
                   description="Currently in progress"
-                  onClick={() => setTimelineSubview('activeTasks')}
+                  onClick={() => setTimelineSubview("activeTasks")}
                 />
                 <StatCard
                   title="Completed This Week"
@@ -1613,30 +1946,32 @@ const SiteDashboard = () => {
                   icon={HardHat}
                   description="Tasks finished"
                   trend={{ value: 12, label: "vs last week" }}
-                  onClick={() => setTimelineSubview('completedTasks')}
+                  onClick={() => setTimelineSubview("completedTasks")}
                 />
                 <StatCard
                   title="On Schedule"
                   value={`${progressStats.onSchedule}%`}
                   icon={Calendar}
                   description="Timeline adherence"
-                  onClick={() => setTimelineSubview('onSchedule')}
+                  onClick={() => setTimelineSubview("onSchedule")}
                 />
                 <StatCard
                   title="Resource Utilization"
                   value={`${progressStats.resourceUtilization}%`}
                   icon={HardHat}
                   description="Team efficiency"
-                  onClick={() => setTimelineSubview('resourceUtilization')}
+                  onClick={() => setTimelineSubview("resourceUtilization")}
                 />
               </div>
-              {timelineSubview === 'main' && (
+              {timelineSubview === "main" && (
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle>Progress vs Plan</CardTitle>
-                        <CardDescription>Weekly execution tracking</CardDescription>
+                        <CardDescription>
+                          Weekly execution tracking
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <ResponsiveContainer width="100%" height={300}>
@@ -1654,14 +1989,18 @@ const SiteDashboard = () => {
                     <Card>
                       <CardHeader>
                         <CardTitle>Project Gantt View</CardTitle>
-                        <CardDescription>Timeline visualization</CardDescription>
+                        <CardDescription>
+                          Timeline visualization
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
                           {projectPhases.map((phase) => (
                             <div key={phase.phase} className="space-y-2">
                               <div className="flex justify-between text-sm">
-                                <span className="font-medium">{phase.phase}</span>
+                                <span className="font-medium">
+                                  {phase.phase}
+                                </span>
                                 <span>{phase.progress}%</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -1710,14 +2049,18 @@ const SiteDashboard = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => openTaskViewModal(row.original)}
+                                  onClick={() =>
+                                    openTaskViewModal(row.original)
+                                  }
                                 >
                                   View
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => openProgressModal(row.original)}
+                                  onClick={() =>
+                                    openProgressModal(row.original)
+                                  }
                                 >
                                   Update
                                 </Button>
@@ -1734,15 +2077,17 @@ const SiteDashboard = () => {
               )}
             </>
           )}
-          {timelineSubview === 'activeTasks' && <ActiveTasksList />}
-          {timelineSubview === 'completedTasks' && <CompletedTasksList />}
-          {timelineSubview === 'onSchedule' && <OnScheduleTasksList />}
-          {timelineSubview === 'resourceUtilization' && <ResourceUtilizationView />}
-          {timelineSubview === 'taskDetail' && <TaskDetailView />}
+          {timelineSubview === "activeTasks" && <ActiveTasksList />}
+          {timelineSubview === "completedTasks" && <CompletedTasksList />}
+          {timelineSubview === "onSchedule" && <OnScheduleTasksList />}
+          {timelineSubview === "resourceUtilization" && (
+            <ResourceUtilizationView />
+          )}
+          {timelineSubview === "taskDetail" && <TaskDetailView />}
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          {reportsSubview === 'mainReports' && (
+          {reportsSubview === "mainReports" && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
@@ -1750,21 +2095,21 @@ const SiteDashboard = () => {
                   value="28"
                   icon={FileText}
                   description="This month"
-                  onClick={() => setReportsSubview('dprList')}
+                  onClick={() => setReportsSubview("dprList")}
                 />
                 <StatCard
                   title="WPRs Completed"
                   value="7"
                   icon={Calendar}
                   description="This month"
-                  onClick={() => setReportsSubview('wprList')}
+                  onClick={() => setReportsSubview("wprList")}
                 />
                 <StatCard
                   title="Average Score"
                   value="4.2/5"
                   icon={HardHat}
                   description="Report quality"
-                  onClick={() => setReportsSubview('reportQuality')}
+                  onClick={() => setReportsSubview("reportQuality")}
                 />
               </div>
               <Card>
@@ -1816,7 +2161,9 @@ const SiteDashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Report History</CardTitle>
-                  <CardDescription>Previously submitted reports</CardDescription>
+                  <CardDescription>
+                    Previously submitted reports
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -1897,14 +2244,13 @@ const SiteDashboard = () => {
               </Card>
             </>
           )}
-          {reportsSubview === 'dprList' && <DPRListView />}
-          {reportsSubview === 'wprList' && <WPRListView />}
-          {reportsSubview === 'reportQuality' && <ReportQualityView />}
-
+          {reportsSubview === "dprList" && <DPRListView />}
+          {reportsSubview === "wprList" && <WPRListView />}
+          {reportsSubview === "reportQuality" && <ReportQualityView />}
         </TabsContent>
 
         <TabsContent value="materials" className="space-y-6">
-          {materialsSubview === 'mainMaterials' && (
+          {materialsSubview === "mainMaterials" && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
@@ -1912,21 +2258,21 @@ const SiteDashboard = () => {
                   value={materialStats.pendingRequests.toString()}
                   icon={Package}
                   description="Material requests"
-                  onClick={() => setMaterialsSubview('pendingRequests')}
+                  onClick={() => setMaterialsSubview("pendingRequests")}
                 />
                 <StatCard
                   title="Received Today"
                   value={materialStats.receivedToday.toString()}
                   icon={Package}
                   description="Material deliveries"
-                  onClick={() => setMaterialsSubview('receivedToday')}
+                  onClick={() => setMaterialsSubview("receivedToday")}
                 />
                 <StatCard
                   title="Utilization Rate"
                   value={`${materialStats.utilizationRate}%`}
                   icon={Package}
                   description="Material efficiency"
-                  onClick={() => setMaterialsSubview('utilizationRate')}
+                  onClick={() => setMaterialsSubview("utilizationRate")}
                 />
               </div>
               <Card>
@@ -2005,7 +2351,7 @@ const SiteDashboard = () => {
                             {request.item} • {request.quantity}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Requested: {request.requestDate} • Expected: {" "}
+                            Requested: {request.requestDate} • Expected:{" "}
                             {request.expectedDelivery}
                           </p>
                         </div>
@@ -2037,13 +2383,13 @@ const SiteDashboard = () => {
               </Card>
             </>
           )}
-          {materialsSubview === 'pendingRequests' && <PendingRequestsView />}
-          {materialsSubview === 'receivedToday' && <ReceivedTodayView />}
-          {materialsSubview === 'utilizationRate' && <UtilizationRateView />}
+          {materialsSubview === "pendingRequests" && <PendingRequestsView />}
+          {materialsSubview === "receivedToday" && <ReceivedTodayView />}
+          {materialsSubview === "utilizationRate" && <UtilizationRateView />}
         </TabsContent>
 
         <TabsContent value="issues" className="space-y-6">
-          {issuesSubview === 'mainIssues' ? (
+          {issuesSubview === "mainIssues" ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
@@ -2051,21 +2397,21 @@ const SiteDashboard = () => {
                   value="12"
                   icon={AlertTriangle}
                   description="Requiring attention"
-                  onClick={() => setIssuesSubview('openIssues')}
+                  onClick={() => setIssuesSubview("openIssues")}
                 />
                 <StatCard
                   title="High Priority"
                   value="3"
                   icon={AlertTriangle}
                   description="Critical issues"
-                  onClick={() => setIssuesSubview('highPriority')}
+                  onClick={() => setIssuesSubview("highPriority")}
                 />
                 <StatCard
                   title="Resolved This Week"
                   value="8"
                   icon={HardHat}
                   description="Issues fixed"
-                  onClick={() => setIssuesSubview('resolvedThisWeek')}
+                  onClick={() => setIssuesSubview("resolvedThisWeek")}
                 />
               </div>
               <Card>
@@ -2180,11 +2526,16 @@ const SiteDashboard = () => {
           ) : (
             // Subview content
             <>
-              {issuesSubview === 'openIssues' && (
+              {issuesSubview === "openIssues" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Open Issues</h2>
-                    <Button variant="outline" onClick={() => setIssuesSubview('mainIssues')}>Back to Issues</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIssuesSubview("mainIssues")}
+                    >
+                      Back to Issues
+                    </Button>
                   </div>
                   <Card>
                     <CardContent>
@@ -2228,18 +2579,23 @@ const SiteDashboard = () => {
                             ),
                           },
                         ]}
-                        data={issues.filter(issue => issue.status === 'Open')}
+                        data={issues.filter((issue) => issue.status === "Open")}
                         searchKey="description"
                       />
                     </CardContent>
                   </Card>
                 </>
               )}
-              {issuesSubview === 'highPriority' && (
+              {issuesSubview === "highPriority" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">High Priority Issues</h2>
-                    <Button variant="outline" onClick={() => setIssuesSubview('mainIssues')}>Back to Issues</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIssuesSubview("mainIssues")}
+                    >
+                      Back to Issues
+                    </Button>
                   </div>
                   <Card>
                     <CardContent>
@@ -2283,18 +2639,25 @@ const SiteDashboard = () => {
                             ),
                           },
                         ]}
-                        data={issues.filter(issue => issue.severity === 'High')}
+                        data={issues.filter(
+                          (issue) => issue.severity === "High"
+                        )}
                         searchKey="description"
                       />
                     </CardContent>
                   </Card>
                 </>
               )}
-              {issuesSubview === 'resolvedThisWeek' && (
+              {issuesSubview === "resolvedThisWeek" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Resolved This Week</h2>
-                    <Button variant="outline" onClick={() => setIssuesSubview('mainIssues')}>Back to Issues</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIssuesSubview("mainIssues")}
+                    >
+                      Back to Issues
+                    </Button>
                   </div>
                   <Card>
                     <CardContent>
@@ -2338,7 +2701,9 @@ const SiteDashboard = () => {
                             ),
                           },
                         ]}
-                        data={issues.filter(issue => issue.status === 'Resolved')}
+                        data={issues.filter(
+                          (issue) => issue.status === "Resolved"
+                        )}
                         searchKey="description"
                       />
                     </CardContent>
@@ -2350,7 +2715,7 @@ const SiteDashboard = () => {
         </TabsContent>
 
         <TabsContent value="cost" className="space-y-6">
-          {costSubview === 'mainCost' ? (
+          {costSubview === "mainCost" ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
@@ -2359,7 +2724,7 @@ const SiteDashboard = () => {
                   icon={DollarSign}
                   description="Projected vs Actual"
                   trend={{ value: -2.5, label: "vs budget" }}
-                  onClick={() => setCostSubview('totalCost')}
+                  onClick={() => setCostSubview("totalCost")}
                 />
                 <StatCard
                   title="Labor Utilization"
@@ -2367,7 +2732,7 @@ const SiteDashboard = () => {
                   icon={Users}
                   description="Team efficiency"
                   trend={{ value: 3, label: "vs last week" }}
-                  onClick={() => setCostSubview('laborUtilization')}
+                  onClick={() => setCostSubview("laborUtilization")}
                 />
                 <StatCard
                   title="Equipment Utilization"
@@ -2375,7 +2740,7 @@ const SiteDashboard = () => {
                   icon={Truck}
                   description="Equipment efficiency"
                   trend={{ value: -1, label: "vs target" }}
-                  onClick={() => setCostSubview('equipmentUtilization')}
+                  onClick={() => setCostSubview("equipmentUtilization")}
                 />
               </div>
               {/* Main Cost Analysis Content (unchanged) */}
@@ -2400,7 +2765,7 @@ const SiteDashboard = () => {
                 <CardContent>
                   <div className="space-y-6">
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={costData}>
+                      <BarChart data={safeCostData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="category" />
                         <YAxis />
@@ -2410,8 +2775,11 @@ const SiteDashboard = () => {
                       </BarChart>
                     </ResponsiveContainer>
                     <div className="grid grid-cols-2 gap-4">
-                      {costData.map((item) => (
-                        <div key={item.category} className="p-4 border rounded-lg">
+                      {safeCostData.map((item) => (
+                        <div
+                          key={item.category}
+                          className="p-4 border rounded-lg"
+                        >
                           <div className="flex justify-between items-center">
                             <h3 className="font-medium">{item.category}</h3>
                             <Badge
@@ -2434,10 +2802,12 @@ const SiteDashboard = () => {
                               Actual: ₹{item.actual.toLocaleString()}
                             </div>
                             <div className="text-sm font-medium">
-                              Variance: {(
+                              Variance:{" "}
+                              {(
                                 ((item.actual - item.planned) / item.planned) *
                                 100
-                              ).toFixed(1)}%
+                              ).toFixed(1)}
+                              %
                             </div>
                           </div>
                         </div>
@@ -2451,7 +2821,9 @@ const SiteDashboard = () => {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>Labor Cost Dashboard</CardTitle>
-                      <CardDescription>Productive vs Non-Productive Labor</CardDescription>
+                      <CardDescription>
+                        Productive vs Non-Productive Labor
+                      </CardDescription>
                     </div>
                     <Button onClick={() => setIsLaborModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
@@ -2466,7 +2838,11 @@ const SiteDashboard = () => {
                         Productive Labor
                       </h3>
                       <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={laborData.filter(item => item.type === "productive")}> 
+                        <BarChart
+                          data={safeLaborData.filter(
+                            (item) => item.type === "productive"
+                          )}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="trade" />
                           <YAxis />
@@ -2476,35 +2852,43 @@ const SiteDashboard = () => {
                             fill="#3b82f6"
                             name="Planned Hours"
                           />
-                          <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
+                          <Bar
+                            dataKey="actual"
+                            fill="#10b981"
+                            name="Actual Hours"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="mt-2 space-y-2">
-                        {laborData.filter(item => item.type === "productive").map((item) => (
-                          <div
-                            key={item.trade}
-                            className="flex items-center justify-between p-2 border rounded-lg"
-                          >
-                            <div>
-                              <div className="font-medium">{item.trade}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {item.actual} / {item.planned} hours
+                        {safeLaborData
+                          .filter((item) => item.type === "productive")
+                          .map((item) => (
+                            <div
+                              key={item.trade}
+                              className="flex items-center justify-between p-2 border rounded-lg"
+                            >
+                              <div>
+                                <div className="font-medium">{item.trade}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.actual} / {item.planned} hours
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {item.actual > item.planned * 1.15 && (
+                                  <Badge variant="destructive">OT Alert</Badge>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleViewLaborDetails(item.trade)
+                                  }
+                                >
+                                  Details
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {item.actual > item.planned * 1.15 && (
-                                <Badge variant="destructive">OT Alert</Badge>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewLaborDetails(item.trade)}
-                              >
-                                Details
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </div>
                     {/* Non-Productive Labor Section */}
@@ -2514,7 +2898,11 @@ const SiteDashboard = () => {
                         Non-Productive Labor
                       </h3>
                       <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={laborData.filter(item => item.type === "non-productive")}> 
+                        <BarChart
+                          data={safeLaborData.filter(
+                            (item) => item.type === "non-productive"
+                          )}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="trade" />
                           <YAxis />
@@ -2524,35 +2912,43 @@ const SiteDashboard = () => {
                             fill="#8b5cf6"
                             name="Planned Hours"
                           />
-                          <Bar dataKey="actual" fill="#d946ef" name="Actual Hours" />
+                          <Bar
+                            dataKey="actual"
+                            fill="#d946ef"
+                            name="Actual Hours"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="mt-2 space-y-2">
-                        {laborData.filter(item => item.type === "non-productive").map((item) => (
-                          <div
-                            key={item.trade}
-                            className="flex items-center justify-between p-2 border rounded-lg"
-                          >
-                            <div>
-                              <div className="font-medium">{item.trade}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {item.actual} / {item.planned} hours
+                        {safeLaborData
+                          .filter((item) => item.type === "non-productive")
+                          .map((item) => (
+                            <div
+                              key={item.trade}
+                              className="flex items-center justify-between p-2 border rounded-lg"
+                            >
+                              <div>
+                                <div className="font-medium">{item.trade}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.actual} / {item.planned} hours
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {item.actual > item.planned * 1.15 && (
+                                  <Badge variant="destructive">OT Alert</Badge>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleViewLaborDetails(item.trade)
+                                  }
+                                >
+                                  Details
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {item.actual > item.planned * 1.15 && (
-                                <Badge variant="destructive">OT Alert</Badge>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleViewLaborDetails(item.trade)}
-                              >
-                                Details
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
                     </div>
                   </CardContent>
@@ -2561,7 +2957,9 @@ const SiteDashboard = () => {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>Equipment & Fleet Control</CardTitle>
-                      <CardDescription>Maintenance and Utilization</CardDescription>
+                      <CardDescription>
+                        Maintenance and Utilization
+                      </CardDescription>
                     </div>
                     <Button onClick={() => setIsEquipmentModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
@@ -2703,27 +3101,39 @@ const SiteDashboard = () => {
           ) : (
             // Subview content
             <>
-              {costSubview === 'totalCost' && (
+              {costSubview === "totalCost" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Total Cost</h2>
-                    <Button variant="outline" onClick={() => setCostSubview('mainCost')}>Back to Cost Analysis</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCostSubview("mainCost")}
+                    >
+                      Back to Cost Analysis
+                    </Button>
                   </div>
                   <Card>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={costData}>
+                        <BarChart data={safeCostData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="category" />
                           <YAxis />
                           <Tooltip />
-                          <Bar dataKey="planned" fill="#3b82f6" name="Planned" />
+                          <Bar
+                            dataKey="planned"
+                            fill="#3b82f6"
+                            name="Planned"
+                          />
                           <Bar dataKey="actual" fill="#10b981" name="Actual" />
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="grid grid-cols-2 gap-4 mt-6">
-                        {costData.map((item) => (
-                          <div key={item.category} className="p-4 border rounded-lg">
+                        {safeCostData.map((item) => (
+                          <div
+                            key={item.category}
+                            className="p-4 border rounded-lg"
+                          >
                             <div className="flex justify-between items-center">
                               <h3 className="font-medium">{item.category}</h3>
                               <Badge
@@ -2746,10 +3156,13 @@ const SiteDashboard = () => {
                                 Actual: ₹{item.actual.toLocaleString()}
                               </div>
                               <div className="text-sm font-medium">
-                                Variance: {(
-                                  ((item.actual - item.planned) / item.planned) *
+                                Variance:{" "}
+                                {(
+                                  ((item.actual - item.planned) /
+                                    item.planned) *
                                   100
-                                ).toFixed(1)}%
+                                ).toFixed(1)}
+                                %
                               </div>
                             </div>
                           </div>
@@ -2759,27 +3172,43 @@ const SiteDashboard = () => {
                   </Card>
                 </>
               )}
-              {costSubview === 'laborUtilization' && (
+              {costSubview === "laborUtilization" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Labor Utilization</h2>
-                    <Button variant="outline" onClick={() => setCostSubview('mainCost')}>Back to Cost Analysis</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCostSubview("mainCost")}
+                    >
+                      Back to Cost Analysis
+                    </Button>
                   </div>
                   <Card>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={laborData}>
+                        <BarChart data={safeLaborData}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="trade" />
                           <YAxis />
                           <Tooltip />
-                          <Bar dataKey="planned" fill="#3b82f6" name="Planned Hours" />
-                          <Bar dataKey="actual" fill="#10b981" name="Actual Hours" />
+                          <Bar
+                            dataKey="planned"
+                            fill="#3b82f6"
+                            name="Planned Hours"
+                          />
+                          <Bar
+                            dataKey="actual"
+                            fill="#10b981"
+                            name="Actual Hours"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="grid grid-cols-2 gap-4 mt-6">
-                        {laborData.map((item) => (
-                          <div key={item.trade} className="p-4 border rounded-lg">
+                        {safeLaborData.map((item) => (
+                          <div
+                            key={item.trade}
+                            className="p-4 border rounded-lg"
+                          >
                             <div className="flex justify-between items-center">
                               <h3 className="font-medium">{item.trade}</h3>
                               <Badge
@@ -2812,11 +3241,16 @@ const SiteDashboard = () => {
                   </Card>
                 </>
               )}
-              {costSubview === 'equipmentUtilization' && (
+              {costSubview === "equipmentUtilization" && (
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold">Equipment Utilization</h2>
-                    <Button variant="outline" onClick={() => setCostSubview('mainCost')}>Back to Cost Analysis</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCostSubview("mainCost")}
+                    >
+                      Back to Cost Analysis
+                    </Button>
                   </div>
                   <Card>
                     <CardContent>
@@ -2826,7 +3260,11 @@ const SiteDashboard = () => {
                           <XAxis dataKey="name" />
                           <YAxis />
                           <Tooltip />
-                          <Bar dataKey="hours" fill="#3b82f6" name="Hours Used" />
+                          <Bar
+                            dataKey="hours"
+                            fill="#3b82f6"
+                            name="Hours Used"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                       <div className="grid grid-cols-2 gap-4 mt-6">
@@ -2866,7 +3304,7 @@ const SiteDashboard = () => {
         </TabsContent>
 
         <TabsContent value="store-manager" className="space-y-6">
-          {storeManagerSubview === 'main' && (
+          {storeManagerSubview === "main" && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <StatCard
@@ -2874,519 +3312,900 @@ const SiteDashboard = () => {
                   value="24"
                   icon={Package}
                   description="Currently on duty"
-                  onClick={() => setStoreManagerSubview('activePersonnel')}
+                  onClick={() => setStoreManagerSubview("activePersonnel")}
                 />
                 <StatCard
                   title="Store Performance"
                   value="94%"
                   icon={CheckCircle2}
                   description="Fulfillment rate"
-                  onClick={() => setStoreManagerSubview('performance')}
+                  onClick={() => setStoreManagerSubview("performance")}
                 />
                 <StatCard
                   title="Pending Actions"
                   value="12"
                   icon={Clock}
                   description="Need attention"
-                  onClick={() => setStoreManagerSubview('pendingActions')}
+                  onClick={() => setStoreManagerSubview("pendingActions")}
                 />
                 <StatCard
                   title="Active Sites"
                   value="8"
                   icon={Building2}
                   description="Receiving supplies"
-                  onClick={() => setStoreManagerSubview('activeSites')}
+                  onClick={() => setStoreManagerSubview("activeSites")}
                 />
               </div>
               {/* Render all detailed cards/components below the StatCards row */}
               {/* Store Manager Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Staff Management */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Staff Management</CardTitle>
-                <CardDescription>Manage store personnel and responsibilities</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {storeStaff.map((staff, index) => (
-                    <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-medium">{staff.name}</h3>
-                          <p className="text-sm text-muted-foreground">{staff.role}</p>
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {staff.certifications.map((cert, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">{cert}</Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={staff.status === 'On Duty' ? 'default' : 'secondary'}>
-                            {staff.status}
-                          </Badge>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Show confirmation dialog using toast
-                              toast.promise(
-                                new Promise((resolve) => {
-                                  // Simulate a brief delay for visual feedback
-                                  setTimeout(() => {
-                                    // Remove the staff member
-                                    setStoreStaff(prevStaff => 
-                                      prevStaff.filter((_, i) => i !== index)
-                                    );
-                                    resolve(true);
-                                  }, 300);
-                                }),
-                                {
-                                  loading: 'Removing staff member...',
-                                  success: `${staff.name} has been removed from the staff list`,
-                                  error: 'Failed to remove staff member'
-                                }
-                              );
-                            }}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2">
-                              <path d="M3 6h18"></path>
-                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                              <line x1="10" y1="11" x2="10" y2="17"></line>
-                              <line x1="14" y1="11" x2="14" y2="17"></line>
-                            </svg>
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
-                        <div>Availability: {staff.availability}</div>
-                        <div>Experience: {staff.experience}</div>
-                      </div>
-                      <div className="mt-3 flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => toast.info(`Scheduling ${staff.name}`, {
-                            description: `Opening scheduler for ${staff.availability} staff member`
-                          })}
-                        >
-                          Schedule
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full"
-                          onClick={() => toast.info(`${staff.name}'s Performance Metrics`, {
-                            description: `Viewing detailed performance history and metrics`
-                          })}
-                        >
-                          Performance
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4"
-                  onClick={() => setIsAddStaffModalOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Staff
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Advanced Analytics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Performance Analytics</CardTitle>
-                <CardDescription>Detailed performance metrics and indicators</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Store Response Time</h3>
-                    <div className="space-y-2">
-                      {[
-                        { label: 'Urgent Requests', value: 45, unit: 'minutes', target: 60, status: 'good' },
-                        { label: 'Regular Requests', value: 4.5, unit: 'hours', target: 6, status: 'good' },
-                        { label: 'Inter-site Transfers', value: 28, unit: 'hours', target: 24, status: 'warning' },
-                      ].map((metric, idx) => (
-                        <div key={idx} className="space-y-1">
-                          <div className="flex justify-between text-sm">
-                            <span>{metric.label}</span>
-                            <span className={metric.status === 'good' ? 'text-green-600' : 'text-amber-600'}>
-                              {metric.value} {metric.unit} (Target: {metric.target} {metric.unit})
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className={`h-2 rounded-full ${metric.status === 'good' ? 'bg-green-600' : 'bg-amber-600'}`}
-                              style={{ width: `${Math.min(100, (metric.value / metric.target) * 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Order Fulfillment Rate</h3>
-                    <ResponsiveContainer width="100%" height={120}>
-                      <LineChart data={[
-                        { month: 'Jan', rate: 92 },
-                        { month: 'Feb', rate: 94 },
-                        { month: 'Mar', rate: 91 },
-                        { month: 'Apr', rate: 95 },
-                        { month: 'May', rate: 97 },
-                        { month: 'Jun', rate: 94 },
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis domain={[85, 100]} />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="rate" stroke="#10b981" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => toast.success("Report Generated", {
-                      description: "Store performance report has been exported to Excel"
-                    })}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Export Detailed Report
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Store Operations and Processes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Store Operations & Process Management</CardTitle>
-              <CardDescription>Standard operating procedures and workflow management</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Process Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
-                    { name: 'Goods Receiving', status: 'Optimized', efficiency: 92, lastReview: '2023-05-15', owner: 'Jane Smith', documents: 4 },
-                    { name: 'Order Fulfillment', status: 'Under Review', efficiency: 78, lastReview: '2023-04-10', owner: 'Mike Johnson', documents: 6 },
-                    { name: 'Quality Control', status: 'Optimized', efficiency: 95, lastReview: '2023-05-20', owner: 'John Doe', documents: 3 },
-                    { name: 'Material Transfer', status: 'Needs Improvement', efficiency: 68, lastReview: '2023-03-25', owner: 'Jane Smith', documents: 5 },
-                    { name: 'Returns Processing', status: 'Optimized', efficiency: 88, lastReview: '2023-05-05', owner: 'Mike Johnson', documents: 4 },
-                    { name: 'Inventory Counting', status: 'Under Review', efficiency: 82, lastReview: '2023-04-15', owner: 'John Doe', documents: 7 }
-                  ].map((process, idx) => (
-                    <div key={idx} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="font-medium">{process.name}</h3>
-                        <Badge variant={
-                          process.status === 'Optimized' ? 'default' :
-                          process.status === 'Under Review' ? 'outline' : 'destructive'
-                        }>
-                          {process.status}
-                        </Badge>
-                      </div>
-                      <div className="mb-3">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Process Efficiency</span>
-                          <span className={
-                            process.efficiency > 85 ? 'text-green-600' :
-                            process.efficiency > 70 ? 'text-amber-600' : 'text-red-600'
-                          }>
-                            {process.efficiency}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              process.efficiency > 85 ? 'bg-green-600' :
-                              process.efficiency > 70 ? 'bg-amber-600' : 'bg-red-600'
-                            }`}
-                            style={{ width: `${process.efficiency}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2">
-                        <div>Last Review: {process.lastReview}</div>
-                        <div>Process Owner: {process.owner}</div>
-                        <div>Documents: {process.documents}</div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-3"
-                        onClick={() => toast.info(`Managing ${process.name} Process`, {
-                          description: `Opening process workflow editor with ${process.documents} associated documents`
-                        })}
-                      >
-                        Manage Process
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Process Improvement Initiatives */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Staff Management */}
                 <Card>
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-sm">Active Process Improvement Initiatives</CardTitle>
+                  <CardHeader>
+                    <CardTitle>Store Staff Management</CardTitle>
+                    <CardDescription>
+                      Manage store personnel and responsibilities
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {[
-                        { name: 'Digital Receiving Implementation', completion: 65, dueDate: '2023-07-15', status: 'On Track', owner: 'Jane Smith' },
-                        { name: 'Barcode System Upgrade', completion: 40, dueDate: '2023-08-10', status: 'Delayed', owner: 'Mike Johnson' },
-                        { name: 'Cross-Store Inventory Standardization', completion: 85, dueDate: '2023-06-30', status: 'On Track', owner: 'John Doe' }
-                      ].map((initiative, idx) => (
-                        <div key={idx} className="flex items-center p-3 border rounded-lg">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{initiative.name}</h4>
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1 mb-2">
-                              <span>Due: {initiative.dueDate}</span>
-                              <span>Owner: {initiative.owner}</span>
+                    <div className="space-y-4">
+                      {storeStaff.map((staff, index) => (
+                        <div
+                          key={index}
+                          className="p-4 border rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-medium">{staff.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {staff.role}
+                              </p>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {staff.certifications.map((cert, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    {cert}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                              <div
-                                className={`h-1.5 rounded-full ${initiative.status === 'On Track' ? 'bg-green-600' : 'bg-amber-600'}`}
-                                style={{ width: `${initiative.completion}%` }}
-                              ></div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  staff.status === "On Duty"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
+                                {staff.status}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Show confirmation dialog using toast
+                                  toast.promise(
+                                    new Promise((resolve) => {
+                                      // Simulate a brief delay for visual feedback
+                                      setTimeout(() => {
+                                        // Remove the staff member
+                                        setStoreStaff((prevStaff) =>
+                                          prevStaff.filter(
+                                            (_, i) => i !== index
+                                          )
+                                        );
+                                        resolve(true);
+                                      }, 300);
+                                    }),
+                                    {
+                                      loading: "Removing staff member...",
+                                      success: `${staff.name} has been removed from the staff list`,
+                                      error: "Failed to remove staff member",
+                                    }
+                                  );
+                                }}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="lucide lucide-trash-2"
+                                >
+                                  <path d="M3 6h18"></path>
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                                </svg>
+                              </Button>
                             </div>
                           </div>
-                          <Badge variant={initiative.status === 'On Track' ? 'outline' : 'destructive'} className="ml-4">
-                            {initiative.status}
-                          </Badge>
+                          <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
+                            <div>Availability: {staff.availability}</div>
+                            <div>Experience: {staff.experience}</div>
+                          </div>
+                          <div className="mt-3 flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() =>
+                                toast.info(`Scheduling ${staff.name}`, {
+                                  description: `Opening scheduler for ${staff.availability} staff member`,
+                                })
+                              }
+                            >
+                              Schedule
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() =>
+                                toast.info(
+                                  `${staff.name}'s Performance Metrics`,
+                                  {
+                                    description: `Viewing detailed performance history and metrics`,
+                                  }
+                                )
+                              }
+                            >
+                              Performance
+                            </Button>
+                          </div>
                         </div>
                       ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-4"
+                      onClick={() => setIsAddStaffModalOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Staff
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Advanced Analytics */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Store Performance Analytics</CardTitle>
+                    <CardDescription>
+                      Detailed performance metrics and indicators
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-sm font-medium mb-2">
+                          Store Response Time
+                        </h3>
+                        <div className="space-y-2">
+                          {[
+                            {
+                              label: "Urgent Requests",
+                              value: 45,
+                              unit: "minutes",
+                              target: 60,
+                              status: "good",
+                            },
+                            {
+                              label: "Regular Requests",
+                              value: 4.5,
+                              unit: "hours",
+                              target: 6,
+                              status: "good",
+                            },
+                            {
+                              label: "Inter-site Transfers",
+                              value: 28,
+                              unit: "hours",
+                              target: 24,
+                              status: "warning",
+                            },
+                          ].map((metric, idx) => (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span>{metric.label}</span>
+                                <span
+                                  className={
+                                    metric.status === "good"
+                                      ? "text-green-600"
+                                      : "text-amber-600"
+                                  }
+                                >
+                                  {metric.value} {metric.unit} (Target:{" "}
+                                  {metric.target} {metric.unit})
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    metric.status === "good"
+                                      ? "bg-green-600"
+                                      : "bg-amber-600"
+                                  }`}
+                                  style={{
+                                    width: `${Math.min(
+                                      100,
+                                      (metric.value / metric.target) * 100
+                                    )}%`,
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-medium mb-2">
+                          Order Fulfillment Rate
+                        </h3>
+                        <ResponsiveContainer width="100%" height={120}>
+                          <LineChart
+                            data={[
+                              { month: "Jan", rate: 92 },
+                              { month: "Feb", rate: 94 },
+                              { month: "Mar", rate: 91 },
+                              { month: "Apr", rate: 95 },
+                              { month: "May", rate: 97 },
+                              { month: "Jun", rate: 94 },
+                            ]}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis domain={[85, 100]} />
+                            <Tooltip />
+                            <Line
+                              type="monotone"
+                              dataKey="rate"
+                              stroke="#10b981"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() =>
+                          toast.success("Report Generated", {
+                            description:
+                              "Store performance report has been exported to Excel",
+                          })
+                        }
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export Detailed Report
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-            </CardContent>
-          </Card>
-          
-          {/* Store Compliance & Documentation */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Compliance & Documentation Management</CardTitle>
-              <CardDescription>Manage regulatory compliance and documentation</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Compliance Status */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { area: 'Safety & Hazmat', status: 'Compliant', lastAudit: '2023-05-10', nextAudit: '2023-08-10', documents: 12 },
-                    { area: 'Environmental', status: 'Needs Review', lastAudit: '2023-04-15', nextAudit: '2023-07-15', documents: 8 },
-                    { area: 'Quality Management', status: 'Compliant', lastAudit: '2023-05-20', nextAudit: '2023-08-20', documents: 15 },
-                    { area: 'Inventory Controls', status: 'Compliant', lastAudit: '2023-05-05', nextAudit: '2023-08-05', documents: 10 }
-                  ].map((area, idx) => (
-                    <div key={idx} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium">{area.area}</h3>
-                        <Badge variant={area.status === 'Compliant' ? 'default' : 'destructive'}>
-                          {area.status}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div>Last Audit: {area.lastAudit}</div>
-                        <div>Next Audit: {area.nextAudit}</div>
-                        <div>{area.documents} Documents</div>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-3"
-                        onClick={() => toast.info(`Viewing ${area.area} Documents`, {
-                          description: `Opening document repository with ${area.documents} compliance documents`
-                        })}
-                      >
-                        View Documents
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Recent Document Activity */}
-                <div>
-                  <h3 className="font-medium mb-3">Recent Document Activity</h3>
-                  <div className="space-y-2">
-                    {[
-                      { type: 'Update', document: 'Material Handling Procedure v2.3', user: 'John Doe', timestamp: '2 hours ago' },
-                      { type: 'Upload', document: 'Q2 Safety Inspection Report', user: 'Jane Smith', timestamp: '5 hours ago' },
-                      { type: 'Review', document: 'Hazardous Materials Storage Guidelines', user: 'Mike Johnson', timestamp: '1 day ago' },
-                      { type: 'Update', document: 'Receiving Procedure v1.8', user: 'Jane Smith', timestamp: '2 days ago' }
-                    ].map((activity, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center">
-                          <div className={`w-2 h-2 rounded-full mr-3 ${
-                            activity.type === 'Update' ? 'bg-blue-500' :
-                            activity.type === 'Upload' ? 'bg-green-500' : 'bg-amber-500'
-                          }`}></div>
-                          <div>
-                            <p className="font-medium text-sm">{activity.document}</p>
-                            <p className="text-xs text-muted-foreground">{activity.type} by {activity.user}</p>
-                          </div>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{activity.timestamp}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex justify-between mt-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => toast.info("Upload New Document", {
-                        description: "Opening document upload form"
-                      })}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Upload Document
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => toast.info("Document Repository", {
-                        description: "Opening the complete document management system"
-                      })}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Document Repository
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Inventory Status Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Inventory Status Overview</CardTitle>
-              <CardDescription>Current stock levels and inventory movements</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { category: 'Critical Materials', stockLevel: '92%', items: 35, value: '₹8.2M', trend: '+2%' },
-                    { category: 'Regular Supplies', stockLevel: '78%', items: 120, value: '₹4.5M', trend: '-5%' },
-                    { category: 'Consumables', stockLevel: '65%', items: 210, value: '₹2.3M', trend: '+1%' },
-                    { category: 'Equipment & Tools', stockLevel: '88%', items: 65, value: '₹12.7M', trend: '0%' }
-                  ].map((category, idx) => (
-                    <div key={idx} className="border rounded-lg p-4">
-                      <h3 className="font-medium">{category.category}</h3>
-                      <div className="mt-2 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Stock Level:</span>
-                          <span className="font-medium">{category.stockLevel}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Items:</span>
-                          <span>{category.items}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Value:</span>
-                          <span>{category.value}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Trend:</span>
-                          <span className={
-                            category.trend.startsWith('+') ? 'text-green-600' : 
-                            category.trend.startsWith('-') ? 'text-red-600' : 'text-gray-600'
-                          }>{category.trend}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Recent Stock Movements</h3>
-                    <div className="space-y-2">
+              {/* Store Operations and Processes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Store Operations & Process Management</CardTitle>
+                  <CardDescription>
+                    Standard operating procedures and workflow management
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Process Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       {[
-                        { type: 'In', material: 'Steel Reinforcement', quantity: '2.5 tons', destination: 'North Block', timestamp: '3 hours ago' },
-                        { type: 'Out', material: 'Portland Cement', quantity: '120 bags', destination: 'South Tower', timestamp: '5 hours ago' },
-                        { type: 'In', material: 'PVC Pipes', quantity: '350 units', destination: 'Main Warehouse', timestamp: '1 day ago' },
-                        { type: 'Out', material: 'Electrical Fittings', quantity: '85 boxes', destination: 'East Wing', timestamp: '1 day ago' }
-                      ].map((movement, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center">
-                            <Badge variant={movement.type === 'In' ? 'default' : 'secondary'} className="mr-3">
-                              {movement.type}
-                            </Badge>
-                            <div>
-                              <p className="font-medium text-sm">{movement.material}</p>
-                              <p className="text-xs text-muted-foreground">{movement.quantity} • {movement.destination}</p>
-                            </div>
-                          </div>
-                          <span className="text-xs text-muted-foreground">{movement.timestamp}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Low Stock Alerts</h3>
-                    <div className="space-y-2">
-                      {[
-                        { material: 'Waterproofing Compound', currentStock: '5 barrels', threshold: '10 barrels', priority: 'High' },
-                        { material: 'Electrical Conduits', currentStock: '120 units', threshold: '200 units', priority: 'Medium' },
-                        { material: 'Concrete Admixture', currentStock: '15 containers', threshold: '25 containers', priority: 'Medium' },
-                        { material: 'Safety Gloves', currentStock: '30 pairs', threshold: '50 pairs', priority: 'Low' }
-                      ].map((alert, idx) => (
-                        <div key={idx} className="p-3 border rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-sm">{alert.material}</p>
-                              <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                                <span>Current: {alert.currentStock}</span>
-                                <span>Threshold: {alert.threshold}</span>
-                              </div>
-                            </div>
-                            <Badge variant={
-                              alert.priority === 'High' ? 'destructive' : 
-                              alert.priority === 'Medium' ? 'default' : 'outline'
-                            }>
-                              {alert.priority}
+                        {
+                          name: "Goods Receiving",
+                          status: "Optimized",
+                          efficiency: 92,
+                          lastReview: "2023-05-15",
+                          owner: "Jane Smith",
+                          documents: 4,
+                        },
+                        {
+                          name: "Order Fulfillment",
+                          status: "Under Review",
+                          efficiency: 78,
+                          lastReview: "2023-04-10",
+                          owner: "Mike Johnson",
+                          documents: 6,
+                        },
+                        {
+                          name: "Quality Control",
+                          status: "Optimized",
+                          efficiency: 95,
+                          lastReview: "2023-05-20",
+                          owner: "John Doe",
+                          documents: 3,
+                        },
+                        {
+                          name: "Material Transfer",
+                          status: "Needs Improvement",
+                          efficiency: 68,
+                          lastReview: "2023-03-25",
+                          owner: "Jane Smith",
+                          documents: 5,
+                        },
+                        {
+                          name: "Returns Processing",
+                          status: "Optimized",
+                          efficiency: 88,
+                          lastReview: "2023-05-05",
+                          owner: "Mike Johnson",
+                          documents: 4,
+                        },
+                        {
+                          name: "Inventory Counting",
+                          status: "Under Review",
+                          efficiency: 82,
+                          lastReview: "2023-04-15",
+                          owner: "John Doe",
+                          documents: 7,
+                        },
+                      ].map((process, idx) => (
+                        <div key={idx} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <h3 className="font-medium">{process.name}</h3>
+                            <Badge
+                              variant={
+                                process.status === "Optimized"
+                                  ? "default"
+                                  : process.status === "Under Review"
+                                  ? "outline"
+                                  : "destructive"
+                              }
+                            >
+                              {process.status}
                             </Badge>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="w-full mt-2"
-                            onClick={() => toast.success(`Purchase Request Created`, {
-                              description: `Request for ${alert.material} (${alert.currentStock} → ${alert.threshold}) has been submitted`
-                            })}
+                          <div className="mb-3">
+                            <div className="flex justify-between text-sm mb-1">
+                              <span>Process Efficiency</span>
+                              <span
+                                className={
+                                  process.efficiency > 85
+                                    ? "text-green-600"
+                                    : process.efficiency > 70
+                                    ? "text-amber-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {process.efficiency}%
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${
+                                  process.efficiency > 85
+                                    ? "bg-green-600"
+                                    : process.efficiency > 70
+                                    ? "bg-amber-600"
+                                    : "bg-red-600"
+                                }`}
+                                style={{ width: `${process.efficiency}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground grid grid-cols-2 gap-2">
+                            <div>Last Review: {process.lastReview}</div>
+                            <div>Process Owner: {process.owner}</div>
+                            <div>Documents: {process.documents}</div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-3"
+                            onClick={() =>
+                              toast.info(`Managing ${process.name} Process`, {
+                                description: `Opening process workflow editor with ${process.documents} associated documents`,
+                              })
+                            }
                           >
-                            Create Purchase Request
+                            Manage Process
                           </Button>
                         </div>
                       ))}
                     </div>
+
+                    {/* Process Improvement Initiatives */}
+                    <Card>
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-sm">
+                          Active Process Improvement Initiatives
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {[
+                            {
+                              name: "Digital Receiving Implementation",
+                              completion: 65,
+                              dueDate: "2023-07-15",
+                              status: "On Track",
+                              owner: "Jane Smith",
+                            },
+                            {
+                              name: "Barcode System Upgrade",
+                              completion: 40,
+                              dueDate: "2023-08-10",
+                              status: "Delayed",
+                              owner: "Mike Johnson",
+                            },
+                            {
+                              name: "Cross-Store Inventory Standardization",
+                              completion: 85,
+                              dueDate: "2023-06-30",
+                              status: "On Track",
+                              owner: "John Doe",
+                            },
+                          ].map((initiative, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center p-3 border rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm">
+                                  {initiative.name}
+                                </h4>
+                                <div className="flex justify-between text-xs text-muted-foreground mt-1 mb-2">
+                                  <span>Due: {initiative.dueDate}</span>
+                                  <span>Owner: {initiative.owner}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div
+                                    className={`h-1.5 rounded-full ${
+                                      initiative.status === "On Track"
+                                        ? "bg-green-600"
+                                        : "bg-amber-600"
+                                    }`}
+                                    style={{
+                                      width: `${initiative.completion}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                              <Badge
+                                variant={
+                                  initiative.status === "On Track"
+                                    ? "outline"
+                                    : "destructive"
+                                }
+                                className="ml-4"
+                              >
+                                {initiative.status}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+
+              {/* Store Compliance & Documentation */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Compliance & Documentation Management</CardTitle>
+                  <CardDescription>
+                    Manage regulatory compliance and documentation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Compliance Status */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        {
+                          area: "Safety & Hazmat",
+                          status: "Compliant",
+                          lastAudit: "2023-05-10",
+                          nextAudit: "2023-08-10",
+                          documents: 12,
+                        },
+                        {
+                          area: "Environmental",
+                          status: "Needs Review",
+                          lastAudit: "2023-04-15",
+                          nextAudit: "2023-07-15",
+                          documents: 8,
+                        },
+                        {
+                          area: "Quality Management",
+                          status: "Compliant",
+                          lastAudit: "2023-05-20",
+                          nextAudit: "2023-08-20",
+                          documents: 15,
+                        },
+                        {
+                          area: "Inventory Controls",
+                          status: "Compliant",
+                          lastAudit: "2023-05-05",
+                          nextAudit: "2023-08-05",
+                          documents: 10,
+                        },
+                      ].map((area, idx) => (
+                        <div key={idx} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-medium">{area.area}</h3>
+                            <Badge
+                              variant={
+                                area.status === "Compliant"
+                                  ? "default"
+                                  : "destructive"
+                              }
+                            >
+                              {area.status}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            <div>Last Audit: {area.lastAudit}</div>
+                            <div>Next Audit: {area.nextAudit}</div>
+                            <div>{area.documents} Documents</div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-3"
+                            onClick={() =>
+                              toast.info(`Viewing ${area.area} Documents`, {
+                                description: `Opening document repository with ${area.documents} compliance documents`,
+                              })
+                            }
+                          >
+                            View Documents
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Recent Document Activity */}
+                    <div>
+                      <h3 className="font-medium mb-3">
+                        Recent Document Activity
+                      </h3>
+                      <div className="space-y-2">
+                        {[
+                          {
+                            type: "Update",
+                            document: "Material Handling Procedure v2.3",
+                            user: "John Doe",
+                            timestamp: "2 hours ago",
+                          },
+                          {
+                            type: "Upload",
+                            document: "Q2 Safety Inspection Report",
+                            user: "Jane Smith",
+                            timestamp: "5 hours ago",
+                          },
+                          {
+                            type: "Review",
+                            document: "Hazardous Materials Storage Guidelines",
+                            user: "Mike Johnson",
+                            timestamp: "1 day ago",
+                          },
+                          {
+                            type: "Update",
+                            document: "Receiving Procedure v1.8",
+                            user: "Jane Smith",
+                            timestamp: "2 days ago",
+                          },
+                        ].map((activity, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
+                            <div className="flex items-center">
+                              <div
+                                className={`w-2 h-2 rounded-full mr-3 ${
+                                  activity.type === "Update"
+                                    ? "bg-blue-500"
+                                    : activity.type === "Upload"
+                                    ? "bg-green-500"
+                                    : "bg-amber-500"
+                                }`}
+                              ></div>
+                              <div>
+                                <p className="font-medium text-sm">
+                                  {activity.document}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {activity.type} by {activity.user}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {activity.timestamp}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            toast.info("Upload New Document", {
+                              description: "Opening document upload form",
+                            })
+                          }
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Upload Document
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            toast.info("Document Repository", {
+                              description:
+                                "Opening the complete document management system",
+                            })
+                          }
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Document Repository
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Inventory Status Overview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventory Status Overview</CardTitle>
+                  <CardDescription>
+                    Current stock levels and inventory movements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {[
+                        {
+                          category: "Critical Materials",
+                          stockLevel: "92%",
+                          items: 35,
+                          value: "₹8.2M",
+                          trend: "+2%",
+                        },
+                        {
+                          category: "Regular Supplies",
+                          stockLevel: "78%",
+                          items: 120,
+                          value: "₹4.5M",
+                          trend: "-5%",
+                        },
+                        {
+                          category: "Consumables",
+                          stockLevel: "65%",
+                          items: 210,
+                          value: "₹2.3M",
+                          trend: "+1%",
+                        },
+                        {
+                          category: "Equipment & Tools",
+                          stockLevel: "88%",
+                          items: 65,
+                          value: "₹12.7M",
+                          trend: "0%",
+                        },
+                      ].map((category, idx) => (
+                        <div key={idx} className="border rounded-lg p-4">
+                          <h3 className="font-medium">{category.category}</h3>
+                          <div className="mt-2 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">
+                                Stock Level:
+                              </span>
+                              <span className="font-medium">
+                                {category.stockLevel}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">
+                                Items:
+                              </span>
+                              <span>{category.items}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">
+                                Value:
+                              </span>
+                              <span>{category.value}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">
+                                Trend:
+                              </span>
+                              <span
+                                className={
+                                  category.trend.startsWith("+")
+                                    ? "text-green-600"
+                                    : category.trend.startsWith("-")
+                                    ? "text-red-600"
+                                    : "text-gray-600"
+                                }
+                              >
+                                {category.trend}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-sm font-medium mb-3">
+                          Recent Stock Movements
+                        </h3>
+                        <div className="space-y-2">
+                          {[
+                            {
+                              type: "In",
+                              material: "Steel Reinforcement",
+                              quantity: "2.5 tons",
+                              destination: "North Block",
+                              timestamp: "3 hours ago",
+                            },
+                            {
+                              type: "Out",
+                              material: "Portland Cement",
+                              quantity: "120 bags",
+                              destination: "South Tower",
+                              timestamp: "5 hours ago",
+                            },
+                            {
+                              type: "In",
+                              material: "PVC Pipes",
+                              quantity: "350 units",
+                              destination: "Main Warehouse",
+                              timestamp: "1 day ago",
+                            },
+                            {
+                              type: "Out",
+                              material: "Electrical Fittings",
+                              quantity: "85 boxes",
+                              destination: "East Wing",
+                              timestamp: "1 day ago",
+                            },
+                          ].map((movement, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-3 border rounded-lg"
+                            >
+                              <div className="flex items-center">
+                                <Badge
+                                  variant={
+                                    movement.type === "In"
+                                      ? "default"
+                                      : "secondary"
+                                  }
+                                  className="mr-3"
+                                >
+                                  {movement.type}
+                                </Badge>
+                                <div>
+                                  <p className="font-medium text-sm">
+                                    {movement.material}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {movement.quantity} • {movement.destination}
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {movement.timestamp}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-medium mb-3">
+                          Low Stock Alerts
+                        </h3>
+                        <div className="space-y-2">
+                          {[
+                            {
+                              material: "Waterproofing Compound",
+                              currentStock: "5 barrels",
+                              threshold: "10 barrels",
+                              priority: "High",
+                            },
+                            {
+                              material: "Electrical Conduits",
+                              currentStock: "120 units",
+                              threshold: "200 units",
+                              priority: "Medium",
+                            },
+                            {
+                              material: "Concrete Admixture",
+                              currentStock: "15 containers",
+                              threshold: "25 containers",
+                              priority: "Medium",
+                            },
+                            {
+                              material: "Safety Gloves",
+                              currentStock: "30 pairs",
+                              threshold: "50 pairs",
+                              priority: "Low",
+                            },
+                          ].map((alert, idx) => (
+                            <div key={idx} className="p-3 border rounded-lg">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="font-medium text-sm">
+                                    {alert.material}
+                                  </p>
+                                  <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                                    <span>Current: {alert.currentStock}</span>
+                                    <span>Threshold: {alert.threshold}</span>
+                                  </div>
+                                </div>
+                                <Badge
+                                  variant={
+                                    alert.priority === "High"
+                                      ? "destructive"
+                                      : alert.priority === "Medium"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                >
+                                  {alert.priority}
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full mt-2"
+                                onClick={() =>
+                                  toast.success(`Purchase Request Created`, {
+                                    description: `Request for ${alert.material} (${alert.currentStock} → ${alert.threshold}) has been submitted`,
+                                  })
+                                }
+                              >
+                                Create Purchase Request
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
-          {storeManagerSubview === 'activePersonnel' && (
+          {storeManagerSubview === "activePersonnel" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Active Personnel</h2>
-                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setStoreManagerSubview("main")}
+                >
+                  Back to Store Manager
+                </Button>
               </div>
               {/* Store Staff Management Card */}
               <Card>
@@ -3397,45 +4216,73 @@ const SiteDashboard = () => {
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     {storeStaff.map((staff, index) => (
-                      <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
+                      <div
+                        key={index}
+                        className="p-4 border rounded-lg hover:bg-gray-50"
+                      >
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-medium">{staff.name}</h3>
-                            <p className="text-sm text-muted-foreground">{staff.role}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {staff.role}
+                            </p>
                             <div className="flex flex-wrap gap-2 mt-2">
                               {staff.certifications.map((cert, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">{cert}</Badge>
+                                <Badge
+                                  key={i}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {cert}
+                                </Badge>
                               ))}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant={staff.status === 'On Duty' ? 'default' : 'secondary'}>
+                            <Badge
+                              variant={
+                                staff.status === "On Duty"
+                                  ? "default"
+                                  : "secondary"
+                                }
+                            >
                               {staff.status}
                             </Badge>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toast.promise(
                                   new Promise((resolve) => {
                                     setTimeout(() => {
-                                      setStoreStaff(prevStaff => 
+                                      setStoreStaff((prevStaff) =>
                                         prevStaff.filter((_, i) => i !== index)
                                       );
                                       resolve(true);
                                     }, 300);
                                   }),
                                   {
-                                    loading: 'Removing staff member...',
+                                    loading: "Removing staff member...",
                                     success: `${staff.name} has been removed from the staff list`,
-                                    error: 'Failed to remove staff member'
+                                    error: "Failed to remove staff member",
                                   }
                                 );
                               }}
                             >
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="lucide lucide-trash-2"
+                              >
                                 <path d="M3 6h18"></path>
                                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
@@ -3450,23 +4297,30 @@ const SiteDashboard = () => {
                           <div>Experience: {staff.experience}</div>
                         </div>
                         <div className="mt-3 flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="w-full"
-                            onClick={() => toast.info(`Scheduling ${staff.name}`, {
-                              description: `Opening scheduler for ${staff.availability} staff member`
-                            })}
+                            onClick={() =>
+                              toast.info(`Scheduling ${staff.name}`, {
+                                description: `Opening scheduler for ${staff.availability} staff member`,
+                              })
+                            }
                           >
                             Schedule
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="w-full"
-                            onClick={() => toast.info(`${staff.name}'s Performance Metrics`, {
-                              description: `Viewing detailed performance history and metrics`
-                            })}
+                            onClick={() =>
+                              toast.info(
+                                `${staff.name}'s Performance Metrics`,
+                                {
+                                  description: `Viewing detailed performance history and metrics`,
+                                }
+                              )
+                            }
                           >
                             Performance
                           </Button>
@@ -3474,8 +4328,8 @@ const SiteDashboard = () => {
                       </div>
                     ))}
                   </div>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full mt-4"
                     onClick={() => setIsAddStaffModalOpen(true)}
                   >
@@ -3486,11 +4340,16 @@ const SiteDashboard = () => {
               </Card>
             </div>
           )}
-          {storeManagerSubview === 'performance' && (
+          {storeManagerSubview === "performance" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Store Performance</h2>
-                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setStoreManagerSubview("main")}
+                >
+                  Back to Store Manager
+                </Button>
               </div>
               {/* Store Performance Analytics Card */}
               <Card>
@@ -3501,24 +4360,60 @@ const SiteDashboard = () => {
                 <CardContent className="pt-6">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Store Response Time</h3>
+                      <h3 className="text-sm font-medium mb-2">
+                        Store Response Time
+                      </h3>
                       <div className="space-y-2">
                         {[
-                          { label: 'Urgent Requests', value: 45, unit: 'minutes', target: 60, status: 'good' },
-                          { label: 'Regular Requests', value: 4.5, unit: 'hours', target: 6, status: 'good' },
-                          { label: 'Inter-site Transfers', value: 28, unit: 'hours', target: 24, status: 'warning' },
+                          {
+                            label: "Urgent Requests",
+                            value: 45,
+                            unit: "minutes",
+                            target: 60,
+                            status: "good",
+                          },
+                          {
+                            label: "Regular Requests",
+                            value: 4.5,
+                            unit: "hours",
+                            target: 6,
+                            status: "good",
+                          },
+                          {
+                            label: "Inter-site Transfers",
+                            value: 28,
+                            unit: "hours",
+                            target: 24,
+                            status: "warning",
+                          },
                         ].map((metric, idx) => (
                           <div key={idx} className="space-y-1">
                             <div className="flex justify-between text-sm">
                               <span>{metric.label}</span>
-                              <span className={metric.status === 'good' ? 'text-green-600' : 'text-amber-600'}>
-                                {metric.value} {metric.unit} (Target: {metric.target} {metric.unit})
+                              <span
+                                className={
+                                  metric.status === "good"
+                                    ? "text-green-600"
+                                    : "text-amber-600"
+                                }
+                              >
+                                {metric.value} {metric.unit} (Target:{" "}
+                                {metric.target} {metric.unit})
                               </span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className={`h-2 rounded-full ${metric.status === 'good' ? 'bg-green-600' : 'bg-amber-600'}`}
-                                style={{ width: `${Math.min(100, (metric.value / metric.target) * 100)}%` }}
+                                className={`h-2 rounded-full ${
+                                  metric.status === "good"
+                                    ? "bg-green-600"
+                                    : "bg-amber-600"
+                                }`}
+                                style={{
+                                  width: `${Math.min(
+                                    100,
+                                    (metric.value / metric.target) * 100
+                                  )}%`,
+                                }}
                               ></div>
                             </div>
                           </div>
@@ -3526,30 +4421,41 @@ const SiteDashboard = () => {
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium mb-2">Order Fulfillment Rate</h3>
+                      <h3 className="text-sm font-medium mb-2">
+                        Order Fulfillment Rate
+                      </h3>
                       <ResponsiveContainer width="100%" height={120}>
-                        <LineChart data={[
-                          { month: 'Jan', rate: 92 },
-                          { month: 'Feb', rate: 94 },
-                          { month: 'Mar', rate: 91 },
-                          { month: 'Apr', rate: 95 },
-                          { month: 'May', rate: 97 },
-                          { month: 'Jun', rate: 94 },
-                        ]}>
+                        <LineChart
+                          data={[
+                            { month: "Jan", rate: 92 },
+                            { month: "Feb", rate: 94 },
+                            { month: "Mar", rate: 91 },
+                            { month: "Apr", rate: 95 },
+                            { month: "May", rate: 97 },
+                            { month: "Jun", rate: 94 },
+                          ]}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="month" />
                           <YAxis domain={[85, 100]} />
                           <Tooltip />
-                          <Line type="monotone" dataKey="rate" stroke="#10b981" />
+                          <Line
+                            type="monotone"
+                            dataKey="rate"
+                            stroke="#10b981"
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="w-full"
-                      onClick={() => toast.success("Report Generated", {
-                        description: "Store performance report has been exported to Excel"
-                      })}
+                      onClick={() =>
+                        toast.success("Report Generated", {
+                          description:
+                            "Store performance report has been exported to Excel",
+                        })
+                      }
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Export Detailed Report
@@ -3559,42 +4465,61 @@ const SiteDashboard = () => {
               </Card>
             </div>
           )}
-          {storeManagerSubview === 'pendingActions' && (
+          {storeManagerSubview === "pendingActions" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Pending Actions</h2>
-                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setStoreManagerSubview("main")}
+                >
+                  Back to Store Manager
+                </Button>
               </div>
               {/* For demo, show a filtered list of staff who are Off Duty or a placeholder */}
               <Card>
                 <CardContent className="pt-6">
                   <div className="space-y-4">
-                    {storeStaff.filter(staff => staff.status !== 'On Duty').length === 0 ? (
-                      <div className="text-muted-foreground">No pending actions for staff.</div>
+                    {storeStaff.filter((staff) => staff.status !== "On Duty")
+                      .length === 0 ? (
+                      <div className="text-muted-foreground">
+                        No pending actions for staff.
+                      </div>
                     ) : (
-                      storeStaff.filter(staff => staff.status !== 'On Duty').map((staff, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h3 className="font-medium">{staff.name}</h3>
-                              <p className="text-sm text-muted-foreground">{staff.role}</p>
+                      storeStaff
+                        .filter((staff) => staff.status !== "On Duty")
+                        .map((staff, index) => (
+                          <div key={index} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h3 className="font-medium">{staff.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {staff.role}
+                                </p>
+                              </div>
+                              <Badge variant="secondary">{staff.status}</Badge>
                             </div>
-                            <Badge variant="secondary">{staff.status}</Badge>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              Availability: {staff.availability}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-2">Availability: {staff.availability}</div>
-                        </div>
-                      ))
+                        ))
                     )}
                   </div>
                 </CardContent>
               </Card>
             </div>
           )}
-          {storeManagerSubview === 'activeSites' && (
+          {storeManagerSubview === "activeSites" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Active Sites</h2>
-                <Button variant="outline" onClick={() => setStoreManagerSubview('main')}>Back to Store Manager</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setStoreManagerSubview("main")}
+                >
+                  Back to Store Manager
+                </Button>
               </div>
               {/* For demo, show a placeholder for active sites overview */}
               <Card>
@@ -3606,19 +4531,35 @@ const SiteDashboard = () => {
                   <div className="space-y-4">
                     {/* Example: List of active sites (static for now) */}
                     {[
-                      { name: 'North Block', status: 'Receiving', supplies: 'Steel, Cement' },
-                      { name: 'South Tower', status: 'Receiving', supplies: 'Bricks, Sand' },
-                      { name: 'Main Warehouse', status: 'Idle', supplies: '-' },
-                      { name: 'East Wing', status: 'Receiving', supplies: 'Electrical Fittings' },
-                    ].filter(site => site.status === 'Receiving').map((site, idx) => (
-                      <div key={idx} className="p-4 border rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-medium">{site.name}</h3>
-                          <Badge variant="default">{site.status}</Badge>
+                      {
+                        name: "North Block",
+                        status: "Receiving",
+                        supplies: "Steel, Cement",
+                      },
+                      {
+                        name: "South Tower",
+                        status: "Receiving",
+                        supplies: "Bricks, Sand",
+                      },
+                      { name: "Main Warehouse", status: "Idle", supplies: "-" },
+                      {
+                        name: "East Wing",
+                        status: "Receiving",
+                        supplies: "Electrical Fittings",
+                      },
+                    ]
+                      .filter((site) => site.status === "Receiving")
+                      .map((site, idx) => (
+                        <div key={idx} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center">
+                            <h3 className="font-medium">{site.name}</h3>
+                            <Badge variant="default">{site.status}</Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            Supplies: {site.supplies}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-2">Supplies: {site.supplies}</div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </CardContent>
               </Card>
@@ -3626,7 +4567,7 @@ const SiteDashboard = () => {
           )}
         </TabsContent>
         <TabsContent value="central-warehouse" className="space-y-6">
-          {centralWarehouseSubview === 'main' && (
+          {centralWarehouseSubview === "main" && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
@@ -3635,43 +4576,53 @@ const SiteDashboard = () => {
                   icon={Warehouse}
                   description="Materials in stock"
                   trend={{ value: 2, label: "this week" }}
-                  onClick={() => setCentralWarehouseSubview('stockAvailability')}
+                  onClick={() =>
+                    setCentralWarehouseSubview("stockAvailability")
+                  }
                 />
                 <StatCard
                   title="Pending Deliveries"
                   value="14"
                   icon={Package}
                   description="Inbound materials"
-                  onClick={() => setCentralWarehouseSubview('pendingDeliveries')}
+                  onClick={() =>
+                    setCentralWarehouseSubview("pendingDeliveries")
+                  }
                 />
                 <StatCard
                   title="Storage Capacity"
                   value="78%"
                   icon={Building2}
                   description="Warehouse utilization"
-                  onClick={() => setCentralWarehouseSubview('storageCapacity')}
+                  onClick={() => setCentralWarehouseSubview("storageCapacity")}
                 />
               </div>
               {/* Render all detailed cards/components below the StatCards row */}
               <Card>
                 <CardHeader>
                   <CardTitle>Critical Stock Alerts</CardTitle>
-                  <CardDescription>Materials requiring immediate attention</CardDescription>
+                  <CardDescription>
+                    Materials requiring immediate attention
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {stockAlerts.map((alert) => (
-                      <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={alert.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="flex-1">
                           <h3 className="font-medium">{alert.item}</h3>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Current: {alert.quantity} • Reorder Point: {alert.reorderPoint}
+                            Current: {alert.quantity} • Reorder Point:{" "}
+                            {alert.reorderPoint}
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <Badge variant="destructive">{alert.status}</Badge>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setIsMaterialRequestModalOpen(true)}
                           >
@@ -3692,16 +4643,28 @@ const SiteDashboard = () => {
                   <CardContent>
                     <div className="space-y-4">
                       {materialMovements.map((movement) => (
-                        <div key={movement.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={movement.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <Badge variant={movement.type === "Inbound" ? "default" : "secondary"}>
+                              <Badge
+                                variant={
+                                  movement.type === "Inbound"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                              >
                                 {movement.type}
                               </Badge>
-                              <span className="font-medium">{movement.material}</span>
+                              <span className="font-medium">
+                                {movement.material}
+                              </span>
                             </div>
                             <div className="text-sm text-muted-foreground mt-1">
-                              {movement.quantity} • {movement.time} • {movement.site}
+                              {movement.quantity} • {movement.time} •{" "}
+                              {movement.site}
                             </div>
                           </div>
                         </div>
@@ -3712,7 +4675,9 @@ const SiteDashboard = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Storage Location Map</CardTitle>
-                    <CardDescription>Warehouse section occupancy</CardDescription>
+                    <CardDescription>
+                      Warehouse section occupancy
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-4">
@@ -3720,15 +4685,25 @@ const SiteDashboard = () => {
                         <div key={section.id} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-center mb-2">
                             <h3 className="font-medium">{section.zone}</h3>
-                            <Badge variant={section.occupancy > 80 ? "destructive" : "secondary"}>
+                            <Badge
+                              variant={
+                                section.occupancy > 80
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                            >
                               {section.occupancy}% Full
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{section.type}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {section.type}
+                          </p>
                           <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full ${
-                                section.occupancy > 80 ? "bg-red-600" : "bg-blue-600"
+                                section.occupancy > 80
+                                  ? "bg-red-600"
+                                  : "bg-blue-600"
                               }`}
                               style={{ width: `${section.occupancy}%` }}
                             ></div>
@@ -3741,11 +4716,16 @@ const SiteDashboard = () => {
               </div>
             </>
           )}
-          {centralWarehouseSubview === 'stockAvailability' && (
+          {centralWarehouseSubview === "stockAvailability" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Stock Availability</h2>
-                <Button variant="outline" onClick={() => setCentralWarehouseSubview('main')}>Back to Central Warehouse</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCentralWarehouseSubview("main")}
+                >
+                  Back to Central Warehouse
+                </Button>
               </div>
               {/* Show only the Critical Stock Alerts card */}
               <Card>
@@ -3756,17 +4736,21 @@ const SiteDashboard = () => {
                 <CardContent>
                   <div className="pt-4 space-y-4">
                     {stockAlerts.map((alert) => (
-                      <div key={alert.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={alert.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="flex-1">
                           <h3 className="font-medium">{alert.item}</h3>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Current: {alert.quantity} • Reorder Point: {alert.reorderPoint}
+                            Current: {alert.quantity} • Reorder Point:{" "}
+                            {alert.reorderPoint}
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <Badge variant="destructive">{alert.status}</Badge>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => setIsMaterialRequestModalOpen(true)}
                           >
@@ -3780,11 +4764,16 @@ const SiteDashboard = () => {
               </Card>
             </div>
           )}
-          {centralWarehouseSubview === 'pendingDeliveries' && (
+          {centralWarehouseSubview === "pendingDeliveries" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Pending Deliveries</h2>
-                <Button variant="outline" onClick={() => setCentralWarehouseSubview('main')}>Back to Central Warehouse</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCentralWarehouseSubview("main")}
+                >
+                  Back to Central Warehouse
+                </Button>
               </div>
               {/* Show only the Recent Material Movements card */}
               <Card>
@@ -3795,16 +4784,28 @@ const SiteDashboard = () => {
                 <CardContent>
                   <div className="pt-4 space-y-4">
                     {materialMovements.map((movement) => (
-                      <div key={movement.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div
+                        key={movement.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <Badge variant={movement.type === "Inbound" ? "default" : "secondary"}>
+                            <Badge
+                              variant={
+                                movement.type === "Inbound"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
                               {movement.type}
                             </Badge>
-                            <span className="font-medium">{movement.material}</span>
+                            <span className="font-medium">
+                              {movement.material}
+                            </span>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            {movement.quantity} • {movement.time} • {movement.site}
+                            {movement.quantity} • {movement.time} •{" "}
+                            {movement.site}
                           </div>
                         </div>
                       </div>
@@ -3814,11 +4815,16 @@ const SiteDashboard = () => {
               </Card>
             </div>
           )}
-          {centralWarehouseSubview === 'storageCapacity' && (
+          {centralWarehouseSubview === "storageCapacity" && (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Storage Capacity</h2>
-                <Button variant="outline" onClick={() => setCentralWarehouseSubview('main')}>Back to Central Warehouse</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCentralWarehouseSubview("main")}
+                >
+                  Back to Central Warehouse
+                </Button>
               </div>
               {/* Show only the Storage Location Map card */}
               <Card>
@@ -3832,15 +4838,25 @@ const SiteDashboard = () => {
                       <div key={section.id} className="p-4 border rounded-lg">
                         <div className="flex justify-between items-center mb-2">
                           <h3 className="font-medium">{section.zone}</h3>
-                          <Badge variant={section.occupancy > 80 ? "destructive" : "secondary"}>
+                          <Badge
+                            variant={
+                              section.occupancy > 80
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
                             {section.occupancy}% Full
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground">{section.type}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {section.type}
+                        </p>
                         <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${
-                              section.occupancy > 80 ? "bg-red-600" : "bg-blue-600"
+                              section.occupancy > 80
+                                ? "bg-red-600"
+                                : "bg-blue-600"
                             }`}
                             style={{ width: `${section.occupancy}%` }}
                           ></div>
@@ -3864,197 +4880,10 @@ const SiteDashboard = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[70vh] bg-muted/40 rounded-md p-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleUploadDPR({
-                  workDone: formData.get("workDone") as string,
-                  weather: formData.get("weather") as string,
-                  photos: formData.get("photos") as unknown as FileList,
-                  notes: formData.get("notes") as string,
-                  workSections: formData.getAll("workSections").map(v => v.toString()),
-                  manpower: formData.get("manpower") as string,
-                  manpowerRoles: formData.get("manpowerRoles") as string,
-                  equipmentUsed: formData.getAll("equipmentUsed").map(v => v.toString()),
-                  safetyIncident: formData.get("safetyIncident") as string,
-                  safetyDetails: formData.get("safetyDetails") as string,
-                  qualityCheck: formData.get("qualityCheck") as string,
-                  qualityDetails: formData.get("qualityDetails") as string,
-                  delayIssue: formData.get("delayIssue") as string,
-                  delayDetails: formData.get("delayDetails") as string,
-                  materials: Array.from({length: 5}).map((_,i) => ({
-                    material: formData.get(`material${i}`) as string,
-                    qty: formData.get(`materialQty${i}`) as string,
-                    remarks: formData.get(`materialRemarks${i}`) as string,
-                  })),
-                  subcontractor: formData.get("subcontractor") as string,
-                });
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <Label htmlFor="workSections">Work Sections/Areas Covered</Label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {[
-                    "Foundation", "Structure", "Roofing", "Finishing", "External Works", "MEP", "Other"
-                  ].map((section) => (
-                    <label key={section} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" name="workSections" value={section} className="accent-blue-600" />
-                      {section}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="manpower">Manpower Deployed</Label>
-                  <Input id="manpower" name="manpower" type="number" min="0" placeholder="Total number" required />
-                </div>
-                <div>
-                  <Label htmlFor="manpowerRoles">Roles (comma separated)</Label>
-                  <Input id="manpowerRoles" name="manpowerRoles" placeholder="e.g. Mason, Electrician, Supervisor" />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="equipmentUsed">Equipment Used</Label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {[
-                    "Crane", "Excavator", "Concrete Mixer", "Scaffolding", "Lift", "Other"
-                  ].map((eq) => (
-                    <label key={eq} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" name="equipmentUsed" value={eq} className="accent-blue-600" />
-                      {eq}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
-                  <Select name="safetyIncident" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no">No</SelectItem>
-                      <SelectItem value="yes">Yes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="safetyDetails">If Yes, Details</Label>
-                  <Input id="safetyDetails" name="safetyDetails" placeholder="Describe incident (if any)" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
-                  <Select name="qualityCheck" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yes">Yes</SelectItem>
-                      <SelectItem value="no">No</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="qualityDetails">If Yes, Details</Label>
-                  <Input id="qualityDetails" name="qualityDetails" placeholder="Describe checks (if any)" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
-                  <Select name="delayIssue" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no">No</SelectItem>
-                      <SelectItem value="yes">Yes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="delayDetails">If Yes, Details</Label>
-                  <Input id="delayDetails" name="delayDetails" placeholder="Describe delay/issue (if any)" />
-                </div>
-              </div>
-              <div>
-                <Label>Materials Consumed</Label>
-                <div className="grid grid-cols-3 gap-2 mt-1">
-                  {[0,1,2,3,4].map(i => (
-                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
-                      <Input name={`material${i}`} placeholder="Material" className="text-xs" />
-                      <Input name={`materialQty${i}`} placeholder="Qty" className="text-xs" />
-                      <Input name={`materialRemarks${i}`} placeholder="Remarks" className="text-xs" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="subcontractor">Subcontractor Activities</Label>
-                <Textarea id="subcontractor" name="subcontractor" placeholder="Describe any subcontractor work..." rows={2} />
-              </div>
-              <div>
-                <Label htmlFor="workDone">Work Done Today</Label>
-                <Textarea
-                  id="workDone"
-                  name="workDone"
-                  placeholder="Describe today's work progress..."
-                  rows={4}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="weather">Weather Conditions</Label>
-                <Select name="weather" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select weather" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="clear">Clear</SelectItem>
-                    <SelectItem value="rain">Rain</SelectItem>
-                    <SelectItem value="wind">Windy</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="photos">Upload Photos</Label>
-                <Input
-                  id="photos"
-                  name="photos"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes">Site Engineer Notes</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  placeholder="Additional notes or concerns..."
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setIsDPRModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Submit DPR</Button>
-              </div>
-            </form>
+            <DPRManualForm
+              onSubmit={handleUploadDPR}
+              onCancel={() => setIsDPRModalOpen(false)}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -4068,167 +4897,7 @@ const SiteDashboard = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[70vh] bg-muted/40 rounded-md p-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleUploadWPR({
-                  weekStart: formData.get("weekStart") as string,
-                  weekEnding: formData.get("weekEnding") as string,
-                  milestones: formData.get("milestones") as string,
-                  plannedProgress: formData.get("plannedProgress") as string,
-                  actualProgress: formData.get("actualProgress") as string,
-                  progressRemarks: formData.get("progressRemarks") as string,
-                  issues: formData.get("issues") as string,
-                  risks: formData.get("risks") as string,
-                  safetySummary: formData.get("safetySummary") as string,
-                  qualitySummary: formData.get("qualitySummary") as string,
-                  manpower: Array.from({length: 4}).map((_,i) => ({
-                    role: formData.get(`wprRole${i}`) as string,
-                    planned: formData.get(`wprRolePlanned${i}`) as string,
-                    actual: formData.get(`wprRoleActual${i}`) as string,
-                  })),
-                  equipment: Array.from({length: 4}).map((_,i) => ({
-                    equipment: formData.get(`wprEq${i}`) as string,
-                    uptime: formData.get(`wprEqUptime${i}`) as string,
-                    downtime: formData.get(`wprEqDowntime${i}`) as string,
-                    remarks: formData.get(`wprEqRemarks${i}`) as string,
-                  })),
-                  materials: Array.from({length: 4}).map((_,i) => ({
-                    material: formData.get(`wprMat${i}`) as string,
-                    planned: formData.get(`wprMatPlanned${i}`) as string,
-                    actual: formData.get(`wprMatActual${i}`) as string,
-                    remarks: formData.get(`wprMatRemarks${i}`) as string,
-                  })),
-                  teamPerformance: formData.get("teamPerformance") as string,
-                  attachments: formData.get("attachments") as unknown as FileList,
-                });
-              }}
-              className="space-y-4"
-            >
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="weekStart">Week Start</Label>
-                  <Input id="weekStart" name="weekStart" type="date" required />
-                </div>
-                <div>
-                  <Label htmlFor="weekEnding">Week Ending</Label>
-                  <Input id="weekEnding" name="weekEnding" type="date" required />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="milestones">Key Milestones Achieved</Label>
-                <Textarea
-                  id="milestones"
-                  name="milestones"
-                  placeholder="Describe milestone achievements..."
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="plannedProgress">Planned Progress (%)</Label>
-                  <Input id="plannedProgress" name="plannedProgress" type="number" min="0" max="100" required />
-                </div>
-                <div>
-                  <Label htmlFor="actualProgress">Actual Progress (%)</Label>
-                  <Input id="actualProgress" name="actualProgress" type="number" min="0" max="100" required />
-                </div>
-                <div>
-                  <Label htmlFor="progressRemarks">Remarks</Label>
-                  <Input id="progressRemarks" name="progressRemarks" placeholder="Progress remarks" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="issues">Major Issues</Label>
-                  <Textarea id="issues" name="issues" placeholder="Describe major issues..." rows={2} />
-                </div>
-                <div>
-                  <Label htmlFor="risks">Major Risks</Label>
-                  <Textarea id="risks" name="risks" placeholder="Describe major risks..." rows={2} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="safetySummary">Safety Summary</Label>
-                  <Textarea id="safetySummary" name="safetySummary" placeholder="Incidents, toolbox talks, etc." rows={2} />
-                </div>
-                <div>
-                  <Label htmlFor="qualitySummary">Quality Summary</Label>
-                  <Textarea id="qualitySummary" name="qualitySummary" placeholder="Checks, NCRs, etc." rows={2} />
-                </div>
-              </div>
-              <div>
-                <Label>Manpower Summary</Label>
-                <div className="grid grid-cols-4 gap-2 mt-1">
-                  {[0,1,2,3].map(i => (
-                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
-                      <Input name={`wprRole${i}`} placeholder="Role" className="text-xs" />
-                      <Input name={`wprRolePlanned${i}`} placeholder="Planned" className="text-xs" />
-                      <Input name={`wprRoleActual${i}`} placeholder="Actual" className="text-xs" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Equipment Summary</Label>
-                <div className="grid grid-cols-4 gap-2 mt-1">
-                  {[0,1,2,3].map(i => (
-                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
-                      <Input name={`wprEq${i}`} placeholder="Equipment" className="text-xs" />
-                      <Input name={`wprEqUptime${i}`} placeholder="Uptime (hrs)" className="text-xs" />
-                      <Input name={`wprEqDowntime${i}`} placeholder="Downtime (hrs)" className="text-xs" />
-                      <Input name={`wprEqRemarks${i}`} placeholder="Remarks" className="text-xs" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label>Materials Summary</Label>
-                <div className="grid grid-cols-4 gap-2 mt-1">
-                  {[0,1,2,3].map(i => (
-                    <div key={i} className="flex flex-col gap-1 border rounded p-2">
-                      <Input name={`wprMat${i}`} placeholder="Material" className="text-xs" />
-                      <Input name={`wprMatPlanned${i}`} placeholder="Planned" className="text-xs" />
-                      <Input name={`wprMatActual${i}`} placeholder="Actual" className="text-xs" />
-                      <Input name={`wprMatRemarks${i}`} placeholder="Remarks" className="text-xs" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="teamPerformance">Team Performance</Label>
-                <Textarea
-                  id="teamPerformance"
-                  name="teamPerformance"
-                  placeholder="Team performance comments..."
-                  rows={3}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="attachments">Attachments (Photos, Documents)</Label>
-                <Input
-                  id="attachments"
-                  name="attachments"
-                  type="file"
-                  multiple
-                  accept="image/*,application/pdf"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setIsWPRModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Submit WPR</Button>
-              </div>
-            </form>
+            <WPRManualForm onSubmit={handleUploadWPR} onCancel={() => setIsWPRModalOpen(false)} />
           </div>
         </DialogContent>
       </Dialog>
@@ -4758,7 +5427,7 @@ const SiteDashboard = () => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {costData.map((item) => (
+                  {safeCostData.map((item) => (
                     <SelectItem key={item.category} value={item.category}>
                       {item.category}
                     </SelectItem>
@@ -5184,8 +5853,16 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Labor Type</Label>
-                  <Badge className={selectedLabor.type === "productive" ? "bg-blue-500" : "bg-purple-500"}>
-                    {selectedLabor.type === "productive" ? "Productive" : "Non-Productive"}
+                  <Badge
+                    className={
+                      selectedLabor.type === "productive"
+                        ? "bg-blue-500"
+                        : "bg-purple-500"
+                    }
+                  >
+                    {selectedLabor.type === "productive"
+                      ? "Productive"
+                      : "Non-Productive"}
                   </Badge>
                 </div>
                 <div>
@@ -5234,9 +5911,11 @@ const SiteDashboard = () => {
                   </p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Productivity Coefficient</Label>
+                  <Label className="text-muted-foreground">
+                    Productivity Coefficient
+                  </Label>
                   <p className="font-medium">
-                    {selectedLabor.type === "productive" ? "1.0" : "0.7"} 
+                    {selectedLabor.type === "productive" ? "1.0" : "0.7"}
                   </p>
                 </div>
               </div>
@@ -5864,7 +6543,7 @@ const SiteDashboard = () => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {costData.map((item) => (
+                  {safeCostData.map((item) => (
                     <SelectItem key={item.category} value={item.category}>
                       {item.category}
                     </SelectItem>
@@ -6156,7 +6835,6 @@ const SiteDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* Add Staff Modal */}
       <Dialog open={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen}>
         <DialogContent className="max-w-xl sm:max-w-2xl">
@@ -6169,11 +6847,11 @@ const SiteDashboard = () => {
               Enter staff details to register a new store team member
             </DialogDescription>
           </DialogHeader>
-          <form 
+          <form
             onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              
+
               // Get role display name from value
               const roleValue = formData.get("role") as string;
               const roleMap: Record<string, string> = {
@@ -6184,31 +6862,34 @@ const SiteDashboard = () => {
                 "warehouse-staff": "Warehouse Staff",
                 "material-specialist": "Material Specialist",
                 "inventory-analyst": "Inventory Analyst",
-                "quality-inspector": "Quality Inspector"
+                "quality-inspector": "Quality Inspector",
               };
-              
+
               // Get availability display name
               const availabilityValue = formData.get("availability") as string;
               const availabilityMap: Record<string, string> = {
                 "full-time": "Full-time",
                 "part-time": "Part-time",
-                "contract": "Contract",
-                "seasonal": "Seasonal",
-                "on-call": "On-Call"
+                contract: "Contract",
+                seasonal: "Seasonal",
+                "on-call": "On-Call",
               };
-              
+
               // Parse certifications
-              const certificationString = formData.get("certifications") as string;
+              const certificationString = formData.get(
+                "certifications"
+              ) as string;
               const certifications = certificationString
-                ? certificationString.split(',').map(cert => cert.trim())
+                ? certificationString.split(",").map((cert) => cert.trim())
                 : [];
-              
+
               // Create new staff member object
               const newStaffMember = {
                 name: formData.get("fullName") as string,
                 role: roleMap[roleValue] || roleValue,
-                status: 'On Duty',
-                availability: availabilityMap[availabilityValue] || availabilityValue,
+                status: "On Duty",
+                availability:
+                  availabilityMap[availabilityValue] || availabilityValue,
                 experience: `${formData.get("experience")} years`,
                 certifications,
                 contactNumber: formData.get("contactNumber") as string,
@@ -6216,17 +6897,17 @@ const SiteDashboard = () => {
                 specialization: formData.get("specialization") as string,
                 shiftPreference: formData.get("shiftPreference") as string,
                 emergencyContact: formData.get("emergencyContact") as string,
-                notes: formData.get("notes") as string
+                notes: formData.get("notes") as string,
               };
-              
+
               // Add to staff list
-              setStoreStaff(prevStaff => [...prevStaff, newStaffMember]);
-              
+              setStoreStaff((prevStaff) => [...prevStaff, newStaffMember]);
+
               // Show success message
               toast.success("Staff Member Added Successfully", {
-                description: `${newStaffMember.name} has been added as a ${newStaffMember.role}`
+                description: `${newStaffMember.name} has been added as a ${newStaffMember.role}`,
               });
-              
+
               // Close the modal
               setIsAddStaffModalOpen(false);
             }}
@@ -6239,122 +6920,161 @@ const SiteDashboard = () => {
                 <TabsTrigger value="professional">Professional</TabsTrigger>
                 <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
               </TabsList>
-            
+
               {/* Personal Information Tab */}
               <TabsContent value="personal" className="space-y-3 mt-0">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="fullName" className="text-xs flex items-center gap-1">
+                    <Label
+                      htmlFor="fullName"
+                      className="text-xs flex items-center gap-1"
+                    >
                       Full Name <span className="text-red-500 text-xs">*</span>
                     </Label>
-                    <Input 
-                      id="fullName" 
-                      name="fullName" 
-                      placeholder="John Doe" 
-                      required 
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      placeholder="John Doe"
+                      required
                       className="h-8 text-sm"
                     />
                   </div>
-                  
+
                   <div className="space-y-1">
-                    <Label htmlFor="contactNumber" className="text-xs flex items-center gap-1">
+                    <Label
+                      htmlFor="contactNumber"
+                      className="text-xs flex items-center gap-1"
+                    >
                       Contact <span className="text-red-500 text-xs">*</span>
                     </Label>
-                    <Input 
-                      id="contactNumber" 
-                      name="contactNumber" 
-                      placeholder="+91 98765 43210" 
-                      required 
+                    <Input
+                      id="contactNumber"
+                      name="contactNumber"
+                      placeholder="+91 98765 43210"
+                      required
                       className="h-8 text-sm"
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="email" className="text-xs flex items-center gap-1">
+                    <Label
+                      htmlFor="email"
+                      className="text-xs flex items-center gap-1"
+                    >
                       Email <span className="text-red-500 text-xs">*</span>
                     </Label>
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email" 
-                      placeholder="john.doe@example.com" 
-                      required 
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="john.doe@example.com"
+                      required
                       className="h-8 text-sm"
                     />
                   </div>
-                  
+
                   <div className="space-y-1">
                     <Label htmlFor="emergencyContact" className="text-xs">
                       Emergency Contact
                     </Label>
-                    <Input 
-                      id="emergencyContact" 
-                      name="emergencyContact" 
-                      placeholder="+91 98765 43210" 
+                    <Input
+                      id="emergencyContact"
+                      name="emergencyContact"
+                      placeholder="+91 98765 43210"
                       className="h-8 text-sm"
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-1">
-                  <Label htmlFor="address" className="text-xs">Address</Label>
-                  <Textarea 
-                    id="address" 
-                    name="address" 
+                  <Label htmlFor="address" className="text-xs">
+                    Address
+                  </Label>
+                  <Textarea
+                    id="address"
+                    name="address"
                     placeholder="Full address"
                     className="resize-none text-sm"
                     rows={2}
                   />
                 </div>
               </TabsContent>
-              
+
               {/* Professional Information Tab */}
               <TabsContent value="professional" className="space-y-3 mt-0">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="role" className="text-xs flex items-center gap-1">
-                      Position/Role <span className="text-red-500 text-xs">*</span>
+                    <Label
+                      htmlFor="role"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Position/Role{" "}
+                      <span className="text-red-500 text-xs">*</span>
                     </Label>
                     <Select name="role" required>
                       <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="store-manager">Store Manager</SelectItem>
-                        <SelectItem value="assistant-manager">Assistant Manager</SelectItem>
-                        <SelectItem value="inventory-clerk">Inventory Clerk</SelectItem>
-                        <SelectItem value="logistics-coordinator">Logistics Coordinator</SelectItem>
-                        <SelectItem value="warehouse-staff">Warehouse Staff</SelectItem>
-                        <SelectItem value="material-specialist">Material Specialist</SelectItem>
-                        <SelectItem value="inventory-analyst">Inventory Analyst</SelectItem>
-                        <SelectItem value="quality-inspector">Quality Inspector</SelectItem>
+                        <SelectItem value="store-manager">
+                          Store Manager
+                        </SelectItem>
+                        <SelectItem value="assistant-manager">
+                          Assistant Manager
+                        </SelectItem>
+                        <SelectItem value="inventory-clerk">
+                          Inventory Clerk
+                        </SelectItem>
+                        <SelectItem value="logistics-coordinator">
+                          Logistics Coordinator
+                        </SelectItem>
+                        <SelectItem value="warehouse-staff">
+                          Warehouse Staff
+                        </SelectItem>
+                        <SelectItem value="material-specialist">
+                          Material Specialist
+                        </SelectItem>
+                        <SelectItem value="inventory-analyst">
+                          Inventory Analyst
+                        </SelectItem>
+                        <SelectItem value="quality-inspector">
+                          Quality Inspector
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-1">
-                    <Label htmlFor="experience" className="text-xs flex items-center gap-1">
-                      Experience (Years) <span className="text-red-500 text-xs">*</span>
+                    <Label
+                      htmlFor="experience"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Experience (Years){" "}
+                      <span className="text-red-500 text-xs">*</span>
                     </Label>
-                    <Input 
-                      id="experience" 
-                      name="experience" 
-                      type="number" 
-                      min="0" 
-                      step="0.5" 
-                      placeholder="2" 
-                      required 
+                    <Input
+                      id="experience"
+                      name="experience"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="2"
+                      required
                       className="h-8 text-sm"
                     />
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="availability" className="text-xs flex items-center gap-1">
-                      Availability <span className="text-red-500 text-xs">*</span>
+                    <Label
+                      htmlFor="availability"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Availability{" "}
+                      <span className="text-red-500 text-xs">*</span>
                     </Label>
                     <Select name="availability" required>
                       <SelectTrigger className="h-8 text-sm">
@@ -6369,63 +7089,79 @@ const SiteDashboard = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-1">
-                    <Label htmlFor="shiftPreference" className="text-xs">Shift Preference</Label>
+                    <Label htmlFor="shiftPreference" className="text-xs">
+                      Shift Preference
+                    </Label>
                     <Select name="shiftPreference">
                       <SelectTrigger className="h-8 text-sm">
                         <SelectValue placeholder="Select shift" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="morning">Morning (6AM-2PM)</SelectItem>
+                        <SelectItem value="morning">
+                          Morning (6AM-2PM)
+                        </SelectItem>
                         <SelectItem value="day">Day (9AM-5PM)</SelectItem>
-                        <SelectItem value="evening">Evening (2PM-10PM)</SelectItem>
+                        <SelectItem value="evening">
+                          Evening (2PM-10PM)
+                        </SelectItem>
                         <SelectItem value="night">Night (10PM-6AM)</SelectItem>
                         <SelectItem value="flexible">Flexible</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                
+
                 <div className="space-y-1">
-                  <Label htmlFor="joiningDate" className="text-xs">Joining Date</Label>
-                  <Input 
-                    id="joiningDate" 
-                    name="joiningDate" 
+                  <Label htmlFor="joiningDate" className="text-xs">
+                    Joining Date
+                  </Label>
+                  <Input
+                    id="joiningDate"
+                    name="joiningDate"
                     type="date"
                     className="h-8 text-sm"
                   />
                 </div>
               </TabsContent>
-              
+
               {/* Qualifications Tab */}
               <TabsContent value="qualifications" className="space-y-3 mt-0">
                 <div className="space-y-1">
-                  <Label htmlFor="certifications" className="text-xs">Certifications & Licenses</Label>
-                  <Input 
-                    id="certifications" 
-                    name="certifications" 
+                  <Label htmlFor="certifications" className="text-xs">
+                    Certifications & Licenses
+                  </Label>
+                  <Input
+                    id="certifications"
+                    name="certifications"
                     placeholder="Inventory Management, Supply Chain, etc."
                     className="h-8 text-sm"
                   />
-                  <p className="text-xs text-muted-foreground">Separate multiple certifications with commas</p>
+                  <p className="text-xs text-muted-foreground">
+                    Separate multiple certifications with commas
+                  </p>
                 </div>
-                
+
                 <div className="space-y-1">
-                  <Label htmlFor="specialization" className="text-xs">Area of Specialization</Label>
-                  <Input 
-                    id="specialization" 
-                    name="specialization" 
+                  <Label htmlFor="specialization" className="text-xs">
+                    Area of Specialization
+                  </Label>
+                  <Input
+                    id="specialization"
+                    name="specialization"
                     placeholder="Procurement, Inventory Control, etc."
                     className="h-8 text-sm"
                   />
                 </div>
-                
+
                 <div className="space-y-1">
-                  <Label htmlFor="notes" className="text-xs">Notes & Special Considerations</Label>
-                  <Textarea 
-                    id="notes" 
-                    name="notes" 
+                  <Label htmlFor="notes" className="text-xs">
+                    Notes & Special Considerations
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    name="notes"
                     placeholder="Additional information, special skills, etc."
                     rows={3}
                     className="resize-none text-sm"
@@ -6433,15 +7169,15 @@ const SiteDashboard = () => {
                 </div>
               </TabsContent>
             </Tabs>
-            
+
             <div className="flex items-center pt-2 border-t">
               <p className="text-xs text-muted-foreground mr-auto">
                 <span className="text-red-500">*</span> Required fields
               </p>
               <div className="flex justify-end gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   size="sm"
                   onClick={() => setIsAddStaffModalOpen(false)}
                 >
@@ -6460,7 +7196,9 @@ const SiteDashboard = () => {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Task Details - {selectedTaskView?.name}</DialogTitle>
-            <DialogDescription>View all details and progress history</DialogDescription>
+            <DialogDescription>
+              View all details and progress history
+            </DialogDescription>
           </DialogHeader>
           {selectedTaskView && (
             <div className="space-y-6">
@@ -6491,13 +7229,15 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
-                  <Badge variant={
-                    selectedTaskView.status === "Completed"
-                      ? "default"
-                      : selectedTaskView.status === "In Progress"
-                      ? "secondary"
-                      : "outline"
-                  }>
+                  <Badge
+                    variant={
+                      selectedTaskView.status === "Completed"
+                        ? "default"
+                        : selectedTaskView.status === "In Progress"
+                        ? "secondary"
+                        : "outline"
+                    }
+                  >
                     {selectedTaskView.status}
                   </Badge>
                 </div>
@@ -6507,7 +7247,9 @@ const SiteDashboard = () => {
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-medium mb-2">Progress Update History</h4>
+                <h4 className="text-sm font-medium mb-2">
+                  Progress Update History
+                </h4>
                 <div className="border rounded-md overflow-x-auto">
                   <table className="min-w-full text-sm">
                     <thead>
@@ -6520,7 +7262,9 @@ const SiteDashboard = () => {
                     <tbody>
                       {selectedTaskView.progressHistory.map((entry, idx) => (
                         <tr key={idx} className="border-t">
-                          <td className="p-2">{new Date(entry.timestamp).toLocaleString()}</td>
+                          <td className="p-2">
+                            {new Date(entry.timestamp).toLocaleString()}
+                          </td>
                           <td className="p-2">{entry.progress}</td>
                           <td className="p-2">{entry.remarks}</td>
                         </tr>
@@ -6530,7 +7274,10 @@ const SiteDashboard = () => {
                 </div>
               </div>
               <div className="pt-4 flex justify-end border-t mt-6 px-2">
-                <Button variant="outline" onClick={() => setIsTaskViewModalOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsTaskViewModalOpen(false)}
+                >
                   Close
                 </Button>
               </div>
@@ -6539,17 +7286,21 @@ const SiteDashboard = () => {
         </DialogContent>
       </Dialog>
       {/* Material Request Update Modal */}
-      <Dialog open={isMaterialRequestUpdateModalOpen} onOpenChange={setIsMaterialRequestUpdateModalOpen}>
+      <Dialog
+        open={isMaterialRequestUpdateModalOpen}
+        onOpenChange={setIsMaterialRequestUpdateModalOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Update Material Request Status</DialogTitle>
             <DialogDescription>
-              Change the status of material request {selectedMaterialRequest?.id}
+              Change the status of material request{" "}
+              {selectedMaterialRequest?.id}
             </DialogDescription>
           </DialogHeader>
           {selectedMaterialRequest && (
             <form
-              onSubmit={e => {
+              onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
                 handleUpdateMaterialRequestStatus(
@@ -6561,7 +7312,11 @@ const SiteDashboard = () => {
             >
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select name="status" defaultValue={selectedMaterialRequest.status} required>
+                <Select
+                  name="status"
+                  defaultValue={selectedMaterialRequest.status}
+                  required
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -6576,7 +7331,11 @@ const SiteDashboard = () => {
                 </Select>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => setIsMaterialRequestUpdateModalOpen(false)}>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsMaterialRequestUpdateModalOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit">Update Status</Button>
@@ -6590,3 +7349,526 @@ const SiteDashboard = () => {
 };
 
 export default SiteDashboard;
+
+// Add this component above the SiteDashboard export
+function DPRManualForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (formData: any) => void;
+  onCancel: () => void;
+}) {
+  const [materials, setMaterials] = useState([
+    { material: "", qty: "", remarks: "" },
+  ]);
+
+  const addMaterialRow = () =>
+    setMaterials([...materials, { material: "", qty: "", remarks: "" }]);
+  const removeMaterialRow = (idx: number) =>
+    setMaterials(materials.filter((_, i) => i !== idx));
+  const updateMaterial = (idx: number, field: string, value: string) => {
+    setMaterials(
+      materials.map((mat, i) => (i === idx ? { ...mat, [field]: value } : mat))
+    );
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        onSubmit({
+          workSections: formData.get("workSections") as string,
+          manpower: formData.get("manpower") as string,
+          manpowerRoles: formData.get("manpowerRoles") as string,
+          equipmentUsed: formData.get("equipmentUsed") as string,
+          safetyIncident: formData.get("safetyIncident") as string,
+          safetyDetails: formData.get("safetyDetails") as string,
+          qualityCheck: formData.get("qualityCheck") as string,
+          qualityDetails: formData.get("qualityDetails") as string,
+          delayIssue: formData.get("delayIssue") as string,
+          delayDetails: formData.get("delayDetails") as string,
+          materials,
+          subcontractor: formData.get("subcontractor") as string,
+          workDone: formData.get("workDone") as string,
+          weather: formData.get("weather") as string,
+          photos: formData.get("photos") as unknown as FileList,
+          notes: formData.get("notes") as string,
+        });
+      }}
+      className="space-y-4"
+    >
+      <div>
+        <Label htmlFor="workSections">Work Sections/Areas Covered</Label>
+        <Input
+          id="workSections"
+          name="workSections"
+          placeholder="e.g. Foundation, Structure, Roofing"
+          required
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="manpower">Manpower Deployed</Label>
+          <Input
+            id="manpower"
+            name="manpower"
+            type="number"
+            min="0"
+            placeholder="Total number"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="manpowerRoles">Roles (comma separated)</Label>
+          <Input
+            id="manpowerRoles"
+            name="manpowerRoles"
+            placeholder="e.g. Mason, Electrician, Supervisor"
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="equipmentUsed">Equipment Used</Label>
+        <Input
+          id="equipmentUsed"
+          name="equipmentUsed"
+          placeholder="e.g. Crane, Mixer, Scaffolding"
+          required
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
+          <Select name="safetyIncident" required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="no">No</SelectItem>
+              <SelectItem value="yes">Yes</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="safetyDetails">If Yes, Details</Label>
+          <Input
+            id="safetyDetails"
+            name="safetyDetails"
+            placeholder="Describe incident (if any)"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
+          <Select name="qualityCheck" required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="yes">Yes</SelectItem>
+              <SelectItem value="no">No</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="qualityDetails">If Yes, Details</Label>
+          <Input
+            id="qualityDetails"
+            name="qualityDetails"
+            placeholder="Describe checks (if any)"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
+          <Select name="delayIssue" required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="no">No</SelectItem>
+              <SelectItem value="yes">Yes</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="delayDetails">If Yes, Details</Label>
+          <Input
+            id="delayDetails"
+            name="delayDetails"
+            placeholder="Describe delay/issue (if any)"
+          />
+        </div>
+      </div>
+      <div>
+        <Label>Materials Consumed</Label>
+        <div className="space-y-2">
+          {materials.map((mat, idx) => (
+            <div key={idx} className="flex gap-2 items-center">
+              <Input
+                name={`material${idx}`}
+                placeholder="Material"
+                className="text-xs"
+                value={mat.material}
+                onChange={(e) =>
+                  updateMaterial(idx, "material", e.target.value)
+                }
+                required
+              />
+              <Input
+                name={`materialQty${idx}`}
+                placeholder="Qty"
+                className="text-xs"
+                value={mat.qty}
+                onChange={(e) => updateMaterial(idx, "qty", e.target.value)}
+                required
+              />
+              <Input
+                name={`materialRemarks${idx}`}
+                placeholder="Remarks"
+                className="text-xs"
+                value={mat.remarks}
+                onChange={(e) => updateMaterial(idx, "remarks", e.target.value)}
+              />
+              {materials.length > 1 && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => removeMaterialRow(idx)}
+                >
+                  &times;
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addMaterialRow}
+          >
+            Add Material Row
+          </Button>
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="subcontractor">Subcontractor Activities</Label>
+        <Textarea
+          id="subcontractor"
+          name="subcontractor"
+          placeholder="Describe any subcontractor work..."
+          rows={2}
+        />
+      </div>
+      <div>
+        <Label htmlFor="workDone">Work Done Today</Label>
+        <Textarea
+          id="workDone"
+          name="workDone"
+          placeholder="Describe today's work progress..."
+          rows={4}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="weather">Weather Conditions</Label>
+        <Select name="weather" required>
+          <SelectTrigger>
+            <SelectValue placeholder="Select weather" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="clear">Clear</SelectItem>
+            <SelectItem value="rain">Rain</SelectItem>
+            <SelectItem value="wind">Windy</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor="photos">Upload Photos</Label>
+        <Input
+          id="photos"
+          name="photos"
+          type="file"
+          multiple
+          accept="image/*"
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="notes">Site Engineer Notes</Label>
+        <Textarea
+          id="notes"
+          name="notes"
+          placeholder="Additional notes or concerns..."
+          rows={3}
+          required
+        />
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" type="button" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">Submit DPR</Button>
+      </div>
+    </form>
+  );
+}
+
+// Add this component above the SiteDashboard export
+function WPRManualForm({ onSubmit, onCancel }: { onSubmit: (formData: any) => void; onCancel: () => void }) {
+  const [manpower, setManpower] = useState([{ role: '', planned: '', actual: '' }]);
+  const [equipment, setEquipment] = useState([{ equipment: '', uptime: '', downtime: '', remarks: '' }]);
+  const [materials, setMaterials] = useState([{ material: '', planned: '', actual: '', remarks: '' }]);
+
+  // Manpower handlers
+  const addManpowerRow = () => setManpower([...manpower, { role: '', planned: '', actual: '' }]);
+  const removeManpowerRow = (idx: number) => setManpower(manpower.filter((_, i) => i !== idx));
+  const updateManpower = (idx: number, field: string, value: string) => {
+    setManpower(manpower.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+  };
+  // Equipment handlers
+  const addEquipmentRow = () => setEquipment([...equipment, { equipment: '', uptime: '', downtime: '', remarks: '' }]);
+  const removeEquipmentRow = (idx: number) => setEquipment(equipment.filter((_, i) => i !== idx));
+  const updateEquipment = (idx: number, field: string, value: string) => {
+    setEquipment(equipment.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+  };
+  // Materials handlers
+  const addMaterialRow = () => setMaterials([...materials, { material: '', planned: '', actual: '', remarks: '' }]);
+  const removeMaterialRow = (idx: number) => setMaterials(materials.filter((_, i) => i !== idx));
+  const updateMaterial = (idx: number, field: string, value: string) => {
+    setMaterials(materials.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+  };
+
+  return (
+    <form
+      onSubmit={e => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        onSubmit({
+          weekStart: formData.get('weekStart') as string,
+          weekEnding: formData.get('weekEnding') as string,
+          milestones: formData.get('milestones') as string,
+          plannedProgress: formData.get('plannedProgress') as string,
+          actualProgress: formData.get('actualProgress') as string,
+          progressRemarks: formData.get('progressRemarks') as string,
+          issues: formData.get('issues') as string,
+          risks: formData.get('risks') as string,
+          safetySummary: formData.get('safetySummary') as string,
+          qualitySummary: formData.get('qualitySummary') as string,
+          manpower,
+          equipment,
+          materials,
+          teamPerformance: formData.get('teamPerformance') as string,
+          attachments: formData.get('attachments') as unknown as FileList,
+        });
+      }}
+      className="space-y-4"
+    >
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="weekStart">Week Start</Label>
+          <Input id="weekStart" name="weekStart" type="date" required />
+        </div>
+        <div>
+          <Label htmlFor="weekEnding">Week Ending</Label>
+          <Input id="weekEnding" name="weekEnding" type="date" required />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="milestones">Key Milestones Achieved</Label>
+        <Textarea id="milestones" name="milestones" placeholder="Describe milestone achievements..." rows={3} required />
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label htmlFor="plannedProgress">Planned Progress (%)</Label>
+          <Input id="plannedProgress" name="plannedProgress" type="number" min="0" max="100" required />
+        </div>
+        <div>
+          <Label htmlFor="actualProgress">Actual Progress (%)</Label>
+          <Input id="actualProgress" name="actualProgress" type="number" min="0" max="100" required />
+        </div>
+        <div>
+          <Label htmlFor="progressRemarks">Remarks</Label>
+          <Input id="progressRemarks" name="progressRemarks" placeholder="Progress remarks" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="issues">Major Issues</Label>
+          <Textarea id="issues" name="issues" placeholder="Describe major issues..." rows={2} />
+        </div>
+        <div>
+          <Label htmlFor="risks">Major Risks</Label>
+          <Textarea id="risks" name="risks" placeholder="Describe major risks..." rows={2} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="safetySummary">Safety Summary</Label>
+          <Textarea id="safetySummary" name="safetySummary" placeholder="Incidents, toolbox talks, etc." rows={2} />
+        </div>
+        <div>
+          <Label htmlFor="qualitySummary">Quality Summary</Label>
+          <Textarea id="qualitySummary" name="qualitySummary" placeholder="Checks, NCRs, etc." rows={2} />
+        </div>
+      </div>
+      <div>
+        <Label>Manpower Summary</Label>
+        <div className="space-y-2">
+          {manpower.map((row, idx) => (
+            <div key={idx} className="flex gap-2 items-center">
+              <Input
+                name={`wprRole${idx}`}
+                placeholder="Role"
+                className="text-xs"
+                value={row.role}
+                onChange={e => updateManpower(idx, 'role', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprRolePlanned${idx}`}
+                placeholder="Planned"
+                className="text-xs"
+                value={row.planned}
+                onChange={e => updateManpower(idx, 'planned', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprRoleActual${idx}`}
+                placeholder="Actual"
+                className="text-xs"
+                value={row.actual}
+                onChange={e => updateManpower(idx, 'actual', e.target.value)}
+                required
+              />
+              {manpower.length > 1 && (
+                <Button type="button" size="icon" variant="ghost" onClick={() => removeManpowerRow(idx)}>
+                  &times;
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addManpowerRow}>
+            Add Manpower Row
+          </Button>
+        </div>
+      </div>
+      <div>
+        <Label>Equipment Summary</Label>
+        <div className="space-y-2">
+          {equipment.map((row, idx) => (
+            <div key={idx} className="flex gap-2 items-center">
+              <Input
+                name={`wprEq${idx}`}
+                placeholder="Equipment"
+                className="text-xs"
+                value={row.equipment}
+                onChange={e => updateEquipment(idx, 'equipment', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprEqUptime${idx}`}
+                placeholder="Uptime (hrs)"
+                className="text-xs"
+                value={row.uptime}
+                onChange={e => updateEquipment(idx, 'uptime', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprEqDowntime${idx}`}
+                placeholder="Downtime (hrs)"
+                className="text-xs"
+                value={row.downtime}
+                onChange={e => updateEquipment(idx, 'downtime', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprEqRemarks${idx}`}
+                placeholder="Remarks"
+                className="text-xs"
+                value={row.remarks}
+                onChange={e => updateEquipment(idx, 'remarks', e.target.value)}
+              />
+              {equipment.length > 1 && (
+                <Button type="button" size="icon" variant="ghost" onClick={() => removeEquipmentRow(idx)}>
+                  &times;
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addEquipmentRow}>
+            Add Equipment Row
+          </Button>
+        </div>
+      </div>
+      <div>
+        <Label>Materials Summary</Label>
+        <div className="space-y-2">
+          {materials.map((row, idx) => (
+            <div key={idx} className="flex gap-2 items-center">
+              <Input
+                name={`wprMat${idx}`}
+                placeholder="Material"
+                className="text-xs"
+                value={row.material}
+                onChange={e => updateMaterial(idx, 'material', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprMatPlanned${idx}`}
+                placeholder="Planned"
+                className="text-xs"
+                value={row.planned}
+                onChange={e => updateMaterial(idx, 'planned', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprMatActual${idx}`}
+                placeholder="Actual"
+                className="text-xs"
+                value={row.actual}
+                onChange={e => updateMaterial(idx, 'actual', e.target.value)}
+                required
+              />
+              <Input
+                name={`wprMatRemarks${idx}`}
+                placeholder="Remarks"
+                className="text-xs"
+                value={row.remarks}
+                onChange={e => updateMaterial(idx, 'remarks', e.target.value)}
+              />
+              {materials.length > 1 && (
+                <Button type="button" size="icon" variant="ghost" onClick={() => removeMaterialRow(idx)}>
+                  &times;
+                </Button>
+              )}
+            </div>
+          ))}
+          <Button type="button" variant="outline" size="sm" onClick={addMaterialRow}>
+            Add Material Row
+          </Button>
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="teamPerformance">Team Performance</Label>
+        <Textarea id="teamPerformance" name="teamPerformance" placeholder="Team performance comments..." rows={3} required />
+      </div>
+      <div>
+        <Label htmlFor="attachments">Attachments (Photos, Documents)</Label>
+        <Input id="attachments" name="attachments" type="file" multiple accept="image/*,application/pdf" />
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" type="button" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">Submit WPR</Button>
+      </div>
+    </form>
+  );
+}

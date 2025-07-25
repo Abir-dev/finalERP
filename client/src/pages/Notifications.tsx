@@ -5,57 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Archive, Bell, Check, CheckCheck, Clock, Info, MailWarning, MessagesSquare, RefreshCw, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-const notifications = [
-  {
-    id: 1,
-    title: "New project assigned",
-    description: "You have been assigned to the project 'Commercial Tower'",
-    type: "project",
-    read: false,
-    time: "5 minutes ago"
-  },
-  {
-    id: 2,
-    title: "Task due tomorrow",
-    description: "Task 'Foundation Work' is due tomorrow",
-    type: "task",
-    read: false,
-    time: "1 hour ago"
-  },
-  {
-    id: 3,
-    title: "Design approved",
-    description: "Your design 'Tower Elevation' has been approved",
-    type: "design",
-    read: true,
-    time: "3 hours ago"
-  },
-  {
-    id: 4,
-    title: "Invoice paid",
-    description: "Invoice #INV001 has been paid by ABC Developers",
-    type: "invoice",
-    read: true,
-    time: "Yesterday"
-  },
-  {
-    id: 5,
-    title: "Material request approved",
-    description: "Your request for 'Steel Rods' has been approved",
-    type: "material",
-    read: true,
-    time: "2 days ago"
-  },
-  {
-    id: 6,
-    title: "System maintenance",
-    description: "System will be down for maintenance on Sunday, 10 PM - 12 AM",
-    type: "system",
-    read: true,
-    time: "3 days ago"
-  },
-];
+import { useState, useEffect } from "react";
+import axios from "axios";
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const getIcon = (type: string, read: boolean) => {
   switch (type) {
@@ -77,6 +29,16 @@ const getIcon = (type: string, read: boolean) => {
 };
 
 const Notifications = () => {
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${API_URL}/notification`, { headers })
+      .then(res => setNotifications(res.data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">

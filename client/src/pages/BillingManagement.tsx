@@ -9,7 +9,7 @@ const BillingManagement = () => {
     navigate(-1);
   };
 
-  return <BillingManagerDashboard onBack={handleBack} />;
+  return <BillingManagerDashboard />;
 };
 
 export default BillingManagement;
