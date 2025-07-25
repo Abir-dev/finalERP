@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prismaAccountsService } from '../services/prismaAccountsService';
 import { prismaNotificationService } from '../services/prismaNotificationService';
 import prisma from '../config/prisma';
+import logger from '../logger/logger';
 
 export const accountsController = {
   async createPayment(req: Request, res: Response) {
@@ -25,34 +26,50 @@ export const accountsController = {
         ));
       }
       res.status(201).json(payment);
-    } catch (err) {
-      res.status(400).json({ error: err.message });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
   async listPayments(req: Request, res: Response) {
     try {
       const payments = await prismaAccountsService.getPayments();
       res.json(payments);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
   async getPayment(req: Request, res: Response) {
     try {
       const payment = await prismaAccountsService.getPaymentById(req.params.id);
       if (!payment) return res.status(404).json({ error: 'Not found' });
       res.json(payment);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
   async updatePayment(req: Request, res: Response) {
     try {
       const payment = await prismaAccountsService.updatePayment(req.params.id, req.body);
       res.json(payment);
-    } catch (err) {
-      res.status(400).json({ error: err.message });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
   async deletePayment(req: Request, res: Response) {
     try {
@@ -68,8 +85,12 @@ export const accountsController = {
         })
       ));
       res.status(204).send();
-    } catch (err) {
-      res.status(400).json({ error: err.message });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 }; 

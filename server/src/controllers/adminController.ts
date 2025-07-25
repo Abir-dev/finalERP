@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prismaUserService } from '../services/prismaUserService';
 import { UserRole } from '../utils/constants';
+import logger from '../logger/logger';
 
 export const adminController = {
   async createUser(req: Request, res: Response): Promise<void> {
@@ -24,9 +25,13 @@ export const adminController = {
           name: user.name
         }
       });
-    } catch (error: any) {
-      res.status(400).json({ error: error?.message || 'Failed to create user' });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 
   async createInitialAdmin(req: Request, res: Response): Promise<void> {
@@ -54,8 +59,12 @@ export const adminController = {
           name: user.name
         }
       });
-    } catch (error: any) {
-      res.status(400).json({ error: error?.message || 'Failed to create admin user' });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 }; 
