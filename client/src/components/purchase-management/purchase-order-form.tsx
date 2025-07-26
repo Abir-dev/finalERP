@@ -126,6 +126,15 @@ export function PurchaseOrderForm() {
     taxesAndChargesTotal: 0,
   });
 
+  // State to track selected item IDs
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+
+  // State to track selected tax/charge IDs
+  const [selectedTaxIds, setSelectedTaxIds] = useState<string[]>([]);
+
+  // State to track selected payment term IDs
+  const [selectedPaymentTermIds, setSelectedPaymentTermIds] = useState<string[]>([]);
+
   const [activeTab, setActiveTab] = useState("details");
   const [isAccountingDimensionsOpen, setIsAccountingDimensionsOpen] =
     useState(false);
@@ -363,7 +372,7 @@ export function PurchaseOrderForm() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2 pt-6">
+              {/* <div className="flex items-center space-x-2 pt-6">
                 <Checkbox
                   id="apply-tax"
                   checked={formData.applyTaxWithholdingAmount}
@@ -377,7 +386,7 @@ export function PurchaseOrderForm() {
                 <Label htmlFor="apply-tax" className="text-sm">
                   Apply Tax Withholding Amount
                 </Label>
-              </div>
+              </div> */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -528,14 +537,26 @@ export function PurchaseOrderForm() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Items</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-row gap-2">
                   <Button onClick={addItem} size="sm" variant="outline">
                     <Plus className="h-4 w-4 mr-1" />
                     Add Row
                   </Button>
-                  {/* <Button size="sm" variant="outline">
-                    Add Multiple
-                  </Button> */}
+                  <Button
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        items: prev.items.filter((item) => !selectedItemIds.includes(item.id)),
+                      }));
+                      setSelectedItemIds([]);
+                    }}
+                    size="sm"
+                    variant="destructive"
+                    disabled={selectedItemIds.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete All
+                  </Button>
                 </div>
               </div>
 
@@ -543,7 +564,28 @@ export function PurchaseOrderForm() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-12"></TableHead>
+                      {/* Select All Checkbox */}
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={
+                            formData.items.length === 0
+                              ? false
+                              : selectedItemIds.length === formData.items.length
+                              ? true
+                              : selectedItemIds.length > 0
+                              ? "indeterminate"
+                              : false
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedItemIds(formData.items.map((item) => item.id));
+                            } else {
+                              setSelectedItemIds([]);
+                            }
+                          }}
+                          aria-label="Select all items"
+                        />
+                      </TableHead>
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="min-w-32">Item Code *</TableHead>
                       <TableHead className="min-w-32">Required By *</TableHead>
@@ -578,7 +620,16 @@ export function PurchaseOrderForm() {
                       formData.items.map((item, index) => (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <Checkbox />
+                            <Checkbox
+                              checked={selectedItemIds.includes(item.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedItemIds([...selectedItemIds, item.id]);
+                                } else {
+                                  setSelectedItemIds(selectedItemIds.filter((id) => id !== item.id));
+                                }
+                              }}
+                            />
                           </TableCell>
                           <TableCell className="font-medium">
                             {index + 1}
@@ -697,10 +748,27 @@ export function PurchaseOrderForm() {
                 <Label className="text-base font-medium">
                   Taxes and Charges
                 </Label>
-                <Button onClick={addTaxCharge} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Row
-                </Button>
+                <div className="flex flex-row gap-2">
+                  <Button onClick={addTaxCharge} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Row
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        taxesAndCharges: prev.taxesAndCharges.filter((tax) => !selectedTaxIds.includes(tax.id)),
+                      }));
+                      setSelectedTaxIds([]);
+                    }}
+                    size="sm"
+                    variant="destructive"
+                    disabled={selectedTaxIds.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete All
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -732,7 +800,28 @@ export function PurchaseOrderForm() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-12"></TableHead>
+                      {/* Select All Checkbox for Taxes and Charges */}
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={
+                            formData.taxesAndCharges.length === 0
+                              ? false
+                              : selectedTaxIds.length === formData.taxesAndCharges.length
+                              ? true
+                              : selectedTaxIds.length > 0
+                              ? "indeterminate"
+                              : false
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedTaxIds(formData.taxesAndCharges.map((tax) => tax.id));
+                            } else {
+                              setSelectedTaxIds([]);
+                            }
+                          }}
+                          aria-label="Select all taxes and charges"
+                        />
+                      </TableHead>
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="min-w-32">Type *</TableHead>
                       <TableHead className="min-w-40">Account Head *</TableHead>
@@ -756,7 +845,16 @@ export function PurchaseOrderForm() {
                       formData.taxesAndCharges.map((tax, index) => (
                         <TableRow key={tax.id}>
                           <TableCell>
-                            <Checkbox />
+                            <Checkbox
+                              checked={selectedTaxIds.includes(tax.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedTaxIds([...selectedTaxIds, tax.id]);
+                                } else {
+                                  setSelectedTaxIds(selectedTaxIds.filter((id) => id !== tax.id));
+                                }
+                              }}
+                            />
                           </TableCell>
                           <TableCell className="font-medium">
                             {index + 1}
@@ -864,7 +962,7 @@ export function PurchaseOrderForm() {
             </div>
 
             {/* Additional Discount */}
-            <Collapsible
+            {/* <Collapsible
               open={isAdditionalDiscountOpen}
               onOpenChange={setIsAdditionalDiscountOpen}
             >
@@ -884,7 +982,7 @@ export function PurchaseOrderForm() {
                   Configure additional discounts for this purchase order.
                 </div>
               </CollapsibleContent>
-            </Collapsible>
+            </Collapsible> */}
 
             {/* Totals Section */}
             <div className="bg-muted/20 p-6 rounded-lg space-y-3">
@@ -913,7 +1011,7 @@ export function PurchaseOrderForm() {
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <Checkbox
                       id="disable-rounded"
                       checked={formData.disableRoundedTotal}
@@ -927,7 +1025,7 @@ export function PurchaseOrderForm() {
                     <Label htmlFor="disable-rounded" className="text-sm">
                       Disable Rounded Total
                     </Label>
-                  </div>
+                  </div> */}
                   <div className="space-y-2">
                     <Label htmlFor="advance-paid" className="text-sm">
                       Advance Paid
@@ -1093,7 +1191,7 @@ export function PurchaseOrderForm() {
                         paymentTermsTemplate: e.target.value,
                       }))
                     }
-                    placeholder="Select payment terms template"
+                    placeholder="Enter payment terms template"
                   />
                 </div>
 
@@ -1102,21 +1200,59 @@ export function PurchaseOrderForm() {
                     <Label className="text-sm font-medium">
                       Payment Schedule
                     </Label>
-                    <Button
-                      onClick={addPaymentTerm}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Row
-                    </Button>
+                    <div className="flex flex-row gap-2">
+                      <Button
+                        onClick={addPaymentTerm}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Row
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            paymentSchedule: prev.paymentSchedule.filter((term) => !selectedPaymentTermIds.includes(term.id)),
+                          }));
+                          setSelectedPaymentTermIds([]);
+                        }}
+                        size="sm"
+                        variant="destructive"
+                        disabled={selectedPaymentTermIds.length === 0}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete All
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/50">
-                          <TableHead className="w-12"></TableHead>
+                          {/* Select All Checkbox for Payment Terms */}
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={
+                                formData.paymentSchedule.length === 0
+                                  ? false
+                                  : selectedPaymentTermIds.length === formData.paymentSchedule.length
+                                  ? true
+                                  : selectedPaymentTermIds.length > 0
+                                  ? "indeterminate"
+                                  : false
+                              }
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedPaymentTermIds(formData.paymentSchedule.map((term) => term.id));
+                                } else {
+                                  setSelectedPaymentTermIds([]);
+                                }
+                              }}
+                              aria-label="Select all payment terms"
+                            />
+                          </TableHead>
                           <TableHead className="w-16">No.</TableHead>
                           <TableHead className="min-w-32">
                             Payment Term
@@ -1148,7 +1284,16 @@ export function PurchaseOrderForm() {
                           formData.paymentSchedule.map((payment, index) => (
                             <TableRow key={payment.id}>
                               <TableCell>
-                                <Checkbox />
+                                <Checkbox
+                                  checked={selectedPaymentTermIds.includes(payment.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedPaymentTermIds([...selectedPaymentTermIds, payment.id]);
+                                    } else {
+                                      setSelectedPaymentTermIds(selectedPaymentTermIds.filter((id) => id !== payment.id));
+                                    }
+                                  }}
+                                />
                               </TableCell>
                               <TableCell className="font-medium">
                                 {index + 1}
