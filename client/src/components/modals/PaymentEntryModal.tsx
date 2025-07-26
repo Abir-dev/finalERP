@@ -117,7 +117,7 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                {/* <div>
                   <Label htmlFor="series" className="text-sm font-medium">
                     Series*
                   </Label>
@@ -131,7 +131,7 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                       <SelectItem value="CASH-PAY-.YYYY.-">CASH-PAY-.YYYY.-</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
                 <div>
                   <Label htmlFor="paymentType" className="text-sm font-medium">
                     Payment Type*
