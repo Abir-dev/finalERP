@@ -371,9 +371,9 @@ export function PurchaseDashboard() {
               <Button onClick={() => setShowComprehensiveForm(true)}>
                 <Plus className="mr-2 h-4 w-4" /> New Purchase Order
               </Button>
-              <Button onClick={handleCreateNewOrder} variant="outline">
+              {/* <Button onClick={handleCreateNewOrder} variant="outline">
                 <Plus className="mr-2 h-4 w-4" /> Quick Order
-              </Button>
+              </Button> */}
             </div>
           )}
         </div>
