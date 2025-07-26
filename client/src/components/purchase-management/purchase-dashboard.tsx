@@ -401,9 +401,9 @@ export function PurchaseDashboard() {
   };
 
   return (
-    <Card>
+    <div>
       {/* <CardHeader></CardHeader> */}
-      <CardContent className="mt-6">
+      {/* <CardContent className="mt-6"> */}
         <Tabs
           defaultValue="overview"
           className="space-y-4"
@@ -1285,7 +1285,7 @@ export function PurchaseDashboard() {
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
+      {/* </CardContent> */}
       {/* Add/Edit Purchase Order Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -1707,6 +1707,6 @@ export function PurchaseDashboard() {
         open={showNewVendorModal}
         onOpenChange={setShowNewVendorModal}
       />
-    </Card>
+    </div>
   );
 }
