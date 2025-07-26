@@ -177,60 +177,87 @@ const GanttChart = () => {
 };
 
 const DPRModal = ({ onClose, projects }) => {
-  const [files, setFiles] = useState([]);
-  const [progressNotes, setProgressNotes] = useState("");
+  const [materials, setMaterials] = useState([{ material: '', qty: '', remarks: '' }]);
+  const [form, setForm] = useState({
+    projectId: '',
+    workSections: '',
+    manpower: '',
+    manpowerRoles: '',
+    equipmentUsed: '',
+    safetyIncident: '',
+    safetyDetails: '',
+    qualityCheck: '',
+    qualityDetails: '',
+    delayIssue: '',
+    delayDetails: '',
+    subcontractor: '',
+    workDone: '',
+    weather: '',
+    notes: '',
+  });
+  const [photos, setPhotos] = useState<FileList | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedProject, setSelectedProject] = useState("");
 
-  const handleFileDrop = (e) => {
+  const addMaterialRow = () => setMaterials([...materials, { material: '', qty: '', remarks: '' }]);
+  const removeMaterialRow = (idx) => setMaterials(materials.filter((_, i) => i !== idx));
+  const updateMaterial = (idx, field, value) => {
+    setMaterials(materials.map((mat, i) => i === idx ? { ...mat, [field]: value } : mat));
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoChange = (e) => {
+    setPhotos(e.target.files);
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    setFiles([...files, ...droppedFiles]);
-  };
-
-  const handleFileInput = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-    setFiles([...files, ...selectedFiles]);
-  };
-
-  const removeFile = (index) => {
-    const newFiles = [...files];
-    newFiles.splice(index, 1);
-    setFiles(newFiles);
-  };
-
-  const handleSubmit = () => {
     setIsSubmitting(true);
     // Simulate API call
     setTimeout(() => {
-      console.log("DPR Submitted", {
-        project: selectedProject,
-        notes: progressNotes,
-        files: files.map(f => f.name)
-      });
       setIsSubmitting(false);
       onClose();
-      setFiles([]);
-      setProgressNotes("");
-      setSelectedProject("");
+      setForm({
+        projectId: '',
+        workSections: '',
+        manpower: '',
+        manpowerRoles: '',
+        equipmentUsed: '',
+        safetyIncident: '',
+        safetyDetails: '',
+        qualityCheck: '',
+        qualityDetails: '',
+        delayIssue: '',
+        delayDetails: '',
+        subcontractor: '',
+        workDone: '',
+        weather: '',
+        notes: '',
+      });
+      setMaterials([{ material: '', qty: '', remarks: '' }]);
+      setPhotos(null);
     }, 1500);
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[95vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Submit Daily Progress Report</h3>
           <Button variant="ghost" size="icon" onClick={onClose}>×</Button>
         </div>
-        
-        <div className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
             <Label>Select Project</Label>
             <select
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              name="projectId"
+              value={form.projectId}
+              onChange={handleChange}
+              required
             >
               <option value="">Select a project</option>
               {projects.map(project => (
@@ -240,87 +267,177 @@ const DPRModal = ({ onClose, projects }) => {
               ))}
             </select>
           </div>
-          
-          <div className="space-y-2">
-            <Label>Progress Notes</Label>
+          <div>
+            <Label htmlFor="workSections">Work Sections/Areas Covered</Label>
+            <Input id="workSections" name="workSections" placeholder="e.g. Foundation, Structure, Roofing" value={form.workSections} onChange={handleChange} required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="manpower">Manpower Deployed</Label>
+              <Input id="manpower" name="manpower" type="number" min="0" placeholder="Total number" value={form.manpower} onChange={handleChange} required />
+            </div>
+            <div>
+              <Label htmlFor="manpowerRoles">Roles (comma separated)</Label>
+              <Input id="manpowerRoles" name="manpowerRoles" placeholder="e.g. Mason, Electrician, Supervisor" value={form.manpowerRoles} onChange={handleChange} required />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="equipmentUsed">Equipment Used</Label>
+            <Input id="equipmentUsed" name="equipmentUsed" placeholder="e.g. Crane, Mixer, Scaffolding" value={form.equipmentUsed} onChange={handleChange} required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
+              <select name="safetyIncident" value={form.safetyIncident} onChange={handleChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">Select</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="safetyDetails">If Yes, Details</Label>
+              <Input id="safetyDetails" name="safetyDetails" placeholder="Describe incident (if any)" value={form.safetyDetails} onChange={handleChange} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
+              <select name="qualityCheck" value={form.qualityCheck} onChange={handleChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">Select</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="qualityDetails">If Yes, Details</Label>
+              <Input id="qualityDetails" name="qualityDetails" placeholder="Describe checks (if any)" value={form.qualityDetails} onChange={handleChange} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
+              <select name="delayIssue" value={form.delayIssue} onChange={handleChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="">Select</option>
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="delayDetails">If Yes, Details</Label>
+              <Input id="delayDetails" name="delayDetails" placeholder="Describe delay/issue (if any)" value={form.delayDetails} onChange={handleChange} />
+            </div>
+          </div>
+          <div>
+            <Label>Materials Consumed</Label>
+            <div className="space-y-2">
+              {materials.map((mat, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <Input
+                    name={`material${idx}`}
+                    placeholder="Material"
+                    className="text-xs"
+                    value={mat.material}
+                    onChange={e => updateMaterial(idx, 'material', e.target.value)}
+                    required
+                  />
+                  <Input
+                    name={`materialQty${idx}`}
+                    placeholder="Qty"
+                    className="text-xs"
+                    value={mat.qty}
+                    onChange={e => updateMaterial(idx, 'qty', e.target.value)}
+                    required
+                  />
+                  <Input
+                    name={`materialRemarks${idx}`}
+                    placeholder="Remarks"
+                    className="text-xs"
+                    value={mat.remarks}
+                    onChange={e => updateMaterial(idx, 'remarks', e.target.value)}
+                  />
+                  {materials.length > 1 && (
+                    <Button type="button" size="icon" variant="ghost" onClick={() => removeMaterialRow(idx)}>
+                      &times;
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={addMaterialRow}>
+                Add Material Row
+              </Button>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="subcontractor">Subcontractor Activities</Label>
+            <Textarea id="subcontractor" name="subcontractor" placeholder="Describe any subcontractor work..." rows={2} value={form.subcontractor} onChange={handleChange} />
+          </div>
+          <div>
+            <Label htmlFor="workDone">Work Done Today</Label>
             <Textarea
-              placeholder="Describe today's progress, challenges, and next steps..."
-              value={progressNotes}
-              onChange={(e) => setProgressNotes(e.target.value)}
-              className="min-h-[100px]"
+              id="workDone"
+              name="workDone"
+              placeholder="Describe today's work progress..."
+              rows={4}
+              value={form.workDone}
+              onChange={handleChange}
+              required
             />
           </div>
-          
-          <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleFileDrop}
-            onClick={() => document.getElementById('file-upload').click()}
-          >
-            <input
-              id="file-upload"
+          <div>
+            <Label htmlFor="weather">Weather Conditions</Label>
+            <select name="weather" value={form.weather} onChange={handleChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Select weather</option>
+              <option value="clear">Clear</option>
+              <option value="rain">Rain</option>
+              <option value="wind">Windy</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="photos">Upload Photos</Label>
+            <Input
+              id="photos"
+              name="photos"
               type="file"
               multiple
-              className="hidden"
-              onChange={handleFileInput}
-              accept="image/*,.pdf,.doc,.docx"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              required
             />
-            <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Drag & drop files here or click to browse</p>
-            <p className="text-xs text-gray-500 mt-1">Supports JPG, PNG, PDF, DOC (max 10MB each)</p>
           </div>
-          
-          {files.length > 0 && (
-            <div className="space-y-2">
-              <Label>Selected Files ({files.length})</Label>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {files.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 border rounded">
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm truncate max-w-xs">{file.name}</span>
-                      <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)}MB</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => removeFile(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
+          <div>
+            <Label htmlFor="notes">Site Engineer Notes</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              placeholder="Additional notes or concerns..."
+              rows={3}
+              value={form.notes}
+              onChange={handleChange}
+              required
+            />
+          </div>
           <div className="flex gap-2 pt-2">
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              type="submit"
               className="flex-1"
-              disabled={!selectedProject || isSubmitting}
+              disabled={isSubmitting}
             >
               {isSubmitting ? "Submitting..." : "Submit Report"}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                onClose();
-                setFiles([]);
-                setProgressNotes("");
-                setSelectedProject("");
-              }}
+            <Button
+              variant="outline"
+              type="button"
+              onClick={onClose}
             >
               Cancel
             </Button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
 };
-
 
 const Projects = () => {
   const [searchQuery, setSearchQuery] = useState("");

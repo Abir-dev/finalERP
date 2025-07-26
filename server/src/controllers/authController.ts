@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prismaUserService } from "../services/prismaUserService";
 import { UserRole } from "../utils/constants";
+import logger from "../logger/logger";
 
 export const authController = {
   async register(req: Request, res: Response) {
@@ -35,10 +36,13 @@ export const authController = {
           role: user.role
         }
       });
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      res.status(400).json({ error: error.message || "Registration failed" });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 
   async login(req: Request, res: Response) {
@@ -98,10 +102,13 @@ export const authController = {
         createdAt: user.createdAt,
         updatedAt: user.updatedAt
       });
-    } catch (error: any) {
-      console.error("Get profile error:", error);
-      res.status(500).json({ error: error.message || "Failed to fetch profile" });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 
   async updateProfile(req: Request, res: Response) {
@@ -129,10 +136,13 @@ export const authController = {
           updatedAt: updatedUser.updatedAt
         }
       });
-    } catch (error: any) {
-      console.error("Update profile error:", error);
-      res.status(400).json({ error: error.message || "Failed to update profile" });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 
   async createUserInvitation(req: Request, res: Response) {
@@ -151,10 +161,13 @@ export const authController = {
         registrationUrl,
         invitationToken 
       });
-    } catch (error: any) {
-      console.error("Create invitation error:", error);
-      res.status(400).json({ error: error.message || "Failed to create invitation" });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 
   async validateInvitationToken(req: Request, res: Response) {
@@ -174,10 +187,13 @@ export const authController = {
         message: "Token is valid",
         data: userData
       });
-    } catch (error: any) {
-      console.error("Validate invitation error:", error);
-      res.status(400).json({ error: error.message || "Token validation failed" });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 
   async logout(req: Request, res: Response) {
@@ -187,9 +203,12 @@ export const authController = {
       
       // For stateless JWT, just return success message
       res.status(200).json({ message: "User logged out successfully" });
-    } catch (error: any) {
-      console.error("Logout error:", error);
-      res.status(500).json({ error: "Logout failed" });
-    }
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   },
 };
