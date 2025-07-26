@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Toaster } from '@/components/ui/toaster';
-import InvoiceBuilderModal from '@/components/modals/InvoiceBuilderModal';
+import PaymentEntryModal from '@/components/modals/PaymentEntryModal';
 import EditableInvoiceTable from '@/components/tables/EditableInvoiceTable';
 import { exportBillingReport, exportBillingStatement } from '@/utils/export-utils';
 import { toast } from '@/components/ui/use-toast';
@@ -19,6 +19,7 @@ import {
 } from '@/utils/billing-actions';
 import { downloadProgressInvoice } from '@/utils/invoice-generator';
 import axios from "axios";
+import InvoiceBuilderModal from '@/components/modals/InvoiceBuilderModal';
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Invoice {
@@ -66,6 +67,7 @@ interface ProgressInvoice {
 
 const BillingManagerDashboard = () => {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [showPaymentEntryModal, setShowPaymentEntryModal] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
     progressInvoice: false,
     monthlyReport: false,
@@ -896,9 +898,9 @@ File Size: ${doc.size}`;
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Invoice Management</CardTitle>
-                <Button size="sm" onClick={() => setShowInvoiceModal(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Invoice
+                <Button size="sm" onClick={() => setShowPaymentEntryModal(true)}>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Payment Entry
                 </Button>
               </CardHeader>
               <CardContent>
@@ -1314,6 +1316,11 @@ File Size: ${doc.size}`;
       {showInvoiceModal && (
         <div className="-top-10 ">
           <InvoiceBuilderModal onClose={() => setShowInvoiceModal(false)} />
+        </div>
+      )}
+      {showPaymentEntryModal && (
+        <div className="-top-10 ">
+          <PaymentEntryModal onClose={() => setShowPaymentEntryModal(false)} />
         </div>
       )}
 
