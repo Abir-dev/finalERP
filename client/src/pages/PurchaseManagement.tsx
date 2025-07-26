@@ -826,16 +826,16 @@ const handleNewContractSubmit = async () => {
     </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        {/* <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="procurement">Smart Procurement</TabsTrigger>
           <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
           <TabsTrigger value="optimization">Cost Optimization</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
-        <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+       
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard 
               title="Total Orders" 
               value="₹8.5L" 
@@ -867,10 +867,10 @@ const handleNewContractSubmit = async () => {
               trend={{ value: 5, label: "improvement" }}
               threshold={{ status: 'good', message: 'Excellent delivery performance' }}
             />
-          </div>
+          </div> */}
 
           <PurchaseDashboard />
-        </TabsContent>
+        
 
         <TabsContent value="procurement" className="space-y-6">
           <Card>
@@ -1046,7 +1046,7 @@ const handleNewContractSubmit = async () => {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <Button 
+                                    {/* <Button 
                                       variant="outline" 
                                       size="sm"
                                       onClick={() => {
@@ -1061,7 +1061,7 @@ const handleNewContractSubmit = async () => {
                                       }}
                                     >
                                       Create PO
-                                    </Button>
+                                    </Button> */}
                                   </td>
                                 </tr>
                               ))}
@@ -2647,7 +2647,7 @@ const handleNewContractSubmit = async () => {
           </div>
           
           <div className="flex justify-end gap-2 pt-4">
-            <Button 
+            {/* <Button 
               variant="outline"
               onClick={() => {
                 setPoFormData({
@@ -2660,7 +2660,7 @@ const handleNewContractSubmit = async () => {
               }}
             >
               Create PO
-            </Button>
+            </Button> */}
             {/* <Button 
               variant="outline"
               onClick={() => {
