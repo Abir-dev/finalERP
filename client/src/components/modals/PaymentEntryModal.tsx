@@ -30,6 +30,13 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
   const [taxCharges, setTaxCharges] = useState<TaxCharge[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
+  const [invoiceId, setInvoiceId] = useState("");
+  const [project, setProject] = useState("");
+  const dummyProjects = [
+    { value: "residential-a", label: "Residential Complex A" },
+    { value: "office-b", label: "Office Tower B" },
+    { value: "mall-c", label: "Shopping Mall C" },
+  ];
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -110,6 +117,59 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Invoice & Project Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoice & Project Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="invoiceId" className="text-sm font-medium">
+                    Invoice ID
+                  </Label>
+                  <Select
+                    value={invoiceId}
+                    onValueChange={value => {
+                      setInvoiceId(value);
+                      setProject(value);
+                    }}
+                  >
+                    <SelectTrigger id="invoiceId" className="mt-1">
+                      <SelectValue placeholder="Select invoice ID" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dummyProjects.map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="project" className="text-sm font-medium">
+                    Project
+                  </Label>
+                  <Select
+                    value={project}
+                    onValueChange={value => {
+                      setProject(value);
+                      setInvoiceId(value);
+                    }}
+                  >
+                    <SelectTrigger id="project" className="mt-1">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dummyProjects.map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Type of Payment Section */}
           <Card>
             <CardHeader>
