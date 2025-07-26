@@ -694,143 +694,130 @@ export function PurchaseDashboard() {
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 justify-around">
-              <div className="flex gap-24">
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="invoiced">Invoiced</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={selectedPriority}
-                  onValueChange={setSelectedPriority}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priority</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search orders..."
-                    className="pl-9"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <X
-                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground cursor-pointer"
-                      onClick={() => setSearchQuery("")}
-                    />
-                  )}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+                  <div>
+                    <CardTitle>Purchase Orders</CardTitle>
+                    <CardDescription>
+                      View, filter, and manage all purchase orders in the system
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-1 gap-4 items-center md:justify-end">
+                    <Select
+                      value={selectedStatus}
+                      onValueChange={setSelectedStatus}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="sent">Sent</SelectItem>
+                        <SelectItem value="acknowledged">Acknowledged</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                        <SelectItem value="invoiced">Invoiced</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {/*
+                    <Select
+                      value={selectedPriority}
+                      onValueChange={setSelectedPriority}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Filter by priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priority</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    */}
+                    <Button onClick={() => setShowComprehensiveForm(true)}>
+                      <Plus className="mr-2 h-4 w-4" /> New Purchase Order
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  {activeTab === "orders" && (
-                    <div className="flex gap-2">
-                      <Button onClick={() => setShowComprehensiveForm(true)}>
-                        <Plus className="mr-2 h-4 w-4" /> New Purchase Order
-                      </Button>
-                      {/* <Button onClick={handleCreateNewOrder} variant="outline">
-                <Plus className="mr-2 h-4 w-4" /> Quick Order
-              </Button> */}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Purchase Orders Table */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Order Date</TableHead>
-                    <TableHead>Delivery Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPurchaseOrders.length > 0 ? (
-                    filteredPurchaseOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">
-                          {order.poNumber}
-                        </TableCell>
-                        <TableCell>{order.vendor}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {order.items}
-                        </TableCell>
-                        <TableCell>
-                          ₹{(order.totalAmount / 1000).toFixed(0)}K
-                        </TableCell>
-                        <TableCell>{order.orderDate}</TableCell>
-                        <TableCell>{order.expectedDelivery}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getPriorityColor(order.priority)}>
-                            {order.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditOrder(order)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteOrder(order.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>PO Number</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Order Date</TableHead>
+                        <TableHead>Delivery Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
-                        No purchase orders found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPurchaseOrders.length > 0 ? (
+                        filteredPurchaseOrders.map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">
+                              {order.poNumber}
+                            </TableCell>
+                            <TableCell>{order.vendor}</TableCell>
+                            <TableCell className="max-w-[200px] truncate">
+                              {order.items}
+                            </TableCell>
+                            <TableCell>
+                              ₹{(order.totalAmount / 1000).toFixed(0)}K
+                            </TableCell>
+                            <TableCell>{order.orderDate}</TableCell>
+                            <TableCell>{order.expectedDelivery}</TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusColor(order.status)}>
+                                {order.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={getPriorityColor(order.priority)}>
+                                {order.priority}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditOrder(order)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={9} className="h-24 text-center">
+                            No purchase orders found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="vendors" className="space-y-6">
