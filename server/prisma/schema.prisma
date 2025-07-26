@@ -162,8 +162,8 @@ model Payment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  Invoice   Invoice? @relation(fields: [invoiceId], references: [id])
-  invoiceId String?  @db.Uuid
+  Invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  invoiceId String  @db.Uuid
 }
 
 model InventoryItem {
