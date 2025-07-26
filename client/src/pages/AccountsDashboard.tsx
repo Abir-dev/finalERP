@@ -246,7 +246,7 @@ const AccountsDashboard = () => {
         </TabsContent>
 
         <TabsContent value="invoicing" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
               title="Total Invoiced"
               value="₹32.8M"
@@ -268,13 +268,13 @@ const AccountsDashboard = () => {
               description="Awaiting payment"
               trend={{ value: -15, label: "vs last month" }}
             />
-            <StatCard
+            {/* <StatCard
               title="Average Payment Time"
               value="12 days"
               icon={Clock}
               description="Payment cycle"
               trend={{ value: -2, label: "vs last month" }}
-            />
+            /> */}
           </div>
 
           <Card>
@@ -369,7 +369,7 @@ const AccountsDashboard = () => {
         </TabsContent>
 
         <TabsContent value="payroll" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
               title="Total Employees"
               value={payrollStats.totalEmployees}
@@ -384,12 +384,12 @@ const AccountsDashboard = () => {
               description="This month"
               trend={{ value: 5, label: "vs last month" }}
             />
-            <StatCard
+            {/* <StatCard
               title="Avg. Salary"
               value={payrollStats.avgSalary}
               icon={TrendingUp}
               description="Per employee"
-            />
+            /> */}
             <StatCard
               title="Compliance"
               value={payrollStats.compliance}

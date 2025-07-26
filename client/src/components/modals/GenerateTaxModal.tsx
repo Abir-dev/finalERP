@@ -109,7 +109,7 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
           <div>
             <Label htmlFor="tax-title">Title<span className="text-red-500"> *</span></Label>
             <Input id="tax-title" value={title} onChange={e => setTitle(e.target.value)} className="mt-1" />
-            <div className="flex flex-col gap-2 mt-4">
+            {/* <div className="flex flex-col gap-2 mt-4">
               <label className="flex items-center gap-2">
                 <Checkbox checked={isDefault} onCheckedChange={v => setIsDefault(!!v)} />
                 Default
@@ -118,13 +118,13 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
                 <Checkbox checked={isDisabled} onCheckedChange={v => setIsDisabled(!!v)} />
                 Disabled
               </label>
-            </div>
+            </div> */}
+            <Label htmlFor="tax-category" className="mt-4">Tax Category</Label>
+            <Input id="tax-category" value={taxCategory} onChange={e => setTaxCategory(e.target.value)} className="mt-1" />
           </div>
           <div>
             <Label htmlFor="tax-company">Company<span className="text-red-500"> *</span></Label>
             <Input id="tax-company" value={company} onChange={e => setCompany(e.target.value)} className="mt-1 font-semibold" />
-            <Label htmlFor="tax-category" className="mt-4">Tax Category</Label>
-            <Input id="tax-category" value={taxCategory} onChange={e => setTaxCategory(e.target.value)} className="mt-1" />
           </div>
         </div>
         {/* Taxes and Charges Section (copied) */}
