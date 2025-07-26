@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
 
 interface GenerateTaxModalProps {
   onClose: () => void;
@@ -82,6 +83,20 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
     setTaxCharges(newTaxCharges);
     setSelectedRows(new Set());
     setSelectAll(false);
+  };
+
+  const handleSave = () => {
+    const data = {
+      title,
+      company,
+      taxCategory,
+      isDefault,
+      isDisabled,
+      taxCharges,
+    };
+    console.log("Saved Tax Info:", data);
+    toast.success("Tax info saved!");
+    onClose();
   };
 
   return (
@@ -231,6 +246,14 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
             </CardContent>
           )}
         </Card>
+        <div className="flex justify-end gap-2 pt-6">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>
+            Save
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
