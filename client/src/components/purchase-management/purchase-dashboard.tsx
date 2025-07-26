@@ -56,6 +56,7 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 // import { toast } from "sonner";
 import { toast } from "@/components/ui/use-toast";
+import { AddVendorModal } from "@/components/modals/AddVendorModal";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
@@ -94,17 +95,9 @@ export function PurchaseDashboard() {
   const [currentOrder, setCurrentOrder] = useState<PurchaseOrder | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
-  const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
+    const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
   const [showNewVendorModal, setShowNewVendorModal] = useState(false);
-  const [newVendor, setNewVendor] = useState({
-    name: "",
-    category: "",
-    contact: "",
-    email: "",
-    address: "",
-    paymentTerms: "",
-    documents: [] as File[]
-  });
+ 
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
 const [showVendorDetails, setShowVendorDetails] = useState(false);
@@ -811,7 +804,7 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
           <TabsContent value="vendors" className="space-y-6">
   <Card>
   <CardHeader className="flex flex-row items-center justify-between">
-  <div>
+    <div>
     <CardTitle>Vendor Performance Management</CardTitle>
     <CardDescription>Track and evaluate vendor performance across multiple metrics</CardDescription>
   </div>
@@ -1075,188 +1068,7 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
     </DialogContent>
   </Dialog>
 
-  {/* New Vendor Modal */}
-  <Dialog open={showNewVendorModal} onOpenChange={setShowNewVendorModal}>
-    <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>Add New Vendor</DialogTitle>
-        <DialogDescription>
-          Register a new vendor in the procurement system
-        </DialogDescription>
-      </DialogHeader>
-      
-      <div className="space-y-4 py-4">
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorName" className="text-right">
-            Vendor Name *
-          </Label>
-          <Input
-            id="vendorName"
-            value={newVendor.name}
-            onChange={(e) => setNewVendor({...newVendor, name: e.target.value})}
-            className="col-span-3"
-            placeholder="Enter vendor name"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorCategory" className="text-right">
-            Category *
-          </Label>
-          <Select
-            value={newVendor.category}
-            onValueChange={(value) => setNewVendor({...newVendor, category: value})}
-            required
-          >
-            <SelectTrigger className="col-span-3">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Raw Materials">Raw Materials</SelectItem>
-              <SelectItem value="Building Materials">Building Materials</SelectItem>
-              <SelectItem value="Tools & Equipment">Tools & Equipment</SelectItem>
-              <SelectItem value="Safety Equipment">Safety Equipment</SelectItem>
-              <SelectItem value="Services">Services</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorContact" className="text-right">
-            Contact *
-          </Label>
-          <Input
-            id="vendorContact"
-            value={newVendor.contact}
-            onChange={(e) => setNewVendor({...newVendor, contact: e.target.value})}
-            className="col-span-3"
-            placeholder="Contact person and phone"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorEmail" className="text-right">
-            Email *
-          </Label>
-          <Input
-            id="vendorEmail"
-            type="email"
-            value={newVendor.email}
-            onChange={(e) => setNewVendor({...newVendor, email: e.target.value})}
-            className="col-span-3"
-            placeholder="vendor@example.com"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorAddress" className="text-right">
-            Address
-          </Label>
-          <Textarea
-            id="vendorAddress"
-            value={newVendor.address}
-            onChange={(e) => setNewVendor({...newVendor, address: e.target.value})}
-            className="col-span-3"
-            placeholder="Full business address"
-            rows={3}
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorPaymentTerms" className="text-right">
-            Payment Terms *
-          </Label>
-          <Select
-            value={newVendor.paymentTerms}
-            onValueChange={(value) => setNewVendor({...newVendor, paymentTerms: value})}
-            required
-          >
-            <SelectTrigger className="col-span-3">
-              <SelectValue placeholder="Select payment terms" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Net 15">Net 15</SelectItem>
-              <SelectItem value="Net 30">Net 30</SelectItem>
-              <SelectItem value="Net 45">Net 45</SelectItem>
-              <SelectItem value="Net 60">Net 60</SelectItem>
-              <SelectItem value="Advance">Advance Payment</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorDocs" className="text-right">
-            Documents
-          </Label>
-          <Input
-            id="vendorDocs"
-            type="file"
-            className="col-span-3"
-            multiple
-            onChange={(e) => {
-              if (e.target.files) {
-                setNewVendor({...newVendor, documents: Array.from(e.target.files)});
-              }
-            }}
-          />
-        </div>
-      </div>
-      
-      <DialogFooter>
-        <Button 
-          variant="outline" 
-          onClick={() => setShowNewVendorModal(false)}
-        >
-          Cancel
-        </Button>
-        <Button 
-          onClick={async () => {
-            if (!newVendor.name || !newVendor.category || !newVendor.contact || !newVendor.email || !newVendor.paymentTerms) {
-              toast({
-                title: "Missing required fields",
-                description: "Please fill out all required fields",
-                variant: "destructive"
-              });
-              return;
-            }
-            
-            try {
-              // Simulate API call
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              toast({
-                title: "Vendor added successfully",
-                description: `${newVendor.name} has been registered in the system`,
-              });
-              
-              setNewVendor({
-                name: "",
-                category: "",
-                contact: "",
-                email: "",
-                address: "",
-                paymentTerms: "",
-                documents: []
-              });
-              
-              setShowNewVendorModal(false);
-            } catch (error) {
-              toast({
-                title: "Error adding vendor",
-                description: "Please try again",
-                variant: "destructive"
-              });
-            }
-          }}
-        >
-          Add Vendor
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+
 </TabsContent>
           {/* <TabsContent value="vendors" className="space-y-4">
             <Card>
@@ -1802,6 +1614,12 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Add Vendor Modal */}
+      <AddVendorModal 
+        open={showNewVendorModal} 
+        onOpenChange={setShowNewVendorModal} 
+      />
     </Card>
   );
 }
