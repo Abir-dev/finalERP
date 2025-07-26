@@ -288,10 +288,10 @@ export function PurchaseOrderForm() {
             <p className="text-sm text-muted-foreground">Not Saved</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            {/* <span className="text-sm text-muted-foreground">
               Get Items From:
-            </span>
-            <Select>
+            </span> */}
+            {/* <Select>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Tools" />
               </SelectTrigger>
@@ -304,7 +304,7 @@ export function PurchaseOrderForm() {
                 </SelectItem>
                 <SelectItem value="purchase-order">Purchase Order</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
             <Button variant="outline" size="sm">
               <Eye className="h-4 w-4 mr-1" />
               Preview
@@ -334,7 +334,7 @@ export function PurchaseOrderForm() {
           <TabsContent value="details" className="space-y-6 w-full">
             {/* Basic Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="series">Series *</Label>
                 <Select
                   value={formData.series}
@@ -349,7 +349,7 @@ export function PurchaseOrderForm() {
                     <SelectItem value="PUR-ORD-YYYY-">PUR-ORD-YYYY-</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
@@ -412,7 +412,7 @@ export function PurchaseOrderForm() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-6">
+            {/* <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="reverse-charge"
@@ -444,10 +444,10 @@ export function PurchaseOrderForm() {
                   Is Subcontracted
                 </Label>
               </div>
-            </div>
+            </div> */}
 
             {/* Collapsible Sections */}
-            <Collapsible
+            {/* <Collapsible
               open={isAccountingDimensionsOpen}
               onOpenChange={setIsAccountingDimensionsOpen}
             >
@@ -489,11 +489,11 @@ export function PurchaseOrderForm() {
                   Configure currency and pricing information.
                 </div>
               </CollapsibleContent>
-            </Collapsible>
+            </Collapsible> */}
 
             {/* Barcode and Warehouse */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="scan-barcode">Scan Barcode</Label>
                 <Input
                   id="scan-barcode"
@@ -506,7 +506,7 @@ export function PurchaseOrderForm() {
                   }
                   placeholder="Scan or enter barcode"
                 />
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label htmlFor="target-warehouse">Set Target Warehouse</Label>
@@ -533,9 +533,9 @@ export function PurchaseOrderForm() {
                     <Plus className="h-4 w-4 mr-1" />
                     Add Row
                   </Button>
-                  <Button size="sm" variant="outline">
+                  {/* <Button size="sm" variant="outline">
                     Add Multiple
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
 
