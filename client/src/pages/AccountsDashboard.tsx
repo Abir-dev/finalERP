@@ -16,7 +16,7 @@ import { DollarSign, FileText, Users, Calculator, CreditCard, AlertTriangle, Dow
 import axios from "axios";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
-import TaxCalculatorModal from "@/components/modals/TaxCalculatorModal"
+import GenerateTaxModal from "@/components/modals/GenerateTaxModal"
 import ReconciliationPanel from "@/components/panels/ReconciliationPanel"
 import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal"
 import type { Invoice, Employee } from "@/types/dummy-data-types";
@@ -97,7 +97,7 @@ const AccountsDashboard = () => {
   const [isPayrollModalOpen, setIsPayrollModalOpen] = useState(false)
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false)
-  const [showTaxModal, setShowTaxModal] = useState(false)
+  const [showGenerateTaxModal, setShowGenerateTaxModal] = useState(false)
   const [collections, setCollections] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -169,9 +169,9 @@ const AccountsDashboard = () => {
             <FileText className="h-4 w-4" />
             Generate Invoice
           </Button>
-          <Button onClick={() => setShowTaxModal(true)} className="gap-2">
+          <Button onClick={() => setShowGenerateTaxModal(true)} className="gap-2">
             <Calculator className="h-4 w-4" />
-            Tax Calculator
+            Generate Tax
           </Button>
           <Button onClick={handleBulkReminder} variant="outline" className="gap-2">
             <AlertTriangle className="h-4 w-4" />
@@ -191,7 +191,7 @@ const AccountsDashboard = () => {
         </TabsList>
 
         <TabsContent value="overview">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <StatCard
               title="Total Outstanding"
               value="₹8.2M"
@@ -215,13 +215,13 @@ const AccountsDashboard = () => {
               trend={{ value: 12, label: "vs last month" }}
               onClick={() => toast.info("Viewing collection report")}
             />
-            <StatCard
+            {/* <StatCard
               title="Collection Rate"
               value="92%"
               icon={FileText}
               description="Payment efficiency"
               onClick={() => toast.info("Viewing efficiency metrics")}
-            />
+            /> */}
           </div>
 
           <Card className="mt-6">
@@ -476,15 +476,15 @@ const AccountsDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowTaxModal(true)}>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowGenerateTaxModal(true)}>
                     <Calculator className="h-4 w-4 mr-2" />
                     GST Calculator
                   </Button>
-                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowTaxModal(true)}>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowGenerateTaxModal(true)}>
                     <FileText className="h-4 w-4 mr-2" />
                     TDS Calculator
                   </Button>
-                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowTaxModal(true)}>
+                  <Button className="w-full justify-start" variant="outline" onClick={() => setShowGenerateTaxModal(true)}>
                     <FileText className="h-4 w-4 mr-2" />
                     Income Tax Planner
                   </Button>
@@ -508,7 +508,7 @@ const AccountsDashboard = () => {
       </Tabs>
 
       {/* Modals */}
-      {showTaxModal && <TaxCalculatorModal onClose={() => setShowTaxModal(false)} />}
+      {showGenerateTaxModal && <GenerateTaxModal onClose={() => setShowGenerateTaxModal(false)} />}
       
       {/* Replace old Generate Invoice modal with InvoiceBuilderModal */}
       {isInvoiceModalOpen && (
