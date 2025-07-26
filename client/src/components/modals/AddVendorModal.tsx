@@ -27,12 +27,10 @@ interface AddVendorModalProps {
 interface VendorData {
   gstin: string;
   name: string;
-  supplierType: string;
+  vendorType: string;
   gstCategory: string;
   email: string;
   mobile: string;
-  preferredBillingAddress: boolean;
-  preferredShippingAddress: boolean;
   postalCode: string;
   addressLine1: string;
   addressLine2: string;
@@ -45,12 +43,10 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
   const [vendorData, setVendorData] = useState<VendorData>({
     gstin: "",
     name: "",
-    supplierType: "Company",
+    vendorType: "Company",
     gstCategory: "Unregistered",
     email: "",
     mobile: "",
-    preferredBillingAddress: false,
-    preferredShippingAddress: false,
     postalCode: "",
     addressLine1: "",
     addressLine2: "",
@@ -60,7 +56,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
   });
 
   const handleSave = async () => {
-    if (!vendorData.name || !vendorData.supplierType || !vendorData.gstCategory) {
+    if (!vendorData.name || !vendorData.vendorType || !vendorData.gstCategory) {
       toast({
         title: "Missing required fields",
         description: "Please fill out all required fields",
@@ -82,12 +78,10 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       setVendorData({
         gstin: "",
         name: "",
-        supplierType: "Company",
+        vendorType: "Company",
         gstCategory: "Unregistered",
         email: "",
         mobile: "",
-        preferredBillingAddress: false,
-        preferredShippingAddress: false,
         postalCode: "",
         addressLine1: "",
         addressLine2: "",
@@ -111,12 +105,10 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
     setVendorData({
       gstin: "",
       name: "",
-      supplierType: "Company",
+      vendorType: "Company",
       gstCategory: "Unregistered",
       email: "",
       mobile: "",
-      preferredBillingAddress: false,
-      preferredShippingAddress: false,
       postalCode: "",
       addressLine1: "",
       addressLine2: "",
@@ -146,24 +138,24 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             />
           </div>
 
-          {/* Supplier Name */}
+          {/* Vendor Name */}
           <div className="space-y-2">
-            <Label htmlFor="supplierName">Supplier Name *</Label>
+            <Label htmlFor="supplierName">Vendor Name *</Label>
             <Input
-              id="supplierName"
+              id="vendorName"
               value={vendorData.name}
               onChange={(e) => setVendorData({...vendorData, name: e.target.value})}
-              placeholder="Enter supplier name"
+              placeholder="Enter vendor name"
               required
             />
           </div>
 
           {/* Supplier Type */}
           <div className="space-y-2">
-            <Label htmlFor="supplierType">Supplier Type *</Label>
+            <Label htmlFor="vendorType">Vendor Type *</Label>
             <Select
-              value={vendorData.supplierType}
-              onValueChange={(value) => setVendorData({...vendorData, supplierType: value})}
+              value={vendorData.vendorType}
+              onValueChange={(value) => setVendorData({...vendorData, vendorType: value})}
               required
             >
               <SelectTrigger>
