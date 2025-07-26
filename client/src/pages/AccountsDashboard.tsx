@@ -181,13 +181,13 @@ const AccountsDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
           <TabsTrigger value="budget">Budget Control</TabsTrigger>
           <TabsTrigger value="payroll">Payroll & Compliance</TabsTrigger>
           <TabsTrigger value="taxes">Tax Management</TabsTrigger>
-          <TabsTrigger value="reconciliation">Reconciliation</TabsTrigger>
+          {/* <TabsTrigger value="reconciliation">Reconciliation</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="overview">
@@ -439,7 +439,7 @@ const AccountsDashboard = () => {
         </TabsContent>
 
         <TabsContent value="taxes">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle>Tax Obligations</CardTitle>
@@ -470,11 +470,11 @@ const AccountsDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Tax Tools</CardTitle>
-              </CardHeader>
-              <CardContent>
+              </CardHeader> */}
+              {/* <CardContent>
                 <div className="space-y-3">
                   <Button className="w-full justify-start" variant="outline" onClick={() => setShowGenerateTaxModal(true)}>
                     <Calculator className="h-4 w-4 mr-2" />
@@ -486,8 +486,8 @@ const AccountsDashboard = () => {
                   </Button>
                   <Button className="w-full justify-start" variant="outline" onClick={() => setShowGenerateTaxModal(true)}>
                     <FileText className="h-4 w-4 mr-2" />
-                    Income Tax Planner
-                  </Button>
+                    Income Tax Planner */}
+                  {/* </Button> */}
                   {/* <Button className="w-full justify-start" variant="outline">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Tax Payment Portal
@@ -496,9 +496,9 @@ const AccountsDashboard = () => {
                     <FileText className="h-4 w-4 mr-2" />
                     Generate Returns
                   </Button> */}
-                </div>
-              </CardContent>
-            </Card>
+                {/* </div>
+              </CardContent> */}
+            {/* </Card> */}
           </div>
         </TabsContent>
 

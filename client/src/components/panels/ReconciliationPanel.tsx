@@ -110,8 +110,8 @@ const ReconciliationPanel = () => {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+        {/* <Card>
           <CardHeader>
             <CardTitle>Bank Statements</CardTitle>
           </CardHeader>
@@ -136,7 +136,7 @@ const ReconciliationPanel = () => {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card>
           <CardHeader>
