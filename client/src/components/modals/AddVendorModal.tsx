@@ -131,7 +131,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Supplier</DialogTitle>
+          <DialogTitle>Add New Vendor</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6 py-4">
@@ -144,9 +144,6 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
               onChange={(e) => setVendorData({...vendorData, gstin: e.target.value})}
               placeholder="Enter GSTIN / UIN"
             />
-            <p className="text-sm text-muted-foreground">
-              Autofill party information by entering their GSTIN
-            </p>
           </div>
 
           {/* Supplier Name */}
@@ -231,33 +228,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
           {/* Primary Address Details */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Primary Address Details</h3>
-            <p className="text-sm text-muted-foreground">
-              When you enter a GSTIN, the permanent address linked to it is autofilled. Change the Postal Code to autofill other addresses.
-            </p>
-            
-            <div className="flex gap-6">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="preferredBillingAddress"
-                  checked={vendorData.preferredBillingAddress}
-                  onCheckedChange={(checked) => 
-                    setVendorData({...vendorData, preferredBillingAddress: checked as boolean})
-                  }
-                />
-                <Label htmlFor="preferredBillingAddress">Preferred Billing Address</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="preferredShippingAddress"
-                  checked={vendorData.preferredShippingAddress}
-                  onCheckedChange={(checked) => 
-                    setVendorData({...vendorData, preferredShippingAddress: checked as boolean})
-                  }
-                />
-                <Label htmlFor="preferredShippingAddress">Preferred Shipping Address</Label>
-              </div>
-            </div>
-
+           
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="postalCode">Postal Code</Label>
@@ -280,7 +251,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="addressLine1">Address Line 1</Label>
+              <Label htmlFor="addressLine1">Street Address</Label>
               <Input
                 id="addressLine1"
                 value={vendorData.addressLine1}
@@ -288,17 +259,6 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 placeholder="Enter address line 1"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="addressLine2">Address Line 2</Label>
-              <Input
-                id="addressLine2"
-                value={vendorData.addressLine2}
-                onChange={(e) => setVendorData({...vendorData, addressLine2: e.target.value})}
-                placeholder="Enter address line 2"
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="state">State/Province</Label>
