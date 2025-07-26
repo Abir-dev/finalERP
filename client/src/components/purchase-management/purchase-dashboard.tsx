@@ -57,6 +57,7 @@ import { Textarea } from "../ui/textarea";
 // import { toast } from "sonner";
 import { toast } from "@/components/ui/use-toast";
 import { AddVendorModal } from "@/components/modals/AddVendorModal";
+import { NewMaterialRequestModal } from "@/components/modals/NewMaterialRequestModal";
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -297,9 +298,7 @@ export function PurchaseDashboard() {
   }, []);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const [currentRequest, setCurrentRequest] = useState<MaterialRequest | null>(
-    null
-  );
+  // Remove currentRequest and related logic for the old modal
 
   // Update approve/reject/create/update/delete to use backend API
   const handleApproveRequest = async (requestId: string) => {
@@ -354,50 +353,17 @@ export function PurchaseDashboard() {
     // );
   };
 
-  const handleCreateNewRequest = () => {
-    setCurrentRequest({
-      id: "",
-      requestNumber: `MR-${new Date().getFullYear()}-${(
-        materialRequests.length + 1
-      )
-        .toString()
-        .padStart(3, "0")}`,
-      requestedBy: "",
-      items: "",
-      quantity: 0,
-      unit: "",
-      requestDate: new Date().toISOString().split("T")[0],
-      requiredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      status: "pending",
-      project: "",
-      urgency: "normal",
-    });
-    setIsRequestDialogOpen(true);
-  };
+  // Remove handleCreateNewRequest and saveRequest for the old modal
 
-  const saveRequest = async () => {
-    if (!currentRequest) return;
+  // Add handler for new modal save
+  const handleNewMaterialRequestSave = async (data: any) => {
     const token =
       sessionStorage.getItem("jwt_token") ||
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    if (currentRequest.id) {
-      await axios.put(
-        `${API_URL}/material-requests/${currentRequest.id}`,
-        currentRequest,
-        { headers }
-      );
-    } else {
-      await axios.post(`${API_URL}/material-requests`, currentRequest, {
-        headers,
-      });
-    }
+    await axios.post(`${API_URL}/material-requests`, data, { headers });
     const res = await axios.get(`${API_URL}/material-requests`, { headers });
     setMaterialRequests(res.data);
-    setIsRequestDialogOpen(false);
-    setCurrentRequest(null);
   };
 
   return (
@@ -581,7 +547,7 @@ export function PurchaseDashboard() {
                       Review and approve material requests from site teams
                     </CardDescription>
                   </div>
-                  <Button onClick={handleCreateNewRequest}>
+                  <Button onClick={() => setIsRequestDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" /> New Request
                   </Button>
                 </div>
@@ -669,8 +635,8 @@ export function PurchaseDashboard() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    setCurrentRequest(request);
-                                    setIsRequestDialogOpen(true);
+                                    // setCurrentRequest(request); // This line is no longer needed
+                                    // setIsRequestDialogOpen(true); // This line is no longer needed
                                   }}
                                 >
                                   <Edit className="h-4 w-4" />
@@ -691,6 +657,11 @@ export function PurchaseDashboard() {
                 </div>
               </CardContent>
             </Card>
+            <NewMaterialRequestModal
+              open={isRequestDialogOpen}
+              onOpenChange={setIsRequestDialogOpen}
+              onSave={handleNewMaterialRequestSave}
+            />
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-4">
@@ -1475,213 +1446,6 @@ export function PurchaseDashboard() {
             </Button>
             <Button variant="destructive" onClick={confirmDeleteOrder}>
               Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {currentRequest?.id
-                ? "Edit Material Request"
-                : "Create New Material Request"}
-            </DialogTitle>
-            <DialogDescription>
-              {currentRequest?.id
-                ? `Update details for ${currentRequest.requestNumber}`
-                : "Fill in the details for the new material request"}
-            </DialogDescription>
-          </DialogHeader>
-
-          {currentRequest && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requestNumber" className="text-right">
-                  Request #
-                </label>
-                <Input
-                  id="requestNumber"
-                  name="requestNumber"
-                  value={currentRequest.requestNumber}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requestNumber: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                  disabled={!!currentRequest.id}
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requestedBy" className="text-right">
-                  Requested By
-                </label>
-                <Input
-                  id="requestedBy"
-                  name="requestedBy"
-                  value={currentRequest.requestedBy}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requestedBy: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="items" className="text-right">
-                  Items
-                </label>
-                <Input
-                  id="items"
-                  name="items"
-                  value={currentRequest.items}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      items: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="quantity" className="text-right">
-                  Quantity
-                </label>
-                <div className="col-span-3 flex gap-2">
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    value={currentRequest.quantity}
-                    onChange={(e) =>
-                      setCurrentRequest({
-                        ...currentRequest,
-                        quantity: Number(e.target.value),
-                      })
-                    }
-                    className="w-3/4"
-                  />
-                  <Select
-                    value={currentRequest.unit}
-                    onValueChange={(value) =>
-                      setCurrentRequest({ ...currentRequest, unit: value })
-                    }
-                  >
-                    <SelectTrigger className="w-1/4">
-                      <SelectValue placeholder="Unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">kg</SelectItem>
-                      <SelectItem value="g">g</SelectItem>
-                      <SelectItem value="cum">cum</SelectItem>
-                      <SelectItem value="l">l</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                      <SelectItem value="pcs">pcs</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requestDate" className="text-right">
-                  Request Date
-                </label>
-                <Input
-                  id="requestDate"
-                  name="requestDate"
-                  type="date"
-                  value={currentRequest.requestDate}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requestDate: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requiredDate" className="text-right">
-                  Required By
-                </label>
-                <Input
-                  id="requiredDate"
-                  name="requiredDate"
-                  type="date"
-                  value={currentRequest.requiredDate}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requiredDate: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="project" className="text-right">
-                  Project
-                </label>
-                <Input
-                  id="project"
-                  name="project"
-                  value={currentRequest.project}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      project: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="urgency" className="text-right">
-                  Urgency
-                </label>
-                <Select
-                  value={currentRequest.urgency}
-                  onValueChange={(value) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      urgency: value as any,
-                    })
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select urgency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsRequestDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" onClick={saveRequest}>
-              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
