@@ -57,7 +57,8 @@ import { Textarea } from "../ui/textarea";
 // import { toast } from "sonner";
 import { toast } from "@/components/ui/use-toast";
 import { AddVendorModal } from "@/components/modals/AddVendorModal";
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
   id: string;
@@ -95,18 +96,21 @@ export function PurchaseDashboard() {
   const [currentOrder, setCurrentOrder] = useState<PurchaseOrder | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
-    const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
+  const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
   const [showNewVendorModal, setShowNewVendorModal] = useState(false);
- 
+
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
-const [showVendorDetails, setShowVendorDetails] = useState(false);
+  const [showVendorDetails, setShowVendorDetails] = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/purchase-orders`, { headers })
-      .then(res => setPurchaseOrders(res.data))
+    axios
+      .get(`${API_URL}/purchase-orders`, { headers })
+      .then((res) => setPurchaseOrders(res.data))
       .catch(() => {});
   }, []);
 
@@ -145,10 +149,10 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
 
   const totalOrderValue = purchaseOrders.reduce(
     (sum, po) => sum + po.totalAmount,
-    0,
+    0
   );
   const deliveredOrders = purchaseOrders.filter(
-    (po) => po.status === "delivered",
+    (po) => po.status === "delivered"
   ).length;
   // Filter purchase orders based on selected filters and search query
   const filteredPurchaseOrders = purchaseOrders.filter((order) => {
@@ -169,7 +173,9 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
   const handleCreateNewOrder = () => {
     setCurrentOrder({
       id: "",
-      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1).toString().padStart(3, "0")}`,
+      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1)
+        .toString()
+        .padStart(3, "0")}`,
       vendor: "",
       items: "",
       totalAmount: 0,
@@ -197,7 +203,7 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
   const confirmDeleteOrder = () => {
     if (orderToDelete) {
       setPurchaseOrders(
-        purchaseOrders.filter((order) => order.id !== orderToDelete),
+        purchaseOrders.filter((order) => order.id !== orderToDelete)
       );
       setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
@@ -211,8 +217,8 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
       // Update existing order
       setPurchaseOrders(
         purchaseOrders.map((order) =>
-          order.id === currentOrder.id ? currentOrder : order,
-        ),
+          order.id === currentOrder.id ? currentOrder : order
+        )
       );
     } else {
       // Add new order
@@ -275,33 +281,48 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
   //     urgency: "urgent",
   //   },
   // ]);
-  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>(
+    []
+  );
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/material-requests`, { headers })
-      .then(res => setMaterialRequests(res.data))
+    axios
+      .get(`${API_URL}/material-requests`, { headers })
+      .then((res) => setMaterialRequests(res.data))
       .catch(() => {});
   }, []);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<MaterialRequest | null>(
-    null,
+    null
   );
 
   // Update approve/reject/create/update/delete to use backend API
   const handleApproveRequest = async (requestId: string) => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.patch(`${API_URL}/material-requests/${requestId}/approve`, {}, { headers });
+    await axios.patch(
+      `${API_URL}/material-requests/${requestId}/approve`,
+      {},
+      { headers }
+    );
     const res = await axios.get(`${API_URL}/material-requests`, { headers });
     setMaterialRequests(res.data);
   };
   const handleRejectRequest = async (requestId: string) => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.delete(`${API_URL}/material-requests/${requestId}`, { headers });
+    await axios.delete(`${API_URL}/material-requests/${requestId}`, {
+      headers,
+    });
     const res = await axios.get(`${API_URL}/material-requests`, { headers });
     setMaterialRequests(res.data);
   };
@@ -309,7 +330,9 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
     // Create a new PO from the material request
     const newPO: PurchaseOrder = {
       id: "",
-      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1).toString().padStart(3, "0")}`,
+      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1)
+        .toString()
+        .padStart(3, "0")}`,
       vendor: "", // Will be selected when creating PO
       items: request.items,
       totalAmount: 0, // To be calculated
@@ -334,7 +357,11 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
   const handleCreateNewRequest = () => {
     setCurrentRequest({
       id: "",
-      requestNumber: `MR-${new Date().getFullYear()}-${(materialRequests.length + 1).toString().padStart(3, "0")}`,
+      requestNumber: `MR-${new Date().getFullYear()}-${(
+        materialRequests.length + 1
+      )
+        .toString()
+        .padStart(3, "0")}`,
       requestedBy: "",
       items: "",
       quantity: 0,
@@ -352,12 +379,20 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
 
   const saveRequest = async () => {
     if (!currentRequest) return;
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     if (currentRequest.id) {
-      await axios.put(`${API_URL}/material-requests/${currentRequest.id}`, currentRequest, { headers });
+      await axios.put(
+        `${API_URL}/material-requests/${currentRequest.id}`,
+        currentRequest,
+        { headers }
+      );
     } else {
-      await axios.post(`${API_URL}/material-requests`, currentRequest, { headers });
+      await axios.post(`${API_URL}/material-requests`, currentRequest, {
+        headers,
+      });
     }
     const res = await axios.get(`${API_URL}/material-requests`, { headers });
     setMaterialRequests(res.data);
@@ -367,22 +402,8 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          
-          {activeTab === "orders" && (
-            <div className="flex gap-2">
-              <Button onClick={() => setShowComprehensiveForm(true)}>
-                <Plus className="mr-2 h-4 w-4" /> New Purchase Order
-              </Button>
-              {/* <Button onClick={handleCreateNewOrder} variant="outline">
-                <Plus className="mr-2 h-4 w-4" /> Quick Order
-              </Button> */}
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
+      {/* <CardHeader></CardHeader> */}
+      <CardContent className="mt-6">
         <Tabs
           defaultValue="overview"
           className="space-y-4"
@@ -673,8 +694,8 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
-              <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row gap-4 justify-around">
+              <div className="flex gap-24">
                 <Select
                   value={selectedStatus}
                   onValueChange={setSelectedStatus}
@@ -708,22 +729,33 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
                     <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <X
-                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground cursor-pointer"
-                    onClick={() => setSearchQuery("")}
+                <div className="relative w-full md:w-64">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search orders..."
+                    className="pl-9"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                )}
+                  {searchQuery && (
+                    <X
+                      className="absolute right-3 top-3 h-4 w-4 text-muted-foreground cursor-pointer"
+                      onClick={() => setSearchQuery("")}
+                    />
+                  )}
+                </div>
+                <div className="flex items-center">
+                  {activeTab === "orders" && (
+                    <div className="flex gap-2">
+                      <Button onClick={() => setShowComprehensiveForm(true)}>
+                        <Plus className="mr-2 h-4 w-4" /> New Purchase Order
+                      </Button>
+                      {/* <Button onClick={handleCreateNewOrder} variant="outline">
+                <Plus className="mr-2 h-4 w-4" /> Quick Order
+              </Button> */}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -802,244 +834,314 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
           </TabsContent>
 
           <TabsContent value="vendors" className="space-y-6">
-  <Card>
-  <CardHeader className="flex flex-row items-center justify-between">
-    <div>
-    <CardTitle>Vendor Performance Management</CardTitle>
-    <CardDescription>Track and evaluate vendor performance across multiple metrics</CardDescription>
-  </div>
-  <Button 
-    onClick={() => setShowNewVendorModal(true)}
-    size="sm"
-  >
-    <Plus className="mr-2 h-4 w-4" />
-    Add Vendor
-  </Button>
-</CardHeader>
-    <CardContent>
-      <div className="space-y-4">
-        {[
-          {
-            id: 'steel-corp',
-            vendor: 'Steel Corp Ltd',
-            category: 'Raw Materials',
-            orders: 24,
-            onTimeDelivery: 95,
-            qualityScore: 4.5,
-            priceCompetitiveness: 4.2,
-            totalValue: '₹25L',
-            status: 'Preferred',
-            contact: 'Rajesh Kumar - +91 9876543210',
-            contract: 'Active until Dec 2023',
-            paymentTerms: 'Net 30',
-            performanceNotes: 'Consistent quality, reliable delivery'
-          },
-          {
-            id: 'cement-ind',
-            vendor: 'Cement Industries',
-            category: 'Building Materials',
-            orders: 18,
-            onTimeDelivery: 88,
-            qualityScore: 4.2,
-            priceCompetitiveness: 4.0,
-            totalValue: '₹18L',
-            status: 'Approved',
-            contact: 'Priya Sharma - +91 8765432109',
-            contract: 'Active until Nov 2023',
-            paymentTerms: 'Net 45',
-            performanceNotes: 'Good pricing but occasional delays'
-          },
-          {
-            id: 'hardware-sol',
-            vendor: 'Hardware Solutions',
-            category: 'Tools & Equipment',
-            orders: 32,
-            onTimeDelivery: 92,
-            qualityScore: 4.3,
-            priceCompetitiveness: 4.1,
-            totalValue: '₹12L',
-            status: 'Preferred',
-            contact: 'Vikram Patel - +91 7654321098',
-            contract: 'Active until Jan 2024',
-            paymentTerms: 'Net 15',
-            performanceNotes: 'Excellent customer service'
-          },
-          {
-            id: 'safety-co',
-            vendor: 'Safety First Co',
-            category: 'Safety Equipment',
-            orders: 15,
-            onTimeDelivery: 78,
-            qualityScore: 3.8,
-            priceCompetitiveness: 3.5,
-            totalValue: '₹8L',
-            status: 'Under Review',
-            contact: 'Anjali Gupta - +91 6543210987',
-            contract: 'Expiring next month',
-            paymentTerms: 'Net 30',
-            performanceNotes: 'Quality concerns reported'
-          }
-        ].map((vendor) => (
-          <div key={vendor.id} className="p-4 border rounded-lg">
-            <div className="grid grid-cols-1 md:grid-cols-9 gap-4 items-center">
-              <div className="md:col-span-2">
-                <h4 className="font-medium">{vendor.vendor}</h4>
-                <p className="text-sm text-muted-foreground">{vendor.category}</p>
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                  vendor.status === 'Preferred' ? 'bg-green-100 text-green-800' :
-                  vendor.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {vendor.status}
-                </span>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Orders</p>
-                <p className="font-medium">{vendor.orders}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">On-Time</p>
-                <p className="font-medium">{vendor.onTimeDelivery}%</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Quality</p>
-                <p className="font-medium">{vendor.qualityScore}/5.0</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Price</p>
-                <p className="font-medium">{vendor.priceCompetitiveness}/5.0</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="font-medium">{vendor.totalValue}</p>
-              </div>
-              <div className="flex justify-center gap-3 md:col-span-2">
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={() => {
-                    setSelectedVendor(vendor);
-                    setShowVendorDetails(true);
-                  }}
-                >
-                  Details
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Vendor Performance Management</CardTitle>
+                  <CardDescription>
+                    Track and evaluate vendor performance across multiple
+                    metrics
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setShowNewVendorModal(true)} size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Vendor
                 </Button>
-                {/* <Button 
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    {
+                      id: "steel-corp",
+                      vendor: "Steel Corp Ltd",
+                      category: "Raw Materials",
+                      orders: 24,
+                      onTimeDelivery: 95,
+                      qualityScore: 4.5,
+                      priceCompetitiveness: 4.2,
+                      totalValue: "₹25L",
+                      status: "Preferred",
+                      contact: "Rajesh Kumar - +91 9876543210",
+                      contract: "Active until Dec 2023",
+                      paymentTerms: "Net 30",
+                      performanceNotes: "Consistent quality, reliable delivery",
+                    },
+                    {
+                      id: "cement-ind",
+                      vendor: "Cement Industries",
+                      category: "Building Materials",
+                      orders: 18,
+                      onTimeDelivery: 88,
+                      qualityScore: 4.2,
+                      priceCompetitiveness: 4.0,
+                      totalValue: "₹18L",
+                      status: "Approved",
+                      contact: "Priya Sharma - +91 8765432109",
+                      contract: "Active until Nov 2023",
+                      paymentTerms: "Net 45",
+                      performanceNotes: "Good pricing but occasional delays",
+                    },
+                    {
+                      id: "hardware-sol",
+                      vendor: "Hardware Solutions",
+                      category: "Tools & Equipment",
+                      orders: 32,
+                      onTimeDelivery: 92,
+                      qualityScore: 4.3,
+                      priceCompetitiveness: 4.1,
+                      totalValue: "₹12L",
+                      status: "Preferred",
+                      contact: "Vikram Patel - +91 7654321098",
+                      contract: "Active until Jan 2024",
+                      paymentTerms: "Net 15",
+                      performanceNotes: "Excellent customer service",
+                    },
+                    {
+                      id: "safety-co",
+                      vendor: "Safety First Co",
+                      category: "Safety Equipment",
+                      orders: 15,
+                      onTimeDelivery: 78,
+                      qualityScore: 3.8,
+                      priceCompetitiveness: 3.5,
+                      totalValue: "₹8L",
+                      status: "Under Review",
+                      contact: "Anjali Gupta - +91 6543210987",
+                      contract: "Expiring next month",
+                      paymentTerms: "Net 30",
+                      performanceNotes: "Quality concerns reported",
+                    },
+                  ].map((vendor) => (
+                    <div key={vendor.id} className="p-4 border rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-9 gap-4 items-center">
+                        <div className="md:col-span-2">
+                          <h4 className="font-medium">{vendor.vendor}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {vendor.category}
+                          </p>
+                          <span
+                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                              vendor.status === "Preferred"
+                                ? "bg-green-100 text-green-800"
+                                : vendor.status === "Approved"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {vendor.status}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Orders
+                          </p>
+                          <p className="font-medium">{vendor.orders}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            On-Time
+                          </p>
+                          <p className="font-medium">
+                            {vendor.onTimeDelivery}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Quality
+                          </p>
+                          <p className="font-medium">
+                            {vendor.qualityScore}/5.0
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Price</p>
+                          <p className="font-medium">
+                            {vendor.priceCompetitiveness}/5.0
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Total Value
+                          </p>
+                          <p className="font-medium">{vendor.totalValue}</p>
+                        </div>
+                        <div className="flex justify-center gap-3 md:col-span-2">
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={() => {
+                              setSelectedVendor(vendor);
+                              setShowVendorDetails(true);
+                            }}
+                          >
+                            Details
+                          </Button>
+                          {/* <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => handleContactVendor(vendor.contact)}
                 >
                   Contact
                 </Button> */}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </CardContent>
-  </Card>
-
-  {/* Vendor Details Modal */}
-  <Dialog open={showVendorDetails} onOpenChange={setShowVendorDetails}>
-    <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>{selectedVendor?.vendor} Details</DialogTitle>
-        <DialogDescription>
-          Comprehensive vendor performance and contract information
-        </DialogDescription>
-      </DialogHeader>
-      
-      {selectedVendor && (
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-muted-foreground">Category</Label>
-              <p className="font-medium">{selectedVendor.category}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Status</Label>
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${
-                  selectedVendor.status === 'Preferred' ? 'bg-green-500' : 
-                  selectedVendor.status === 'Approved' ? 'bg-blue-500' : 
-                  'bg-yellow-500'
-                }`} />
-                <span className="capitalize">{selectedVendor.status}</span>
-              </div>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Total Orders</Label>
-              <p className="font-medium">{selectedVendor.orders}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Total Value</Label>
-              <p className="font-medium">{selectedVendor.totalValue}</p>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <Label className="text-muted-foreground">On-Time Delivery</Label>
-              <div className="flex items-center gap-2">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full" 
-                    style={{ width: `${selectedVendor.onTimeDelivery}%` }}
-                  ></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <span className="text-sm">{selectedVendor.onTimeDelivery}%</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-muted-foreground">Quality Score</Label>
-              <div className="flex items-center gap-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`h-4 w-4 ${i < Math.floor(selectedVendor.qualityScore) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                  />
-                ))}
-                <span className="text-sm">({selectedVendor.qualityScore.toFixed(1)})</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-muted-foreground">Price Rating</Label>
-              <div className="flex items-center gap-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={`h-4 w-4 ${i < Math.floor(selectedVendor.priceCompetitiveness) ? 'text-blue-400 fill-current' : 'text-gray-300'}`}
-                  />
-                ))}
-                <span className="text-sm">({selectedVendor.priceCompetitiveness.toFixed(1)})</span>
-              </div>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="text-muted-foreground">Contact Information</Label>
-            <div className="mt-1 p-3 bg-gray-50 rounded-md">
-              <p className="text-sm">{selectedVendor.contact}</p>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="text-muted-foreground">Contract Details</Label>
-            <div className="mt-1 p-3 bg-gray-50 rounded-md">
-              <p className="text-sm">{selectedVendor.contract}</p>
-              <p className="text-sm mt-2">Payment Terms: {selectedVendor.paymentTerms}</p>
-            </div>
-          </div>
-          
-          <div>
-            <Label className="text-muted-foreground">Performance Notes</Label>
-            <div className="mt-1 p-3 bg-gray-50 rounded-md">
-              <p className="text-sm">{selectedVendor.performanceNotes}</p>
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-2 pt-4">
-            {/* <Button 
+              </CardContent>
+            </Card>
+
+            {/* Vendor Details Modal */}
+            <Dialog
+              open={showVendorDetails}
+              onOpenChange={setShowVendorDetails}
+            >
+              <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{selectedVendor?.vendor} Details</DialogTitle>
+                  <DialogDescription>
+                    Comprehensive vendor performance and contract information
+                  </DialogDescription>
+                </DialogHeader>
+
+                {selectedVendor && (
+                  <div className="space-y-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground">
+                          Category
+                        </Label>
+                        <p className="font-medium">{selectedVendor.category}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Status</Label>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              selectedVendor.status === "Preferred"
+                                ? "bg-green-500"
+                                : selectedVendor.status === "Approved"
+                                ? "bg-blue-500"
+                                : "bg-yellow-500"
+                            }`}
+                          />
+                          <span className="capitalize">
+                            {selectedVendor.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">
+                          Total Orders
+                        </Label>
+                        <p className="font-medium">{selectedVendor.orders}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">
+                          Total Value
+                        </Label>
+                        <p className="font-medium">
+                          {selectedVendor.totalValue}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">
+                          On-Time Delivery
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-green-500 h-2 rounded-full"
+                              style={{
+                                width: `${selectedVendor.onTimeDelivery}%`,
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-sm">
+                            {selectedVendor.onTimeDelivery}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">
+                          Quality Score
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i < Math.floor(selectedVendor.qualityScore)
+                                  ? "text-yellow-400 fill-current"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-sm">
+                            ({selectedVendor.qualityScore.toFixed(1)})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-muted-foreground">
+                          Price Rating
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-4 w-4 ${
+                                i <
+                                Math.floor(selectedVendor.priceCompetitiveness)
+                                  ? "text-blue-400 fill-current"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-sm">
+                            ({selectedVendor.priceCompetitiveness.toFixed(1)})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-muted-foreground">
+                        Contact Information
+                      </Label>
+                      <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                        <p className="text-sm">{selectedVendor.contact}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-muted-foreground">
+                        Contract Details
+                      </Label>
+                      <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                        <p className="text-sm">{selectedVendor.contract}</p>
+                        <p className="text-sm mt-2">
+                          Payment Terms: {selectedVendor.paymentTerms}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-muted-foreground">
+                        Performance Notes
+                      </Label>
+                      <div className="mt-1 p-3 bg-gray-50 rounded-md">
+                        <p className="text-sm">
+                          {selectedVendor.performanceNotes}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                      {/* <Button 
               variant="outline"
               onClick={() => {
                 setPoFormData({
@@ -1053,7 +1155,7 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
             >
               Create PO
             </Button> */}
-            {/* <Button 
+                      {/* <Button 
               variant="outline"
               onClick={() => {
                 setShowVendorDetails(false);
@@ -1062,14 +1164,12 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
             >
               Generate Report
             </Button> */}
-          </div>
-        </div>
-      )}
-    </DialogContent>
-  </Dialog>
-
-
-</TabsContent>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
           {/* <TabsContent value="vendors" className="space-y-4">
             <Card>
               <CardHeader>
@@ -1616,9 +1716,9 @@ const [showVendorDetails, setShowVendorDetails] = useState(false);
       </Dialog>
 
       {/* Add Vendor Modal */}
-      <AddVendorModal 
-        open={showNewVendorModal} 
-        onOpenChange={setShowNewVendorModal} 
+      <AddVendorModal
+        open={showNewVendorModal}
+        onOpenChange={setShowNewVendorModal}
       />
     </Card>
   );
