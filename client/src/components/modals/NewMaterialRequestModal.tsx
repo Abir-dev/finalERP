@@ -276,14 +276,13 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Price List</label>
-                <Select value={priceList} onValueChange={setPriceList}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select price list" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Standard Buying">Standard Buying</SelectItem>
-                  </SelectContent>
-                </Select>
+                <input
+                  type="text"
+                  value={priceList}
+                  onChange={e => setPriceList(e.target.value)}
+                  placeholder="Enter price list"
+                  className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 px-3 py-2 text-sm"
+                />
               </div>
             </div>
             {/* <div className="mb-4">
