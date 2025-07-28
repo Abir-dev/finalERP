@@ -283,7 +283,7 @@ model Document {
 }
 
 model PurchaseOrder {
-  id                        String              @id @default(uuid())
+  id                        String              @id @default(uuid()) @db.Uuid 
   poNumber                  String
   date                      DateTime
   supplier                  String
@@ -308,7 +308,7 @@ model PurchaseOrder {
   disableRoundedTotal       Boolean
   advancePaid               Decimal
   taxesAndChargesTotal      Decimal
-  userId                    String
+  userId                    String  @db.Uuid 
   user                      User                @relation(fields: [userId], references: [id])
   items                     PurchaseOrderItem[]
   taxesAndCharges           TaxCharge[]
@@ -321,9 +321,9 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(uuid())
+  id              String        @id @default(uuid())  @db.Uuid 
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  purchaseOrderId String
+  purchaseOrderId String  @db.Uuid 
   itemCode        String
   description     String
   requiredBy      DateTime
@@ -334,9 +334,9 @@ model PurchaseOrderItem {
 }
 
 model PaymentTerm {
-  id              String        @id @default(uuid())
+  id              String        @id @default(uuid())  @db.Uuid 
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  purchaseOrderId String
+  purchaseOrderId String  @db.Uuid 
   paymentTerm     String
   description     String
   dueDate         DateTime
@@ -512,7 +512,7 @@ model TaxCharge {
   amount          Float
   total           Float
   PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  purchaseOrderId String?
+  purchaseOrderId String?  @db.Uuid 
 }
 
 // Items within a material request
