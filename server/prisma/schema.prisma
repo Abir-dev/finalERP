@@ -34,7 +34,7 @@ model User {
   managedProjects  Project[]         @relation("ProjectManagers")
   projectsClient   Project[]         @relation("ProjectClient")
   invoices         Invoice[]         @relation("UserInvoices")
-  bids             Bid[]             @relation("UserBids")
+  // bids             Bid[]             @relation("UserBids")
   notifications    Notification[]    @relation("UserNotifications")
   messagesSent     Message[]         @relation("MessagesSent")
   messagesReceived Message[]         @relation("MessagesReceived")
@@ -44,6 +44,9 @@ model User {
   Invoice          Invoice[]
   Payment          Payment[]
   MaterialRequest  MaterialRequest[] @relation("MaterialRequestApprovals")
+  PurchaseOrder    PurchaseOrder[]
+  createdVendors   Vendor[]          @relation("VendorCreator")
+  Bid              Bid[]
 
   @@map("users")
 }
@@ -225,10 +228,13 @@ model Bid {
   tenderId  String   @db.Uuid
   tender    Tender   @relation(fields: [tenderId], references: [id])
   vendorId  String   @db.Uuid
-  vendor    User     @relation("UserBids", fields: [vendorId], references: [id])
+  vendor    Vendor   @relation(fields: [vendorId], references: [id])
   amount    Float
   status    String   @default("submitted")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  User      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.Uuid
+
 }
 
 model Employee {
@@ -277,32 +283,65 @@ model Document {
 }
 
 model PurchaseOrder {
-  id               String              @id @default(uuid()) @db.Uuid
-  poNumber         String              @unique
-  vendor           String
-  items            PurchaseOrderItem[]
-  totalAmount      Float
-  orderDate        DateTime
-  expectedDelivery DateTime
-  status           String // draft, sent, acknowledged, delivered, invoiced, paid
-  priority         String // low, medium, high, urgent
-  project          String
-  grns             GRN[]
-  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                        String              @id @default(uuid())
+  poNumber                  String
+  date                      DateTime
+  supplier                  String
+  requiredBy                DateTime
+  applyTaxWithholdingAmount Boolean
+  isReverseCharge           Boolean
+  isSubcontracted           Boolean
+  setTargetWarehouse        String?
+  supplierAddress           String
+  supplierContact           String
+  shippingAddress           String
+  dispatchAddress           String
+  companyBillingAddress     String
+  placeOfSupply             String
+  paymentTermsTemplate      String
+  terms                     String
+  totalQuantity             Decimal
+  total                     Decimal
+  grandTotal                Decimal
+  roundingAdjustment        Decimal
+  roundedTotal              Decimal
+  disableRoundedTotal       Boolean
+  advancePaid               Decimal
+  taxesAndChargesTotal      Decimal
+  userId                    String
+  user                      User                @relation(fields: [userId], references: [id])
+  items                     PurchaseOrderItem[]
+  taxesAndCharges           TaxCharge[]
+  paymentSchedule           PaymentTerm[]
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+  GRN                       GRN[]
+  Vendor                    Vendor?             @relation(fields: [vendorId], references: [id])
+  vendorId                  String?             @db.Uuid
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(uuid()) @db.Uuid
-  purchaseOrderId String        @db.Uuid
+  id              String        @id @default(uuid())
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrderId String
   itemCode        String
   description     String
-  requiredBy      String
-  quantity        Int
+  requiredBy      DateTime
+  quantity        Decimal
   uom             String
-  rate            Float
-  amount          Float
+  rate            Decimal
+  amount          Decimal
+}
+
+model PaymentTerm {
+  id              String        @id @default(uuid())
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrderId String
+  paymentTerm     String
+  description     String
+  dueDate         DateTime
+  invoicePortion  Decimal
+  paymentAmount   Decimal
 }
 
 model GRN {
@@ -408,17 +447,45 @@ model Event {
 }
 
 model Vendor {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String
-  category     String
+  id          String      @id @default(uuid()) @db.Uuid
+  gstin       String? // GSTIN / UIN
+  name        String // Vendor Name (required)
+  vendorType  VendorType  @default(COMPANY)
+  gstCategory GstCategory @default(UNREGISTERED)
+
+  // Contact Information
+  email  String?
+  mobile String?
+
+  // Address Information
+  postalCode   String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  country      String  @default("India")
+
+  // Relationships
+  createdBy String @db.Uuid
+  creator   User   @relation("VendorCreator", fields: [createdBy], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Additional fields for existing functionality
+  category     String?
   location     String?
-  contact      String
-  email        String
+  contact      String?
   address      String?
   paymentTerms String?
   documents    String? // JSON or comma separated file links
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations to other models
+  purchaseOrders PurchaseOrder[]
+  bids           Bid[]
+
+  @@map("vendors")
 }
 
 model Tax {
@@ -434,16 +501,18 @@ model Tax {
 }
 
 model TaxCharge {
-  id          String   @id @default(uuid()) @db.Uuid
-  paymentId   String?  @db.Uuid
-  taxId       String?  @db.Uuid
-  payment     Payment? @relation(fields: [paymentId], references: [id])
-  tax         Tax?     @relation(fields: [taxId], references: [id])
-  type        TaxType
-  accountHead String
-  taxRate     Float
-  amount      Float
-  total       Float
+  id              String         @id @default(uuid()) @db.Uuid
+  paymentId       String?        @db.Uuid
+  taxId           String?        @db.Uuid
+  payment         Payment?       @relation(fields: [paymentId], references: [id])
+  tax             Tax?           @relation(fields: [taxId], references: [id])
+  type            TaxType
+  accountHead     String
+  taxRate         Float
+  amount          Float
+  total           Float
+  PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  purchaseOrderId String?
 }
 
 // Items within a material request
@@ -521,4 +590,21 @@ enum MaterialRequestPurpose {
   CONSUMPTION
   MAINTENANCE
   OTHER
+}
+
+// Vendor Type Enum
+enum VendorType {
+  COMPANY
+  INDIVIDUAL
+  PARTNERSHIP
+  PROPRIETORSHIP
+}
+
+// GST Category Enum
+enum GstCategory {
+  UNREGISTERED
+  REGISTERED
+  COMPOSITION
+  SEZ
+  DEEMED_EXPORT
 }
