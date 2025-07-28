@@ -36,7 +36,8 @@ interface NewMaterialRequestModalProps {
 
 export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMaterialRequestModalProps) {
   const [activeTab, setActiveTab] = useState("details");
-  const [series, setSeries] = useState("MAT-MR-YYYY.-");
+  // Replace series state with requestNumber
+  const [requestNumber, setRequestNumber] = useState("");
   const [transactionDate, setTransactionDate] = useState("");
   const [purpose, setPurpose] = useState("Purchase");
   const [requiredBy, setRequiredBy] = useState("");
@@ -133,6 +134,15 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
   };
   const [moreInfo, setMoreInfo] = useState("");
 
+  // Add state for project and approver
+  const [projectId, setProjectId] = useState("");
+  const [approver, setApprover] = useState("");
+  // Mock projects data (replace with real data or prop as needed)
+  const projects = [
+    { id: "1", name: "Project Alpha" },
+    { id: "2", name: "Project Beta" },
+  ];
+
   const handleItemChange = (idx: number, field: keyof ItemRow, value: any) => {
     setItems((prev) =>
       prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
@@ -177,7 +187,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
   const handleSave = () => {
     if (onSave) {
       onSave({
-        series,
+        requestNumber,
         transactionDate,
         purpose,
         requiredBy,
@@ -187,6 +197,8 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
         items,
         terms,
         moreInfo,
+        projectId,
+        approver,
       });
     }
     onOpenChange(false);
@@ -209,14 +221,35 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Request No. *</label>
-                <Select value={series} onValueChange={setSeries}>
+                <Input
+                  value={requestNumber}
+                  onChange={e => setRequestNumber(e.target.value)}
+                  placeholder="Enter request number"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Project</label>
+                <Select value={projectId} onValueChange={setProjectId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select series" />
+                    <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="MAT-MR-YYYY.-">MAT-MR-YYYY.-</SelectItem>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Approver</label>
+                <Input
+                  value={approver}
+                  onChange={e => setApprover(e.target.value)}
+                  placeholder="Enter approver name or ID"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Transaction Date *</label>
@@ -235,7 +268,11 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Required By</label>
-                <Input value={requiredBy} onChange={e => setRequiredBy(e.target.value)} />
+                <Input
+                  type="date"
+                  value={requiredBy}
+                  onChange={e => setRequiredBy(e.target.value)}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Price List</label>
