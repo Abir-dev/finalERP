@@ -344,23 +344,18 @@ export function PurchaseOrderForm() {
 
           <TabsContent value="details" className="space-y-6 w-full">
             {/* Basic Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* <div className="space-y-2">
-                <Label htmlFor="series">Series *</Label>
-                <Select
-                  value={formData.series}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, series: value }))
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="poNumber">Purchase Order Number *</Label>
+                <Input
+                  id="poNumber"
+                  value={formData.poNumber}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, poNumber: e.target.value }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PUR-ORD-YYYY-">PUR-ORD-YYYY-</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div> */}
+                  placeholder="Enter PO number"
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="date">Date *</Label>
@@ -773,7 +768,7 @@ export function PurchaseOrderForm() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tax-category">Tax Category</Label>
                   <Input id="tax-category" placeholder="Select tax category" />
@@ -796,7 +791,7 @@ export function PurchaseOrderForm() {
                   <Label htmlFor="tax-template">Tax Template</Label>
                   <Input id="tax-template" placeholder="Select template" />
                 </div>
-              </div>
+              </div> */}
 
               <div className="border rounded-lg overflow-x-auto">
                 <Table>
