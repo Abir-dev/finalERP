@@ -30,6 +30,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
+import RichTextEditor from "../ui/RichTextEditor";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrderItem {
@@ -141,6 +142,7 @@ export function PurchaseOrderForm() {
   const [isCurrencyPriceListOpen, setIsCurrencyPriceListOpen] = useState(false);
   const [isAdditionalDiscountOpen, setIsAdditionalDiscountOpen] =
     useState(false);
+  const [terms, setTerms] = useState("");
 
   const addItem = () => {
     const newItem: PurchaseOrderItem = {
@@ -1438,44 +1440,20 @@ export function PurchaseOrderForm() {
             </Card>
 
             {/* Terms & Conditions */}
-            <Card>
+            <Card className="shadow-lg border border-gray-200 bg-gray-50 dark:bg-gray-900/40 mt-6">
               <CardHeader>
-                <CardTitle className="text-base">Terms & Conditions</CardTitle>
+                <CardTitle className="text-base font-semibold text-gray-800 dark:text-gray-100">Terms & Conditions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Label htmlFor="terms">Terms</Label>
-                  <Textarea
-                    id="terms"
-                    value={formData.terms}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        terms: e.target.value,
-                      }))
-                    }
+                  <label htmlFor="terms" className="block font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Please enter any terms and conditions for this purchase order:
+                  </label>
+                  <RichTextEditor
+                    value={terms}
+                    onChange={setTerms}
                     placeholder="Enter terms and conditions"
-                    rows={6}
-                    className="resize-none"
                   />
-                </div>
-                <div className="flex items-center gap-2 mt-4 p-2 border-t">
-                  <Button size="sm" variant="outline">
-                    <strong>B</strong>
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <em>I</em>
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <u>U</u>
-                  </Button>
-                  <Separator orientation="vertical" className="h-6" />
-                  <Button size="sm" variant="outline">
-                    List
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    Link
-                  </Button>
                 </div>
               </CardContent>
             </Card>
