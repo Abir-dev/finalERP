@@ -790,12 +790,60 @@ File Size: ${doc.size}`;
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle>Payment Tracking</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">Monitor and manage payment status</p>
+                  <CardTitle>Invoice Management</CardTitle>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleExportStatement}>
                   <FileText className="h-4 w-4 mr-2" />
                   Export Statement
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <EditableInvoiceTable />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Invoices</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    { id: 'INV-2024-001', project: 'Residential Complex A', amount: '₹15,50,000', status: 'Sent', date: '2024-03-15' },
+                    { id: 'INV-2024-002', project: 'Office Tower B', amount: '₹8,75,000', status: 'Draft', date: '2024-03-18' },
+                    { id: 'INV-2024-003', project: 'Shopping Mall C', amount: '₹22,30,000', status: 'Approved', date: '2024-03-20' }
+                  ].map((invoice) => (
+                    <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{invoice.id}</p>
+                        <p className="text-sm text-muted-foreground">{invoice.project}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{invoice.amount}</p>
+                        <Badge variant={
+                          invoice.status === 'Sent' ? 'default' :
+                          invoice.status === 'Draft' ? 'secondary' :
+                          'outline'
+                        }>
+                          {invoice.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Payment Tracking</CardTitle>
+                <Button size="sm" onClick={() => setShowPaymentEntryModal(true)}>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Payment Entry
                 </Button>
               </CardHeader>
               <CardContent>
@@ -887,55 +935,6 @@ File Size: ${doc.size}`;
                     <p className="text-2xl font-bold text-red-600">{paymentSummary.overdue.amount}</p>
                     <p className="text-sm text-muted-foreground mt-1">{paymentSummary.overdue.count} payment{paymentSummary.overdue.count !== 1 ? 's' : ''}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="payments">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Invoice Management</CardTitle>
-                <Button size="sm" onClick={() => setShowPaymentEntryModal(true)}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Payment Entry
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <EditableInvoiceTable />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Invoices</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { id: 'INV-2024-001', project: 'Residential Complex A', amount: '₹15,50,000', status: 'Sent', date: '2024-03-15' },
-                    { id: 'INV-2024-002', project: 'Office Tower B', amount: '₹8,75,000', status: 'Draft', date: '2024-03-18' },
-                    { id: 'INV-2024-003', project: 'Shopping Mall C', amount: '₹22,30,000', status: 'Approved', date: '2024-03-20' }
-                  ].map((invoice) => (
-                    <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{invoice.id}</p>
-                        <p className="text-sm text-muted-foreground">{invoice.project}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">{invoice.amount}</p>
-                        <Badge variant={
-                          invoice.status === 'Sent' ? 'default' :
-                          invoice.status === 'Draft' ? 'secondary' :
-                          'outline'
-                        }>
-                          {invoice.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </CardContent>
             </Card>
