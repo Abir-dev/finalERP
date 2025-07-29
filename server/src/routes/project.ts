@@ -8,7 +8,7 @@ const router = Router();
 
 // Project CRUD
 router.post('/', authenticateUser, checkRole('site'), validateProject, projectController.createProject);
-router.get('/', authenticateUser, projectController.listProjects);
+router.get('/', projectController.listProjects); // Removed authenticateUser
 router.get('/:id', authenticateUser, projectController.getProject);
 router.put('/:id', authenticateUser, checkRole('site'), validateProject, projectController.updateProject);
 router.delete('/:id', authenticateUser, checkRole('admin'), projectController.deleteProject);

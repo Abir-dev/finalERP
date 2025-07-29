@@ -234,7 +234,6 @@ model Bid {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   User      User     @relation(fields: [userId], references: [id])
   userId    String   @db.Uuid
-
 }
 
 model Employee {
@@ -283,17 +282,17 @@ model Document {
 }
 
 model PurchaseOrder {
-  id                        String              @id @default(uuid()) @db.Uuid 
+  id                        String              @id @default(uuid()) @db.Uuid
   poNumber                  String
   date                      DateTime
-  vendor                  String
+  vendor                    String
   requiredBy                DateTime
   applyTaxWithholdingAmount Boolean
   isReverseCharge           Boolean
   isSubcontracted           Boolean
   setTargetWarehouse        String?
-  vendorAddress           String
-  vendorContact           String
+  vendorAddress             String
+  vendorContact             String
   shippingAddress           String
   dispatchAddress           String
   companyBillingAddress     String
@@ -308,7 +307,7 @@ model PurchaseOrder {
   disableRoundedTotal       Boolean
   advancePaid               Decimal
   taxesAndChargesTotal      Decimal
-  userId                    String  @db.Uuid 
+  userId                    String              @db.Uuid
   user                      User                @relation(fields: [userId], references: [id])
   items                     PurchaseOrderItem[]
   taxesAndCharges           TaxCharge[]
@@ -321,9 +320,9 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String        @id @default(uuid())  @db.Uuid 
+  id              String        @id @default(uuid()) @db.Uuid
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  purchaseOrderId String  @db.Uuid 
+  purchaseOrderId String        @db.Uuid
   itemCode        String
   description     String
   requiredBy      DateTime
@@ -334,9 +333,9 @@ model PurchaseOrderItem {
 }
 
 model PaymentTerm {
-  id              String        @id @default(uuid())  @db.Uuid 
+  id              String        @id @default(uuid()) @db.Uuid
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-  purchaseOrderId String  @db.Uuid 
+  purchaseOrderId String        @db.Uuid
   paymentTerm     String
   description     String
   dueDate         DateTime
@@ -513,7 +512,7 @@ model TaxCharge {
   amount          Float
   total           Float
   PurchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  purchaseOrderId String?  @db.Uuid 
+  purchaseOrderId String?        @db.Uuid
 }
 
 // Items within a material request
@@ -560,7 +559,13 @@ enum Unit {
   PIECE
   LITRE
   KILOGRAM
-  // Add more as needed
+  BOX
+  ROLL
+  SHEET
+  HOURS
+  DAYS
+  LUMPSUM
+  // Add more as needed
 }
 
 enum PaymentType {

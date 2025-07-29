@@ -6,8 +6,15 @@ import logger from '../logger/logger';
 export const billingController = {
   async createInvoice(req: Request, res: Response) {
     try {
+      const { items, ...invoiceData } = req.body;
+      
       const invoice = await prisma.invoice.create({
-        data: req.body,
+        data: {
+          ...invoiceData,
+          items: {
+            create: items || []
+          }
+        },
         include: {
           user: true,
           project: true,
