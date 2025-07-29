@@ -16,6 +16,7 @@ import reportRoutes from './routes/report';
 import purchaseOrderRoutes from './routes/purchaseOrder';
 import siteOpsRoutes from './routes/siteOps';
 import vendorRoutes from './routes/vendor';
+import taxRoutes from './routes/tax';
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/site-ops', siteOpsRoutes);
 app.use('/api/vendors', vendorRoutes);
+app.use('/api/tax', taxRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {

@@ -508,7 +508,15 @@ const AccountsDashboard = () => {
       </Tabs>
 
       {/* Modals */}
-      {showGenerateTaxModal && <GenerateTaxModal onClose={() => setShowGenerateTaxModal(false)} />}
+      {showGenerateTaxModal && (
+        <GenerateTaxModal 
+          onClose={() => setShowGenerateTaxModal(false)}
+          onTaxCreated={(tax) => {
+            toast.success(`Tax "${tax.title}" created successfully!`);
+            // You can add logic here to refresh tax data if needed
+          }}
+        />
+      )}
       
       {/* Replace old Generate Invoice modal with InvoiceBuilderModal */}
       {isInvoiceModalOpen && (

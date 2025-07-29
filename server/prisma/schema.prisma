@@ -502,6 +502,7 @@ model Tax {
 
 model TaxCharge {
   id              String         @id @default(uuid()) @db.Uuid
+  serialNo        Int
   paymentId       String?        @db.Uuid
   taxId           String?        @db.Uuid
   payment         Payment?       @relation(fields: [paymentId], references: [id])

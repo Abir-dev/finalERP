@@ -8,9 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface GenerateTaxModalProps {
   onClose: () => void;
+  onTaxCreated?: (tax: any) => void;
 }
 
 interface TaxCharge {
@@ -22,7 +27,9 @@ interface TaxCharge {
   total: number;
 }
 
-const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
+const GenerateTaxModal = ({ onClose, onTaxCreated }: GenerateTaxModalProps) => {
+  const { user } = useUser();
+  const [isLoading, setIsLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [taxCategory, setTaxCategory] = useState("");
@@ -85,18 +92,93 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
     setSelectAll(false);
   };
 
-  const handleSave = () => {
-    const data = {
-      title,
-      company,
-      taxCategory,
-      isDefault,
-      isDisabled,
-      taxCharges,
-    };
-    console.log("Saved Tax Info:", data);
-    toast.success("Tax info saved!");
-    onClose();
+  const validateForm = () => {
+    if (!title.trim()) {
+      toast.error("Tax title is required");
+      return false;
+    }
+    if (!company.trim()) {
+      toast.error("Company name is required");
+      return false;
+    }
+    if (!user?.id) {
+      toast.error("User not authenticated");
+      return false;
+    }
+    if (taxCharges.length === 0) {
+      toast.error("At least one tax charge is required");
+      return false;
+    }
+    
+    // Validate each tax charge
+    for (const charge of taxCharges) {
+      if (!charge.type) {
+        toast.error("Tax type is required for all charges");
+        return false;
+      }
+      if (!charge.accountHead.trim()) {
+        toast.error("Account head is required for all charges");
+        return false;
+      }
+      if (charge.amount <= 0) {
+        toast.error("Amount must be greater than 0 for all charges");
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // First, create the Tax entity
+      const taxData = {
+        title: title.trim(),
+        company: company.trim(),
+        taxCategory: taxCategory.trim() || 'General',
+        userId: user.id
+      };
+
+      const taxResponse = await axios.post(`${API_URL}/tax/taxes`, taxData, { headers });
+      const createdTax = taxResponse.data;
+
+      // Then, create TaxCharge entities
+      const taxChargePromises = taxCharges.map((charge, index) => 
+        axios.post(`${API_URL}/tax/tax-charges`, {
+          serialNo: index + 1,
+          type: charge.type as 'TDS' | 'GST' | 'TCS',
+          accountHead: charge.accountHead.trim(),
+          taxRate: charge.taxRate,
+          amount: charge.amount,
+          total: charge.total,
+          taxId: createdTax.id
+        }, { headers })
+      );
+
+      await Promise.all(taxChargePromises);
+      
+      toast.success("Tax and tax charges created successfully!");
+      
+      // Call the callback if provided
+      if (onTaxCreated) {
+        onTaxCreated(createdTax);
+      }
+      
+      onClose();
+    } catch (error: any) {
+      console.error("Error creating tax:", error);
+      toast.error(error.response?.data?.error || "Failed to create tax");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -109,16 +191,6 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
           <div>
             <Label htmlFor="tax-title">Title<span className="text-red-500"> *</span></Label>
             <Input id="tax-title" value={title} onChange={e => setTitle(e.target.value)} className="mt-1" />
-            {/* <div className="flex flex-col gap-2 mt-4">
-              <label className="flex items-center gap-2">
-                <Checkbox checked={isDefault} onCheckedChange={v => setIsDefault(!!v)} />
-                Default
-              </label>
-              <label className="flex items-center gap-2">
-                <Checkbox checked={isDisabled} onCheckedChange={v => setIsDisabled(!!v)} />
-                Disabled
-              </label>
-            </div> */}
             <Label htmlFor="tax-category" className="mt-4">Tax Category</Label>
             <Input id="tax-category" value={taxCategory} onChange={e => setTaxCategory(e.target.value)} className="mt-1" />
           </div>
@@ -127,7 +199,7 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
             <Input id="tax-company" value={company} onChange={e => setCompany(e.target.value)} className="mt-1 font-semibold" />
           </div>
         </div>
-        {/* Taxes and Charges Section (copied) */}
+        {/* Taxes and Charges Section */}
         <Card>
           <CardHeader className="cursor-pointer" onClick={() => setExpanded(e => !e)}>
             <div className="flex items-center justify-between">
@@ -247,11 +319,11 @@ const GenerateTaxModal = ({ onClose }: GenerateTaxModalProps) => {
           )}
         </Card>
         <div className="flex justify-end gap-2 pt-6">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>
-            Save
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading ? "Creating..." : "Save"}
           </Button>
         </div>
       </DialogContent>
