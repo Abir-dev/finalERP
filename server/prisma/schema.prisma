@@ -286,14 +286,14 @@ model PurchaseOrder {
   id                        String              @id @default(uuid()) @db.Uuid 
   poNumber                  String
   date                      DateTime
-  supplier                  String
+  vendor                  String
   requiredBy                DateTime
   applyTaxWithholdingAmount Boolean
   isReverseCharge           Boolean
   isSubcontracted           Boolean
   setTargetWarehouse        String?
-  supplierAddress           String
-  supplierContact           String
+  vendorAddress           String
+  vendorContact           String
   shippingAddress           String
   dispatchAddress           String
   companyBillingAddress     String

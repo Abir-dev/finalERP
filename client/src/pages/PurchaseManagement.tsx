@@ -645,7 +645,7 @@ const handleCompareVendors = async (material: string) => {
       vendors = [
         {
           id: 'default-1',
-          name: 'General Supplier 1',
+          name: 'General Vendor 1',
           price: 500,
           deliveryTime: '3-5 days',
           qualityRating: 4.0,
@@ -653,7 +653,7 @@ const handleCompareVendors = async (material: string) => {
         },
         {
           id: 'default-2',
-          name: 'General Supplier 2',
+          name: 'General Vendor 2',
           price: 480,
           deliveryTime: '4-7 days',
           qualityRating: 3.8,
@@ -848,9 +848,9 @@ const handleNewContractSubmit = async () => {
               title="Active Vendors" 
               value="24" 
               icon={Users}
-              description="Approved supplier network"
+              description="Approved vendor network"
               trend={{ value: 3, label: "new vendors added" }}
-              threshold={{ status: 'good', message: 'Diverse supplier base' }}
+              threshold={{ status: 'good', message: 'Diverse vendor base' }}
             />
             <EnhancedStatCard 
               title="Cost Savings" 
@@ -1300,7 +1300,7 @@ const handleNewContractSubmit = async () => {
             <SelectContent>
               <SelectItem value="steel-corp">Steel Corp Ltd (24h delivery)</SelectItem>
               <SelectItem value="express-supply">Express Supply Co (12h delivery)</SelectItem>
-              <SelectItem value="local-urgent">Local Urgent Suppliers (6h delivery)</SelectItem>
+              <SelectItem value="local-urgent">Local Urgent Vendors (6h delivery)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1437,7 +1437,7 @@ const handleNewContractSubmit = async () => {
       {activeContracts > 0 ? (
         `${activeContracts} active contracts (${expiringSoon} expiring soon)`
       ) : (
-        "Manage long-term contracts with suppliers"
+        "Manage long-term contracts with vendors"
       )}
     </p>
     <div className="space-y-2">
@@ -1574,7 +1574,7 @@ const handleNewContractSubmit = async () => {
     <DialogHeader>
       <DialogTitle>Create New Contract</DialogTitle>
       <DialogDescription>
-        Set up a new supplier contract or service agreement
+        Set up a new vendor contract or service agreement
       </DialogDescription>
     </DialogHeader>
     
@@ -2897,12 +2897,12 @@ const handleNewContractSubmit = async () => {
                   </div>
 
                   <div>
-                    <h4 className="font-medium mb-3">Supplier Diversity</h4>
+                    <h4 className="font-medium mb-3">Vendor Diversity</h4>
                     <div className="space-y-3">
                       {[
-                        { type: 'Local Suppliers', count: 12, percentage: 50 },
-                        { type: 'Regional Suppliers', count: 8, percentage: 33 },
-                        { type: 'National Suppliers', count: 4, percentage: 17 }
+                        { type: 'Local Vendors', count: 12, percentage: 50 },
+                        { type: 'Regional Vendors', count: 8, percentage: 33 },
+                        { type: 'National Vendors', count: 4, percentage: 17 }
                       ].map((type) => (
                         <div key={type.type} className="flex justify-between items-center">
                           <span className="text-sm">{type.type}</span>

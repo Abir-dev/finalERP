@@ -70,7 +70,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "Supplier added successfully",
+        title: "Vendor added successfully",
         description: `${vendorData.name} has been registered in the system`,
       });
       
@@ -93,7 +93,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       onOpenChange(false);
     } catch (error) {
       toast({
-        title: "Error adding supplier",
+        title: "Error adding vendor",
         description: "Please try again",
         variant: "destructive"
       });
@@ -140,7 +140,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
 
           {/* Vendor Name */}
           <div className="space-y-2">
-            <Label htmlFor="supplierName">Vendor Name *</Label>
+            <Label htmlFor="vendor Name">Vendor Name *</Label>
             <Input
               id="vendorName"
               value={vendorData.name}
@@ -150,7 +150,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             />
           </div>
 
-          {/* Supplier Type */}
+          {/* Vendor Type */}
           <div className="space-y-2">
             <Label htmlFor="vendorType">Vendor Type *</Label>
             <Select
@@ -159,7 +159,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
               required
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select supplier type" />
+                <SelectValue placeholder="Select vendor type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Company">Company</SelectItem>

@@ -63,10 +63,13 @@ interface PaymentTerm {
 }
 
 interface PurchaseOrderFormData {
+  vendor: string | number | readonly string[];
+  vendorContact: string | number | readonly string[];
+  vendorAddress: string | number | readonly string[];
   series: string;
   poNumber: string;
   date: string;
-  supplier: string;
+  // supplier: string;
   requiredBy: string;
   applyTaxWithholdingAmount: boolean;
   isReverseCharge: boolean;
@@ -74,8 +77,8 @@ interface PurchaseOrderFormData {
   scanBarcode: string;
   setTargetWarehouse: string;
   items: PurchaseOrderItem[];
-  supplierAddress: string;
-  supplierContact: string;
+  // supplierAddress: string;
+  // supplierContact: string;
   shippingAddress: string;
   dispatchAddress: string;
   companyBillingAddress: string;
@@ -99,7 +102,7 @@ export function PurchaseOrderForm() {
     series: "PUR-ORD-YYYY-",
     poNumber: "",
     date: new Date().toISOString().split("T")[0],
-    supplier: "",
+    vendor: "",
     requiredBy: "",
     applyTaxWithholdingAmount: false,
     isReverseCharge: false,
@@ -107,8 +110,8 @@ export function PurchaseOrderForm() {
     scanBarcode: "",
     setTargetWarehouse: "",
     items: [],
-    supplierAddress: "",
-    supplierContact: "",
+    vendorAddress: "",
+    vendorContact: "",
     shippingAddress: "",
     dispatchAddress: "",
     companyBillingAddress: "",
@@ -388,17 +391,17 @@ export function PurchaseOrderForm() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="supplier">Supplier *</Label>
+                <Label htmlFor="vendor">Vendor *</Label>
                 <Input
-                  id="supplier"
-                  value={formData.supplier}
+                  id="vendor"
+                  value={formData.vendor}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      supplier: e.target.value,
+                      vendor: e.target.value,
                     }))
                   }
-                  placeholder="Select supplier"
+                  placeholder="Select vendor"
                 />
               </div>
 
@@ -1048,39 +1051,39 @@ export function PurchaseOrderForm() {
 
           <TabsContent value="address-contact" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Supplier Address */}
+              {/* Vendor Address */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Supplier Address</CardTitle>
+                  <CardTitle className="text-base">Vendor Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="supplier-address">Supplier Address</Label>
+                    <Label htmlFor="vendor-address">Vendor Address</Label>
                     <Textarea
-                      id="supplier-address"
-                      value={formData.supplierAddress}
+                      id="vendor-address"
+                      value={formData.vendorAddress}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          supplierAddress: e.target.value,
+                          vendorAddress: e.target.value,
                         }))
                       }
-                      placeholder="Enter supplier address"
+                      placeholder="Enter vendor address"
                       rows={3}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="supplier-contact">Supplier Contact</Label>
+                    <Label htmlFor="vendor-contact">Vendor Contact</Label>
                     <Input
-                      id="supplier-contact"
-                      value={formData.supplierContact}
+                      id="vendor-contact"
+                      value={formData.vendorContact}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          supplierContact: e.target.value,
+                          vendorContact: e.target.value,
                         }))
                       }
-                      placeholder="Enter supplier contact"
+                      placeholder="Enter vendor contact"
                     />
                   </div>
                 </CardContent>
