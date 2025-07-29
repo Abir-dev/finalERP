@@ -14,7 +14,7 @@ router.put('/:id', authenticateUser, checkRole('site'), validateProject, project
 router.delete('/:id', authenticateUser, checkRole('admin'), projectController.deleteProject);
 
 // Task management
-router.post('/:id/tasks', authenticateUser, /* checkRole('site-manager'), */ projectController.addTask);
+// router.post('/:id/tasks', authenticateUser, /* checkRole('site-manager'), */ projectController.addTask);
 router.get('/:id/tasks', authenticateUser, projectController.listTasks);
 router.put('/:id/tasks/:taskId', authenticateUser, /* checkRole('site-manager'), */ projectController.updateTask);
 
