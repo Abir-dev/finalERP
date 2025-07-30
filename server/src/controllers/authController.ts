@@ -200,15 +200,32 @@ export const authController = {
     try {
       // Clear cookie if using cookie-based auth
       res.clearCookie('token');
-      
       // For stateless JWT, just return success message
+      // Set user status to inactive if possible
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        let payload;
+        try {
+          payload = require('jsonwebtoken').verify(token, process.env.JWT_SECRET || 'changeme');
+        } catch (err) {
+          // Ignore token errors
+        }
+        if (payload && payload.id) {
+          // Update user status to inactive
+          await require('../config/prisma').default.user.update({
+            where: { id: payload.id },
+            data: { status: 'inactive' },
+          });
+        }
+      }
       res.status(200).json({ message: "User logged out successfully" });
     } catch (error) {
       logger.error("Error:", error);
       res.status(500).json({
         message: "Internal server error",
         error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
+      });
+    }
   },
 };

@@ -54,7 +54,7 @@ export const prismaUserService = {
     }
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() }, // ✅ Fixed: Use camelCase
+      data: { lastLogin: new Date(), status: 'active' },
     });
     const payload = {
       id: user.id,
