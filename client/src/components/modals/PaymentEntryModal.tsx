@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CreditCard, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Project } from '@/types/project';
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PaymentEntryModalProps {
   onClose: () => void;
@@ -20,6 +24,11 @@ interface TaxCharge {
 }
 
 const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  
   const [expandedSections, setExpandedSections] = useState({
     taxes: false,
     gst: true,
@@ -32,11 +41,19 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
   const [selectAll, setSelectAll] = useState(false);
   const [invoiceId, setInvoiceId] = useState("");
   const [project, setProject] = useState("");
-  const dummyProjects = [
-    { value: "residential-a", label: "Residential Complex A" },
-    { value: "office-b", label: "Office Tower B" },
-    { value: "mall-c", label: "Shopping Mall C" },
-  ];
+  const [paymentData, setPaymentData] = useState({
+    paymentType: "RECEIVE",
+    postingDate: new Date().toISOString().split("T")[0],
+    modeOfPayment: "",
+    partyType: "CUSTOMER",
+    party: "",
+    partyName: "",
+    accountPaidTo: "",
+    companyAddress: "",
+    customerAddress: "",
+    placeOfSupply: "",
+    costCenter: ""
+  });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -99,6 +116,236 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
     setSelectAll(false);
   };
 
+  // Fetch invoices and projects on component mount
+  useEffect(() => {
+    fetchInvoices();
+    fetchProjects();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      const response = await fetch(`${API_URL}/billing/invoices`, {
+        headers: {
+          Authorization: `Bearer ${sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup")}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInvoices(data);
+      }
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await fetch(`${API_URL}/projects`, { headers });
+      if (response.ok) {
+        const projectsData = await response.json();
+        setProjects(projectsData);
+      } else {
+        console.error("Failed to fetch projects:", response.status);
+        // Use fallback data
+        const fallbackProjects: Project[] = [
+          {
+            id: "1",
+            name: "Residential Complex A",
+            clientId: "1",
+            startDate: "2024-01-01",
+            endDate: "2024-12-31",
+            status: "active",
+            client: {
+              id: '',
+              name: '',
+              email: '',
+              role: '',
+              avatar: '',
+              status: ''
+            },
+            managers: [],
+            members: [],
+            createdAt: '',
+            updatedAt: ''
+          },
+          {
+            id: "2",
+            name: "Office Tower B",
+            clientId: "2",
+            startDate: "2024-02-01",
+            endDate: "2024-11-30",
+            status: "active",
+            client: {
+              id: '',
+              name: '',
+              email: '',
+              role: '',
+              avatar: '',
+              status: ''
+            },
+            managers: [],
+            members: [],
+            createdAt: '',
+            updatedAt: ''
+          },
+          {
+            id: "3",
+            name: "Shopping Mall C",
+            clientId: "3",
+            startDate: "2024-03-01",
+            endDate: "2024-10-31",
+            status: "active",
+            client: {
+              id: '',
+              name: '',
+              email: '',
+              role: '',
+              avatar: '',
+              status: ''
+            },
+            managers: [],
+            members: [],
+            createdAt: '',
+            updatedAt: ''
+          },
+        ];
+        setProjects(fallbackProjects);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      // Use fallback data
+      const fallbackProjects: Project[] = [
+        {
+          id: "1",
+          name: "Residential Complex A",
+          clientId: "1",
+          startDate: "2024-01-01",
+          endDate: "2024-12-31",
+          status: "active",
+          client: {
+            id: '',
+            name: '',
+            email: '',
+            role: '',
+            avatar: '',
+            status: ''
+          },
+          managers: [],
+          members: [],
+          createdAt: '',
+          updatedAt: ''
+        },
+        {
+          id: "2",
+          name: "Office Tower B",
+          clientId: "2",
+          startDate: "2024-02-01",
+          endDate: "2024-11-30",
+          status: "active",
+          client: {
+            id: '',
+            name: '',
+            email: '',
+            role: '',
+            avatar: '',
+            status: ''
+          },
+          managers: [],
+          members: [],
+          createdAt: '',
+          updatedAt: ''
+        },
+        {
+          id: "3",
+          name: "Shopping Mall C",
+          clientId: "3",
+          startDate: "2024-03-01",
+          endDate: "2024-10-31",
+          status: "active",
+          client: {
+            id: '',
+            name: '',
+            email: '',
+            role: '',
+            avatar: '',
+            status: ''
+          },
+          managers: [],
+          members: [],
+          createdAt: '',
+          updatedAt: ''
+        },
+      ];
+      setProjects(fallbackProjects);
+    }
+  };
+
+  const handleSavePayment = async () => {
+    if (!invoiceId || !paymentData.accountPaidTo) {
+      toast({
+        title: "Error",
+        description: "Please select an invoice and account",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const paymentPayload = {
+        ...paymentData,
+        projectId: project,
+        taxes: taxCharges.map(charge => ({
+          serialNo: charge.id,
+          type: charge.type,
+          accountHead: charge.accountHead,
+          taxRate: charge.taxRate,
+          amount: charge.amount,
+          total: charge.total
+        })),
+        total: taxCharges.reduce((sum, charge) => sum + charge.total, 0)
+      };
+
+      const response = await fetch(`${API_URL}/billing/invoices/${invoiceId}/payments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup")}`
+        },
+        body: JSON.stringify(paymentPayload)
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Payment entry saved successfully"
+        });
+        onClose();
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.message || "Failed to save payment",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error saving payment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save payment",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
@@ -132,15 +379,18 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                     value={invoiceId}
                     onValueChange={value => {
                       setInvoiceId(value);
-                      setProject(value);
+                      const selectedInvoice = invoices.find(inv => inv.id === value);
+                      if (selectedInvoice) {
+                        setProject(selectedInvoice.projectId);
+                      }
                     }}
                   >
                     <SelectTrigger id="invoiceId" className="mt-1">
                       <SelectValue placeholder="Select invoice ID" />
                     </SelectTrigger>
                     <SelectContent>
-                      {dummyProjects.map(p => (
-                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      {invoices.map(invoice => (
+                        <SelectItem key={invoice.id} value={invoice.id}>{invoice.invoiceNumber}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -153,15 +403,14 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                     value={project}
                     onValueChange={value => {
                       setProject(value);
-                      setInvoiceId(value);
                     }}
                   >
                     <SelectTrigger id="project" className="mt-1">
                       <SelectValue placeholder="Select project" />
                     </SelectTrigger>
                     <SelectContent>
-                      {dummyProjects.map(p => (
-                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      {projects.map(proj => (
+                        <SelectItem key={proj.id} value={proj.id}>{proj.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -196,13 +445,13 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                   <Label htmlFor="paymentType" className="text-sm font-medium">
                     Payment Type*
                   </Label>
-                  <Select defaultValue="Receive">
+                  <Select value={paymentData.paymentType} onValueChange={(value) => setPaymentData({...paymentData, paymentType: value})}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Receive">Receive</SelectItem>
-                      <SelectItem value="Pay">Pay</SelectItem>
+                      <SelectItem value="RECEIVE">Receive</SelectItem>
+                      <SelectItem value="PAY">Pay</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -214,7 +463,8 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                   </Label>
                   <Input 
                     type="date" 
-                    defaultValue="2025-07-26"
+                    value={paymentData.postingDate}
+                    onChange={(e) => setPaymentData({...paymentData, postingDate: e.target.value})}
                     className="mt-1"
                   />
                 </div>
@@ -223,6 +473,8 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                     Mode of Payment
                   </Label>
                   <Input 
+                    value={paymentData.modeOfPayment}
+                    onChange={(e) => setPaymentData({...paymentData, modeOfPayment: e.target.value})}
                     placeholder="Enter payment mode"
                     className="mt-1"
                   />
@@ -242,15 +494,15 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                   <Label htmlFor="partyType" className="text-sm font-medium">
                     Party Type
                   </Label>
-                  <Select defaultValue="Customer">
+                  <Select value={paymentData.partyType} onValueChange={(value) => setPaymentData({...paymentData, partyType: value})}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Customer">Customer</SelectItem>
-                      <SelectItem value="Vendor">Vendor</SelectItem>
-                      <SelectItem value="Employee">Employee</SelectItem>
-                      <SelectItem value="Bank">Bank</SelectItem>
+                      <SelectItem value="CUSTOMER">Customer</SelectItem>
+                      <SelectItem value="VENDOR">Vendor</SelectItem>
+                      <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                      <SelectItem value="BANK">Bank</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -259,6 +511,8 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                     Party
                   </Label>
                   <Input 
+                    value={paymentData.party}
+                    onChange={(e) => setPaymentData({...paymentData, party: e.target.value})}
                     placeholder="Select party"
                     className="mt-1"
                   />
@@ -268,6 +522,8 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                     Party Name
                   </Label>
                   <Input 
+                    value={paymentData.partyName}
+                    onChange={(e) => setPaymentData({...paymentData, partyName: e.target.value})}
                     placeholder="Enter party name"
                     className="mt-1"
                   />
@@ -298,8 +554,10 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                     Account Paid To*
                   </Label>
                   <Input 
+                    value={paymentData.accountPaidTo}
+                    onChange={(e) => setPaymentData({...paymentData, accountPaidTo: e.target.value})}
                     placeholder="Select account"
-                    className="mt-1 border-red-500"
+                    className="mt-1"
                     required
                   />
                 </div>
@@ -455,30 +713,36 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
             {expandedSections.gst && (
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="companyAddress" className="text-sm font-medium">
-                      Company Address
-                    </Label>
-                    <Input 
-                      placeholder="Enter company address"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="customerAddress" className="text-sm font-medium">
-                      Customer Address
-                    </Label>
-                    <Input 
-                      placeholder="Enter customer address"
-                      className="mt-1"
-                    />
-                  </div>
+                                  <div>
+                  <Label htmlFor="companyAddress" className="text-sm font-medium">
+                    Company Address
+                  </Label>
+                  <Input 
+                    value={paymentData.companyAddress}
+                    onChange={(e) => setPaymentData({...paymentData, companyAddress: e.target.value})}
+                    placeholder="Enter company address"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="customerAddress" className="text-sm font-medium">
+                    Customer Address
+                  </Label>
+                  <Input 
+                    value={paymentData.customerAddress}
+                    onChange={(e) => setPaymentData({...paymentData, customerAddress: e.target.value})}
+                    placeholder="Enter customer address"
+                    className="mt-1"
+                  />
+                </div>
                 </div>
                 <div>
                   <Label htmlFor="placeOfSupply" className="text-sm font-medium">
                     Place of Supply
                   </Label>
                   <Input 
+                    value={paymentData.placeOfSupply}
+                    onChange={(e) => setPaymentData({...paymentData, placeOfSupply: e.target.value})}
                     placeholder="Enter place of supply"
                     className="mt-1"
                   />
@@ -505,7 +769,7 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
             {expandedSections.accounting && (
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  {/* <div>
                     <Label htmlFor="project" className="text-sm font-medium">
                       Project
                     </Label>
@@ -513,12 +777,14 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                       placeholder="Select project"
                       className="mt-1"
                     />
-                  </div>
+                  </div> */}
                   <div>
                     <Label htmlFor="costCenter" className="text-sm font-medium">
                       Cost Center
                     </Label>
                     <Input 
+                      value={paymentData.costCenter}
+                      onChange={(e) => setPaymentData({...paymentData, costCenter: e.target.value})}
                       placeholder="Select cost center"
                       className="mt-1"
                     />
@@ -539,8 +805,12 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              Save Payment Entry
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleSavePayment}
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Save Payment Entry"}
             </Button>
           </div>
         </div>

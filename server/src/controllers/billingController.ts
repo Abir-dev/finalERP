@@ -188,10 +188,23 @@ export const billingController = {
   // Payment endpoints
   async addPayment(req: Request, res: Response) {
     try {
+      const { taxes, ...paymentData } = req.body;
+      
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (paymentData.postingDate) {
+        paymentData.postingDate = new Date(paymentData.postingDate);
+      }
       const payment = await prisma.payment.create({
         data: {
-          ...req.body,
-          invoiceId: req.params.id
+          ...paymentData,
+          invoiceId: req.params.id,
+          userId: req.user.id,
+          taxes: {
+            create: taxes || []
+          }
         },
         include: {
           user: true,

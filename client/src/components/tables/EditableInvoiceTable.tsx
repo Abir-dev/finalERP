@@ -10,6 +10,33 @@ const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender
 
 interface Invoice {
   id: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  status: string;
+  total: number;
+  subtotal: number;
+  taxAmount: number;
+  project: {
+    id: string;
+    name: string;
+  };
+  client: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  user: {
+    id: string;
+    name: string;
+  };
+  items: any[];
+  Payment: any[];
+}
+
+// Legacy interface for modal compatibility
+interface LegacyInvoice {
+  id: string;
   project: string;
   client: string;
   amount: number;
@@ -21,7 +48,7 @@ interface Invoice {
 
 const EditableInvoiceTable = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<LegacyInvoice | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
@@ -52,24 +79,40 @@ const EditableInvoiceTable = () => {
     return status !== 'Paid' && due < today;
   };
 
+  // Transform new invoice structure to legacy format for modals
+  const transformInvoiceForModal = (invoice: Invoice) => {
+    return {
+      id: invoice.id,
+      project: invoice.project?.name || 'N/A',
+      client: invoice.client?.name || 'N/A',
+      amount: invoice.total || 0,
+      status: invoice.status,
+      dueDate: invoice.dueDate,
+      sentDate: invoice.date || 'N/A',
+      paymentMethod: 'Bank Transfer' // Default value since this field doesn't exist in new structure
+    };
+  };
+
   const handleEdit = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
+    setSelectedInvoice(transformInvoiceForModal(invoice));
     setIsEditModalOpen(true);
   };
 
   const handleView = (invoice: Invoice) => {
-    setSelectedInvoice(invoice);
+    setSelectedInvoice(transformInvoiceForModal(invoice));
     setIsViewModalOpen(true);
   };
 
-  const handleSave = (editedInvoice: Invoice) => {
+  const handleSave = (editedInvoice: any) => {
+    // Update the local state - in a real app you'd make an API call here
     setInvoices(invoices.map(invoice => 
-      invoice.id === editedInvoice.id ? editedInvoice : invoice
+      invoice.id === editedInvoice.id ? { ...invoice, ...editedInvoice } : invoice
     ));
+    toast.success('Invoice updated successfully!');
   };
 
   const handleEmailInvoice = (invoice: Invoice) => {
-    toast.success(`Invoice ${invoice.id} has been emailed to ${invoice.client}`, {
+    toast.success(`Invoice ${invoice.id} has been emailed to ${invoice.client?.name || 'client'}`, {
       description: "A copy has been sent to the accounts team."
     });
   };
@@ -78,24 +121,24 @@ const EditableInvoiceTable = () => {
     // Define CSV headers and data
     const headers = [
       'Invoice ID',
+      'Invoice Number',
       'Project',
       'Client',
       'Amount (₹)',
       'Status',
       'Due Date',
-      'Sent Date',
-      'Payment Method'
+      'Date Created'
     ];
 
     const data = [
       invoice.id,
-      invoice.project,
-      invoice.client,
-      invoice.amount.toLocaleString('en-IN'),
+      invoice.invoiceNumber || 'N/A',
+      invoice.project?.name || 'N/A',
+      invoice.client?.name || 'N/A',
+      (invoice.total || 0).toLocaleString('en-IN'),
       invoice.status,
       invoice.dueDate,
-      invoice.sentDate,
-      invoice.paymentMethod
+      invoice.date || 'N/A'
     ];
 
     // Create CSV content
@@ -130,7 +173,7 @@ const EditableInvoiceTable = () => {
               <th className="border border-gray-300 p-3 text-left">Amount</th>
               <th className="border border-gray-300 p-3 text-left">Status</th>
               <th className="border border-gray-300 p-3 text-left">Due Date</th>
-              <th className="border border-gray-300 p-3 text-left">Payment Method</th>
+              <th className="border border-gray-300 p-3 text-left">Date Created</th>
               <th className="border border-gray-300 p-3 text-left">Actions</th>
             </tr>
           </thead>
@@ -147,16 +190,16 @@ const EditableInvoiceTable = () => {
                 </td>
                 
                 <td className="border border-gray-300 p-3">
-                  <span className="text-[16px]">{invoice.project}</span>
+                  <span className="text-[16px]">{invoice.project?.name || 'N/A'}</span>
                 </td>
 
                 <td className="border border-gray-300 p-3">
-                  <span className="text-[16px]">{invoice.client}</span>
+                  <span className="text-[16px]">{invoice.client?.name || 'N/A'}</span>
                 </td>
 
                 <td className="border border-gray-300 p-3">
                   <span className="font-semibold text-[16px]">
-                    ₹{invoice.amount.toLocaleString('en-IN')}
+                    ₹{(invoice.total || 0).toLocaleString('en-IN')}
                   </span>
                 </td>
 
@@ -175,7 +218,7 @@ const EditableInvoiceTable = () => {
                 </td>
 
                 <td className="border border-gray-300 p-3">
-                  <span className="text-[16px]">{invoice.paymentMethod}</span>
+                  <span className="text-[16px]">{invoice.date}</span>
                 </td>
 
                 <td className="border border-gray-300 p-3">

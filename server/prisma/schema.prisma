@@ -30,9 +30,9 @@ model User {
   lastLogin        DateTime?         @map("last_login") @db.Timestamptz(6)
   password         String
   documents        Document[]
-  projects         Project[]         @relation("ProjectMembers")
-  managedProjects  Project[]         @relation("ProjectManagers")
-  projectsClient   Project[]         @relation("ProjectClient")
+  managedProjects  Project[] @relation("ProjectManagers")
+  memberProjects   Project[] @relation("ProjectMembers")
+  clientProjects   Project[] @relation("ProjectClient")
   invoices         Invoice[]         @relation("UserInvoices")
   // bids             Bid[]             @relation("UserBids")
   notifications    Notification[]    @relation("UserNotifications")
@@ -153,6 +153,7 @@ model Payment {
   partyName String
 
   accountPaidTo String
+  total     Float
 
   taxes TaxCharge[] // Relation to TaxCharge
 

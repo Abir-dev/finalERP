@@ -23,14 +23,32 @@ import InvoiceBuilderModal from '@/components/modals/InvoiceBuilderModal';
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Invoice {
-  invoice: string;
-  client: string;
-  amount: string;
-  status: 'Paid' | 'Pending' | 'Overdue';
+  id: string;
+  invoiceNumber: string;
+  date: string;
   dueDate: string;
-  paidDate: string | null;
-  reminderCount: number;
-  lastReminderSent: string | null;
+  status: string;
+  total: number;
+  subtotal: number;
+  taxAmount: number;
+  project: {
+    id: string;
+    name: string;
+  };
+  client: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  user: {
+    id: string;
+    name: string;
+  };
+  items: any[];
+  Payment: any[];
+  reminderCount?: number;
+  lastReminderSent?: string | null;
+  paidDate?: string | null;
 }
 
 interface ReminderResponse {
@@ -102,18 +120,30 @@ const BillingManagerDashboard = () => {
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
     axios.get(`${API_URL}/billing/invoices`, { headers })
-      .then(res => setInvoices(res.data))
-      .catch(() => {});
+      .then(res => setInvoices(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setInvoices([]));
+      
     axios.get(`${API_URL}/billing/payment-summary`, { headers })
-      .then(res => setPaymentSummary(res.data))
-      .catch(() => {});
+      .then(res => setPaymentSummary(res.data || {
+        received: { count: 0, amount: '₹0' },
+        pending: { count: 0, amount: '₹0' },
+        overdue: { count: 0, amount: '₹0' }
+      }))
+      .catch(() => setPaymentSummary({
+        received: { count: 0, amount: '₹0' },
+        pending: { count: 0, amount: '₹0' },
+        overdue: { count: 0, amount: '₹0' }
+      }));
+      
     axios.get(`${API_URL}/billing/documents`, { headers })
-      .then(res => setDocuments(res.data))
-      .catch(() => {});
+      .then(res => setDocuments(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setDocuments([]));
+      
     axios.get(`${API_URL}/billing/progress-invoices`, { headers })
-      .then(res => setProgressInvoices(res.data))
-      .catch(() => {});
+      .then(res => setProgressInvoices(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setProgressInvoices([]));
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -180,20 +210,21 @@ const BillingManagerDashboard = () => {
 
   const handleSendReminder = async (invoice: Invoice) => {
     // Set loading state for this invoice
-    setReminderLoadingStates(prev => ({ ...prev, [invoice.invoice]: true }));
+    const invoiceId = invoice.id || 'unknown';
+    setReminderLoadingStates(prev => ({ ...prev, [invoiceId]: true }));
 
     try {
       const result = await sendPaymentReminder({
-        invoiceId: invoice.invoice,
-        client: invoice.client,
-        amount: invoice.amount,
-        dueDate: invoice.dueDate,
-        reminderCount: invoice.reminderCount
+        invoiceId: invoiceId,
+        client: invoice.client?.name || 'Unknown Client',
+        amount: (invoice.total || 0).toString(),
+        dueDate: invoice.dueDate || '',
+        reminderCount: invoice.reminderCount || 0
       });
 
       // Update invoice with new reminder count and timestamp
       const updatedInvoices = invoices.map(inv => {
-        if (inv.invoice === invoice.invoice) {
+        if (inv.id === invoiceId) {
           return {
             ...inv,
             reminderCount: (result as ReminderResponse).reminderCount,
@@ -206,7 +237,7 @@ const BillingManagerDashboard = () => {
 
       toast({
         title: "Reminder Sent Successfully",
-        description: `Payment reminder sent to ${invoice.client}`,
+        description: `Payment reminder sent to ${invoice.client?.name || 'Unknown Client'}`,
         variant: "default",
       });
     } catch (error) {
@@ -216,19 +247,21 @@ const BillingManagerDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setReminderLoadingStates(prev => ({ ...prev, [invoice.invoice]: false }));
+      setReminderLoadingStates(prev => ({ ...prev, [invoiceId]: false }));
     }
   };
 
   const handleRecordPayment = (invoiceId: string) => {
     const updatedInvoices = invoices.map(inv => {
-      if (inv.invoice === invoiceId) {
-        const paidAmount = parseFloat(inv.amount.replace('₹', '').replace(',', ''));
+      if (inv.id === invoiceId) {
+        const paidAmount = inv.total || 0;
         
         // Update payment summary
         setPaymentSummary(prev => {
-          const newReceived = parseFloat(prev.received.amount.replace('₹', '').replace(',', '')) + paidAmount;
-          const newPending = parseFloat(prev.pending.amount.replace('₹', '').replace(',', '')) - paidAmount;
+          const receivedAmountStr = prev.received.amount || '₹0';
+          const pendingAmountStr = prev.pending.amount || '₹0';
+          const newReceived = parseFloat(receivedAmountStr.replace('₹', '').replace(',', '')) + paidAmount;
+          const newPending = parseFloat(pendingAmountStr.replace('₹', '').replace(',', '')) - paidAmount;
           
           return {
             received: {
@@ -236,8 +269,8 @@ const BillingManagerDashboard = () => {
               amount: `₹${newReceived.toLocaleString('en-IN')}`
             },
             pending: {
-              count: prev.pending.count - 1,
-              amount: `₹${newPending.toLocaleString('en-IN')}`
+              count: Math.max(0, prev.pending.count - 1),
+              amount: `₹${Math.max(0, newPending).toLocaleString('en-IN')}`
             },
             overdue: prev.overdue
           };
@@ -250,7 +283,7 @@ const BillingManagerDashboard = () => {
         
         return { 
           ...inv, 
-          status: 'Paid' as const,
+          status: 'Paid',
           paidDate: new Date().toISOString().split('T')[0]
         };
       }
@@ -849,32 +882,32 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-4">
                   {invoices.map((payment) => (
-                    <div key={payment.invoice} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={payment.id || 'unknown'} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
-                        <p className="font-medium">{payment.invoice}</p>
-                        <p className="text-sm text-muted-foreground">{payment.client}</p>
+                        <p className="font-medium">{payment.invoiceNumber || payment.id || 'N/A'}</p>
+                        <p className="text-sm text-muted-foreground">{payment.client?.name || 'N/A'}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant={
                             payment.status === 'Paid' ? 'default' :
                             payment.status === 'Pending' ? 'secondary' :
                             'destructive'
                           }>
-                            {payment.status}
+                            {payment.status || 'Unknown'}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
-                            Due: {payment.dueDate}
+                            Due: {payment.dueDate || 'N/A'}
                           </span>
-                          {payment.reminderCount > 0 && (
+                          {(payment.reminderCount || 0) > 0 && (
                             <Badge variant="outline" className="ml-2">
-                              {payment.reminderCount} reminder{payment.reminderCount > 1 ? 's' : ''} sent
+                              {payment.reminderCount || 0} reminder{(payment.reminderCount || 0) > 1 ? 's' : ''} sent
                             </Badge>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{payment.amount}</p>
+                        <p className="font-medium">₹{(payment.total || 0).toLocaleString('en-IN')}</p>
                         {payment.status === 'Paid' ? (
-                          <p className="text-sm text-green-600">Paid on {payment.paidDate}</p>
+                          <p className="text-sm text-green-600">Paid on {payment.paidDate || 'N/A'}</p>
                         ) : payment.status === 'Overdue' ? (
                           <div className="flex flex-col items-end gap-1">
                             {payment.lastReminderSent && (
@@ -887,9 +920,9 @@ File Size: ${doc.size}`;
                               variant="destructive" 
                               className="mt-2"
                               onClick={() => handleSendReminder(payment)}
-                              disabled={reminderLoadingStates[payment.invoice]}
+                              disabled={reminderLoadingStates[payment.id || 'unknown']}
                             >
-                              {reminderLoadingStates[payment.invoice] ? (
+                              {reminderLoadingStates[payment.id || 'unknown'] ? (
                                 <>
                                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                   Sending...
@@ -903,7 +936,7 @@ File Size: ${doc.size}`;
                             </Button>
                           </div>
                         ) : (
-                          <Button size="sm" variant="outline" className="mt-2" onClick={() => handleRecordPayment(payment.invoice)}>
+                          <Button size="sm" variant="outline" className="mt-2" onClick={() => handleRecordPayment(payment.id || 'unknown')}>
                             Record Payment
                           </Button>
                         )}
@@ -922,18 +955,18 @@ File Size: ${doc.size}`;
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 border rounded-lg">
                     <p className="text-sm text-muted-foreground">Total Received</p>
-                    <p className="text-2xl font-bold text-green-600">{paymentSummary.received.amount}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.received.count} payment{paymentSummary.received.count !== 1 ? 's' : ''}</p>
+                    <p className="text-2xl font-bold text-green-600">{paymentSummary.received.amount || '₹0'}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.received.count || 0} payment{(paymentSummary.received.count || 0) !== 1 ? 's' : ''}</p>
                   </div>
                   <div className="p-4 border rounded-lg">
                     <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-600">{paymentSummary.pending.amount}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.pending.count} payment{paymentSummary.pending.count !== 1 ? 's' : ''}</p>
+                    <p className="text-2xl font-bold text-yellow-600">{paymentSummary.pending.amount || '₹0'}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.pending.count || 0} payment{(paymentSummary.pending.count || 0) !== 1 ? 's' : ''}</p>
                   </div>
                   <div className="p-4 border rounded-lg">
                     <p className="text-sm text-muted-foreground">Overdue</p>
-                    <p className="text-2xl font-bold text-red-600">{paymentSummary.overdue.amount}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.overdue.count} payment{paymentSummary.overdue.count !== 1 ? 's' : ''}</p>
+                    <p className="text-2xl font-bold text-red-600">{paymentSummary.overdue.amount || '₹0'}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.overdue.count || 0} payment{(paymentSummary.overdue.count || 0) !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1115,28 +1148,28 @@ File Size: ${doc.size}`;
                     <div key={invoice.projectId} className="p-4 border rounded-lg">
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <h4 className="font-medium text-gray-900">{invoice.project}</h4>
-                          <p className="text-sm text-muted-foreground">{invoice.clientName}</p>
+                          <h4 className="font-medium text-gray-900">{invoice.project || 'N/A'}</h4>
+                          <p className="text-sm text-muted-foreground">{invoice.clientName || 'N/A'}</p>
                         </div>
                         <Badge variant="outline">
-                          Next: {invoice.nextBilling}
+                          Next: {invoice.nextBilling || 'N/A'}
                         </Badge>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>Work Completed: {invoice.completed}%</span>
-                          <span>Billed: {invoice.billed}%</span>
+                          <span>Work Completed: {invoice.completed || 0}%</span>
+                          <span>Billed: {invoice.billed || 0}%</span>
                         </div>
                         <div className="relative">
-                          <Progress value={invoice.completed} className="h-3" />
+                          <Progress value={invoice.completed || 0} className="h-3" />
                           <div 
                             className="absolute top-0 h-3 bg-green-600 bg-opacity-50 rounded"
-                            style={{ width: `${invoice.billed}%` }}
+                            style={{ width: `${invoice.billed || 0}%` }}
                           />
                         </div>
                         <div className="flex justify-between items-center mt-3">
                           <p className="text-sm text-muted-foreground">
-                            Last Invoice: {invoice.invoiceDate}
+                            Last Invoice: {invoice.invoiceDate || 'N/A'}
                           </p>
                           <Button
                             size="sm"
@@ -1237,20 +1270,20 @@ File Size: ${doc.size}`;
                             <FileText className="h-6 w-6 text-gray-600" />
                           </div>
                           <div>
-                            <p className="font-medium">{doc.name}</p>
+                            <p className="font-medium">{doc.name || 'N/A'}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline">{doc.type}</Badge>
-                              <span className="text-sm text-muted-foreground">{doc.size}</span>
+                              <Badge variant="outline">{doc.type || 'Unknown'}</Badge>
+                              <span className="text-sm text-muted-foreground">{doc.size || 'N/A'}</span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Uploaded by {doc.uploadedBy}</p>
-                            <p className="text-sm">{doc.date}</p>
+                            <p className="text-sm text-muted-foreground">Uploaded by {doc.uploadedBy || 'Unknown'}</p>
+                            <p className="text-sm">{doc.date || 'N/A'}</p>
                           </div>
                           <Badge variant={doc.status === 'Verified' ? 'default' : 'secondary'}>
-                            {doc.status}
+                            {doc.status || 'Unknown'}
                           </Badge>
                           <div className="flex items-center gap-2">
                             {doc.status === 'Pending Review' && (
@@ -1293,14 +1326,14 @@ File Size: ${doc.size}`;
                           {doc.status === 'Verified' ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                         </div>
                         <div>
-                          <p className="font-medium">{doc.name}</p>
+                          <p className="font-medium">{doc.name || 'N/A'}</p>
                           <p className="text-sm text-muted-foreground">
-                            {doc.status === 'Verified' ? 'Verified' : 'Uploaded'} by {doc.uploadedBy}
+                            {doc.status === 'Verified' ? 'Verified' : 'Uploaded'} by {doc.uploadedBy || 'Unknown'}
                           </p>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(doc.date).toLocaleDateString()}
+                        {doc.date ? new Date(doc.date).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
                   ))}

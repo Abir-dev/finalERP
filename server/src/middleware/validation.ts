@@ -152,9 +152,14 @@ export const validateEmployee = [
 ];
 
 export const validatePayment = [
-  body('invoiceId').isString().notEmpty(),
-  body('amount').isFloat({ gt: 0 }),
-  body('date').isISO8601(),
+  body('paymentType').isIn(['RECEIVE', 'PAY']),
+  body('postingDate').isISO8601(),
+  body('partyType').isIn(['CUSTOMER', 'VENDOR', 'EMPLOYEE', 'BANK']),
+  body('party').isString().notEmpty(),
+  body('partyName').isString().notEmpty(),
+  body('accountPaidTo').isString().notEmpty(),
+  body('total').isFloat({ gt: 0 }),
+  body('projectId').isString().notEmpty(),
 ];
 
 export const validateNotification = [
