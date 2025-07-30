@@ -126,9 +126,22 @@ export const validateInventoryItem = [
 ];
 
 export const validateMaterialRequest = [
-  body('projectId').isString().notEmpty(),
-  body('itemId').isString().notEmpty(),
-  body('quantity').isInt({ gt: 0 }),
+  body('requestNumber').isString().notEmpty(),
+  body('transactionDate').isISO8601(),
+  body('purpose').isIn(['PURCHASE', 'TRANSFER', 'CONSUMPTION', 'MAINTENANCE', 'OTHER']),
+  body('status').optional().isIn(['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+  body('projectId').optional().isString(),
+  body('targetWarehouse').optional().isString(),
+  body('terms').optional().isString(),
+  body('moreInfo').optional().isString(),
+];
+
+export const validateMaterialRequestItem = [
+  body('itemCode').isString().notEmpty(),
+  body('quantity').isFloat({ gt: 0 }),
+  body('uom').isString().notEmpty(),
+  body('requiredBy').optional().isString(),
+  body('targetWarehouse').optional().isString(),
 ];
 
 export const validateTender = [

@@ -13,6 +13,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get users with projects
+router.get('/with-projects', async (req, res) => {
+  try {
+    const users = await prismaUserService.getUsersWithProjects();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch users with projects' });
+  }
+});
+
 // Update user
 router.put('/:id', async (req, res) => {
   try {

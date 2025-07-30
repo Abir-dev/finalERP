@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Separator } from "../ui/separator";
 import RichTextEditor from "../ui/RichTextEditor";
+import { useToast } from "../../hooks/use-toast";
+import { supabase } from "../../lib/supabase";
 
 interface ItemRow {
   id: number;
@@ -28,6 +30,18 @@ interface ItemRow {
   uom: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface NewMaterialRequestModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,11 +49,16 @@ interface NewMaterialRequestModalProps {
 }
 
 export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMaterialRequestModalProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("details");
-  // Replace series state with requestNumber
+  const [loading, setLoading] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  
+  // Form state
   const [requestNumber, setRequestNumber] = useState("");
   const [transactionDate, setTransactionDate] = useState("");
-  const [purpose, setPurpose] = useState("Purchase");
+  const [purpose, setPurpose] = useState("PURCHASE");
   const [requiredBy, setRequiredBy] = useState("");
   const [priceList, setPriceList] = useState("Standard Buying");
   const [scanBarcode, setScanBarcode] = useState("");
@@ -51,9 +70,73 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
   const [selectAll, setSelectAll] = useState(false);
   const [expanded, setExpanded] = useState(true);
 
+  const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
   // Tab content placeholders
   const [terms, setTerms] = useState("");
   const termsTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Add state for project and approver
+  const [projectId, setProjectId] = useState("");
+  const [approver, setApprover] = useState("");
+  const [moreInfo, setMoreInfo] = useState("");
+
+
+  // Fetch projects and users on component mount
+  useEffect(() => {
+    if (open) {
+      fetchProjects();
+      fetchUsers();
+    }
+  }, [open]);
+
+
+  const getToken = () => {
+    return sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch(`${API_URL}/projects`, {
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch projects",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Formatting helpers
   const applyFormatting = (before: string, after: string = before, placeholder = "") => {
@@ -132,16 +215,6 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
       textarea.setSelectionRange(urlStart, urlEnd);
     }, 0);
   };
-  const [moreInfo, setMoreInfo] = useState("");
-
-  // Add state for project and approver
-  const [projectId, setProjectId] = useState("");
-  const [approver, setApprover] = useState("");
-  // Mock projects data (replace with real data or prop as needed)
-  const projects = [
-    { id: "1", name: "Project Alpha" },
-    { id: "2", name: "Project Beta" },
-  ];
 
   const handleItemChange = (idx: number, field: keyof ItemRow, value: any) => {
     setItems((prev) =>
@@ -184,24 +257,138 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
     }
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave({
-        requestNumber,
-        transactionDate,
-        purpose,
-        requiredBy,
-        priceList,
-        scanBarcode,
-        targetWarehouse,
-        items,
-        terms,
-        moreInfo,
-        projectId,
-        approver,
+  const validateForm = () => {
+    if (!requestNumber.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Request number is required",
+        variant: "destructive",
       });
+      return false;
     }
-    onOpenChange(false);
+
+    if (!transactionDate) {
+      toast({
+        title: "Validation Error",
+        description: "Transaction date is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (!purpose) {
+      toast({
+        title: "Validation Error",
+        description: "Purpose is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Validate items
+    const validItems = items.filter(item => 
+      item.itemCode.trim() && 
+      item.quantity > 0 && 
+      item.uom.trim()
+    );
+
+    if (validItems.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "At least one valid item is required",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Filter out empty items
+      const validItems = items.filter(item => 
+        item.itemCode.trim() && 
+        item.quantity > 0 && 
+        item.uom.trim()
+      );
+
+      const materialRequestData = {
+        requestNumber: requestNumber.trim(),
+        transactionDate: new Date(transactionDate).toISOString(),
+        purpose: purpose,
+        requiredBy: requiredBy ? new Date(requiredBy).toISOString() : null,
+        priceList: priceList.trim() || null,
+        targetWarehouse: targetWarehouse.trim() || null,
+        terms: terms.trim() || null,
+        moreInfo: moreInfo.trim() || null,
+        projectId: projectId || null,
+        approvedBy: approver || null,
+        items: validItems.map(item => ({
+          itemCode: item.itemCode.trim(),
+          quantity: item.quantity,
+          uom: item.uom.trim(),
+          requiredBy: item.requiredBy || null,
+          targetWarehouse: item.targetWarehouse.trim() || null,
+        }))
+      };
+
+      const response = await fetch(`${API_URL}/material/material-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify(materialRequestData),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast({
+          title: "Success",
+          description: "Material request created successfully",
+        });
+        
+        if (onSave) {
+          onSave(result);
+        }
+        onOpenChange(false);
+        
+        // Reset form
+        setRequestNumber("");
+        setTransactionDate("");
+        setPurpose("PURCHASE");
+        setRequiredBy("");
+        setPriceList("Standard Buying");
+        setTargetWarehouse("");
+        setItems([{ id: 1, itemCode: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" }]);
+        setTerms("");
+        setMoreInfo("");
+        setProjectId("");
+        setApprover("");
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.error || "Failed to create material request",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating material request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create material request",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -215,7 +402,6 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="terms">Terms</TabsTrigger>
-            {/* <TabsTrigger value="moreinfo">More Info</TabsTrigger> */}
           </TabsList>
           <TabsContent value="details">
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -245,11 +431,18 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Approver</label>
-                <Input
-                  value={approver}
-                  onChange={e => setApprover(e.target.value)}
-                  placeholder="Enter approver name or ID"
-                />
+                <Select value={approver} onValueChange={setApprover}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select approver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map(user => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name} ({user.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Transaction Date *</label>
@@ -262,7 +455,11 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                     <SelectValue placeholder="Select purpose" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Purchase">Purchase</SelectItem>
+                    <SelectItem value="PURCHASE">Purchase</SelectItem>
+                    <SelectItem value="TRANSFER">Transfer</SelectItem>
+                    <SelectItem value="CONSUMPTION">Consumption</SelectItem>
+                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -285,10 +482,10 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                 />
               </div>
             </div>
-            {/* <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Scan Barcode</label>
-              <Input value={scanBarcode} onChange={e => setScanBarcode(e.target.value)} />
-            </div> */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">More Info</label>
+              <Input value={moreInfo} onChange={e => setMoreInfo(e.target.value)} placeholder="Enter additional information..." />
+            </div>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">Set Target Warehouse</label>
               <Input value={targetWarehouse} onChange={e => setTargetWarehouse(e.target.value)} />
@@ -323,8 +520,8 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                         </div>
                         <div className="col-span-1">No.</div>
                         <div className="col-span-1">Item Code *</div>
-                        <div className="col-span-2">Required By *</div>
-                        <div className="col-span-1">Quantity</div>
+                        <div className="col-span-2">Required By</div>
+                        <div className="col-span-1">Quantity *</div>
                         <div className="col-span-1">Target Warehouse</div>
                         <div className="col-span-1">UOM *</div>
                       </div>
@@ -365,6 +562,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                               onChange={e => handleItemChange(idx, "quantity", Number(e.target.value))}
                               className="h-8 text-sm"
                               placeholder="0"
+                              min="0"
                             />
                           </div>
                           <div className="col-span-1">
@@ -376,12 +574,25 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                             />
                           </div>
                           <div className="col-span-1">
-                            <Input
-                              value={item.uom}
-                              onChange={e => handleItemChange(idx, "uom", e.target.value)}
-                              className="h-8 text-sm"
-                              placeholder="UOM"
-                            />
+                            <Select value={item.uom} onValueChange={(value) => handleItemChange(idx, "uom", value)}>
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="UOM" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="CUBIC_METRE">Cubic Metre</SelectItem>
+                                <SelectItem value="TONNE">Tonne</SelectItem>
+                                <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
+                                <SelectItem value="PIECE">Piece</SelectItem>
+                                <SelectItem value="LITRE">Litre</SelectItem>
+                                <SelectItem value="KILOGRAM">Kilogram</SelectItem>
+                                <SelectItem value="BOX">Box</SelectItem>
+                                <SelectItem value="ROLL">Roll</SelectItem>
+                                <SelectItem value="SHEET">Sheet</SelectItem>
+                                <SelectItem value="HOURS">Hours</SelectItem>
+                                <SelectItem value="DAYS">Days</SelectItem>
+                                <SelectItem value="LUMPSUM">Lump Sum</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
                       ))}
@@ -420,18 +631,14 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="moreinfo">
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">More Info</label>
-              <Input value={moreInfo} onChange={e => setMoreInfo(e.target.value)} placeholder="Enter more info..." />
-            </div>
-          </TabsContent>
         </Tabs>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : "Save"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

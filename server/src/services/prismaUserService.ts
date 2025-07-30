@@ -189,4 +189,42 @@ async updateUser(id: string, updates: Partial<{ name: string; email: string; pas
       },
     });
   },
+
+  async getUsersWithProjects() {
+    return prisma.user.findMany({
+      where: {
+        OR: [
+          { projects: { some: {} } },
+          { managedProjects: { some: {} } },
+          { memberProjects: { some: {} } }
+        ]
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        avatar: true,
+        status: true,
+        projects: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        managedProjects: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        memberProjects: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+    });
+  },
 };
