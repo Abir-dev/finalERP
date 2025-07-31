@@ -507,7 +507,7 @@ model TaxCharge {
   paymentId       String?        @db.Uuid
   taxId           String?        @db.Uuid
   payment         Payment?       @relation(fields: [paymentId], references: [id])
-  tax             Tax?           @relation(fields: [taxId], references: [id])
+  tax             Tax?           @relation(fields: [taxId], references: [id], onDelete: Cascade)
   type            TaxType
   accountHead     String
   taxRate         Float

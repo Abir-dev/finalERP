@@ -28,6 +28,29 @@ export const checkRole = (requiredRole: UserRole) => {
   };
 };
 
+export const checkAnyRole = (allowedRoles: UserRole[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userRole = req.user?.role;
+
+      if (!userRole) {
+        res.status(403).json({ error: 'No role assigned' });
+        return;
+      }
+
+      if (allowedRoles.includes(userRole as UserRole)) {
+        next();
+        return;
+      }
+
+      res.status(403).json({ error: 'Insufficient permissions' });
+      return;
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
 export const checkPermission = (requiredPermission: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
