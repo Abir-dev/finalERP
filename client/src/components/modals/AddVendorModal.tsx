@@ -18,6 +18,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
+import axios from "axios";
+import { useUser } from "@/contexts/UserContext";
 
 interface AddVendorModalProps {
   open: boolean;
@@ -39,12 +42,16 @@ interface VendorData {
   country: string;
 }
 
+// API configuration
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
 export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
+  const { user } = useUser();
   const [vendorData, setVendorData] = useState<VendorData>({
     gstin: "",
     name: "",
-    vendorType: "Company",
-    gstCategory: "Unregistered",
+    vendorType: "COMPANY",
+    gstCategory: "UNREGISTERED",
     email: "",
     mobile: "",
     postalCode: "",
@@ -54,6 +61,8 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
     state: "",
     country: "India"
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
     if (!vendorData.name || !vendorData.vendorType || !vendorData.gstCategory) {
@@ -65,9 +74,42 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       return;
     }
     
+    setIsLoading(true);
+    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get auth token
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      if (!token) {
+        throw new Error("Authentication required");
+      }
+
+      if (!user?.id) {
+        throw new Error("User not authenticated");
+      }
+
+      // Prepare vendor data according to schema
+      const vendorPayload = {
+        gstin: vendorData.gstin || null,
+        name: vendorData.name,
+        vendorType: vendorData.vendorType,
+        gstCategory: vendorData.gstCategory,
+        email: vendorData.email || null,
+        mobile: vendorData.mobile || null,
+        postalCode: vendorData.postalCode || null,
+        addressLine1: vendorData.addressLine1 || null,
+        addressLine2: vendorData.addressLine2 || null,
+        city: vendorData.city || null,
+        state: vendorData.state || null,
+        country: vendorData.country || "India",
+        createdBy: user.id
+      };
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await axios.post(`${API_URL}/vendors`, vendorPayload, { headers });
       
       toast({
         title: "Vendor added successfully",
@@ -78,8 +120,8 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       setVendorData({
         gstin: "",
         name: "",
-        vendorType: "Company",
-        gstCategory: "Unregistered",
+        vendorType: "COMPANY",
+        gstCategory: "UNREGISTERED",
         email: "",
         mobile: "",
         postalCode: "",
@@ -91,12 +133,15 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       });
       
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error creating vendor:", error);
       toast({
         title: "Error adding vendor",
-        description: "Please try again",
+        description: error?.response?.data?.message || error?.message || "Please try again",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,8 +150,8 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
     setVendorData({
       gstin: "",
       name: "",
-      vendorType: "Company",
-      gstCategory: "Unregistered",
+      vendorType: "COMPANY",
+      gstCategory: "UNREGISTERED",
       email: "",
       mobile: "",
       postalCode: "",
@@ -162,10 +207,10 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 <SelectValue placeholder="Select vendor type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Company">Company</SelectItem>
-                <SelectItem value="Individual">Individual</SelectItem>
-                <SelectItem value="Partnership">Partnership</SelectItem>
-                <SelectItem value="Proprietorship">Proprietorship</SelectItem>
+                <SelectItem value="COMPANY">Company</SelectItem>
+                <SelectItem value="INDIVIDUAL">Individual</SelectItem>
+                <SelectItem value="PARTNERSHIP">Partnership</SelectItem>
+                <SelectItem value="PROPRIETORSHIP">Proprietorship</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -182,11 +227,11 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 <SelectValue placeholder="Select GST category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Unregistered">Unregistered</SelectItem>
-                <SelectItem value="Registered">Registered</SelectItem>
-                <SelectItem value="Composition">Composition</SelectItem>
+                <SelectItem value="UNREGISTERED">Unregistered</SelectItem>
+                <SelectItem value="REGISTERED">Registered</SelectItem>
+                <SelectItem value="COMPOSITION">Composition</SelectItem>
                 <SelectItem value="SEZ">SEZ</SelectItem>
-                <SelectItem value="Deemed Export">Deemed Export</SelectItem>
+                <SelectItem value="DEEMED_EXPORT">Deemed Export</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -281,8 +326,15 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
           >
             Edit Full Form
           </Button> */}
-          <Button onClick={handleSave}>
-            Save
+          <Button onClick={handleSave} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Save"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

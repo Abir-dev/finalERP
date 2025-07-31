@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
-import { prismaVendorService } from '../services/prismaVendorService';
+import { PrismaClient } from '@prisma/client';
 import logger from '../logger/logger';
+
+const prisma = new PrismaClient();
 
 export const vendorController = {
   async createVendor(req: Request, res: Response) {
     try {
-      const vendor = await prismaVendorService.createVendor(req.body);
+      const vendor = await prisma.vendor.create({
+        data: req.body,
+      });
       res.status(201).json(vendor);
     } catch (error) {
       logger.error("Error:", error);
@@ -15,9 +19,10 @@ export const vendorController = {
       });
     }
   },
+
   async getVendors(req: Request, res: Response) {
     try {
-      const vendors = await prismaVendorService.getVendors(req.query);
+      const vendors = await prisma.vendor.findMany();
       res.json(vendors);
     } catch (error) {
       logger.error("Error:", error);
@@ -27,9 +32,15 @@ export const vendorController = {
       });
     }
   },
+
   async getVendorById(req: Request, res: Response) {
     try {
-      const vendor = await prismaVendorService.getVendorById(req.params.id);
+      const vendor = await prisma.vendor.findUnique({
+        where: { id: req.params.id },
+      });
+      if (!vendor) {
+        return res.status(404).json({ message: "Vendor not found" });
+      }
       res.json(vendor);
     } catch (error) {
       logger.error("Error:", error);
@@ -39,9 +50,13 @@ export const vendorController = {
       });
     }
   },
+
   async updateVendor(req: Request, res: Response) {
     try {
-      const vendor = await prismaVendorService.updateVendor(req.params.id, req.body);
+      const vendor = await prisma.vendor.update({
+        where: { id: req.params.id },
+        data: req.body,
+      });
       res.json(vendor);
     } catch (error) {
       logger.error("Error:", error);
@@ -51,9 +66,12 @@ export const vendorController = {
       });
     }
   },
+
   async deleteVendor(req: Request, res: Response) {
     try {
-      await prismaVendorService.deleteVendor(req.params.id);
+      await prisma.vendor.delete({
+        where: { id: req.params.id },
+      });
       res.status(204).end();
     } catch (error) {
       logger.error("Error:", error);
