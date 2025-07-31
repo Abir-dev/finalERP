@@ -49,6 +49,7 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
     party: "",
     partyName: "",
     accountPaidTo: "",
+    amount: 0,
     companyAddress: "",
     customerAddress: "",
     placeOfSupply: "",
@@ -308,7 +309,7 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
           amount: charge.amount,
           total: charge.total
         })),
-        total: taxCharges.reduce((sum, charge) => sum + charge.total, 0)
+        total: paymentData.amount + taxCharges.reduce((sum, charge) => sum + charge.total, 0)
       };
 
       const response = await fetch(`${API_URL}/billing/invoices/${invoiceId}/payments`, {
@@ -769,15 +770,6 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
             {expandedSections.accounting && (
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  {/* <div>
-                    <Label htmlFor="project" className="text-sm font-medium">
-                      Project
-                    </Label>
-                    <Input 
-                      placeholder="Select project"
-                      className="mt-1"
-                    />
-                  </div> */}
                   <div>
                     <Label htmlFor="costCenter" className="text-sm font-medium">
                       Cost Center
@@ -786,6 +778,19 @@ const PaymentEntryModal: React.FC<PaymentEntryModalProps> = ({ onClose }) => {
                       value={paymentData.costCenter}
                       onChange={(e) => setPaymentData({...paymentData, costCenter: e.target.value})}
                       placeholder="Select cost center"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="amount" className="text-sm font-medium">
+                      Amount
+                    </Label>
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      value={paymentData.amount || ''}
+                      onChange={(e) => setPaymentData({...paymentData, amount: parseFloat(e.target.value) || 0})}
+                      placeholder="Enter payment amount"
                       className="mt-1"
                     />
                   </div>

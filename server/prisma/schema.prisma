@@ -153,7 +153,8 @@ model Payment {
   partyName String
 
   accountPaidTo String
-  total     Float
+  amount    Float        // Base payment amount (excluding taxes)
+  total     Float        // Total amount (including taxes)
 
   taxes TaxCharge[] // Relation to TaxCharge
 
