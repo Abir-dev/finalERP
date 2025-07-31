@@ -995,7 +995,7 @@ const downloadTextFile = (content: string, filename: string) => {
                             <span className="text-xs w-9 text-right">{project.progress}%</span>
                           </div>
                         </td>
-                        <td className="p-4 align-middle">₹{project.budget.toLocaleString()}</td>
+                        <td className="p-4 align-middle">₹{(project.budget || 0).toLocaleString()}</td>
                         <td className="p-4 align-middle">{project.location}</td>
                       </tr>
                     ))}
@@ -1100,7 +1100,7 @@ const downloadTextFile = (content: string, filename: string) => {
                           <span className="text-sm text-muted-foreground">{project.deadline}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Budget: ₹{project.spent.toLocaleString()} / ₹{project.budget.toLocaleString()}
+                          Budget: ₹{(project.spent || 0).toLocaleString()} / ₹{(project.budget || 0).toLocaleString()}
                         </div>
                       </div>
 
