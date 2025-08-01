@@ -31,7 +31,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
 import RichTextEditor from "../ui/RichTextEditor";
+import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
+interface Vendor {
+  id: string;
+  name: string;
+  email?: string;
+  contact?: string;
+  mobile?: string;
+  category?: string;
+  location?: string;
+}
 
 interface PurchaseOrderItem {
   id: string;
@@ -63,53 +74,47 @@ interface PaymentTerm {
 }
 
 interface PurchaseOrderFormData {
-  vendor: string | number | readonly string[];
-  vendorContact: string | number | readonly string[];
-  vendorAddress: string | number | readonly string[];
-  series: string;
   poNumber: string;
-  date: string;
-  // supplier: string;
-  requiredBy: string;
-  applyTaxWithholdingAmount: boolean;
-  isReverseCharge: boolean;
-  isSubcontracted: boolean;
-  scanBarcode: string;
-  setTargetWarehouse: string;
-  items: PurchaseOrderItem[];
-  // supplierAddress: string;
-  // supplierContact: string;
+  date: string; // Will be converted to DateTime when saving
+  vendorId: string; // Required field
+  requiredBy: string; // Will be converted to DateTime when saving
+  setTargetWarehouse?: string; // Optional warehouse field
+  vendorAddress: string;
+  vendorContact: string;
   shippingAddress: string;
   dispatchAddress: string;
   companyBillingAddress: string;
   placeOfSupply: string;
   paymentTermsTemplate: string;
-  paymentSchedule: PaymentTerm[];
   terms: string;
+  totalQuantity: number; // Will be converted to Decimal
+  total: number; // Will be converted to Decimal
+  grandTotal: number; // Will be converted to Decimal
+  roundingAdjustment: number; // Will be converted to Decimal
+  roundedTotal: number; // Will be converted to Decimal
+  advancePaid: number; // Will be converted to Decimal
+  taxesAndChargesTotal: number; // Will be converted to Decimal
+  userId: string;
+  items: PurchaseOrderItem[];
   taxesAndCharges: TaxCharge[];
-  totalQuantity: number;
-  total: number;
-  grandTotal: number;
-  roundingAdjustment: number;
-  roundedTotal: number;
-  disableRoundedTotal: boolean;
-  advancePaid: number;
-  taxesAndChargesTotal: number;
+  paymentSchedule: PaymentTerm[];
 }
 
-export function PurchaseOrderForm() {
+
+interface PurchaseOrderFormProps {
+  onSuccess?: () => void;
+}
+
+export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
+  const { user } = useUser();
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [formData, setFormData] = useState<PurchaseOrderFormData>({
-    series: "PUR-ORD-YYYY-",
     poNumber: "",
     date: new Date().toISOString().split("T")[0],
-    vendor: "",
+    vendorId: "", // Required field
     requiredBy: "",
-    applyTaxWithholdingAmount: false,
-    isReverseCharge: false,
-    isSubcontracted: false,
-    scanBarcode: "",
-    setTargetWarehouse: "",
-    items: [],
+    setTargetWarehouse: "", // Optional warehouse field
     vendorAddress: "",
     vendorContact: "",
     shippingAddress: "",
@@ -117,19 +122,20 @@ export function PurchaseOrderForm() {
     companyBillingAddress: "",
     placeOfSupply: "",
     paymentTermsTemplate: "",
-    paymentSchedule: [],
     terms: "",
-    taxesAndCharges: [],
     totalQuantity: 0,
     total: 0,
     grandTotal: 0,
     roundingAdjustment: 0,
     roundedTotal: 0,
-    disableRoundedTotal: false,
     advancePaid: 0,
     taxesAndChargesTotal: 0,
+    userId: "",
+    items: [],
+    taxesAndCharges: [],
+    paymentSchedule: [],
   });
-
+  
   // State to track selected item IDs
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
 
@@ -146,6 +152,35 @@ export function PurchaseOrderForm() {
   const [isAdditionalDiscountOpen, setIsAdditionalDiscountOpen] =
     useState(false);
   const [terms, setTerms] = useState("");
+
+  // Fetch vendors on component mount
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await axios.get(`${API_URL}/vendors`, { headers });
+        setVendors(response.data);
+      } catch (error) {
+        console.error("Error fetching vendors:", error);
+        toast.error("Failed to fetch vendors");
+      }
+    };
+
+    fetchVendors();
+  }, []);
+
+  // Update form data when vendor is selected
+  useEffect(() => {
+    if (selectedVendor) {
+      setFormData(prev => ({
+        ...prev,
+        vendorId: selectedVendor.id,
+        vendorContact: selectedVendor.contact || selectedVendor.mobile || "",
+        vendorAddress: selectedVendor.location || "",
+      }));
+    }
+  }, [selectedVendor]);
 
   const addItem = () => {
     const newItem: PurchaseOrderItem = {
@@ -265,31 +300,34 @@ export function PurchaseOrderForm() {
   const handleSave = async () => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    // Prepare data for backend
+    const submitData = {
+      ...formData,
+      terms: terms,
+      userId: user?.id || "",
+    };
+
     try {
-      if (formData.poNumber) {
-        await axios.put(`${API_URL}/purchase-orders/${formData.poNumber}`, formData, { headers });
-      } else {
-        await axios.post(`${API_URL}/purchase-orders`, formData, { headers });
-      }
+      const response = await axios.post(`${API_URL}/purchase-orders`, submitData, { headers });
       toast.success("Purchase order saved successfully!");
+      onSuccess?.();
     } catch (err) {
+      console.error("Error saving purchase order:", err);
       toast.error("Failed to save purchase order.");
     }
   };
 
   const handleSubmit = async () => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    try {
-      if (formData.poNumber) {
-        await axios.put(`${API_URL}/purchase-orders/${formData.poNumber}`, formData, { headers });
-      } else {
-        await axios.post(`${API_URL}/purchase-orders`, formData, { headers });
-      }
-      toast.success("Purchase order submitted successfully!");
-    } catch (err) {
-      toast.error("Failed to submit purchase order.");
+    if (!formData.vendorId || !formData.poNumber) {
+      toast.error("Please fill in required fields: Vendor and PO Number");
+      return;
     }
+    if (!user?.id) {
+      toast.error("User not authenticated");
+      return;
+    }
+    await handleSave();
   };
 
   return (
@@ -392,17 +430,35 @@ export function PurchaseOrderForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="vendor">Vendor *</Label>
-                <Input
-                  id="vendor"
-                  value={formData.vendor}
-                  onChange={(e) =>
+                <Select
+                  value={formData.vendorId}
+                  onValueChange={(value) => {
+                    const vendor = vendors.find(v => v.id === value);
+                    setSelectedVendor(vendor || null);
                     setFormData((prev) => ({
                       ...prev,
-                      vendor: e.target.value,
-                    }))
-                  }
-                  placeholder="Select vendor"
-                />
+                      vendorId: value,
+                    }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        <div className="flex flex-col">
+                          <span>{vendor.name}</span>
+                          {vendor.email && (
+                            <span className="text-xs text-muted-foreground">
+                              {vendor.email}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -417,6 +473,20 @@ export function PurchaseOrderForm() {
                       requiredBy: e.target.value,
                     }))
                   }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="target-warehouse">Set Target Warehouse</Label>
+                <Input
+                  id="target-warehouse"
+                  value={formData.setTargetWarehouse || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, setTargetWarehouse: e.target.value }))
+                  }
+                  placeholder="Enter target warehouse"
                 />
               </div>
             </div>
@@ -500,9 +570,9 @@ export function PurchaseOrderForm() {
               </CollapsibleContent>
             </Collapsible> */}
 
-            {/* Barcode and Warehouse */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* <div className="space-y-2">
+            {/* Barcode Section - commented out for now */}
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
                 <Label htmlFor="scan-barcode">Scan Barcode</Label>
                 <Input
                   id="scan-barcode"
@@ -515,23 +585,8 @@ export function PurchaseOrderForm() {
                   }
                   placeholder="Scan or enter barcode"
                 />
-              </div> */}
-
-              <div className="space-y-2">
-                <Label htmlFor="target-warehouse">Set Target Warehouse</Label>
-                <Input
-                  id="target-warehouse"
-                  value={formData.setTargetWarehouse}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      setTargetWarehouse: e.target.value,
-                    }))
-                  }
-                  placeholder="Select warehouse"
-                />
               </div>
-            </div>
+            </div> */}
 
             {/* Items Section */}
             <div className="space-y-4">
@@ -588,6 +643,7 @@ export function PurchaseOrderForm() {
                       </TableHead>
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="min-w-32">Item Code *</TableHead>
+                      <TableHead className="min-w-40">Description</TableHead>
                       <TableHead className="min-w-32">Required By *</TableHead>
                       <TableHead className="w-24">Quantity *</TableHead>
                       <TableHead className="w-20">UOM *</TableHead>
@@ -600,7 +656,7 @@ export function PurchaseOrderForm() {
                     {formData.items.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={9}
+                          colSpan={10}
                           className="text-center py-8 text-muted-foreground"
                         >
                           <div className="flex flex-col items-center space-y-2">
@@ -646,6 +702,17 @@ export function PurchaseOrderForm() {
                           </TableCell>
                           <TableCell>
                             <Input
+                              value={item.description}
+                              onChange={(e) =>
+                                updateItem(item.id, "description", e.target.value)
+                              }
+                              placeholder="Item description"
+                              className="min-w-40"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="date"
                               value={item.requiredBy}
                               onChange={(e) =>
                                 updateItem(

@@ -65,14 +65,24 @@ const API_URL =
 interface PurchaseOrder {
   id: string;
   poNumber: string;
-  vendor: string;
-  items: string;
-  totalAmount: number;
-  orderDate: string;
-  expectedDelivery: string;
-  status: "draft" | "sent" | "acknowledged" | "delivered" | "invoiced" | "paid";
-  priority: "low" | "medium" | "high" | "urgent";
-  project: string;
+  date: string;
+  vendorId: string;
+  Vendor?: {
+    id: string;
+    name: string;
+    email?: string;
+    contact?: string;
+  };
+  requiredBy: string;
+  items: any[];
+  totalQuantity: number;
+  total: number;
+  grandTotal: number;
+  roundedTotal: number;
+  advancePaid: number;
+  taxesAndChargesTotal: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface MaterialRequest {
@@ -105,15 +115,19 @@ export function PurchaseDashboard() {
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
   const [showVendorDetails, setShowVendorDetails] = useState(false);
 
+  const fetchPurchaseOrders = async () => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/purchase-orders`, { headers });
+      setPurchaseOrders(response.data);
+    } catch (error) {
+      console.error("Error fetching purchase orders:", error);
+    }
+  };
+
   useEffect(() => {
-    const token =
-      sessionStorage.getItem("jwt_token") ||
-      localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios
-      .get(`${API_URL}/purchase-orders`, { headers })
-      .then((res) => setPurchaseOrders(res.data))
-      .catch(() => {});
+    fetchPurchaseOrders();
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -150,46 +164,29 @@ export function PurchaseDashboard() {
   };
 
   const totalOrderValue = purchaseOrders.reduce(
-    (sum, po) => sum + po.totalAmount,
+    (sum, po) => sum + po.grandTotal,
     0
   );
-  const deliveredOrders = purchaseOrders.filter(
-    (po) => po.status === "delivered"
+  const completedOrders = purchaseOrders.filter(
+    (po) => po.advancePaid > 0
   ).length;
-  // Filter purchase orders based on selected filters and search query
+  
+  // Filter purchase orders based on search query
   const filteredPurchaseOrders = purchaseOrders.filter((order) => {
-    const matchesStatus =
-      selectedStatus === "all" || order.status === selectedStatus;
-    const matchesPriority =
-      selectedPriority === "all" || order.priority === selectedPriority;
     const matchesSearch =
       searchQuery === "" ||
       order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.project.toLowerCase().includes(searchQuery.toLowerCase());
+      order.Vendor?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.items.some(item => 
+        item.itemCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-    return matchesStatus && matchesPriority && matchesSearch;
+    return matchesSearch;
   });
 
   const handleCreateNewOrder = () => {
-    setCurrentOrder({
-      id: "",
-      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1)
-        .toString()
-        .padStart(3, "0")}`,
-      vendor: "",
-      items: "",
-      totalAmount: 0,
-      orderDate: new Date().toISOString().split("T")[0],
-      expectedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      status: "draft",
-      priority: "medium",
-      project: "",
-    });
-    setIsDialogOpen(true);
+    setShowComprehensiveForm(true);
   };
 
   const handleEditOrder = (order: PurchaseOrder) => {
@@ -202,11 +199,31 @@ export function PurchaseDashboard() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDeleteOrder = () => {
+  const confirmDeleteOrder = async () => {
     if (orderToDelete) {
-      setPurchaseOrders(
-        purchaseOrders.filter((order) => order.id !== orderToDelete)
-      );
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
+        await axios.delete(`${API_URL}/purchase-orders/${orderToDelete}`, { headers });
+        
+        setPurchaseOrders(
+          purchaseOrders.filter((order) => order.id !== orderToDelete)
+        );
+        
+        toast({
+          title: "Success",
+          description: "Purchase order deleted successfully",
+        });
+      } catch (error) {
+        console.error("Error deleting purchase order:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete purchase order",
+          variant: "destructive",
+        });
+      }
+      
       setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
     }
@@ -409,8 +426,8 @@ export function PurchaseDashboard() {
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Delivered</p>
-                      <p className="text-2xl font-bold">{deliveredOrders}</p>
+                      <p className="text-sm text-muted-foreground">Completed</p>
+                      <p className="text-2xl font-bold">{completedOrders}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -461,23 +478,20 @@ export function PurchaseDashboard() {
                         <div className="flex-1">
                           <h4 className="font-medium">{po.poNumber}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {po.vendor} • {po.items}
+                            {po.Vendor?.name || 'N/A'} • {po.items.length} item(s)
                           </p>
                           <div className="flex gap-2 mt-1">
-                            <Badge variant={getStatusColor(po.status)}>
-                              {po.status}
-                            </Badge>
-                            <Badge variant={getPriorityColor(po.priority)}>
-                              {po.priority}
+                            <Badge variant="secondary">
+                              {po.items.length} items
                             </Badge>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            ₹{(po.totalAmount / 1000).toFixed(0)}K
+                            ₹{po.grandTotal?.toLocaleString() || '0'}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Due: {po.expectedDelivery}
+                            Due: {new Date(po.requiredBy).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -648,7 +662,7 @@ export function PurchaseDashboard() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={9} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                             No material requests found
                           </TableCell>
                         </TableRow>
@@ -724,11 +738,9 @@ export function PurchaseDashboard() {
                         <TableHead>PO Number</TableHead>
                         <TableHead>Vendor</TableHead>
                         <TableHead>Items</TableHead>
-                        <TableHead>Amount</TableHead>
+                        <TableHead>Total Amount</TableHead>
                         <TableHead>Order Date</TableHead>
-                        <TableHead>Delivery Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
+                        <TableHead>Required By</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -736,46 +748,43 @@ export function PurchaseDashboard() {
                       {filteredPurchaseOrders.length > 0 ? (
                         filteredPurchaseOrders.map((order) => (
                           <TableRow key={order.id}>
-                            <TableCell className="font-medium">
-                              {order.poNumber}
-                            </TableCell>
-                            <TableCell>{order.vendor}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {order.items}
-                            </TableCell>
-                            <TableCell>
-                              ₹{(order.totalAmount / 1000).toFixed(0)}K
-                            </TableCell>
-                            <TableCell>{order.orderDate}</TableCell>
-                            <TableCell>{order.expectedDelivery}</TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusColor(order.status)}>
-                                {order.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={getPriorityColor(order.priority)}>
-                                {order.priority}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleEditOrder(order)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDeleteOrder(order.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                          <TableCell className="font-medium">
+                          {order.poNumber}
+                          </TableCell>
+                          <TableCell>{order.Vendor?.name || 'N/A'}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                          {order.items.length > 0 
+                              ? `${order.items.length} item(s): ${order.items[0]?.itemCode || ''}`
+                              : 'No items'
+                          }
+                          </TableCell>
+                          <TableCell>
+                            ₹{order.grandTotal?.toLocaleString() || '0'}
+                          </TableCell>
+                          <TableCell>
+                          {new Date(order.date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(order.requiredBy).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                          <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                              size="sm"
+                            onClick={() => handleEditOrder(order)}
+                          >
+                          <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                          variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteOrder(order.id)}
+                          >
+                          <Trash2 className="h-4 w-4" />
+                          </Button>
+                          </div>
+                          </TableCell>
                           </TableRow>
                         ))
                       ) : (
@@ -1001,7 +1010,12 @@ export function PurchaseDashboard() {
             <DialogTitle>Purchase Order</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">
-            <PurchaseOrderForm />
+            <PurchaseOrderForm 
+              onSuccess={() => {
+                fetchPurchaseOrders();
+                setShowComprehensiveForm(false);
+              }}
+            />
           </div>
         </DialogContent>
       </Dialog>
