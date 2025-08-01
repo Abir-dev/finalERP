@@ -289,9 +289,7 @@ model PurchaseOrder {
   date                      DateTime
 //  vendor                    String
   requiredBy                DateTime
-  applyTaxWithholdingAmount Boolean
-  isReverseCharge           Boolean
-  isSubcontracted           Boolean
+
   setTargetWarehouse        String?
   vendorAddress             String
   vendorContact             String
@@ -306,7 +304,7 @@ model PurchaseOrder {
   grandTotal                Decimal
   roundingAdjustment        Decimal
   roundedTotal              Decimal
-  disableRoundedTotal       Boolean
+
   advancePaid               Decimal
   taxesAndChargesTotal      Decimal
   userId                    String              @db.Uuid
