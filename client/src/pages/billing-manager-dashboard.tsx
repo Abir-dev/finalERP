@@ -292,6 +292,19 @@ const BillingManagerDashboard = () => {
     }
   };
 
+  // Helper function to format amounts in lakhs/crores
+  const formatAmount = (amount: number): string => {
+    if (amount >= 10000000) { // 1 crore
+      return `₹${(amount / 10000000).toFixed(1)}Cr`;
+    } else if (amount >= 100000) { // 1 lakh
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    } else if (amount >= 1000) { // 1 thousand
+      return `₹${(amount / 1000).toFixed(1)}K`;
+    } else {
+      return `₹${amount.toLocaleString("en-IN")}`;
+    }
+  };
+
   // Calculate payment status dynamically from invoices and payments
   const calculatePaymentSummary = () => {
     const today = new Date();
@@ -343,15 +356,18 @@ const BillingManagerDashboard = () => {
     return {
       paid: {
         count: paidInvoices.length,
-        amount: `₹${paidTotal.toLocaleString("en-IN")}`
+        amount: formatAmount(paidTotal),
+        actualAmount: `₹${paidTotal.toLocaleString("en-IN")}`
       },
       pending: {
         count: pendingInvoices.length,
-        amount: `₹${pendingTotal.toLocaleString("en-IN")}`
+        amount: formatAmount(pendingTotal),
+        actualAmount: `₹${pendingTotal.toLocaleString("en-IN")}`
       },
       overdue: {
         count: overdueInvoices.length,
-        amount: `₹${overdueTotal.toLocaleString("en-IN")}`
+        amount: formatAmount(overdueTotal),
+        actualAmount: `₹${overdueTotal.toLocaleString("en-IN")}`
       }
     };
   };
@@ -768,19 +784,19 @@ File Size: ${doc.size}`;
 
         <TabsContent value="overview">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">
-                      Total Outstanding
+                      Paid Invoices
                     </p>
-                    <p className="text-2xl font-bold text-purple-600">₹2.4Cr</p>
+                    <p className="text-2xl font-bold text-green-600">{paymentSummary.paid.amount}</p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-purple-500" />
+                  <CheckCircle className="h-8 w-8 text-green-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Across 18 invoices</p>
+                <p className="text-xs text-gray-500 mt-2">{paymentSummary.paid.count} invoices completed</p>
               </CardContent>
             </Card>
 
@@ -789,13 +805,13 @@ File Size: ${doc.size}`;
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">
-                      This Month
+                      Pending Amount
                     </p>
-                    <p className="text-2xl font-bold text-green-600">₹1.8Cr</p>
+                    <p className="text-2xl font-bold text-yellow-600">{paymentSummary.pending.amount}</p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-green-500" />
+                  <Clock className="h-8 w-8 text-yellow-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">+15% vs last month</p>
+                <p className="text-xs text-gray-500 mt-2">{paymentSummary.pending.count} invoices pending</p>
               </CardContent>
             </Card>
 
@@ -803,27 +819,12 @@ File Size: ${doc.size}`;
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Overdue</p>
-                    <p className="text-2xl font-bold text-red-600">₹45L</p>
+                    <p className="text-sm font-medium text-gray-600">Overdue Amount</p>
+                    <p className="text-2xl font-bold text-red-600">{paymentSummary.overdue.amount}</p>
                   </div>
-                  <Clock className="h-8 w-8 text-red-500" />
+                  <FileText className="h-8 w-8 text-red-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">5 invoices overdue</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Collection Rate
-                    </p>
-                    <p className="text-2xl font-bold text-blue-600">92%</p>
-                  </div>
-                  <CreditCard className="h-8 w-8 text-blue-500" />
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Last 90 days</p>
+                <p className="text-xs text-gray-500 mt-2">{paymentSummary.overdue.count} invoices overdue</p>
               </CardContent>
             </Card>
           </div>
@@ -902,19 +903,19 @@ File Size: ${doc.size}`;
                     {
                       status: "Paid",
                       count: paymentSummary.paid.count,
-                      amount: paymentSummary.paid.amount,
+                      amount: paymentSummary.paid.actualAmount,
                       color: "bg-green-500",
                     },
                     {
                       status: "Pending",
                       count: paymentSummary.pending.count,
-                      amount: paymentSummary.pending.amount,
+                      amount: paymentSummary.pending.actualAmount,
                       color: "bg-yellow-500",
                     },
                     {
                       status: "Overdue",
                       count: paymentSummary.overdue.count,
-                      amount: paymentSummary.overdue.amount,
+                      amount: paymentSummary.overdue.actualAmount,
                       color: "bg-red-500",
                     },
                   ].map((item, index) => (
