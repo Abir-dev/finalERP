@@ -161,6 +161,7 @@ const AccountsDashboard = () => {
     const [taxes, setTaxes] = useState([]);
     const [taxCharges, setTaxCharges] = useState([]);
     const [projects, setProjects] = useState([]);
+    const [payments, setPayments] = useState([]);
     const [budgetMetrics, setBudgetMetrics] = useState({
         totalBudget: 0,
         totalSpent: 0,
@@ -191,6 +192,11 @@ const AccountsDashboard = () => {
 
         // Fetch projects data
         fetchProjects();
+
+        // Fetch payments data
+        axios.get(`${API_URL}/billing/payments`, { headers })
+            .then(res => setPayments(res.data))
+            .catch(() => { });
     }, []);
 
     const fetchProjects = async () => {
@@ -572,32 +578,25 @@ const AccountsDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatCard
                             title="Total Invoiced"
-                            value={`₹${(invoices.reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0) / 100000).toFixed(1)}L`}
+                            value={`₹${(invoices.reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0) / 100000).toFixed(2)}L`}
                             icon={FileText}
                             description="This month"
                             trend={{ value: 8, label: "vs last month" }}
                         />
                         <StatCard
                             title="Paid Invoices"
-                            value={`₹${(invoices.filter(inv => inv.status === 'PAID').reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0) / 100000).toFixed(1)}L`}
+                            value={`₹${(payments.filter((payment: any) => payment.paymentType === 'RECEIVE').reduce((sum, payment) => sum + (payment.total || 0), 0) / 100000).toFixed(2)}L`}
                             icon={Check}
-                            description="This month"
+                            description="Total payments received"
                             trend={{ value: 12, label: "vs last month" }}
                         />
                         <StatCard
                             title="Pending Amount"
-                            value={`₹${(invoices.filter(inv => inv.status !== 'PAID').reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0) / 100000).toFixed(1)}L`}
+                            value={`₹${((invoices.reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0) - payments.filter((payment: any) => payment.paymentType === 'RECEIVE').reduce((sum, payment) => sum + (payment.total || 0), 0)) / 100000).toFixed(2)}L`}
                             icon={AlertTriangle}
-                            description="Awaiting payment"
+                            description="Total Invoiced - Paid Invoices"
                             trend={{ value: -15, label: "vs last month" }}
                         />
-                        {/* <StatCard
-                            title="Average Invoice Value"
-                            value={`₹${invoices.length > 0 ? (invoices.reduce((sum, inv) => sum + (inv.total || inv.amount || 0), 0) / invoices.length / 1000).toFixed(0) : 0}K`}
-                            icon={TrendingUp}
-                            description="Per invoice"
-                            trend={{ value: 5, label: "vs last month" }}
-                        /> */}
                     </div>
 
                     <Card>
