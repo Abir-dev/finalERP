@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Express, Request, Response, NextFunction } from "express";
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
@@ -18,6 +18,7 @@ import siteOpsRoutes from './routes/siteOps';
 import vendorRoutes from './routes/vendor';
 import taxRoutes from './routes/tax';
 import materialRoutes from './routes/material';
+import logger from './logger/logger';
 
 dotenv.config();
 
@@ -34,12 +35,20 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Debug middleware to log request body
-app.use((req, res, next) => {
-  if (req.body) {
-    console.log('Request Body:', JSON.stringify(req.body));
-    console.log('Content-Type:', req.headers['content-type']);
+// Request logging middleware
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.info(`Request received: ${req.method} ${req.url}`);
+  
+  // Log request body for non-GET requests
+  if (req.method !== 'GET' && req.body && Object.keys(req.body).length > 0) {
+    logger.info(`Request Body: ${JSON.stringify(req.body)}`);
   }
+  
+  // Log request headers (optional - you can remove this if you don't want to log headers)
+  if (req.headers.authorization) {
+    logger.info(`Authorization: Bearer ${req.headers.authorization.substring}`);
+  }
+  
   next();
 });
 
@@ -68,12 +77,23 @@ app.get('/health', (req, res) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({   
-    error: 'Something went wrong!',
-    message: err.message,  })
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  if (error instanceof SyntaxError && "body" in error) {
+    logger.error("JSON parsing error:", {
+      error: error.message,
+      body: req.body,
+      url: req.url,
+      method: req.method,
+    });
+    return res.status(400).json({
+      error: "Invalid JSON format",
+      message:
+        "The request body contains malformed JSON. Please check your JSON syntax.",
+    });
+  }
+  next();
 });
+
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  logger.info(`Server is running at http://localhost:${port}`);
 });
