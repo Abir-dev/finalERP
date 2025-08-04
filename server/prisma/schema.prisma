@@ -46,6 +46,7 @@ model User {
   MaterialRequest  MaterialRequest[] @relation("MaterialRequestApprovals")
   PurchaseOrder    PurchaseOrder[]
   createdVendors   Vendor[]          @relation("VendorCreator")
+  createdNonBillables NonBillable[]  @relation("NonBillableCreator")
   Bid              Bid[]
 
   @@map("users")
@@ -73,15 +74,35 @@ model Project {
   startDate        DateTime
   endDate          DateTime
   status           String            @default("active")
+  location         String?
+  budget           Float?
+  projectType      String?
   managers         User[]            @relation("ProjectManagers")
   members          User[]            @relation("ProjectMembers")
   tasks            Task[]
   invoices         Invoice[]
   materialRequests MaterialRequest[]
+  nonBillables     NonBillable[]
+  totalSpend       Float?
   createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   Tender           Tender[]
   Payment          Payment[]
+}
+
+model NonBillable {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @db.Uuid
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  amount      Float
+  description String?
+  createdBy   String   @db.Uuid
+  creator     User     @relation("NonBillableCreator", fields: [createdBy], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("non_billables")
 }
 
 model Task {

@@ -46,7 +46,7 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
   
   // Log request headers (optional - you can remove this if you don't want to log headers)
   if (req.headers.authorization) {
-    logger.info(`Authorization: Bearer ${req.headers.authorization.substring}`);
+    logger.info(`Authorization: ${req.headers.authorization.substring(0, 20)}...`);
   }
   
   next();
