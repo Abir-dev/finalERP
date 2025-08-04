@@ -1,26 +1,58 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, FileText, CreditCard, Clock, TrendingUp, DollarSign, Loader2, Download, MoreVertical, Upload, CheckCircle, Mail, Trash2, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Toaster } from '@/components/ui/toaster';
-import PaymentEntryModal from '@/components/modals/PaymentEntryModal';
-import EditableInvoiceTable from '@/components/tables/EditableInvoiceTable';
-import { exportBillingReport, exportBillingStatement } from '@/utils/export-utils';
-import { toast } from '@/components/ui/use-toast';
-import { 
-  createProgressInvoice, 
-  generateMonthlyReport, 
-  followUpOverdue, 
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Plus,
+  FileText,
+  CreditCard,
+  Clock,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Loader2,
+  Download,
+  MoreVertical,
+  Upload,
+  CheckCircle,
+  Mail,
+  Trash2,
+  Eye,
+  Calendar,
+  Folder,
+  Building2,
+  Target,
+  MapPin,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Toaster } from "@/components/ui/toaster";
+import PaymentEntryModal from "@/components/modals/PaymentEntryModal";
+import EditableInvoiceTable from "@/components/tables/EditableInvoiceTable";
+import {
+  exportBillingReport,
+  exportBillingStatement,
+} from "@/utils/export-utils";
+import { toast } from "@/components/ui/use-toast";
+import {
+  createProgressInvoice,
+  generateMonthlyReport,
+  followUpOverdue,
   processPayments,
-  sendPaymentReminder
-} from '@/utils/billing-actions';
-import { downloadProgressInvoice } from '@/utils/invoice-generator';
+  sendPaymentReminder,
+} from "@/utils/billing-actions";
+import { downloadProgressInvoice } from "@/utils/invoice-generator";
 import axios from "axios";
-import InvoiceBuilderModal from '@/components/modals/InvoiceBuilderModal';
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal";
+import { Payment } from "@/types/payment";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Invoice {
   id: string;
@@ -60,11 +92,11 @@ interface ReminderResponse {
 interface Document {
   id: string;
   name: string;
-  type: 'Invoice' | 'Contract' | 'Receipt' | 'Tax' | 'Audit';
+  type: "Invoice" | "Contract" | "Receipt" | "Tax" | "Audit";
   size: string;
   uploadedBy: string;
   date: string;
-  status: 'Verified' | 'Pending Review';
+  status: "Verified" | "Pending Review";
   project?: string;
   amount?: string;
   client?: string;
@@ -90,72 +122,100 @@ const BillingManagerDashboard = () => {
     progressInvoice: false,
     monthlyReport: false,
     followUp: false,
-    payments: false
+    payments: false,
   });
 
   // Add state for reminder loading
-  const [reminderLoadingStates, setReminderLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [reminderLoadingStates, setReminderLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Add state for document loading
-  const [documentLoadingStates, setDocumentLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [documentLoadingStates, setDocumentLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Add ref for file input
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Add state for selected tab
-  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [selectedTab, setSelectedTab] = useState<string>("all");
 
   // Replace static arrays with backend data
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [paymentSummary, setPaymentSummary] = useState({
-    received: { count: 0, amount: '' },
-    pending: { count: 0, amount: '' },
-    overdue: { count: 0, amount: '' }
+    received: { count: 0, amount: "" },
+    pending: { count: 0, amount: "" },
+    overdue: { count: 0, amount: "" },
   });
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [progressInvoices, setProgressInvoices] = useState<ProgressInvoice[]>([]);
+  const [progressInvoices, setProgressInvoices] = useState<ProgressInvoice[]>(
+    []
+  );
 
-  const [generatingInvoice, setGeneratingInvoice] = useState<{ [key: string]: boolean }>({});
+  const [generatingInvoice, setGeneratingInvoice] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
-    axios.get(`${API_URL}/billing/invoices`, { headers })
-      .then(res => setInvoices(Array.isArray(res.data) ? res.data : []))
+
+    axios
+      .get(`${API_URL}/billing/invoices`, { headers })
+      .then((res) => setInvoices(Array.isArray(res.data) ? res.data : []))
       .catch(() => setInvoices([]));
-      
-    axios.get(`${API_URL}/billing/payment-summary`, { headers })
-      .then(res => setPaymentSummary(res.data || {
-        received: { count: 0, amount: '₹0' },
-        pending: { count: 0, amount: '₹0' },
-        overdue: { count: 0, amount: '₹0' }
-      }))
-      .catch(() => setPaymentSummary({
-        received: { count: 0, amount: '₹0' },
-        pending: { count: 0, amount: '₹0' },
-        overdue: { count: 0, amount: '₹0' }
-      }));
-      
-    axios.get(`${API_URL}/billing/documents`, { headers })
-      .then(res => setDocuments(Array.isArray(res.data) ? res.data : []))
+
+    axios
+      .get(`${API_URL}/billing/payments`, { headers })
+      .then((res) => setPayments(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setPayments([]));
+
+    axios
+      .get(`${API_URL}/billing/payment-summary`, { headers })
+      .then((res) =>
+        setPaymentSummary(
+          res.data || {
+            received: { count: 0, amount: "₹0" },
+            pending: { count: 0, amount: "₹0" },
+            overdue: { count: 0, amount: "₹0" },
+          }
+        )
+      )
+      .catch(() =>
+        setPaymentSummary({
+          received: { count: 0, amount: "₹0" },
+          pending: { count: 0, amount: "₹0" },
+          overdue: { count: 0, amount: "₹0" },
+        })
+      );
+
+    axios
+      .get(`${API_URL}/billing/documents`, { headers })
+      .then((res) => setDocuments(Array.isArray(res.data) ? res.data : []))
       .catch(() => setDocuments([]));
-      
-    axios.get(`${API_URL}/billing/progress-invoices`, { headers })
-      .then(res => setProgressInvoices(Array.isArray(res.data) ? res.data : []))
+
+    axios
+      .get(`${API_URL}/billing/progress-invoices`, { headers })
+      .then((res) =>
+        setProgressInvoices(Array.isArray(res.data) ? res.data : [])
+      )
       .catch(() => setProgressInvoices([]));
   }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Paid':
-        return 'bg-green-500';
-      case 'Pending':
-        return 'bg-yellow-500';
-      case 'Overdue':
-        return 'bg-red-500';
+      case "Paid":
+        return "bg-green-500";
+      case "Pending":
+        return "bg-yellow-500";
+      case "Overdue":
+        return "bg-red-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   };
 
@@ -163,72 +223,72 @@ const BillingManagerDashboard = () => {
     try {
       exportBillingReport();
     } catch (error) {
-      console.error('Failed to export report:', error);
+      console.error("Failed to export report:", error);
       // Here you might want to show a toast notification for error
     }
   };
 
   const handleProgressInvoice = async () => {
-    setLoadingStates(prev => ({ ...prev, progressInvoice: true }));
+    setLoadingStates((prev) => ({ ...prev, progressInvoice: true }));
     try {
       await createProgressInvoice({
         projectId: "PRJ-2024-001",
         completionPercentage: 75,
-        amount: "₹12L"
+        amount: "₹12L",
       });
     } finally {
-      setLoadingStates(prev => ({ ...prev, progressInvoice: false }));
+      setLoadingStates((prev) => ({ ...prev, progressInvoice: false }));
     }
   };
 
   const handleMonthlyReport = async () => {
-    setLoadingStates(prev => ({ ...prev, monthlyReport: true }));
+    setLoadingStates((prev) => ({ ...prev, monthlyReport: true }));
     try {
       await generateMonthlyReport();
     } finally {
-      setLoadingStates(prev => ({ ...prev, monthlyReport: false }));
+      setLoadingStates((prev) => ({ ...prev, monthlyReport: false }));
     }
   };
 
   const handleFollowUp = async () => {
-    setLoadingStates(prev => ({ ...prev, followUp: true }));
+    setLoadingStates((prev) => ({ ...prev, followUp: true }));
     try {
       await followUpOverdue();
     } finally {
-      setLoadingStates(prev => ({ ...prev, followUp: false }));
+      setLoadingStates((prev) => ({ ...prev, followUp: false }));
     }
   };
 
   const handleProcessPayments = async () => {
-    setLoadingStates(prev => ({ ...prev, payments: true }));
+    setLoadingStates((prev) => ({ ...prev, payments: true }));
     try {
       await processPayments();
     } finally {
-      setLoadingStates(prev => ({ ...prev, payments: false }));
+      setLoadingStates((prev) => ({ ...prev, payments: false }));
     }
   };
 
   const handleSendReminder = async (invoice: Invoice) => {
     // Set loading state for this invoice
-    const invoiceId = invoice.id || 'unknown';
-    setReminderLoadingStates(prev => ({ ...prev, [invoiceId]: true }));
+    const invoiceId = invoice.id || "unknown";
+    setReminderLoadingStates((prev) => ({ ...prev, [invoiceId]: true }));
 
     try {
       const result = await sendPaymentReminder({
         invoiceId: invoiceId,
-        client: invoice.client?.name || 'Unknown Client',
+        client: invoice.client?.name || "Unknown Client",
         amount: (invoice.total || 0).toString(),
-        dueDate: invoice.dueDate || '',
-        reminderCount: invoice.reminderCount || 0
+        dueDate: invoice.dueDate || "",
+        reminderCount: invoice.reminderCount || 0,
       });
 
       // Update invoice with new reminder count and timestamp
-      const updatedInvoices = invoices.map(inv => {
+      const updatedInvoices = invoices.map((inv) => {
         if (inv.id === invoiceId) {
           return {
             ...inv,
             reminderCount: (result as ReminderResponse).reminderCount,
-            lastReminderSent: (result as ReminderResponse).sentAt
+            lastReminderSent: (result as ReminderResponse).sentAt,
           };
         }
         return inv;
@@ -237,42 +297,49 @@ const BillingManagerDashboard = () => {
 
       toast({
         title: "Reminder Sent Successfully",
-        description: `Payment reminder sent to ${invoice.client?.name || 'Unknown Client'}`,
+        description: `Payment reminder sent to ${
+          invoice.client?.name || "Unknown Client"
+        }`,
         variant: "default",
       });
     } catch (error) {
       toast({
         title: "Failed to Send Reminder",
-        description: "There was an error sending the payment reminder. Please try again.",
+        description:
+          "There was an error sending the payment reminder. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setReminderLoadingStates(prev => ({ ...prev, [invoiceId]: false }));
+      setReminderLoadingStates((prev) => ({ ...prev, [invoiceId]: false }));
     }
   };
 
   const handleRecordPayment = (invoiceId: string) => {
-    const updatedInvoices = invoices.map(inv => {
+    const updatedInvoices = invoices.map((inv) => {
       if (inv.id === invoiceId) {
         const paidAmount = inv.total || 0;
-        
+
         // Update payment summary
-        setPaymentSummary(prev => {
-          const receivedAmountStr = prev.received.amount || '₹0';
-          const pendingAmountStr = prev.pending.amount || '₹0';
-          const newReceived = parseFloat(receivedAmountStr.replace('₹', '').replace(',', '')) + paidAmount;
-          const newPending = parseFloat(pendingAmountStr.replace('₹', '').replace(',', '')) - paidAmount;
-          
+        setPaymentSummary((prev) => {
+          const receivedAmountStr = prev.received.amount || "₹0";
+          const pendingAmountStr = prev.pending.amount || "₹0";
+          const newReceived =
+            parseFloat(receivedAmountStr.replace("₹", "").replace(",", "")) +
+            paidAmount;
+          const newPending =
+            parseFloat(pendingAmountStr.replace("₹", "").replace(",", "")) -
+            paidAmount;
+
           return {
             received: {
               count: prev.received.count + 1,
-              amount: `₹${newReceived.toLocaleString('en-IN')}`
+              amount: `₹${newReceived.toLocaleString("en-IN")}`,
             },
             pending: {
               count: Math.max(0, prev.pending.count - 1),
-              amount: `₹${Math.max(0, newPending).toLocaleString('en-IN')}`
+              amount: `₹${Math.max(0, newPending).toLocaleString("en-IN")}`,
             },
-            overdue: prev.overdue
+            overdue: prev.overdue,
           };
         });
 
@@ -280,11 +347,11 @@ const BillingManagerDashboard = () => {
           title: "Payment Recorded",
           description: `Payment recorded for invoice ${invoiceId}`,
         });
-        
-        return { 
-          ...inv, 
-          status: 'Paid',
-          paidDate: new Date().toISOString().split('T')[0]
+
+        return {
+          ...inv,
+          status: "Paid",
+          paidDate: new Date().toISOString().split("T")[0],
         };
       }
       return inv;
@@ -319,12 +386,12 @@ const BillingManagerDashboard = () => {
       name: file.name,
       type: getDocumentType(file.name),
       size: formatFileSize(file.size),
-      uploadedBy: 'Current User',
-      date: new Date().toISOString().split('T')[0],
-      status: 'Pending Review'
+      uploadedBy: "Current User",
+      date: new Date().toISOString().split("T")[0],
+      status: "Pending Review",
     };
 
-    setDocuments(prev => [newDoc, ...prev]);
+    setDocuments((prev) => [newDoc, ...prev]);
     toast({
       title: "Document Uploaded",
       description: `${file.name} has been uploaded successfully.`,
@@ -332,7 +399,7 @@ const BillingManagerDashboard = () => {
 
     // Reset file input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -343,43 +410,43 @@ const BillingManagerDashboard = () => {
   };
 
   const handleDownload = async (doc: Document) => {
-    setDocumentLoadingStates(prev => ({ ...prev, [doc.id]: true }));
+    setDocumentLoadingStates((prev) => ({ ...prev, [doc.id]: true }));
     try {
       // Create a sample file based on document type
-      let fileContent = '';
-      let mimeType = '';
+      let fileContent = "";
+      let mimeType = "";
       let fileName = doc.name;
 
       switch (doc.type) {
-        case 'Invoice':
+        case "Invoice":
           fileContent = generateInvoiceContent(doc);
-          mimeType = 'application/pdf';
+          mimeType = "application/pdf";
           break;
-        case 'Contract':
+        case "Contract":
           fileContent = generateContractContent(doc);
-          mimeType = 'application/msword';
+          mimeType = "application/msword";
           break;
-        case 'Receipt':
+        case "Receipt":
           fileContent = generateReceiptContent(doc);
-          mimeType = 'application/pdf';
+          mimeType = "application/pdf";
           break;
-        case 'Tax':
+        case "Tax":
           fileContent = generateTaxContent(doc);
-          mimeType = 'application/pdf';
+          mimeType = "application/pdf";
           break;
-        case 'Audit':
+        case "Audit":
           fileContent = generateAuditContent(doc);
-          mimeType = 'application/pdf';
+          mimeType = "application/pdf";
           break;
         default:
           fileContent = generateGenericContent(doc);
-          mimeType = 'text/plain';
+          mimeType = "text/plain";
       }
 
       // Create and trigger download
       const blob = new Blob([fileContent], { type: mimeType });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = fileName;
       document.body.appendChild(link);
@@ -398,14 +465,16 @@ const BillingManagerDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setDocumentLoadingStates(prev => ({ ...prev, [doc.id]: false }));
+      setDocumentLoadingStates((prev) => ({ ...prev, [doc.id]: false }));
     }
   };
 
   const handleVerify = (doc: Document) => {
-    setDocuments(prev => prev.map(d => 
-      d.id === doc.id ? { ...d, status: 'Verified' as const } : d
-    ));
+    setDocuments((prev) =>
+      prev.map((d) =>
+        d.id === doc.id ? { ...d, status: "Verified" as const } : d
+      )
+    );
     toast({
       title: "Document Verified",
       description: `${doc.name} has been marked as verified.`,
@@ -413,7 +482,7 @@ const BillingManagerDashboard = () => {
   };
 
   const handleDelete = (doc: Document) => {
-    setDocuments(prev => prev.filter(d => d.id !== doc.id));
+    setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     toast({
       title: "Document Deleted",
       description: `${doc.name} has been deleted.`,
@@ -421,19 +490,19 @@ const BillingManagerDashboard = () => {
     });
   };
 
-  const getDocumentType = (filename: string): Document['type'] => {
-    if (filename.toLowerCase().includes('invoice')) return 'Invoice';
-    if (filename.toLowerCase().includes('contract')) return 'Contract';
-    if (filename.toLowerCase().includes('receipt')) return 'Receipt';
-    if (filename.toLowerCase().includes('tax')) return 'Tax';
-    if (filename.toLowerCase().includes('audit')) return 'Audit';
-    return 'Invoice';
+  const getDocumentType = (filename: string): Document["type"] => {
+    if (filename.toLowerCase().includes("invoice")) return "Invoice";
+    if (filename.toLowerCase().includes("contract")) return "Contract";
+    if (filename.toLowerCase().includes("receipt")) return "Receipt";
+    if (filename.toLowerCase().includes("tax")) return "Tax";
+    if (filename.toLowerCase().includes("audit")) return "Audit";
+    return "Invoice";
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const generateInvoiceContent = (doc: Document): string => {
@@ -442,9 +511,9 @@ const BillingManagerDashboard = () => {
 Document Name: ${doc.name}
 Invoice Type: ${doc.type}
 Date: ${doc.date}
-Client: ${doc.client || 'N/A'}
-Project: ${doc.project || 'N/A'}
-Amount: ${doc.amount || 'N/A'}
+Client: ${doc.client || "N/A"}
+Project: ${doc.project || "N/A"}
+Amount: ${doc.amount || "N/A"}
 
 INVOICE DETAILS:
 ================
@@ -464,8 +533,8 @@ Thank you for your business!`;
 Document Name: ${doc.name}
 Contract Type: ${doc.type}
 Date: ${doc.date}
-Client: ${doc.client || 'N/A'}
-Amount: ${doc.amount || 'N/A'}
+Client: ${doc.client || "N/A"}
+Amount: ${doc.amount || "N/A"}
 
 CONTRACT TERMS:
 ===============
@@ -488,7 +557,7 @@ File Size: ${doc.size}`;
 Document Name: ${doc.name}
 Receipt Type: ${doc.type}
 Date: ${doc.date}
-Payment Method: ${doc.method || 'N/A'}
+Payment Method: ${doc.method || "N/A"}
 
 PAYMENT DETAILS:
 ================
@@ -561,23 +630,64 @@ Status: ${doc.status}
 File Size: ${doc.size}`;
   };
 
-  const filteredDocuments = documents.filter(doc => {
+  const getPaymentStatusColor = (paymentType: string) => {
+    switch (paymentType) {
+      case "RECEIVE":
+        return "bg-green-500";
+      case "PAY":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getPartyTypeColor = (partyType: string) => {
+    switch (partyType) {
+      case "CUSTOMER":
+        return "bg-blue-500 text-white";
+      case "VENDOR":
+        return "bg-orange-500 text-white";
+      case "EMPLOYEE":
+        return "bg-purple-500 text-white";
+      case "BANK":
+        return "bg-green-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
+  const getMonthlyPayments = () => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    return payments.filter((payment) => {
+      const paymentDate = new Date(payment.postingDate);
+      return (
+        paymentDate.getMonth() === currentMonth &&
+        paymentDate.getFullYear() === currentYear
+      );
+    });
+  };
+
+  const monthlyPayments = getMonthlyPayments();
+
+  const filteredDocuments = documents.filter((doc) => {
     switch (selectedTab) {
-      case 'invoices':
-        return doc.type === 'Invoice';
-      case 'contracts':
-        return doc.type === 'Contract';
-      case 'receipts':
-        return doc.type === 'Receipt';
-      case 'others':
-        return doc.type === 'Tax' || doc.type === 'Audit';
+      case "invoices":
+        return doc.type === "Invoice";
+      case "contracts":
+        return doc.type === "Contract";
+      case "receipts":
+        return doc.type === "Receipt";
+      case "others":
+        return doc.type === "Tax" || doc.type === "Audit";
       default:
         return true;
     }
   });
 
   const handleGenerateProgressInvoice = async (invoice: ProgressInvoice) => {
-    setGeneratingInvoice(prev => ({ ...prev, [invoice.projectId]: true }));
+    setGeneratingInvoice((prev) => ({ ...prev, [invoice.projectId]: true }));
 
     try {
       // Generate and download the invoice
@@ -585,34 +695,36 @@ File Size: ${doc.size}`;
 
       if (success) {
         // Update the invoice data
-        setProgressInvoices(prev => prev.map(inv => {
-          if (inv.projectId === invoice.projectId) {
-            return {
-              ...inv,
-              billed: inv.completed,
-              nextBilling: '₹0',
-              invoiceDate: new Date().toISOString().split('T')[0]
-            };
-          }
-          return inv;
-        }));
+        setProgressInvoices((prev) =>
+          prev.map((inv) => {
+            if (inv.projectId === invoice.projectId) {
+              return {
+                ...inv,
+                billed: inv.completed,
+                nextBilling: "₹0",
+                invoiceDate: new Date().toISOString().split("T")[0],
+              };
+            }
+            return inv;
+          })
+        );
 
         toast({
           title: "Invoice Generated",
           description: `Progress invoice for ${invoice.project} has been generated and downloaded.`,
         });
       } else {
-        throw new Error('Failed to generate invoice');
+        throw new Error("Failed to generate invoice");
       }
     } catch (error) {
-      console.error('Error generating invoice:', error);
+      console.error("Error generating invoice:", error);
       toast({
         title: "Error",
         description: "Failed to generate progress invoice. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setGeneratingInvoice(prev => ({ ...prev, [invoice.projectId]: false }));
+      setGeneratingInvoice((prev) => ({ ...prev, [invoice.projectId]: false }));
     }
   };
 
@@ -621,15 +733,23 @@ File Size: ${doc.size}`;
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Billing Management</h1>
-          <p className="text-muted-foreground">Invoice generation and payment tracking</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Billing Management
+          </h1>
+          <p className="text-muted-foreground">
+            Invoice generation and payment tracking
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowInvoiceModal(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             New Invoice
           </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExportReport}>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleExportReport}
+          >
             <FileText className="h-4 w-4" />
             Export Report
           </Button>
@@ -654,7 +774,9 @@ File Size: ${doc.size}`;
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Total Outstanding
+                    </p>
                     <p className="text-2xl font-bold text-purple-600">₹2.4Cr</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-purple-500" />
@@ -667,7 +789,9 @@ File Size: ${doc.size}`;
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      This Month
+                    </p>
                     <p className="text-2xl font-bold text-green-600">₹1.8Cr</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-green-500" />
@@ -693,7 +817,9 @@ File Size: ${doc.size}`;
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Collection Rate</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Collection Rate
+                    </p>
                     <p className="text-2xl font-bold text-blue-600">92%</p>
                   </div>
                   <CreditCard className="h-8 w-8 text-blue-500" />
@@ -711,8 +837,8 @@ File Size: ${doc.size}`;
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button 
-                    className="w-full justify-start" 
+                  <Button
+                    className="w-full justify-start"
                     variant="outline"
                     onClick={handleProgressInvoice}
                     disabled={loadingStates.progressInvoice}
@@ -724,8 +850,8 @@ File Size: ${doc.size}`;
                     )}
                     Create Progress Invoice
                   </Button>
-                  <Button 
-                    className="w-full justify-start" 
+                  <Button
+                    className="w-full justify-start"
                     variant="outline"
                     onClick={handleMonthlyReport}
                     disabled={loadingStates.monthlyReport}
@@ -737,8 +863,8 @@ File Size: ${doc.size}`;
                     )}
                     Generate Monthly Report
                   </Button>
-                  <Button 
-                    className="w-full justify-start" 
+                  <Button
+                    className="w-full justify-start"
                     variant="outline"
                     onClick={handleFollowUp}
                     disabled={loadingStates.followUp}
@@ -750,8 +876,8 @@ File Size: ${doc.size}`;
                     )}
                     Follow Up Overdue
                   </Button>
-                  <Button 
-                    className="w-full justify-start" 
+                  <Button
+                    className="w-full justify-start"
                     variant="outline"
                     onClick={handleProcessPayments}
                     disabled={loadingStates.payments}
@@ -774,19 +900,45 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-4">
                   {[
-                    { status: 'Paid', count: 12, amount: '₹1.8Cr', color: 'bg-green-500' },
-                    { status: 'Pending', count: 6, amount: '₹95L', color: 'bg-yellow-500' },
-                    { status: 'Overdue', count: 5, amount: '₹45L', color: 'bg-red-500' }
+                    {
+                      status: "Paid",
+                      count: 12,
+                      amount: "₹1.8Cr",
+                      color: "bg-green-500",
+                    },
+                    {
+                      status: "Pending",
+                      count: 6,
+                      amount: "₹95L",
+                      color: "bg-yellow-500",
+                    },
+                    {
+                      status: "Overdue",
+                      count: 5,
+                      amount: "₹45L",
+                      color: "bg-red-500",
+                    },
                   ].map((item, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                    >
                       <div className="flex items-center">
-                        <div className={`w-3 h-3 ${item.color} rounded-full mr-3`}></div>
+                        <div
+                          className={`w-3 h-3 ${item.color} rounded-full mr-3`}
+                        ></div>
                         <div>
-                          <p className="font-medium text-gray-900">{item.status}</p>
-                          <p className="text-sm text-gray-600">{item.count} invoices</p>
+                          <p className="font-medium text-gray-900">
+                            {item.status}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {item.count} invoices
+                          </p>
                         </div>
                       </div>
-                      <p className="font-semibold text-gray-900">{item.amount}</p>
+                      <p className="font-semibold text-gray-900">
+                        {item.amount}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -800,14 +952,16 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-4">
                   {[
-                    { month: 'March 2024', collection: 88, target: 90 },
-                    { month: 'April 2024', collection: 92, target: 90 },
-                    { month: 'May 2024', collection: 85, target: 90 }
+                    { month: "March 2024", collection: 88, target: 90 },
+                    { month: "April 2024", collection: 92, target: 90 },
+                    { month: "May 2024", collection: 85, target: 90 },
                   ].map((item, index) => (
                     <div key={index}>
                       <div className="flex justify-between text-sm mb-1">
                         <span>{item.month}</span>
-                        <span>{item.collection}% / {item.target}%</span>
+                        <span>
+                          {item.collection}% / {item.target}%
+                        </span>
                       </div>
                       <Progress value={item.collection} className="h-2" />
                     </div>
@@ -825,7 +979,11 @@ File Size: ${doc.size}`;
                 <div>
                   <CardTitle>Invoice Management</CardTitle>
                 </div>
-                <Button variant="outline" size="sm" onClick={handleExportStatement}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportStatement}
+                >
                   <FileText className="h-4 w-4 mr-2" />
                   Export Statement
                 </Button>
@@ -841,23 +999,28 @@ File Size: ${doc.size}`;
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { id: 'INV-2024-001', project: 'Residential Complex A', amount: '₹15,50,000', status: 'Sent', date: '2024-03-15' },
-                    { id: 'INV-2024-002', project: 'Office Tower B', amount: '₹8,75,000', status: 'Draft', date: '2024-03-18' },
-                    { id: 'INV-2024-003', project: 'Shopping Mall C', amount: '₹22,30,000', status: 'Approved', date: '2024-03-20' }
-                  ].map((invoice) => (
-                    <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  {invoices.map((invoice) => (
+                    <div
+                      key={invoice.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
                       <div>
-                        <p className="font-medium">{invoice.id}</p>
-                        <p className="text-sm text-muted-foreground">{invoice.project}</p>
+                        <p className="font-medium">{invoice.invoiceNumber}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {invoice.project.name}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{invoice.amount}</p>
-                        <Badge variant={
-                          invoice.status === 'Sent' ? 'default' :
-                          invoice.status === 'Draft' ? 'secondary' :
-                          'outline'
-                        }>
+                        <p className="font-medium">₹ {invoice.total}</p>
+                        <Badge
+                          variant={
+                            invoice.status === "Sent"
+                              ? "default"
+                              : invoice.status === "Draft"
+                              ? "secondary"
+                              : "outline"
+                          }
+                        >
                           {invoice.status}
                         </Badge>
                       </div>
@@ -872,78 +1035,196 @@ File Size: ${doc.size}`;
         <TabsContent value="payments">
           <div className="space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Payment Tracking</CardTitle>
-                <Button size="sm" onClick={() => setShowPaymentEntryModal(true)}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Payment Entry
-                </Button>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle>Payment History</CardTitle>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowPaymentEntryModal(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Payment Entry
+                  </Button>
+                </div>
+                <CardDescription>
+                  Track all payment transactions and their status
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {invoices.map((payment) => (
-                    <div key={payment.id || 'unknown'} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{payment.invoiceNumber || payment.id || 'N/A'}</p>
-                        <p className="text-sm text-muted-foreground">{payment.client?.name || 'N/A'}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={
-                            payment.status === 'Paid' ? 'default' :
-                            payment.status === 'Pending' ? 'secondary' :
-                            'destructive'
-                          }>
-                            {payment.status || 'Unknown'}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            Due: {payment.dueDate || 'N/A'}
-                          </span>
-                          {(payment.reminderCount || 0) > 0 && (
-                            <Badge variant="outline" className="ml-2">
-                              {payment.reminderCount || 0} reminder{(payment.reminderCount || 0) > 1 ? 's' : ''} sent
+                {payments.length > 0 ? (
+                  <div className="space-y-4">
+                    {payments.map((payment) => (
+                      <div
+                        key={payment.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`p-2 rounded-full ${
+                              payment.paymentType === "RECEIVE"
+                                ? "bg-green-100 text-green-600"
+                                : "bg-red-100 text-red-600"
+                            }`}
+                          >
+                            {payment.paymentType === "RECEIVE" ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium">
+                                {payment.Invoice?.invoiceNumber ||
+                                  "Direct Payment"}
+                              </h4>
+                              <Badge
+                                variant={
+                                  payment.paymentType === "RECEIVE"
+                                    ? "default"
+                                    : "destructive"
+                                }
+                                className="text-xs"
+                              >
+                                {payment.paymentType}
+                              </Badge>
+                              <Badge
+                                variant="default"
+                                className={`text-xs ${getPartyTypeColor(
+                                  payment.partyType
+                                )}`}
+                              >
+                                {payment.partyType}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-1">
+                              {payment.partyName}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <CreditCard className="h-3 w-3" />
+                                {payment.modeOfPayment || "N/A"}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {new Date(
+                                  payment.postingDate
+                                ).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                              {payment.project?.name && (
+                                <span className="flex items-center gap-1">
+                                  <Folder className="h-3 w-3" />
+                                  {payment.project.name}
+                                </span>
+                              )}
+                              {payment.accountPaidTo && (
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  {payment.accountPaidTo}
+                                </span>
+                              )}
+                            </div>
+                            {payment.taxes && payment.taxes.length > 0 && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <span>
+                                  Base: ₹
+                                  {(payment.amount || 0).toLocaleString(
+                                    "en-IN"
+                                  )}
+                                </span>
+                                <span>•</span>
+                                <span>
+                                  Tax: ₹
+                                  {payment.taxes
+                                    .reduce((sum, tax) => sum + tax.amount, 0)
+                                    .toLocaleString("en-IN")}
+                                </span>
+                              </div>
+                            )}
+                            {(payment.costCenter || payment.placeOfSupply) && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                {payment.costCenter && (
+                                  <span className="flex items-center gap-1">
+                                    <Target className="h-3 w-3" />
+                                    {payment.costCenter}
+                                  </span>
+                                )}
+                                {payment.placeOfSupply && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {payment.placeOfSupply}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div
+                            className={`text-lg font-bold ${
+                              payment.paymentType === "RECEIVE"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {payment.paymentType === "RECEIVE" ? "+" : "-"}₹
+                            {(payment.total || 0).toLocaleString("en-IN")}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {payment.paymentType === "RECEIVE"
+                                ? "Received"
+                                : "Paid"}
                             </Badge>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(payment.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
+                            </p>
+                          </div>
+                          {payment.Invoice?.invoiceNumber && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Invoice: {payment.Invoice.invoiceNumber}
+                            </p>
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">₹{(payment.total || 0).toLocaleString('en-IN')}</p>
-                        {payment.status === 'Paid' ? (
-                          <p className="text-sm text-green-600">Paid on {payment.paidDate || 'N/A'}</p>
-                        ) : payment.status === 'Overdue' ? (
-                          <div className="flex flex-col items-end gap-1">
-                            {payment.lastReminderSent && (
-                              <p className="text-xs text-muted-foreground">
-                                Last reminder: {new Date(payment.lastReminderSent).toLocaleDateString()}
-                              </p>
-                            )}
-                            <Button 
-                              size="sm" 
-                              variant="destructive" 
-                              className="mt-2"
-                              onClick={() => handleSendReminder(payment)}
-                              disabled={reminderLoadingStates[payment.id || 'unknown']}
-                            >
-                              {reminderLoadingStates[payment.id || 'unknown'] ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Sending...
-                                </>
-                              ) : (
-                                <>
-                                  <Mail className="h-4 w-4 mr-2" />
-                                  Send Reminder
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button size="sm" variant="outline" className="mt-2" onClick={() => handleRecordPayment(payment.id || 'unknown')}>
-                            Record Payment
-                          </Button>
-                        )}
-                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <CreditCard className="h-8 w-8 text-muted-foreground" />
                     </div>
-                  ))}
-                </div>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No Payment Records
+                    </h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                      Track all your payment transactions and their status.
+                      Create your first payment entry to get started.
+                    </p>
+                    <Button onClick={() => setShowPaymentEntryModal(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Payment Entry
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -952,21 +1233,82 @@ File Size: ${doc.size}`;
                 <CardTitle>Payment Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total Received</p>
-                    <p className="text-2xl font-bold text-green-600">{paymentSummary.received.amount || '₹0'}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.received.count || 0} payment{(paymentSummary.received.count || 0) !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Total Received
+                    </p>
+                    <p className="text-2xl font-bold text-green-600">
+                      ₹
+                      {monthlyPayments
+                        .filter((p) => p.paymentType === "RECEIVE")
+                        .reduce((sum, p) => sum + p.total, 0)
+                        .toLocaleString("en-IN")}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {
+                        monthlyPayments.filter(
+                          (p) => p.paymentType === "RECEIVE"
+                        ).length
+                      }{" "}
+                      payment
+                      {monthlyPayments.filter(
+                        (p) => p.paymentType === "RECEIVE"
+                      ).length !== 1
+                        ? "s"
+                        : ""}
+                    </p>
                   </div>
                   <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold text-yellow-600">{paymentSummary.pending.amount || '₹0'}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.pending.count || 0} payment{(paymentSummary.pending.count || 0) !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-muted-foreground">Total Paid</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      ₹
+                      {monthlyPayments
+                        .filter((p) => p.paymentType === "PAY")
+                        .reduce((sum, p) => sum + p.total, 0)
+                        .toLocaleString("en-IN")}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {
+                        monthlyPayments.filter((p) => p.paymentType === "PAY")
+                          .length
+                      }{" "}
+                      payment
+                      {monthlyPayments.filter((p) => p.paymentType === "PAY")
+                        .length !== 1
+                        ? "s"
+                        : ""}
+                    </p>
                   </div>
                   <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Overdue</p>
-                    <p className="text-2xl font-bold text-red-600">{paymentSummary.overdue.amount || '₹0'}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{paymentSummary.overdue.count || 0} payment{(paymentSummary.overdue.count || 0) !== 1 ? 's' : ''}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Net Cash Flow
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      ₹
+                      {(
+                        monthlyPayments
+                          .filter((p) => p.paymentType === "RECEIVE")
+                          .reduce((sum, p) => sum + p.total, 0) -
+                        monthlyPayments
+                          .filter((p) => p.paymentType === "PAY")
+                          .reduce((sum, p) => sum + p.total, 0)
+                      ).toLocaleString("en-IN")}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      This month
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Total Transactions
+                    </p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {payments.length}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      All time
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -985,33 +1327,46 @@ File Size: ${doc.size}`;
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium">Monthly Revenue</p>
-                      <p className="text-sm text-muted-foreground">Last 6 months</p>
+                      <p className="text-sm text-muted-foreground">
+                        Last 6 months
+                      </p>
                     </div>
                     <div className="space-y-1">
                       {[
-                        { month: 'October', amount: 180, target: 200 },
-                        { month: 'November', amount: 220, target: 200 },
-                        { month: 'December', amount: 260, target: 200 },
-                        { month: 'January', amount: 190, target: 200 },
-                        { month: 'February', amount: 240, target: 200 },
-                        { month: 'March', amount: 280, target: 200 },
+                        { month: "October", amount: 180, target: 200 },
+                        { month: "November", amount: 220, target: 200 },
+                        { month: "December", amount: 260, target: 200 },
+                        { month: "January", amount: 190, target: 200 },
+                        { month: "February", amount: 240, target: 200 },
+                        { month: "March", amount: 280, target: 200 },
                       ].map((data) => (
-                        <div key={data.month} className="flex items-center gap-4">
+                        <div
+                          key={data.month}
+                          className="flex items-center gap-4"
+                        >
                           <p className="w-20 text-sm">{data.month}</p>
                           <div className="flex-1 space-y-1">
                             <div className="flex gap-2 items-center">
-                              <div 
+                              <div
                                 className="h-3 bg-primary rounded"
-                                style={{ width: `${(data.amount/300)*100}%` }}
+                                style={{
+                                  width: `${(data.amount / 300) * 100}%`,
+                                }}
                               />
-                              <span className="text-sm font-medium">₹{data.amount}L</span>
+                              <span className="text-sm font-medium">
+                                ₹{data.amount}L
+                              </span>
                             </div>
                             <div className="flex gap-2 items-center">
-                              <div 
+                              <div
                                 className="h-1 bg-muted rounded"
-                                style={{ width: `${(data.target/300)*100}%` }}
+                                style={{
+                                  width: `${(data.target / 300) * 100}%`,
+                                }}
                               />
-                              <span className="text-xs text-muted-foreground">Target: ₹{data.target}L</span>
+                              <span className="text-xs text-muted-foreground">
+                                Target: ₹{data.target}L
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1041,26 +1396,50 @@ File Size: ${doc.size}`;
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium">Collection Rate</p>
-                      <p className="text-sm text-muted-foreground">By Project Type</p>
+                      <p className="text-sm text-muted-foreground">
+                        By Project Type
+                      </p>
                     </div>
                     <div className="space-y-3">
                       {[
-                        { type: 'Residential', collected: 92, pending: 8, amount: '320L' },
-                        { type: 'Commercial', collected: 88, pending: 12, amount: '450L' },
-                        { type: 'Industrial', collected: 95, pending: 5, amount: '280L' },
-                        { type: 'Infrastructure', collected: 85, pending: 15, amount: '520L' },
+                        {
+                          type: "Residential",
+                          collected: 92,
+                          pending: 8,
+                          amount: "320L",
+                        },
+                        {
+                          type: "Commercial",
+                          collected: 88,
+                          pending: 12,
+                          amount: "450L",
+                        },
+                        {
+                          type: "Industrial",
+                          collected: 95,
+                          pending: 5,
+                          amount: "280L",
+                        },
+                        {
+                          type: "Infrastructure",
+                          collected: 85,
+                          pending: 15,
+                          amount: "520L",
+                        },
                       ].map((data) => (
                         <div key={data.type} className="space-y-1">
                           <div className="flex justify-between text-sm">
                             <span>{data.type}</span>
-                            <span className="text-muted-foreground">₹{data.amount}</span>
+                            <span className="text-muted-foreground">
+                              ₹{data.amount}
+                            </span>
                           </div>
                           <div className="flex h-2 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="bg-green-500"
                               style={{ width: `${data.collected}%` }}
                             />
-                            <div 
+                            <div
                               className="bg-yellow-500"
                               style={{ width: `${data.pending}%` }}
                             />
@@ -1075,12 +1454,18 @@ File Size: ${doc.size}`;
                   </div>
                   <div className="grid grid-cols-2 gap-4 border-t pt-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">Average Collection Rate</p>
+                      <p className="text-sm text-muted-foreground">
+                        Average Collection Rate
+                      </p>
                       <p className="text-2xl font-bold text-green-600">90%</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Outstanding</p>
-                      <p className="text-2xl font-bold text-yellow-600">₹157L</p>
+                      <p className="text-sm text-muted-foreground">
+                        Total Outstanding
+                      </p>
+                      <p className="text-2xl font-bold text-yellow-600">
+                        ₹157L
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1094,16 +1479,21 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-4">
                   {[
-                    { month: 'January', collected: 85, target: 100 },
-                    { month: 'February', collected: 92, target: 100 },
-                    { month: 'March', collected: 78, target: 100 }
+                    { month: "January", collected: 85, target: 100 },
+                    { month: "February", collected: 92, target: 100 },
+                    { month: "March", collected: 78, target: 100 },
                   ].map((month) => (
                     <div key={month.month} className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="font-medium">{month.month}</span>
-                        <span>₹{month.collected}L / ₹{month.target}L</span>
+                        <span>
+                          ₹{month.collected}L / ₹{month.target}L
+                        </span>
                       </div>
-                      <Progress value={(month.collected/month.target)*100} className="h-2" />
+                      <Progress
+                        value={(month.collected / month.target) * 100}
+                        className="h-2"
+                      />
                     </div>
                   ))}
                 </div>
@@ -1117,9 +1507,13 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-3">
                   {[
-                    { client: 'ABC Developers', avgDays: 15, paymentRate: 95 },
-                    { client: 'XYZ Properties', avgDays: 22, paymentRate: 88 },
-                    { client: 'Government Agency', avgDays: 45, paymentRate: 100 }
+                    { client: "ABC Developers", avgDays: 15, paymentRate: 95 },
+                    { client: "XYZ Properties", avgDays: 22, paymentRate: 88 },
+                    {
+                      client: "Government Agency",
+                      avgDays: 45,
+                      paymentRate: 100,
+                    },
                   ].map((client) => (
                     <div key={client.client} className="p-3 border rounded-lg">
                       <h4 className="font-medium text-sm">{client.client}</h4>
@@ -1127,7 +1521,10 @@ File Size: ${doc.size}`;
                         <span>Avg Payment: {client.avgDays} days</span>
                         <span>Success Rate: {client.paymentRate}%</span>
                       </div>
-                      <Progress value={client.paymentRate} className="h-2 mt-2" />
+                      <Progress
+                        value={client.paymentRate}
+                        className="h-2 mt-2"
+                      />
                     </div>
                   ))}
                 </div>
@@ -1145,14 +1542,21 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-4">
                   {progressInvoices.map((invoice) => (
-                    <div key={invoice.projectId} className="p-4 border rounded-lg">
+                    <div
+                      key={invoice.projectId}
+                      className="p-4 border rounded-lg"
+                    >
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <h4 className="font-medium text-gray-900">{invoice.project || 'N/A'}</h4>
-                          <p className="text-sm text-muted-foreground">{invoice.clientName || 'N/A'}</p>
+                          <h4 className="font-medium text-gray-900">
+                            {invoice.project || "N/A"}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {invoice.clientName || "N/A"}
+                          </p>
                         </div>
                         <Badge variant="outline">
-                          Next: {invoice.nextBilling || 'N/A'}
+                          Next: {invoice.nextBilling || "N/A"}
                         </Badge>
                       </div>
                       <div className="space-y-2">
@@ -1161,20 +1565,28 @@ File Size: ${doc.size}`;
                           <span>Billed: {invoice.billed || 0}%</span>
                         </div>
                         <div className="relative">
-                          <Progress value={invoice.completed || 0} className="h-3" />
-                          <div 
+                          <Progress
+                            value={invoice.completed || 0}
+                            className="h-3"
+                          />
+                          <div
                             className="absolute top-0 h-3 bg-green-600 bg-opacity-50 rounded"
                             style={{ width: `${invoice.billed || 0}%` }}
                           />
                         </div>
                         <div className="flex justify-between items-center mt-3">
                           <p className="text-sm text-muted-foreground">
-                            Last Invoice: {invoice.invoiceDate || 'N/A'}
+                            Last Invoice: {invoice.invoiceDate || "N/A"}
                           </p>
                           <Button
                             size="sm"
-                            onClick={() => handleGenerateProgressInvoice(invoice)}
-                            disabled={invoice.completed <= invoice.billed || generatingInvoice[invoice.projectId]}
+                            onClick={() =>
+                              handleGenerateProgressInvoice(invoice)
+                            }
+                            disabled={
+                              invoice.completed <= invoice.billed ||
+                              generatingInvoice[invoice.projectId]
+                            }
                           >
                             {generatingInvoice[invoice.projectId] ? (
                               <>
@@ -1206,22 +1618,58 @@ File Size: ${doc.size}`;
             <CardContent>
               <div className="space-y-3">
                 {[
-                  { milestone: 'Foundation Complete', percentage: 25, status: 'Billed', amount: '₹12L' },
-                  { milestone: 'Structure Complete', percentage: 50, status: 'Due', amount: '₹18L' },
-                  { milestone: 'Finishing Work', percentage: 75, status: 'Upcoming', amount: '₹15L' },
-                  { milestone: 'Project Handover', percentage: 100, status: 'Upcoming', amount: '₹8L' }
+                  {
+                    milestone: "Foundation Complete",
+                    percentage: 25,
+                    status: "Billed",
+                    amount: "₹12L",
+                  },
+                  {
+                    milestone: "Structure Complete",
+                    percentage: 50,
+                    status: "Due",
+                    amount: "₹18L",
+                  },
+                  {
+                    milestone: "Finishing Work",
+                    percentage: 75,
+                    status: "Upcoming",
+                    amount: "₹15L",
+                  },
+                  {
+                    milestone: "Project Handover",
+                    percentage: 100,
+                    status: "Upcoming",
+                    amount: "₹8L",
+                  },
                 ].map((milestone, index) => (
-                  <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 border rounded-lg"
+                  >
                     <div>
-                      <p className="font-medium text-gray-900">{milestone.milestone}</p>
-                      <p className="text-sm text-gray-600">{milestone.percentage}% completion</p>
+                      <p className="font-medium text-gray-900">
+                        {milestone.milestone}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {milestone.percentage}% completion
+                      </p>
                     </div>
                     <div className="text-right">
-                      <Badge variant={milestone.status === 'Billed' ? 'default' : 
-                                  milestone.status === 'Due' ? 'destructive' : 'outline'}>
+                      <Badge
+                        variant={
+                          milestone.status === "Billed"
+                            ? "default"
+                            : milestone.status === "Due"
+                            ? "destructive"
+                            : "outline"
+                        }
+                      >
                         {milestone.status}
                       </Badge>
-                      <p className="text-sm font-semibold text-gray-900 mt-1">{milestone.amount}</p>
+                      <p className="text-sm font-semibold text-gray-900 mt-1">
+                        {milestone.amount}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -1236,7 +1684,9 @@ File Size: ${doc.size}`;
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Document Management</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">Manage and organize billing-related documents</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Manage and organize billing-related documents
+                  </p>
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -1246,14 +1696,22 @@ File Size: ${doc.size}`;
                     onChange={handleFileUpload}
                     accept=".pdf,.doc,.docx,.xls,.xlsx"
                   />
-                  <Button variant="outline" size="sm" onClick={handleBulkUpload}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkUpload}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Document
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="all" className="w-full" onValueChange={(value) => setSelectedTab(value as any)}>
+                <Tabs
+                  defaultValue="all"
+                  className="w-full"
+                  onValueChange={(value) => setSelectedTab(value as any)}
+                >
                   <TabsList className="w-full grid grid-cols-5 mb-4">
                     <TabsTrigger value="all">All Documents</TabsTrigger>
                     <TabsTrigger value="invoices">Invoices</TabsTrigger>
@@ -1264,41 +1722,69 @@ File Size: ${doc.size}`;
 
                   <div className="space-y-4">
                     {filteredDocuments.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                      >
                         <div className="flex items-center gap-4">
                           <div className="p-2 bg-gray-100 rounded">
                             <FileText className="h-6 w-6 text-gray-600" />
                           </div>
                           <div>
-                            <p className="font-medium">{doc.name || 'N/A'}</p>
+                            <p className="font-medium">{doc.name || "N/A"}</p>
                             <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline">{doc.type || 'Unknown'}</Badge>
-                              <span className="text-sm text-muted-foreground">{doc.size || 'N/A'}</span>
+                              <Badge variant="outline">
+                                {doc.type || "Unknown"}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {doc.size || "N/A"}
+                              </span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-6">
                           <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Uploaded by {doc.uploadedBy || 'Unknown'}</p>
-                            <p className="text-sm">{doc.date || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Uploaded by {doc.uploadedBy || "Unknown"}
+                            </p>
+                            <p className="text-sm">{doc.date || "N/A"}</p>
                           </div>
-                          <Badge variant={doc.status === 'Verified' ? 'default' : 'secondary'}>
-                            {doc.status || 'Unknown'}
+                          <Badge
+                            variant={
+                              doc.status === "Verified"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {doc.status || "Unknown"}
                           </Badge>
                           <div className="flex items-center gap-2">
-                            {doc.status === 'Pending Review' && (
-                              <Button variant="ghost" size="icon" onClick={() => handleVerify(doc)}>
+                            {doc.status === "Pending Review" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleVerify(doc)}
+                              >
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} disabled={documentLoadingStates[doc.id]}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDownload(doc)}
+                              disabled={documentLoadingStates[doc.id]}
+                            >
                               {documentLoadingStates[doc.id] ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <Download className="h-4 w-4" />
                               )}
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(doc)}
+                            >
                               <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
                           </div>
@@ -1317,23 +1803,38 @@ File Size: ${doc.size}`;
               <CardContent>
                 <div className="space-y-4">
                   {documents.slice(0, 3).map((doc, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded ${
-                          doc.status === 'Verified' ? 'bg-green-100 text-green-600' :
-                          'bg-yellow-100 text-yellow-600'
-                        }`}>
-                          {doc.status === 'Verified' ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                        <div
+                          className={`p-2 rounded ${
+                            doc.status === "Verified"
+                              ? "bg-green-100 text-green-600"
+                              : "bg-yellow-100 text-yellow-600"
+                          }`}
+                        >
+                          {doc.status === "Verified" ? (
+                            <CheckCircle className="h-4 w-4" />
+                          ) : (
+                            <Clock className="h-4 w-4" />
+                          )}
                         </div>
                         <div>
-                          <p className="font-medium">{doc.name || 'N/A'}</p>
+                          <p className="font-medium">{doc.name || "N/A"}</p>
                           <p className="text-sm text-muted-foreground">
-                            {doc.status === 'Verified' ? 'Verified' : 'Uploaded'} by {doc.uploadedBy || 'Unknown'}
+                            {doc.status === "Verified"
+                              ? "Verified"
+                              : "Uploaded"}{" "}
+                            by {doc.uploadedBy || "Unknown"}
                           </p>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {doc.date ? new Date(doc.date).toLocaleDateString() : 'N/A'}
+                        {doc.date
+                          ? new Date(doc.date).toLocaleDateString()
+                          : "N/A"}
                       </p>
                     </div>
                   ))}
@@ -1362,4 +1863,4 @@ File Size: ${doc.size}`;
   );
 };
 
-export default BillingManagerDashboard; 
+export default BillingManagerDashboard;

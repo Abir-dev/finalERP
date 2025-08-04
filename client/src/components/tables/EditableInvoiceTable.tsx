@@ -37,6 +37,7 @@ interface Invoice {
 // Legacy interface for modal compatibility
 interface LegacyInvoice {
   id: string;
+  invoiceNumber: string;
   project: string;
   client: string;
   amount: number;
@@ -83,6 +84,7 @@ const EditableInvoiceTable = () => {
   const transformInvoiceForModal = (invoice: Invoice) => {
     return {
       id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
       project: invoice.project?.name || 'N/A',
       client: invoice.client?.name || 'N/A',
       amount: invoice.total || 0,
@@ -186,7 +188,7 @@ const EditableInvoiceTable = () => {
                 }`}
               >
                 <td className="border border-gray-300 p-3">
-                  <span className="font-mono text-[16px]">{invoice.id}</span>
+                  <span className="font-mono text-[16px]">{invoice.invoiceNumber}</span>
                 </td>
                 
                 <td className="border border-gray-300 p-3">
@@ -213,12 +215,12 @@ const EditableInvoiceTable = () => {
                   <span className={`text-[16px] ${
                     isOverdue(invoice.dueDate, invoice.status) ? 'text-red-600 font-semibold' : ''
                   }`}>
-                    {invoice.dueDate}
+                    {invoice.dueDate? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
                   </span>
                 </td>
 
                 <td className="border border-gray-300 p-3">
-                  <span className="text-[16px]">{invoice.date}</span>
+                  <span className="text-[16px]">{invoice.date?new Date(invoice.date).toLocaleDateString(): 'N/A'}</span>
                 </td>
 
                 <td className="border border-gray-300 p-3">

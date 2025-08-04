@@ -21,5 +21,6 @@ router.delete('/invoices/:invoiceId/items/:itemId', authenticateUser, checkRole(
 // Payment management
 router.post('/invoices/:id/payments', authenticateUser, checkRole('accounts'), validatePayment, billingController.addPayment);
 router.get('/invoices/:id/payments', authenticateUser, billingController.listPayments);
+router.get('/payments', authenticateUser, billingController.getAllPayments);
 
 export default router; 

@@ -270,5 +270,33 @@ export const billingController = {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  },
+
+  async getAllPayments(req: Request, res: Response) {
+    try {
+      const payments = await prisma.payment.findMany({
+        include: {
+          user: true,
+          project: true,
+          Invoice: {
+            include: {
+              client: true
+            }
+          },
+          taxes: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+      
+      res.json(payments);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 }; 

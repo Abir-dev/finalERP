@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Invoice {
   id: string;
+  invoiceNumber: string;
   project: string;
   client: string;
   amount: number;
@@ -66,7 +67,7 @@ const ViewInvoiceModal = ({ invoice, isOpen, onClose }: ViewInvoiceModalProps) =
           <DialogTitle className="flex items-center justify-between">
             <span>Invoice Details</span>
             <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-              {invoice.id || 'Unknown'}
+              {invoice.invoiceNumber || 'Unknown'}
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -88,8 +89,8 @@ const ViewInvoiceModal = ({ invoice, isOpen, onClose }: ViewInvoiceModalProps) =
 
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Dates</h3>
-              <DetailRow label="Due Date" value={invoice.dueDate || 'N/A'} />
-              <DetailRow label="Sent Date" value={invoice.sentDate || 'N/A'} />
+              <DetailRow label="Due Date" value={invoice.dueDate?new Date(invoice.dueDate).toLocaleDateString(): 'N/A'} />
+              <DetailRow label="Sent Date" value={invoice.sentDate?new Date(invoice.sentDate).toLocaleDateString(): 'N/A'} />
             </div>
           </div>
         </ScrollArea>
