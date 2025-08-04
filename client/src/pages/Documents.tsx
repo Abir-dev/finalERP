@@ -266,10 +266,10 @@ const Documents = () => {
             <FileText className="mr-2 h-4 w-4" />
             My Documents
           </TabsTrigger>
-          <TabsTrigger value="shared">
+          {/* <TabsTrigger value="shared">
             <File className="mr-2 h-4 w-4" />
             Shared With Me
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="all" className="mt-4">

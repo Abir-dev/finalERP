@@ -144,11 +144,6 @@ const BillingManagerDashboard = () => {
   // Replace static arrays with backend data
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [paymentSummary, setPaymentSummary] = useState({
-    received: { count: 0, amount: "" },
-    pending: { count: 0, amount: "" },
-    overdue: { count: 0, amount: "" },
-  });
   const [documents, setDocuments] = useState<Document[]>([]);
   const [progressInvoices, setProgressInvoices] = useState<ProgressInvoice[]>(
     []
@@ -174,24 +169,7 @@ const BillingManagerDashboard = () => {
       .then((res) => setPayments(Array.isArray(res.data) ? res.data : []))
       .catch(() => setPayments([]));
 
-    axios
-      .get(`${API_URL}/billing/payment-summary`, { headers })
-      .then((res) =>
-        setPaymentSummary(
-          res.data || {
-            received: { count: 0, amount: "₹0" },
-            pending: { count: 0, amount: "₹0" },
-            overdue: { count: 0, amount: "₹0" },
-          }
-        )
-      )
-      .catch(() =>
-        setPaymentSummary({
-          received: { count: 0, amount: "₹0" },
-          pending: { count: 0, amount: "₹0" },
-          overdue: { count: 0, amount: "₹0" },
-        })
-      );
+
 
     axios
       .get(`${API_URL}/billing/documents`, { headers })
@@ -314,50 +292,71 @@ const BillingManagerDashboard = () => {
     }
   };
 
-  const handleRecordPayment = (invoiceId: string) => {
-    const updatedInvoices = invoices.map((inv) => {
-      if (inv.id === invoiceId) {
-        const paidAmount = inv.total || 0;
+  // Calculate payment status dynamically from invoices and payments
+  const calculatePaymentSummary = () => {
+    const today = new Date();
+    const paidInvoices: Invoice[] = [];
+    const pendingInvoices: Invoice[] = [];
+    const overdueInvoices: Invoice[] = [];
 
-        // Update payment summary
-        setPaymentSummary((prev) => {
-          const receivedAmountStr = prev.received.amount || "₹0";
-          const pendingAmountStr = prev.pending.amount || "₹0";
-          const newReceived =
-            parseFloat(receivedAmountStr.replace("₹", "").replace(",", "")) +
-            paidAmount;
-          const newPending =
-            parseFloat(pendingAmountStr.replace("₹", "").replace(",", "")) -
-            paidAmount;
+    invoices.forEach((invoice) => {
+      // Calculate total payments for this invoice
+      const totalPayments = payments
+        .filter((payment) => payment.Invoice?.id === invoice.id && payment.paymentType === "RECEIVE")
+        .reduce((sum, payment) => sum + (payment.total || 0), 0);
 
-          return {
-            received: {
-              count: prev.received.count + 1,
-              amount: `₹${newReceived.toLocaleString("en-IN")}`,
-            },
-            pending: {
-              count: Math.max(0, prev.pending.count - 1),
-              amount: `₹${Math.max(0, newPending).toLocaleString("en-IN")}`,
-            },
-            overdue: prev.overdue,
-          };
-        });
+      const invoiceTotal = invoice.total || 0;
+      const dueDate = new Date(invoice.dueDate);
 
-        toast({
-          title: "Payment Recorded",
-          description: `Payment recorded for invoice ${invoiceId}`,
-        });
-
-        return {
-          ...inv,
-          status: "Paid",
-          paidDate: new Date().toISOString().split("T")[0],
-        };
+      if (totalPayments >= invoiceTotal) {
+        // Paid: sum of payments equals or exceeds invoice total
+        paidInvoices.push(invoice);
       }
-      return inv;
+      else {
+        // Pending: sum of payments is less than invoice total and not overdue
+        pendingInvoices.push(invoice);
+      }
+      if (dueDate < today && totalPayments < invoiceTotal) {
+        // Overdue: due date has passed and payment is still pending
+        overdueInvoices.push(invoice);
+      }
     });
-    setInvoices(updatedInvoices);
+
+    const paidTotal = paidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
+    
+    // Pending total = sum of (invoice total - payments received) for pending invoices
+    const pendingTotal = pendingInvoices.reduce((sum, inv) => {
+      const totalPayments = payments
+        .filter((payment) => payment.Invoice?.id === inv.id && payment.paymentType === "RECEIVE")
+        .reduce((paySum, payment) => paySum + (payment.total || 0), 0);
+      return sum + ((inv.total || 0) - totalPayments);
+    }, 0);
+
+    // Overdue total = sum of (invoice total - payments received) for overdue invoices  
+    const overdueTotal = overdueInvoices.reduce((sum, inv) => {
+      const totalPayments = payments
+        .filter((payment) => payment.Invoice?.id === inv.id && payment.paymentType === "RECEIVE")
+        .reduce((paySum, payment) => paySum + (payment.total || 0), 0);
+      return sum + ((inv.total || 0) - totalPayments);
+    }, 0);
+
+    return {
+      paid: {
+        count: paidInvoices.length,
+        amount: `₹${paidTotal.toLocaleString("en-IN")}`
+      },
+      pending: {
+        count: pendingInvoices.length,
+        amount: `₹${pendingTotal.toLocaleString("en-IN")}`
+      },
+      overdue: {
+        count: overdueInvoices.length,
+        amount: `₹${overdueTotal.toLocaleString("en-IN")}`
+      }
+    };
   };
+
+  const paymentSummary = calculatePaymentSummary();
 
   const handleExportStatement = () => {
     try {
@@ -830,8 +829,8 @@ File Size: ${doc.size}`;
           </div>
 
           {/* Quick Actions & Recent Activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
@@ -891,7 +890,7 @@ File Size: ${doc.size}`;
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
               <CardHeader>
@@ -902,20 +901,20 @@ File Size: ${doc.size}`;
                   {[
                     {
                       status: "Paid",
-                      count: 12,
-                      amount: "₹1.8Cr",
+                      count: paymentSummary.paid.count,
+                      amount: paymentSummary.paid.amount,
                       color: "bg-green-500",
                     },
                     {
                       status: "Pending",
-                      count: 6,
-                      amount: "₹95L",
+                      count: paymentSummary.pending.count,
+                      amount: paymentSummary.pending.amount,
                       color: "bg-yellow-500",
                     },
                     {
                       status: "Overdue",
-                      count: 5,
-                      amount: "₹45L",
+                      count: paymentSummary.overdue.count,
+                      amount: paymentSummary.overdue.amount,
                       color: "bg-red-500",
                     },
                   ].map((item, index) => (

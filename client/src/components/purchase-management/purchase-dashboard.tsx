@@ -114,6 +114,11 @@ export function PurchaseDashboard() {
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
   const [showVendorDetails, setShowVendorDetails] = useState(false);
+  const [paymentSummary, setPaymentSummary] = useState({
+    received: { count: 0, amount: "₹0" },
+    pending: { count: 0, amount: "₹0" },
+    overdue: { count: 0, amount: "₹0" },
+  });
 
   const fetchPurchaseOrders = async () => {
     try {
@@ -126,8 +131,27 @@ export function PurchaseDashboard() {
     }
   };
 
+  const fetchPaymentSummary = async () => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      console.log("Fetching payment summary from:", `${API_URL}/billing/payment-summary`);
+      const response = await axios.get(`${API_URL}/billing/payment-summary`, { headers });
+      console.log("Payment summary response:", response.data);
+      setPaymentSummary(response.data || {
+        received: { count: 0, amount: "₹0" },
+        pending: { count: 0, amount: "₹0" },
+        overdue: { count: 0, amount: "₹0" },
+      });
+    } catch (error) {
+      console.error("Error fetching payment summary:", error);
+      console.error("API URL:", API_URL);
+    }
+  };
+
   useEffect(() => {
     fetchPurchaseOrders();
+    fetchPaymentSummary();
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -384,6 +408,8 @@ export function PurchaseDashboard() {
     setMaterialRequests(res.data);
   };
 
+  console.log("Current paymentSummary state:", paymentSummary);
+  
   return (
     <div>
       {/* <CardHeader></CardHeader> */}
@@ -393,18 +419,18 @@ export function PurchaseDashboard() {
           className="space-y-4"
           onValueChange={setActiveTab}
         >
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="requests">Material Requests</TabsTrigger>
             <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
             {/* <TabsTrigger value="vendors">Vendors</TabsTrigger> */}
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
             <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
@@ -436,10 +462,35 @@ export function PurchaseDashboard() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Payments Received
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {paymentSummary.received.amount}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {paymentSummary.received.count} invoices
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-orange-600" />
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Pending Requests
+                        Pending Payments
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {paymentSummary.pending.amount}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {paymentSummary.pending.count} invoices
                       </p>
                     </div>
                   </div>
@@ -452,7 +503,13 @@ export function PurchaseDashboard() {
                     <AlertTriangle className="h-4 w-4 text-red-600" />
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Urgent Items
+                        Overdue Payments
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {paymentSummary.overdue.amount}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {paymentSummary.overdue.count} invoices
                       </p>
                     </div>
                   </div>
