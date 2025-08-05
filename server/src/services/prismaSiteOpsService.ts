@@ -2,121 +2,121 @@ import prisma from '../config/prisma';
 
 export const prismaSiteOpsService = {
   // Equipment Maintenance
-  async createEquipmentMaintenance(data) {
+  async createEquipmentMaintenance(data: any) {
     return prisma.equipmentMaintenance.create({ data });
   },
-  async getEquipmentMaintenances(filter = {}) {
+  async getEquipmentMaintenances(filter: any = {}) {
     return prisma.equipmentMaintenance.findMany({ where: filter });
   },
-  async getEquipmentMaintenanceById(id) {
+  async getEquipmentMaintenanceById(id: string) {
     return prisma.equipmentMaintenance.findUnique({ where: { id } });
   },
-  async updateEquipmentMaintenance(id, data) {
+  async updateEquipmentMaintenance(id: string, data: any) {
     return prisma.equipmentMaintenance.update({ where: { id }, data });
   },
-  async deleteEquipmentMaintenance(id) {
+  async deleteEquipmentMaintenance(id: string) {
     return prisma.equipmentMaintenance.delete({ where: { id } });
   },
 
   // Labor Log
-  async createLaborLog(data) {
+  async createLaborLog(data: any) {
     return prisma.laborLog.create({ data });
   },
-  async getLaborLogs(filter = {}) {
+  async getLaborLogs(filter: any = {}) {
     return prisma.laborLog.findMany({ where: filter });
   },
-  async getLaborLogById(id) {
+  async getLaborLogById(id: string) {
     return prisma.laborLog.findUnique({ where: { id } });
   },
-  async updateLaborLog(id, data) {
+  async updateLaborLog(id: string, data: any) {
     return prisma.laborLog.update({ where: { id }, data });
   },
-  async deleteLaborLog(id) {
+  async deleteLaborLog(id: string) {
     return prisma.laborLog.delete({ where: { id } });
   },
 
   // Budget Adjustment
-  async createBudgetAdjustment(data) {
+  async createBudgetAdjustment(data: any) {
     return prisma.budgetAdjustment.create({ data });
   },
-  async getBudgetAdjustments(filter = {}) {
+  async getBudgetAdjustments(filter: any = {}) {
     return prisma.budgetAdjustment.findMany({ where: filter });
   },
-  async getBudgetAdjustmentById(id) {
+  async getBudgetAdjustmentById(id: string) {
     return prisma.budgetAdjustment.findUnique({ where: { id } });
   },
-  async updateBudgetAdjustment(id, data) {
+  async updateBudgetAdjustment(id: string, data: any) {
     return prisma.budgetAdjustment.update({ where: { id }, data });
   },
-  async deleteBudgetAdjustment(id) {
+  async deleteBudgetAdjustment(id: string) {
     return prisma.budgetAdjustment.delete({ where: { id } });
   },
 
   // Issue Report
-  async createIssueReport(data) {
+  async createIssueReport(data: any) {
     return prisma.issueReport.create({ data });
   },
-  async getIssueReports(filter = {}) {
+  async getIssueReports(filter: any = {}) {
     return prisma.issueReport.findMany({ where: filter });
   },
-  async getIssueReportById(id) {
+  async getIssueReportById(id: string) {
     return prisma.issueReport.findUnique({ where: { id } });
   },
-  async updateIssueReport(id, data) {
+  async updateIssueReport(id: string, data: any) {
     return prisma.issueReport.update({ where: { id }, data });
   },
-  async deleteIssueReport(id) {
+  async deleteIssueReport(id: string) {
     return prisma.issueReport.delete({ where: { id } });
   },
 
   // Daily Progress Report
-  async createDailyProgressReport(data) {
+  async createDailyProgressReport(data: any) {
     return prisma.dailyProgressReport.create({ data });
   },
-  async getDailyProgressReports(filter = {}) {
+  async getDailyProgressReports(filter: any = {}) {
     return prisma.dailyProgressReport.findMany({ where: filter });
   },
-  async getDailyProgressReportById(id) {
+  async getDailyProgressReportById(id: string) {
     return prisma.dailyProgressReport.findUnique({ where: { id } });
   },
-  async updateDailyProgressReport(id, data) {
+  async updateDailyProgressReport(id: string, data: any) {
     return prisma.dailyProgressReport.update({ where: { id }, data });
   },
-  async deleteDailyProgressReport(id) {
+  async deleteDailyProgressReport(id: string) {
     return prisma.dailyProgressReport.delete({ where: { id } });
   },
 
   // Weekly Progress Report
-  async createWeeklyProgressReport(data) {
+  async createWeeklyProgressReport(data: any) {
     return prisma.weeklyProgressReport.create({ data });
   },
-  async getWeeklyProgressReports(filter = {}) {
+  async getWeeklyProgressReports(filter: any = {}) {
     return prisma.weeklyProgressReport.findMany({ where: filter });
   },
-  async getWeeklyProgressReportById(id) {
+  async getWeeklyProgressReportById(id: string) {
     return prisma.weeklyProgressReport.findUnique({ where: { id } });
   },
-  async updateWeeklyProgressReport(id, data) {
+  async updateWeeklyProgressReport(id: string, data: any) {
     return prisma.weeklyProgressReport.update({ where: { id }, data });
   },
-  async deleteWeeklyProgressReport(id) {
+  async deleteWeeklyProgressReport(id: string) {
     return prisma.weeklyProgressReport.delete({ where: { id } });
   },
 
   // Event
-  async createEvent(data) {
+  async createEvent(data: any) {
     return prisma.event.create({ data });
   },
-  async getEvents(filter = {}) {
+  async getEvents(filter: any = {}) {
     return prisma.event.findMany({ where: filter });
   },
-  async getEventById(id) {
+  async getEventById(id: string) {
     return prisma.event.findUnique({ where: { id } });
   },
-  async updateEvent(id, data) {
+  async updateEvent(id: string, data: any) {
     return prisma.event.update({ where: { id }, data });
   },
-  async deleteEvent(id) {
+  async deleteEvent(id: string) {
     return prisma.event.delete({ where: { id } });
   },
 }; 

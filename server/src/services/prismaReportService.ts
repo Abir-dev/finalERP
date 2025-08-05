@@ -16,7 +16,7 @@ export const prismaReportService = {
     return prisma.project.findMany({ include: { tasks: true, invoices: true, materialRequests: true } });
   },
   async getFinanceReports() {
-    return prisma.invoice.findMany({ include: { payments: true, project: true, client: true } });
+    return prisma.invoice.findMany({ include: { Payment: true, project: true, client: true } });
   },
   async getInventoryReports() {
     return prisma.inventoryItem.findMany({ include: { requests: true } });

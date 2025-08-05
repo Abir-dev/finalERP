@@ -194,7 +194,6 @@ async updateUser(id: string, updates: Partial<{ name: string; email: string; pas
     return prisma.user.findMany({
       where: {
         OR: [
-          { projects: { some: {} } },
           { managedProjects: { some: {} } },
           { memberProjects: { some: {} } }
         ]
@@ -206,12 +205,6 @@ async updateUser(id: string, updates: Partial<{ name: string; email: string; pas
         role: true,
         avatar: true,
         status: true,
-        projects: {
-          select: {
-            id: true,
-            name: true
-          }
-        },
         managedProjects: {
           select: {
             id: true,

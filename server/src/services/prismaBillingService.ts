@@ -6,10 +6,10 @@ export const prismaBillingService = {
     return prisma.invoice.create({ data });
   },
   async getInvoices(filter: any = {}) {
-    return prisma.invoice.findMany({ where: filter, include: { payments: true, project: true, client: true } });
+    return prisma.invoice.findMany({ where: filter, include: { Payment: true, project: true, client: true } });
   },
   async getInvoiceById(id: string) {
-    return prisma.invoice.findUnique({ where: { id }, include: { payments: true, project: true, client: true } });
+    return prisma.invoice.findUnique({ where: { id }, include: { Payment: true, project: true, client: true } });
   },
   async updateInvoice(id: string, data: Prisma.InvoiceUpdateInput) {
     return prisma.invoice.update({ where: { id }, data });

@@ -1,19 +1,19 @@
 import prisma from '../config/prisma';
 
 export const prismaHRService = {
-  async createEmployee(data) {
+  async createEmployee(data: any) {
     return prisma.employee.create({ data });
   },
   async getEmployees(filter = {}) {
     return prisma.employee.findMany({ where: filter, include: { user: true } });
   },
-  async getEmployeeById(id) {
+  async getEmployeeById(id: string) {
     return prisma.employee.findUnique({ where: { id }, include: { user: true } });
   },
-  async updateEmployee(id, data) {
+  async updateEmployee(id: string, data: any) {
     return prisma.employee.update({ where: { id }, data });
   },
-  async deleteEmployee(id) {
+  async deleteEmployee(id: string) {
     return prisma.employee.delete({ where: { id } });
   },
   // Cross-module stubs (to be implemented as needed)
