@@ -270,6 +270,7 @@ const AccountsDashboard = () => {
             .reduce((sum, invoice) => {
                 const invoiceAmount = invoice.total || invoice.amount || 0;
                 const paymentsSum = (invoice.Payment || [])
+                    .filter((payment: any) => payment.paymentType === 'RECEIVE')
                     .reduce((paySum, payment) => paySum + payment.total, 0);
                 return sum + Math.max(0, invoiceAmount - paymentsSum);
             }, 0);
@@ -452,7 +453,7 @@ const AccountsDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatCard
                             title="Total Outstanding"
-                            value={`₹${(kpiData.totalOutstanding / 100000).toFixed(1)}L`}
+                            value={`₹${(kpiData.totalOutstanding / 100000).toFixed(2)}L`}
                             icon={DollarSign}
                             description="Pending collections"
                             trend={{ value: -5, label: "vs last month" }}
@@ -460,14 +461,14 @@ const AccountsDashboard = () => {
                         />
                         <StatCard
                             title="Overdue Amount"
-                            value={`₹${(kpiData.overdueAmount / 100000).toFixed(1)}L`}
+                            value={`₹${(kpiData.overdueAmount / 100000).toFixed(2)}L`}
                             icon={AlertTriangle}
                             description="Past due date"
                             onClick={() => toast.info("Opening overdue analysis")}
                         />
                         <StatCard
                             title="Paid This Month"
-                            value={`₹${(kpiData.paidThisMonth / 100000).toFixed(1)}L`}
+                            value={`₹${(kpiData.paidThisMonth / 100000).toFixed(2)}L`}
                             icon={DollarSign}
                             description="Payment received"
                             trend={{ value: 12, label: "vs last month" }}
