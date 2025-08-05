@@ -58,7 +58,9 @@ import { Textarea } from "../ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { AddVendorModal } from "@/components/modals/AddVendorModal";
 import { NewMaterialRequestModal } from "@/components/modals/NewMaterialRequestModal";
+import { EditMaterialRequestModal } from "@/components/modals/EditMaterialRequestModal";
 import { VendorManagement } from "@/components/vendor-management/VendorManagement";
+import { MaterialRequest, MaterialRequestItem } from "@/types/material-request";
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -85,20 +87,6 @@ interface PurchaseOrder {
   updatedAt: string;
 }
 
-interface MaterialRequest {
-  id: string;
-  requestNumber: string;
-  requestedBy: string;
-  items: string;
-  quantity: number;
-  unit: string;
-  requestDate: string;
-  requiredDate: string;
-  status: "pending" | "approved" | "ordered" | "delivered";
-  project: string;
-  urgency: "normal" | "urgent" | "emergency";
-}
-
 export function PurchaseDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -122,9 +110,13 @@ export function PurchaseDashboard() {
 
   const fetchPurchaseOrders = async () => {
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/purchase-orders`, { headers });
+      const response = await axios.get(`${API_URL}/purchase-orders`, {
+        headers,
+      });
       setPurchaseOrders(response.data);
     } catch (error) {
       console.error("Error fetching purchase orders:", error);
@@ -133,16 +125,25 @@ export function PurchaseDashboard() {
 
   const fetchPaymentSummary = async () => {
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      console.log("Fetching payment summary from:", `${API_URL}/billing/payment-summary`);
-      const response = await axios.get(`${API_URL}/billing/payment-summary`, { headers });
-      console.log("Payment summary response:", response.data);
-      setPaymentSummary(response.data || {
-        received: { count: 0, amount: "₹0" },
-        pending: { count: 0, amount: "₹0" },
-        overdue: { count: 0, amount: "₹0" },
+      console.log(
+        "Fetching payment summary from:",
+        `${API_URL}/billing/payment-summary`
+      );
+      const response = await axios.get(`${API_URL}/billing/payment-summary`, {
+        headers,
       });
+      console.log("Payment summary response:", response.data);
+      setPaymentSummary(
+        response.data || {
+          received: { count: 0, amount: "₹0" },
+          pending: { count: 0, amount: "₹0" },
+          overdue: { count: 0, amount: "₹0" },
+        }
+      );
     } catch (error) {
       console.error("Error fetching payment summary:", error);
       console.error("API URL:", API_URL);
@@ -156,17 +157,18 @@ export function PurchaseDashboard() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "delivered":
+      case "completed":
       case "approved":
         return "default";
+      case "in_progress":
       case "acknowledged":
-      case "ordered":
         return "secondary";
-      case "sent":
-      case "pending":
+      case "submitted":
+      case "draft":
         return "outline";
-      case "paid":
-        return "default";
+      case "rejected":
+      case "cancelled":
+        return "destructive";
       default:
         return "outline";
     }
@@ -194,16 +196,17 @@ export function PurchaseDashboard() {
   const completedOrders = purchaseOrders.filter(
     (po) => po.advancePaid > 0
   ).length;
-  
+
   // Filter purchase orders based on search query
   const filteredPurchaseOrders = purchaseOrders.filter((order) => {
     const matchesSearch =
       searchQuery === "" ||
       order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       order.Vendor?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some(item => 
-        item.itemCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      order.items.some(
+        (item) =>
+          item.itemCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
 
     return matchesSearch;
@@ -226,15 +229,19 @@ export function PurchaseDashboard() {
   const confirmDeleteOrder = async () => {
     if (orderToDelete) {
       try {
-        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const token =
+          sessionStorage.getItem("jwt_token") ||
+          localStorage.getItem("jwt_token_backup");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        
-        await axios.delete(`${API_URL}/purchase-orders/${orderToDelete}`, { headers });
-        
+
+        await axios.delete(`${API_URL}/purchase-orders/${orderToDelete}`, {
+          headers,
+        });
+
         setPurchaseOrders(
           purchaseOrders.filter((order) => order.id !== orderToDelete)
         );
-        
+
         toast({
           title: "Success",
           description: "Purchase order deleted successfully",
@@ -247,7 +254,7 @@ export function PurchaseDashboard() {
           variant: "destructive",
         });
       }
-      
+
       setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
     }
@@ -295,78 +302,90 @@ export function PurchaseDashboard() {
     });
   };
 
-  // Remove static array
-  // const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([
-  //   {
-  //     id: "MR001",
-  //     requestNumber: "MR-2024-001",
-  //     requestedBy: "Site Engineer - Team A",
-  //     items: "Steel Rods",
-  //     quantity: 500,
-  //     unit: "kg",
-  //     requestDate: "2024-01-22",
-  //     requiredDate: "2024-01-30",
-  //     status: "approved",
-  //     project: "Commercial Complex",
-  //     urgency: "normal",
-  //   },
-  //   {
-  //     id: "MR002",
-  //     requestNumber: "MR-2024-002",
-  //     requestedBy: "Project Manager",
-  //     items: "RMC M25",
-  //     quantity: 25,
-  //     unit: "cum",
-  //     requestDate: "2024-01-23",
-  //     requiredDate: "2024-01-25",
-  //     status: "pending",
-  //     project: "Residential Towers",
-  //     urgency: "urgent",
-  //   },
-  // ]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>(
     []
   );
 
+  const fetchMaterialRequests = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(
+        `${API_URL}/material/material-requests`,
+        { headers }
+      );
+      setMaterialRequests(response.data);
+    } catch (error) {
+      console.error("Error fetching material requests:", error);
+    }
+  };
+
   useEffect(() => {
-    const token =
-      sessionStorage.getItem("jwt_token") ||
-      localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios
-      .get(`${API_URL}/material-requests`, { headers })
-      .then((res) => setMaterialRequests(res.data))
-      .catch(() => {});
+    fetchMaterialRequests();
   }, []);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  // Remove currentRequest and related logic for the old modal
+  const [isEditRequestDialogOpen, setIsEditRequestDialogOpen] = useState(false);
+  const [currentEditRequest, setCurrentEditRequest] =
+    useState<MaterialRequest | null>(null);
 
   // Update approve/reject/create/update/delete to use backend API
   const handleApproveRequest = async (requestId: string) => {
-    const token =
-      sessionStorage.getItem("jwt_token") ||
-      localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.patch(
-      `${API_URL}/material-requests/${requestId}/approve`,
-      {},
-      { headers }
-    );
-    const res = await axios.get(`${API_URL}/material-requests`, { headers });
-    setMaterialRequests(res.data);
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post(
+        `${API_URL}/material/material-requests/${requestId}/approve`,
+        {},
+        { headers }
+      );
+      await fetchMaterialRequests();
+      toast({
+        title: "Success",
+        description: "Material request approved successfully",
+      });
+    } catch (error) {
+      console.error("Error approving material request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve material request",
+        variant: "destructive",
+      });
+    }
   };
+
   const handleRejectRequest = async (requestId: string) => {
-    const token =
-      sessionStorage.getItem("jwt_token") ||
-      localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.delete(`${API_URL}/material-requests/${requestId}`, {
-      headers,
-    });
-    const res = await axios.get(`${API_URL}/material-requests`, { headers });
-    setMaterialRequests(res.data);
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post(
+        `${API_URL}/material/material-requests/${requestId}/reject`,
+        {
+          rejectionReason: "Rejected by admin",
+        },
+        { headers }
+      );
+      await fetchMaterialRequests();
+      toast({
+        title: "Success",
+        description: "Material request rejected successfully",
+      });
+    } catch (error) {
+      console.error("Error rejecting material request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reject material request",
+        variant: "destructive",
+      });
+    }
   };
+
   const handleCreatePOFromRequest = (request: MaterialRequest) => {
     // Create a new PO from the material request
     const newPO: PurchaseOrder = {
@@ -374,397 +393,420 @@ export function PurchaseDashboard() {
       poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1)
         .toString()
         .padStart(3, "0")}`,
-      vendor: "", // Will be selected when creating PO
-      items: request.items,
-      totalAmount: 0, // To be calculated
-      orderDate: new Date().toISOString().split("T")[0],
-      expectedDelivery: request.requiredDate,
-      status: "draft",
-      priority: request.urgency === "urgent" ? "high" : "medium",
-      project: request.project,
+      date: new Date().toISOString().split("T")[0],
+      vendorId: "",
+      requiredBy: request.requiredBy || new Date().toISOString().split("T")[0],
+      items: request.items.map((item) => ({
+        itemCode: item.itemCode,
+        description: item.itemCode,
+        quantity: item.quantity,
+        unit: item.uom,
+      })),
+      totalQuantity: request.items.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      ),
+      total: 0,
+      grandTotal: 0,
+      roundedTotal: 0,
+      advancePaid: 0,
+      taxesAndChargesTotal: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     setCurrentOrder(newPO);
     setIsDialogOpen(true);
-
-    // Update request status to 'ordered'
-    // setMaterialRequests(
-    //   materialRequests.map((mr) =>
-    //     mr.id === request.id ? { ...mr, status: "ordered" } : mr,
-    //   ),
-    // );
   };
 
   // Remove handleCreateNewRequest and saveRequest for the old modal
 
   // Add handler for new modal save
   const handleNewMaterialRequestSave = async (data: any) => {
-    const token =
-      sessionStorage.getItem("jwt_token") ||
-      localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.post(`${API_URL}/material-requests`, data, { headers });
-    const res = await axios.get(`${API_URL}/material-requests`, { headers });
-    setMaterialRequests(res.data);
+    // The modal already makes the API call, so we just need to refresh the list
+    await fetchMaterialRequests();
+  };
+
+  // Add handler for edit modal
+  const handleEditRequest = (request: MaterialRequest) => {
+    setCurrentEditRequest(request);
+    setIsEditRequestDialogOpen(true);
+  };
+
+  const handleEditRequestSave = async () => {
+    await fetchMaterialRequests();
   };
 
   console.log("Current paymentSummary state:", paymentSummary);
-  
+
   return (
     <div>
       {/* <CardHeader></CardHeader> */}
       {/* <CardContent className="mt-6"> */}
-        <Tabs
-          defaultValue="overview"
-          className="space-y-4"
-          onValueChange={setActiveTab}
-        >
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="requests">Material Requests</TabsTrigger>
-            <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
-            {/* <TabsTrigger value="vendors">Vendors</TabsTrigger> */}
-            {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
-            <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
-          </TabsList>
+      <Tabs
+        defaultValue="overview"
+        className="space-y-4"
+        onValueChange={setActiveTab}
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="requests">Material Requests</TabsTrigger>
+          <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
+          {/* <TabsTrigger value="vendors">Vendors</TabsTrigger> */}
+          {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
+          <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4 text-blue-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Total Orders
-                      </p>
-                      <p className="text-2xl font-bold">
-                        ₹{(totalOrderValue / 100000).toFixed(1)}L
-                      </p>
-                    </div>
+        <TabsContent value="overview" className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Total Orders
+                    </p>
+                    <p className="text-2xl font-bold">
+                      ₹{(totalOrderValue / 100000).toFixed(1)}L
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Completed</p>
-                      <p className="text-2xl font-bold">{completedOrders}</p>
-                    </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Completed</p>
+                    <p className="text-2xl font-bold">{completedOrders}</p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-green-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Payments Received
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {paymentSummary.received.amount}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {paymentSummary.received.count} invoices
-                      </p>
-                    </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Payments Received
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {paymentSummary.received.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentSummary.received.count} invoices
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-orange-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Pending Payments
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {paymentSummary.pending.amount}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {paymentSummary.pending.count} invoices
-                      </p>
-                    </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Pending Payments
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {paymentSummary.pending.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentSummary.pending.count} invoices
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Overdue Payments
-                      </p>
-                      <p className="text-2xl font-bold">
-                        {paymentSummary.overdue.amount}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {paymentSummary.overdue.count} invoices
-                      </p>
-                    </div>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Overdue Payments
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {paymentSummary.overdue.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentSummary.overdue.count} invoices
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Recent Purchase Orders
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {purchaseOrders.slice(0, 3).map((po) => (
-                      <div
-                        key={po.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h4 className="font-medium">{po.poNumber}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {po.Vendor?.name || 'N/A'} • {po.items.length} item(s)
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="secondary">
-                              {po.items.length} items
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            ₹{po.grandTotal?.toLocaleString() || '0'}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Due: {new Date(po.requiredBy).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Pending Material Requests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {materialRequests.map((mr) => (
-                      <div
-                        key={mr.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h4 className="font-medium">{mr.requestNumber}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {mr.requestedBy}
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant={getStatusColor(mr.status)}>
-                              {mr.status}
-                            </Badge>
-                            <Badge variant={getPriorityColor(mr.urgency)}>
-                              {mr.urgency}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            {mr.quantity} {mr.unit}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Need: {mr.requiredDate}
-                          </p>
-                          {mr.status === "pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-1"
-                            >
-                              Approve
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="requests" className="space-y-4">
+          {/* Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Material Requests</CardTitle>
-                    <CardDescription>
-                      Review and approve material requests from site teams
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => setIsRequestDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> New Request
-                  </Button>
-                </div>
+                <CardTitle className="text-lg">
+                  Recent Purchase Orders
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Request #</TableHead>
-                        <TableHead>Requested By</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Request Date</TableHead>
-                        <TableHead>Required By</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {materialRequests.length > 0 ? (
-                        materialRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium">
-                              {request.requestNumber}
-                            </TableCell>
-                            <TableCell>{request.requestedBy}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {request.items}
-                            </TableCell>
-                            <TableCell>
-                              {request.quantity} {request.unit}
-                            </TableCell>
-                            <TableCell>{request.requestDate}</TableCell>
-                            <TableCell>{request.requiredDate}</TableCell>
-                            <TableCell>
-                              <Badge variant={getStatusColor(request.status)}>
-                                {request.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={getPriorityColor(request.urgency)}
-                              >
-                                {request.urgency}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                {request.status === "pending" && (
-                                  <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleApproveRequest(request.id)
-                                      }
-                                    >
-                                      Approve
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleRejectRequest(request.id)
-                                      }
-                                    >
-                                      Reject
-                                    </Button>
-                                  </>
-                                )}
-                                {request.status === "approved" && (
+                <div className="space-y-3">
+                  {purchaseOrders.slice(0, 3).map((po) => (
+                    <div
+                      key={po.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium">{po.poNumber}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {po.Vendor?.name || "N/A"} • {po.items.length} item(s)
+                        </p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="secondary">
+                            {po.items.length} items
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          ₹{po.grandTotal?.toLocaleString() || "0"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Due: {new Date(po.requiredBy).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  Pending Material Requests
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {materialRequests.slice(0, 3).map((mr) => (
+                    <div
+                      key={mr.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h4 className="font-medium">{mr.requestNumber}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {mr.requester?.name || "Unknown"}
+                        </p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge
+                            variant={getStatusColor(mr.status.toLowerCase())}
+                          >
+                            {mr.status}
+                          </Badge>
+                          <Badge variant="secondary">{mr.purpose}</Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {Array.isArray(mr.items) ? mr.items.length : 0}{" "}
+                          item(s)
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Need:{" "}
+                          {mr.requiredBy
+                            ? new Date(mr.requiredBy).toLocaleDateString()
+                            : "Not specified"}
+                        </p>
+                        {mr.status === "SUBMITTED" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-1"
+                            onClick={() => handleApproveRequest(mr.id)}
+                          >
+                            Approve
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="requests" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Material Requests</CardTitle>
+                  <CardDescription>
+                    Review and approve material requests from site teams
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setIsRequestDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New Request
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Request #</TableHead>
+                      <TableHead>Requested By</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Transaction Date</TableHead>
+                      <TableHead>Required By</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {materialRequests.length > 0 ? (
+                      materialRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">
+                            {request.requestNumber}
+                          </TableCell>
+                          <TableCell>
+                            {request.requester?.name || "Unknown"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{request.purpose}</Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {Array.isArray(request.items)
+                              ? request.items.length
+                              : 0}{" "}
+                            item(s)
+                          </TableCell>
+                          <TableCell>
+                            {new Date(
+                              request.transactionDate
+                            ).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {request.requiredBy
+                              ? new Date(
+                                  request.requiredBy
+                                ).toLocaleDateString()
+                              : "Not specified"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={getStatusColor(
+                                request.status.toLowerCase()
+                              )}
+                            >
+                              {request.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {request.status === "SUBMITTED" && (
+                                <>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() =>
-                                      handleCreatePOFromRequest(request)
+                                      handleApproveRequest(request.id)
                                     }
                                   >
-                                    Create PO
+                                    Approve
                                   </Button>
-                                )}
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRejectRequest(request.id)
+                                    }
+                                  >
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              {request.status === "APPROVED" && (
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    // setCurrentRequest(request); // This line is no longer needed
-                                    // setIsRequestDialogOpen(true); // This line is no longer needed
-                                  }}
+                                  onClick={() =>
+                                    handleCreatePOFromRequest(request)
+                                  }
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  Create PO
                                 </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                            No material requests found
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditRequest(request)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-            <NewMaterialRequestModal
-              open={isRequestDialogOpen}
-              onOpenChange={setIsRequestDialogOpen}
-              onSave={handleNewMaterialRequestSave}
-            />
-          </TabsContent>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          No material requests found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+          <NewMaterialRequestModal
+            open={isRequestDialogOpen}
+            onOpenChange={setIsRequestDialogOpen}
+            onSave={handleNewMaterialRequestSave}
+          />
+        </TabsContent>
 
-          <TabsContent value="orders" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
-                  <div>
-                    <CardTitle>Purchase Orders</CardTitle>
-                    <CardDescription>
-                      View, filter, and manage all purchase orders in the system
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-1 gap-4 items-center md:justify-end">
-                    <Select
-                      value={selectedStatus}
-                      onValueChange={setSelectedStatus}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="sent">Sent</SelectItem>
-                        <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                        <SelectItem value="invoiced">Invoiced</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {/*
+        <TabsContent value="orders" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+                <div>
+                  <CardTitle>Purchase Orders</CardTitle>
+                  <CardDescription>
+                    View, filter, and manage all purchase orders in the system
+                  </CardDescription>
+                </div>
+                <div className="flex flex-1 gap-4 items-center md:justify-end">
+                  <Select
+                    value={selectedStatus}
+                    onValueChange={setSelectedStatus}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="acknowledged">Acknowledged</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="invoiced">Invoiced</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/*
                     <Select
                       value={selectedPriority}
                       onValueChange={setSelectedPriority}
@@ -781,87 +823,88 @@ export function PurchaseDashboard() {
                       </SelectContent>
                     </Select>
                     */}
-                    <Button onClick={() => setShowComprehensiveForm(true)}>
-                      <Plus className="mr-2 h-4 w-4" /> New Purchase Order
-                    </Button>
-                  </div>
+                  <Button onClick={() => setShowComprehensiveForm(true)}>
+                    <Plus className="mr-2 h-4 w-4" /> New Purchase Order
+                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>PO Number</TableHead>
-                        <TableHead>Vendor</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Total Amount</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Required By</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredPurchaseOrders.length > 0 ? (
-                        filteredPurchaseOrders.map((order) => (
-                          <TableRow key={order.id}>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>PO Number</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Total Amount</TableHead>
+                      <TableHead>Order Date</TableHead>
+                      <TableHead>Required By</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPurchaseOrders.length > 0 ? (
+                      filteredPurchaseOrders.map((order) => (
+                        <TableRow key={order.id}>
                           <TableCell className="font-medium">
-                          {order.poNumber}
+                            {order.poNumber}
                           </TableCell>
-                          <TableCell>{order.Vendor?.name || 'N/A'}</TableCell>
+                          <TableCell>{order.Vendor?.name || "N/A"}</TableCell>
                           <TableCell className="max-w-[200px] truncate">
-                          {order.items.length > 0 
-                              ? `${order.items.length} item(s): ${order.items[0]?.itemCode || ''}`
-                              : 'No items'
-                          }
+                            {order.items.length > 0
+                              ? `${order.items.length} item(s): ${
+                                  order.items[0]?.itemCode || ""
+                                }`
+                              : "No items"}
                           </TableCell>
                           <TableCell>
-                            ₹{order.grandTotal?.toLocaleString() || '0'}
+                            ₹{order.grandTotal?.toLocaleString() || "0"}
                           </TableCell>
                           <TableCell>
-                          {new Date(order.date).toLocaleDateString()}
+                            {new Date(order.date).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
                             {new Date(order.requiredBy).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                          <div className="flex gap-2">
+                            <div className="flex gap-2">
                               <Button
                                 variant="outline"
-                              size="sm"
-                            onClick={() => handleEditOrder(order)}
-                          >
-                          <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                          variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteOrder(order.id)}
-                          >
-                          <Trash2 className="h-4 w-4" />
-                          </Button>
-                          </div>
-                          </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={9} className="h-24 text-center">
-                            No purchase orders found
+                                size="sm"
+                                onClick={() => handleEditOrder(order)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteOrder(order.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={9} className="h-24 text-center">
+                          No purchase orders found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <TabsContent value="vendors" className="space-y-6">
-            <VendorManagement />
-          </TabsContent>
-        </Tabs>
+        <TabsContent value="vendors" className="space-y-6">
+          <VendorManagement />
+        </TabsContent>
+      </Tabs>
       {/* </CardContent> */}
       {/* Add/Edit Purchase Order Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -1067,7 +1110,7 @@ export function PurchaseDashboard() {
             <DialogTitle>Purchase Order</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">
-            <PurchaseOrderForm 
+            <PurchaseOrderForm
               onSuccess={() => {
                 fetchPurchaseOrders();
                 setShowComprehensiveForm(false);
@@ -1082,6 +1125,14 @@ export function PurchaseDashboard() {
         open={isRequestDialogOpen}
         onOpenChange={setIsRequestDialogOpen}
         onSave={handleNewMaterialRequestSave}
+      />
+
+      {/* Edit Material Request Modal */}
+      <EditMaterialRequestModal
+        open={isEditRequestDialogOpen}
+        onOpenChange={setIsEditRequestDialogOpen}
+        materialRequest={currentEditRequest}
+        onSave={handleEditRequestSave}
       />
 
       {/* Add Vendor Modal */}

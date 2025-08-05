@@ -7,7 +7,7 @@ export const materialController = {
   // MaterialRequest CRUD Operations
   async createMaterialRequest(req: Request, res: Response) {
     try {
-      const { items, ...materialRequestData } = req.body;
+      const { items, requester, project, approver, ...materialRequestData } = req.body;
       
       if (!req.user?.id) {
         return res.status(401).json({ error: 'User not authenticated' });
@@ -61,7 +61,8 @@ export const materialController = {
         where,
         include: {
           requester: true,
-          project: true
+          project: true,
+          items:true,
         },
         orderBy: {
           createdAt: 'desc'
@@ -84,7 +85,8 @@ export const materialController = {
         where: { id: req.params.id },
         include: {
           requester: true,
-          project: true
+          project: true,
+          items: true
         }
       });
       
@@ -109,7 +111,8 @@ export const materialController = {
         data: req.body,
         include: {
           requester: true,
-          project: true
+          project: true,
+          items: true
         }
       });
       
@@ -154,7 +157,8 @@ export const materialController = {
         },
         include: {
           requester: true,
-          project: true
+          project: true,
+          items: true
         }
       });
       
@@ -196,7 +200,8 @@ export const materialController = {
         },
         include: {
           requester: true,
-          project: true
+          project: true,
+          items: true
         }
       });
       
