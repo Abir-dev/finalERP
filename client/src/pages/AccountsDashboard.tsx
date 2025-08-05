@@ -162,6 +162,7 @@ const AccountsDashboard = () => {
     const [taxCharges, setTaxCharges] = useState([]);
     const [projects, setProjects] = useState([]);
     const [payments, setPayments] = useState([]);
+    const [projectsLoading, setProjectsLoading] = useState(true);
     const [budgetMetrics, setBudgetMetrics] = useState({
         totalBudget: 0,
         totalSpent: 0,
@@ -201,17 +202,32 @@ const AccountsDashboard = () => {
 
     const fetchProjects = async () => {
         try {
+            setProjectsLoading(true);
             const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-            const response = await axios.get(`${API_URL}/project`, { headers });
+            console.log("Fetching projects from:", `${API_URL}/projects`);
+            const response = await axios.get(`${API_URL}/projects`, { headers });
             const projectsData = response.data;
+            console.log("Projects fetched:", projectsData.length, "projects");
             setProjects(projectsData);
 
             // Calculate budget metrics from projects data
             calculateBudgetMetrics(projectsData);
         } catch (error) {
             console.error("Error fetching projects:", error);
+            toast.error("Failed to fetch project data");
+            // Set fallback empty data to prevent UI crashes
+            setProjects([]);
+            setBudgetMetrics({
+                totalBudget: 0,
+                totalSpent: 0,
+                remaining: 0,
+                projectCount: 0
+            });
+            setBudgetData([]);
+        } finally {
+            setProjectsLoading(false);
         }
     };
 
@@ -221,10 +237,8 @@ const AccountsDashboard = () => {
 
         // For each project, calculate budget and spent amounts
         const updatedBudgetData = projectsData.map((project: any) => {
-            // Calculate project budget as sum of all invoices for this project
-            const projectInvoices = project.invoices || [];
-            const projectBudget = projectInvoices.reduce((sum: number, invoice: any) =>
-                sum + (invoice.total || invoice.amount || 0), 0);
+            // Use actual project budget from the budget field
+            const projectBudget = project.budget || 0;
 
             // Calculate spent amount as sum of all payments for this project
             const projectPayments = project.Payment || [];
@@ -722,10 +736,21 @@ const AccountsDashboard = () => {
                 </TabsContent>
 
                 <TabsContent value="budget" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {projectsLoading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="border rounded-lg p-4 space-y-3 animate-pulse">
+                                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                                    <div className="h-8 bg-muted rounded w-1/2"></div>
+                                    <div className="h-3 bg-muted rounded w-full"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <StatCard
                             title="Total Budget"
-                            value={`₹${(budgetMetrics.totalBudget / 100000).toFixed(1)}L`}
+                            value={`₹${(budgetMetrics.totalBudget / 100000).toFixed(2)}L`}
                             icon={DollarSign}
                             description="All projects"
                             trend={{
@@ -735,7 +760,7 @@ const AccountsDashboard = () => {
                         />
                         <StatCard
                             title="Spent"
-                            value={`₹${(budgetMetrics.totalSpent / 100000).toFixed(1)}L`}
+                            value={`₹${(budgetMetrics.totalSpent / 100000).toFixed(2)}L`}
                             icon={TrendingUp}
                             description="Total expenses"
                             trend={{
@@ -746,7 +771,7 @@ const AccountsDashboard = () => {
                         />
                         <StatCard
                             title="Remaining"
-                            value={`₹${(budgetMetrics.remaining / 100000).toFixed(1)}L`}
+                            value={`₹${(budgetMetrics.remaining / 100000).toFixed(2)}L`}
                             icon={PieChart}
                             description="Available funds"
                             trend={{
@@ -766,7 +791,8 @@ const AccountsDashboard = () => {
                                 label: "avg ₹L per project"
                             }}
                         />
-                    </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -826,8 +852,7 @@ const AccountsDashboard = () => {
                         <CardContent>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {projects.slice(0, 6).map((project: any) => {
-                                    const projectBudget = (project.invoices || []).reduce((sum: number, inv: any) =>
-                                        sum + (inv.total || inv.amount || 0), 0);
+                                    const projectBudget = project.budget || 0;
                                     const projectSpent = (project.Payment || []).reduce((sum: number, payment: any) =>
                                         sum + (payment.total || 0), 0);
                                     const completionPercentage = projectBudget > 0 ? (projectSpent / projectBudget) * 100 : 0;

@@ -65,8 +65,13 @@ export const projectController = {
           managers: true,
           members: true,
           tasks: true,
-          invoices: true,
+          invoices: {
+            include: {
+              items: true
+            }
+          },
           materialRequests: true,
+          nonBillables: true,
           Tender: true,
           Payment: true
         },
@@ -75,7 +80,21 @@ export const projectController = {
         }
       });
       
-      res.json(projects);
+      // Ensure totalSpend is calculated for each project
+      const projectsWithCalculatedSpend = projects.map(project => {
+        const nonBillableTotal = (project.nonBillables as any)?.reduce((sum: number, nb: any) => 
+          sum + parseFloat(nb.amount || 0), 0) || 0;
+        const paymentTotal = project.Payment?.reduce((sum: number, payment: any) => 
+          sum + parseFloat(payment.total || 0), 0) || 0;
+        const calculatedTotalSpend = nonBillableTotal + paymentTotal;
+        
+        return {
+          ...project,
+          totalSpend: calculatedTotalSpend
+        };
+      });
+      
+      res.json(projectsWithCalculatedSpend);
     } catch (error) {
       logger.error("Error:", error);
       res.status(500).json({
