@@ -11,7 +11,7 @@ router.post('/material-requests', authenticateUser, checkRole('accounts'), valid
 router.get('/material-requests', authenticateUser, materialController.listMaterialRequests);
 router.get('/material-requests/:id', authenticateUser, materialController.getMaterialRequest);
 router.put('/material-requests/:id', authenticateUser, checkRole('accounts'), validateMaterialRequest, materialController.updateMaterialRequest);
-router.delete('/material-requests/:id', authenticateUser, checkRole('admin'), materialController.deleteMaterialRequest);
+router.delete('/material-requests/:id', authenticateUser,materialController.deleteMaterialRequest);
 
 // Material Request Approval/Rejection
 router.post('/material-requests/:id/approve', authenticateUser, checkRole('admin'), materialController.approveMaterialRequest);

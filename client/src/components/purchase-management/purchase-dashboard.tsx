@@ -50,6 +50,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PurchaseOrderForm } from "./purchase-order-form";
 import axios from "axios";
 import { Label } from "../ui/label";
@@ -98,6 +108,11 @@ export function PurchaseDashboard() {
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
   const [showNewVendorModal, setShowNewVendorModal] = useState(false);
+  const [materialRequestToDelete, setMaterialRequestToDelete] = useState<
+    string | null
+  >(null);
+  const [isDeleteRequestDialogOpen, setIsDeleteRequestDialogOpen] =
+    useState(false);
 
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<any>(null);
@@ -226,6 +241,39 @@ export function PurchaseDashboard() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleDeleteMaterialRequest = (requestId: string) => {
+    setMaterialRequestToDelete(requestId);
+    setIsDeleteRequestDialogOpen(true);
+  };
+
+  const confirmDeleteMaterialRequest = async () => {
+    if (materialRequestToDelete) {
+      try {
+        const token = sessionStorage.getItem("jwt_token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        await axios.delete(
+          `${API_URL}/material/material-requests/${materialRequestToDelete}`,
+          {
+            headers,
+          }
+        );
+        await fetchMaterialRequests();
+        toast({
+          title: "Success",
+          description: "Material request deleted successfully",
+        });
+      } catch (error) {
+        console.error("Error deleting material request:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete material request",
+          variant: "destructive",
+        });
+      }
+    }
+    setIsDeleteRequestDialogOpen(false);
+    setMaterialRequestToDelete(null);
+  };
   const confirmDeleteOrder = async () => {
     if (orderToDelete) {
       try {
@@ -755,6 +803,15 @@ export function PurchaseDashboard() {
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteMaterialRequest(request.id)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -775,7 +832,38 @@ export function PurchaseDashboard() {
             open={isRequestDialogOpen}
             onOpenChange={setIsRequestDialogOpen}
             onSave={handleNewMaterialRequestSave}
-          />
+          />{" "}
+          <AlertDialog
+            open={isDeleteRequestDialogOpen}
+            onOpenChange={setIsDeleteRequestDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  material request{" "}
+                  <span className="font-semibold text-black">
+                    {
+                      materialRequests.find(
+                        (mr) => mr.id === materialRequestToDelete
+                      )?.requestNumber
+                    }
+                  </span>{" "}
+                  and remove all associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmDeleteMaterialRequest}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete Vendor
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-4">
