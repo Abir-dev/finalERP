@@ -453,7 +453,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center">
-            <Calculator className="h-6 w-6 text-purple-600 mr-3" />
+            <Calculator className="h-6 w-6 mr-3" />
             <div>
               <h2 className="text-xl font-bold text-gray-900">
                 Invoice Builder
@@ -468,10 +468,11 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
           </Button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 space-y-6">
+          {/* First Row: Invoice Information + Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Invoice Details */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* Left Column - Invoice Information */}
+            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Invoice Information</CardTitle>
@@ -621,244 +622,10 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Line Items */}
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Invoice Items</CardTitle>
-                    <Button onClick={addLineItem} size="sm" variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Item
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Headers */}
-                    <div className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
-                      <div className="col-span-1">S.No</div>
-                      <div className="col-span-3">Description</div>
-                      <div className="col-span-2">Item</div>
-                      <div className="col-span-2">Unit</div>
-                      <div className="col-span-1">Qty</div>
-                      <div className="col-span-1">Rate</div>
-                      <div className="col-span-1">Amount</div>
-                      <div className="col-span-1">Action</div>
-                    </div>
-
-                    {lineItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="grid grid-cols-12 gap-2 items-center p-3 border rounded-lg"
-                      >
-                        <div className="col-span-1">
-                          <Input
-                            placeholder="001"
-                            value={item.serialNumber}
-                            onChange={(e) =>
-                              updateLineItem(
-                                item.id,
-                                "serialNumber",
-                                e.target.value
-                              )
-                            }
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Input
-                            placeholder="Description"
-                            value={item.description}
-                            onChange={(e) =>
-                              updateLineItem(
-                                item.id,
-                                "description",
-                                e.target.value
-                              )
-                            }
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Select
-                            value={item.item}
-                            onValueChange={(value) =>
-                              updateLineItem(item.id, "item", value)
-                            }
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Select item" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CONSTRUCTION_ITEMS.map((constructionItem) => (
-                                <SelectItem
-                                  key={constructionItem.value}
-                                  value={constructionItem.value}
-                                >
-                                  {constructionItem.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-2">
-                          <Select
-                            value={item.unit}
-                            onValueChange={(value) =>
-                              updateLineItem(item.id, "unit", value)
-                            }
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Unit" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {UNITS.map((unit) => (
-                                <SelectItem key={unit.value} value={unit.value}>
-                                  {unit.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="col-span-1">
-                          <Input
-                            type="number"
-                            placeholder="1"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              updateLineItem(
-                                item.id,
-                                "quantity",
-                                Number(e.target.value)
-                              )
-                            }
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Input
-                            type="number"
-                            placeholder="Rate"
-                            value={item.rate}
-                            onChange={(e) =>
-                              updateLineItem(
-                                item.id,
-                                "rate",
-                                Number(e.target.value)
-                              )
-                            }
-                            className="h-9"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Input
-                            value={`₹${item.amount.toLocaleString("en-IN")}`}
-                            readOnly
-                            className="bg-gray-50 h-9"
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Button
-                            variant="ghost"
-                            onClick={() => removeLineItem(item.id)}
-                            className="text-red-500 hover:text-red-700 px-2 py-2"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Totals */}
-                  <div className="mt-6 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Subtotal:</span>
-                      <span>₹{subtotal.toLocaleString("en-IN")}</span>
-                    </div>
-                    {applyRetention && (
-                      <div className="flex justify-between text-sm text-red-600">
-                        <span>Retention (5%):</span>
-                        <span>-₹{retentionAmount.toLocaleString("en-IN")}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span>Base Amount:</span>
-                      <span>₹{baseAfterRetention.toLocaleString("en-IN")}</span>
-                    </div>
-                    {applyGst && (
-                      <div className="flex justify-between text-sm">
-                        <span>GST (18%):</span>
-                        <span>₹{taxAmount.toLocaleString("en-IN")}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-lg font-bold border-t pt-2">
-                      <span>Total:</span>
-                      <span>₹{total.toLocaleString("en-IN")}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Additional Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Additional Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Work Completed (%)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="65"
-                      min="0"
-                      max="100"
-                      value={formData.workCompletedPercent}
-                      onChange={(e) =>
-                        handleFormChange(
-                          "workCompletedPercent",
-                          Number(e.target.value)
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Terms & Conditions
-                    </label>
-                    <Textarea
-                      placeholder="Payment terms, conditions, and notes..."
-                      rows={3}
-                      value={formData.termsAndConditions}
-                      onChange={(e) =>
-                        handleFormChange("termsAndConditions", e.target.value)
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Internal Notes
-                    </label>
-                    <Textarea
-                      placeholder="Internal notes (not visible to client)..."
-                      rows={2}
-                      value={formData.internalNotes}
-                      onChange={(e) =>
-                        handleFormChange("internalNotes", e.target.value)
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
-            {/* Right Column - Preview & Actions */}
-            <div className="space-y-6">
+            {/* Right Column - Invoice Preview */}
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>Invoice Preview</CardTitle>
@@ -934,32 +701,249 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </div>
 
+          {/* Full Width: Invoice Items */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Actions</CardTitle>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Invoice Items</CardTitle>
+                    <Button onClick={addLineItem} size="sm" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    className="w-full bg-purple-600 hover:bg-purple-700"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    {loading ? "Creating Invoice..." : "Create Invoice"}
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    Save as Draft
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    Send Email
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    Schedule Reminder
-                  </Button>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Headers */}
+                    <div className="grid grid-cols-12 gap-3 items-center p-3 bg-gray-50 rounded-lg text-sm font-medium text-gray-700">
+                      <div className="col-span-1">S.No</div>
+                      <div className="col-span-3">Description</div>
+                      <div className="col-span-1">Item</div>
+                      <div className="col-span-1">Unit</div>
+                      <div className="col-span-2">Qty</div>
+                      <div className="col-span-2">Rate</div>
+                      <div className="col-span-2">Amount</div>
+                      <div className="col-span-1">Action</div>
+                    </div>
+
+                    {lineItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-12 gap-2 items-center p-3 border rounded-lg"
+                      >
+                        <div className="col-span-1">
+                          <Input
+                            placeholder="001"
+                            value={item.serialNumber}
+                            onChange={(e) =>
+                              updateLineItem(
+                                item.id,
+                                "serialNumber",
+                                e.target.value
+                              )
+                            }
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="col-span-3">
+                          <Input
+                            placeholder="Description"
+                            value={item.description}
+                            onChange={(e) =>
+                              updateLineItem(
+                                item.id,
+                                "description",
+                                e.target.value
+                              )
+                            }
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Select
+                            value={item.item}
+                            onValueChange={(value) =>
+                              updateLineItem(item.id, "item", value)
+                            }
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Select item" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CONSTRUCTION_ITEMS.map((constructionItem) => (
+                                <SelectItem
+                                  key={constructionItem.value}
+                                  value={constructionItem.value}
+                                >
+                                  {constructionItem.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-1">
+                          <Select
+                            value={item.unit}
+                            onValueChange={(value) =>
+                              updateLineItem(item.id, "unit", value)
+                            }
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {UNITS.map((unit) => (
+                                <SelectItem key={unit.value} value={unit.value}>
+                                  {unit.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="col-span-2">
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateLineItem(
+                                item.id,
+                                "quantity",
+                                Number(e.target.value)
+                              )
+                            }
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input
+                            type="number"
+                            placeholder="Rate"
+                            value={item.rate}
+                            onChange={(e) =>
+                              updateLineItem(
+                                item.id,
+                                "rate",
+                                Number(e.target.value)
+                              )
+                            }
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <Input
+                            value={`₹${item.amount.toLocaleString("en-IN")}`}
+                            readOnly
+                            className="bg-gray-50 h-9"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Button
+                            variant="ghost"
+                            onClick={() => removeLineItem(item.id)}
+                            className="text-red-500 hover:text-red-700 px-2 py-2"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Totals */}
+                  <div className="mt-6 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                    </div>
+                    {applyRetention && (
+                      <div className="flex justify-between text-sm text-red-600">
+                        <span>Retention (5%):</span>
+                        <span>-₹{retentionAmount.toLocaleString("en-IN")}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span>Base Amount:</span>
+                      <span>₹{baseAfterRetention.toLocaleString("en-IN")}</span>
+                    </div>
+                    {applyGst && (
+                      <div className="flex justify-between text-sm">
+                        <span>GST (18%):</span>
+                        <span>₹{taxAmount.toLocaleString("en-IN")}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg font-bold border-t pt-2">
+                      <span>Total:</span>
+                      <span>₹{total.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
+          {/* Third Row: Additional Information + Progress Tracking */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Additional Information */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Work Completed (%)
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="65"
+                      min="0"
+                      max="100"
+                      value={formData.workCompletedPercent}
+                      onChange={(e) =>
+                        handleFormChange(
+                          "workCompletedPercent",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Terms & Conditions
+                    </label>
+                    <Textarea
+                      placeholder="Payment terms, conditions, and notes..."
+                      rows={3}
+                      value={formData.termsAndConditions}
+                      onChange={(e) =>
+                        handleFormChange("termsAndConditions", e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Internal Notes
+                    </label>
+                    <Textarea
+                      placeholder="Internal notes (not visible to client)..."
+                      rows={2}
+                      value={formData.internalNotes}
+                      onChange={(e) =>
+                        handleFormChange("internalNotes", e.target.value)
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Progress Tracking */}
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>Progress Tracking</CardTitle>
@@ -987,7 +971,6 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
               </Card>
             </div>
           </div>
-
           {/* Footer */}
           <div className="flex items-center justify-between mt-8 pt-6 border-t">
             <div className="flex items-center text-sm text-gray-600">
@@ -999,7 +982,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                 Cancel
               </Button>
               <Button
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-black hover:bg-black"
                 onClick={handleSubmit}
                 disabled={loading}
               >
