@@ -20,6 +20,12 @@ import {
   Building2,
   Target,
   MapPin,
+  Timer,
+  Users,
+  Zap,
+  Shield,
+  Banknote,
+  PieChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -373,6 +379,57 @@ const BillingManagerDashboard = () => {
   };
 
   const paymentSummary = calculatePaymentSummary();
+
+  // Calculate unique KPI metrics
+  const calculateUniqueKPIs = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // 1. Weekly Revenue - Money collected in last 7 days
+    const weeklyRevenue = payments
+      .filter(p => {
+        const paymentDate = new Date(p.postingDate);
+        return paymentDate >= sevenDaysAgo && 
+               paymentDate <= today &&
+               p.paymentType === "RECEIVE";
+      })
+      .reduce((sum, p) => sum + (p.total || 0), 0);
+
+    // 2. Pipeline Value - Total value of pending invoices (not yet fully paid)
+    const pipelineValue = invoices.reduce((sum, inv) => {
+      const totalPayments = payments
+        .filter(p => p.Invoice?.id === inv.id && p.paymentType === "RECEIVE")
+        .reduce((paySum, p) => paySum + (p.total || 0), 0);
+      
+      const remainingAmount = (inv.total || 0) - totalPayments;
+      return sum + Math.max(0, remainingAmount);
+    }, 0);
+
+    // 3. Top Revenue Client
+    const clientRevenue = new Map<string, number>();
+    
+    payments
+      .filter(p => p.paymentType === "RECEIVE" && p.Invoice?.client)
+      .forEach(payment => {
+        const clientName = payment.Invoice?.client?.name || "Unknown";
+        const current = clientRevenue.get(clientName) || 0;
+        clientRevenue.set(clientName, current + (payment.total || 0));
+      });
+
+    const topClient = Array.from(clientRevenue.entries())
+      .sort((a, b) => b[1] - a[1])[0] || ["No data", 0];
+
+    return {
+      weeklyRevenue: formatAmount(weeklyRevenue),
+      pipelineValue: formatAmount(pipelineValue),
+      topClient: {
+        name: topClient[0],
+        revenue: formatAmount(topClient[1])
+      }
+    };
+  };
+
+  const uniqueKPIs = calculateUniqueKPIs();
 
   const handleExportStatement = () => {
     try {
@@ -790,13 +847,13 @@ File Size: ${doc.size}`;
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">
-                      Paid Invoices
+                      Weekly Revenue
                     </p>
-                    <p className="text-2xl font-bold text-green-600">{paymentSummary.paid.amount}</p>
+                    <p className="text-2xl font-bold text-green-600">{uniqueKPIs.weeklyRevenue}</p>
                   </div>
-                  <CheckCircle className="h-8 w-8 text-green-500" />
+                  <Banknote className="h-8 w-8 text-green-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{paymentSummary.paid.count} invoices completed</p>
+                <p className="text-xs text-gray-500 mt-2">Money collected last 7 days</p>
               </CardContent>
             </Card>
 
@@ -805,13 +862,13 @@ File Size: ${doc.size}`;
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">
-                      Pending Amount
+                      Pipeline Value
                     </p>
-                    <p className="text-2xl font-bold text-yellow-600">{paymentSummary.pending.amount}</p>
+                    <p className="text-2xl font-bold text-blue-600">{uniqueKPIs.pipelineValue}</p>
                   </div>
-                  <Clock className="h-8 w-8 text-yellow-500" />
+                  <PieChart className="h-8 w-8 text-blue-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{paymentSummary.pending.count} invoices pending</p>
+                <p className="text-xs text-gray-500 mt-2">Outstanding invoice amounts</p>
               </CardContent>
             </Card>
 
@@ -819,12 +876,12 @@ File Size: ${doc.size}`;
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Overdue Amount</p>
-                    <p className="text-2xl font-bold text-red-600">{paymentSummary.overdue.amount}</p>
+                    <p className="text-sm font-medium text-gray-600">Top Client</p>
+                    <p className="text-2xl font-bold text-purple-600">{uniqueKPIs.topClient.revenue}</p>
                   </div>
-                  <FileText className="h-8 w-8 text-red-500" />
+                  <Users className="h-8 w-8 text-purple-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{paymentSummary.overdue.count} invoices overdue</p>
+                <p className="text-xs text-gray-500 mt-2">{uniqueKPIs.topClient.name}</p>
               </CardContent>
             </Card>
           </div>
