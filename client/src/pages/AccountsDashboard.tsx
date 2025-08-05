@@ -20,6 +20,7 @@ import GenerateTaxModal from "@/components/modals/GenerateTaxModal"
 import EditTaxModal from "@/components/modals/EditTaxModal"
 import ReconciliationPanel from "@/components/panels/ReconciliationPanel"
 import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal"
+import LabourWagesModal from "@/components/modals/LabourWagesModal"
 import type { Invoice, Employee, Tax } from "@/types/dummy-data-types";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -147,6 +148,8 @@ const AccountsDashboard = () => {
     const [showGenerateTaxModal, setShowGenerateTaxModal] = useState(false)
     const [showEditTaxModal, setShowEditTaxModal] = useState(false)
     const [selectedTax, setSelectedTax] = useState<Tax | null>(null)
+    const [isLabourWagesModalOpen, setIsLabourWagesModalOpen] = useState(false)
+    const [labourWages, setLabourWages] = useState([])
     const [collections, setCollections] = useState([]);
     const [invoices, setInvoices] = useState([]);
     const [employees, setEmployees] = useState([]);
@@ -198,6 +201,9 @@ const AccountsDashboard = () => {
         axios.get(`${API_URL}/billing/payments`, { headers })
             .then(res => setPayments(res.data))
             .catch(() => { });
+
+        // Fetch labour wages data
+        fetchLabourWages();
     }, []);
 
     const fetchProjects = async () => {
@@ -206,10 +212,8 @@ const AccountsDashboard = () => {
             const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-            console.log("Fetching projects from:", `${API_URL}/projects`);
             const response = await axios.get(`${API_URL}/projects`, { headers });
             const projectsData = response.data;
-            console.log("Projects fetched:", projectsData.length, "projects");
             setProjects(projectsData);
 
             // Calculate budget metrics from projects data
@@ -231,6 +235,18 @@ const AccountsDashboard = () => {
         }
     };
 
+    const fetchLabourWages = async () => {
+        try {
+            const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            const response = await axios.get(`${API_URL}/non-billables`, { headers });
+            setLabourWages(response.data);
+        } catch (error) {
+            console.error("Error fetching labour wages:", error);
+        }
+    };
+
     const calculateBudgetMetrics = (projectsData: any[]) => {
         let totalBudget = 0;
         let totalSpent = 0;
@@ -240,10 +256,16 @@ const AccountsDashboard = () => {
             // Use actual project budget from the budget field
             const projectBudget = project.budget || 0;
 
-            // Calculate spent amount as sum of all payments for this project
-            const projectPayments = project.Payment || [];
-            const projectSpent = projectPayments.reduce((sum: number, payment: any) =>
-                sum + (payment.total || 0), 0);
+            // Calculate spent amount as sum of non-billables (labour wages) + invoices for this project
+            const projectNonBillables = project.nonBillables || [];
+            const nonBillableTotal = projectNonBillables.reduce((sum: number, nb: any) =>
+                sum + (nb.amount || 0), 0);
+            
+            const projectInvoices = project.invoices || [];
+            const invoiceTotal = projectInvoices.reduce((sum: number, invoice: any) =>
+                sum + (invoice.total || invoice.amount || 0), 0);
+            
+            const projectSpent = nonBillableTotal + invoiceTotal;
 
             totalBudget += projectBudget;
             totalSpent += projectSpent;
@@ -383,6 +405,31 @@ const AccountsDashboard = () => {
             toast.error(error.response?.data?.message || "Failed to delete tax");
         }
     }
+
+    const handleLabourWagesSuccess = () => {
+        fetchLabourWages();
+        fetchProjects(); // Refresh projects to update budget calculations
+    };
+
+    const handleDeleteLabourWage = async (wageId: string, wageName: string) => {
+        if (!confirm(`Are you sure you want to delete the labour wage entry "${wageName}"?`)) {
+            return;
+        }
+
+        try {
+            const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            await axios.delete(`${API_URL}/non-billables/${wageId}`, { headers });
+            
+            toast.success("Labour wage entry deleted successfully!");
+            fetchLabourWages(); // Refresh the labour wages list
+            fetchProjects(); // Refresh projects to update budget calculations
+        } catch (error: any) {
+            console.error("Error deleting labour wage:", error);
+            toast.error(error.response?.data?.message || "Failed to delete labour wage entry");
+        }
+    };
 
     const handleDeleteTaxCharge = async (taxCharge: any) => {
         if (!confirm(`Are you sure you want to delete this tax charge (${taxCharge.type} - ${taxCharge.accountHead})?`)) {
@@ -825,8 +872,8 @@ const AccountsDashboard = () => {
                                         <div key={index} className="space-y-2">
                                             <div className="flex justify-between">
                                                 <span className="font-medium">{project.project}</span>
-                                                <span className={project.variance < 0 ? "text-green-600" : "text-red-600"}>
-                                                    {project.variance < 0 ? "Under" : "Over"} by ₹{Math.abs(project.variance / 100000).toFixed(1)}L
+                                                <span className={project.variance > 0 ? "text-green-600" : "text-red-600"}>
+                                                    {project.variance > 0 ? "Under" : "Over"} by ₹{Math.abs(project.variance / 100000).toFixed(2)}L
                                                 </span>
                                             </div>
                                             <Progress
@@ -834,8 +881,8 @@ const AccountsDashboard = () => {
                                                 className="h-2"
                                             />
                                             <div className="flex justify-between text-sm text-muted-foreground">
-                                                <span>Spent: ₹{(project.actual / 100000).toFixed(1)}L</span>
-                                                <span>Budget: ₹{(project.budgeted / 100000).toFixed(1)}L</span>
+                                                <span>Spent: ₹{(project.actual / 100000).toFixed(2)}L</span>
+                                                <span>Budget: ₹{(project.budgeted / 100000).toFixed(2)}L</span>
                                             </div>
                                         </div>
                                     ))}
@@ -853,8 +900,11 @@ const AccountsDashboard = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {projects.slice(0, 6).map((project: any) => {
                                     const projectBudget = project.budget || 0;
-                                    const projectSpent = (project.Payment || []).reduce((sum: number, payment: any) =>
-                                        sum + (payment.total || 0), 0);
+                                    const nonBillableTotal = (project.nonBillables || []).reduce((sum: number, nb: any) =>
+                                        sum + (nb.amount || 0), 0);
+                                    const invoiceTotal = (project.invoices || []).reduce((sum: number, invoice: any) =>
+                                        sum + (invoice.total || invoice.amount || 0), 0);
+                                    const projectSpent = nonBillableTotal + invoiceTotal;
                                     const completionPercentage = projectBudget > 0 ? (projectSpent / projectBudget) * 100 : 0;
 
                                     return (
@@ -874,7 +924,7 @@ const AccountsDashboard = () => {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between text-sm">
                                                     <span>Budget:</span>
-                                                    <span>₹{(projectBudget / 100000).toFixed(1)}L</span>
+                                                    <span>₹{(projectBudget / 100000).toFixed(2)}L</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
                                                     <span>Spent:</span>
@@ -938,10 +988,11 @@ const AccountsDashboard = () => {
               description="Per employee"
             /> */}
                         <StatCard
-                            title="Compliance"
-                            value={payrollStats.compliance}
-                            icon={Check}
-                            description="Documents verified"
+                            title="Labour Wages"
+                            value={`₹${(labourWages.reduce((sum: number, wage: any) => sum + (wage.amount || 0), 0) / 1000).toFixed(0)}K`}
+                            icon={Users}
+                            description="Total labour costs"
+                            trend={{ value: labourWages.length, label: "wage entries" }}
                         />
                     </div>
 
@@ -957,28 +1008,53 @@ const AccountsDashboard = () => {
                         </Card>
 
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Compliance Status</CardTitle>
-                                <CardDescription>Document verification status</CardDescription>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle>Labour Wages</CardTitle>
+                                    <CardDescription>All labour wage entries across projects</CardDescription>
+                                </div>
+                                <Button size="sm" onClick={() => setIsLabourWagesModalOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Labour Wage
+                                </Button>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {[
-                                        { doc: 'PF Registration', status: 'Verified', date: '15 Jan 2024' },
-                                        { doc: 'ESI Compliance', status: 'Verified', date: '22 Jan 2024' },
-                                        { doc: 'Labor License', status: 'Verified', date: '10 Feb 2024' },
-                                        { doc: 'Professional Tax', status: 'Pending', date: '05 Mar 2024' }
-                                    ].map((item, index) => (
-                                        <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
-                                            <div>
-                                                <p className="font-medium">{item.doc}</p>
-                                                <p className="text-sm text-muted-foreground">Last updated: {item.date}</p>
+                                    {labourWages.length > 0 ? labourWages.slice(0, 4).map((wage: any, index: number) => (
+                                        <div key={index} className="flex justify-between items-center p-3 border rounded-lg group hover:border-muted-foreground/20 transition-colors">
+                                            <div className="flex-1">
+                                                <p className="font-medium">{wage.name}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {wage.project?.name || 'No project'} • {new Date(wage.createdAt).toLocaleDateString('en-IN')}
+                                                </p>
+                                                {wage.description && (
+                                                    <p className="text-xs text-muted-foreground mt-1">{wage.description}</p>
+                                                )}
                                             </div>
-                                            <Badge variant={item.status === 'Verified' ? 'default' : 'outline'}>
-                                                {item.status}
-                                            </Badge>
+                                            <div className="flex items-center gap-3">
+                                                <div className="text-right">
+                                                    <p className="font-medium">₹{(wage.amount / 1000).toFixed(1)}K</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        by {wage.creator?.name || 'Unknown'}
+                                                    </p>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteLabourWage(wage.id, wage.name)}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                            <p className="text-lg font-medium">No Labour Wages</p>
+                                            <p className="text-sm">Click "Add Labour Wage" to create your first entry.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -1344,6 +1420,12 @@ const AccountsDashboard = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <LabourWagesModal
+                isOpen={isLabourWagesModalOpen}
+                onClose={() => setIsLabourWagesModalOpen(false)}
+                onSuccess={handleLabourWagesSuccess}
+            />
         </div>
     )
 }
