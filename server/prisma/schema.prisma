@@ -48,6 +48,8 @@ model User {
   createdVendors   Vendor[]          @relation("VendorCreator")
   createdNonBillables NonBillable[]  @relation("NonBillableCreator")
   Bid              Bid[]
+  createdIssues    IssueReport[]     @relation("IssueCreator")
+  assignedIssues   IssueReport[]     @relation("IssueAssignments")
 
   @@map("users")
 }
@@ -405,12 +407,29 @@ model BudgetAdjustment {
 }
 
 model IssueReport {
-  id               String   @id @default(uuid()) @db.Uuid
-  category         String
-  description      String
-  severity         String
-  responsibleParty String
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                    String           @id @default(uuid()) @db.Uuid
+  title                 String
+  type                  IssueType        @default(OTHER)
+  priority              IssuePriority    @default(MEDIUM)
+  status                IssueStatus      @default(OPEN)
+  reportedBy            String
+  reportedAt            DateTime         @default(now()) @map("reported_at") @db.Timestamptz(6)
+  assignedToId          String?          @map("assigned_to_id") @db.Uuid
+  assignedTo            User?            @relation("IssueAssignments", fields: [assignedToId], references: [id], onDelete: Cascade)
+  description           String
+  location              String
+  estimatedResolutionTime Float?        @map("estimated_resolution_time")
+  actualResolutionTime  Float?          @map("actual_resolution_time")
+  startResolutionAt     DateTime?       @map("start_resolution_at") @db.Timestamptz(6)
+  markedResolvedAt      DateTime?       @map("marked_resolved_at") @db.Timestamptz(6)
+  isStartResolution     Boolean         @default(false) @map("is_start_resolution")
+  isMarkedResolved      Boolean         @default(false) @map("is_marked_resolved")
+  createdById           String          @map("created_by_id") @db.Uuid
+  createdBy             User            @relation("IssueCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("issue_reports")
 }
 
 model DailyProgressReport {
@@ -631,4 +650,27 @@ enum GstCategory {
   COMPOSITION
   SEZ
   DEEMED_EXPORT
+}
+
+// Issue Report Enums
+enum IssueType {
+  LABOR_SHORTAGE    @map("labor-shortage")
+  MACHINERY_DEFECT  @map("machinery-defect")
+  QUALITY_ISSUE     @map("quality-issue")
+  SAFETY_CONCERN    @map("safety-concern")
+  MATERIAL_DELAY    @map("material-delay")
+  OTHER
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS       @map("in-progress")
+  RESOLVED
 }
