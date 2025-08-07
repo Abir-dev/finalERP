@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, TrendingUp, AlertTriangle, Calendar, Download } from "lucide-react";
+import { Package, TrendingUp, AlertTriangle, Calendar, Download, DollarSign, Clock } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 
 interface MaterialRequirement {
   id: string;
@@ -223,6 +224,42 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
         </div>
       </CardHeader>
       <CardContent>
+        {/* KPI Cards */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <EnhancedStatCard
+            title="Total Material Cost"
+            value={`₹${(totalEstimatedCost / 100000).toFixed(1)}L`}
+            icon={DollarSign}
+            description="Estimated procurement cost"
+            trend={{ value: 8, label: "vs last forecast" }}
+            threshold={{ status: 'good', message: 'Within budget allocation' }}
+          />
+          <EnhancedStatCard
+            title="Critical Materials"
+            value={materialRequirements.filter(m => m.priority === 'critical').length}
+            icon={AlertTriangle}
+            description="Require immediate action"
+            trend={{ value: -12, label: "vs last week" }}
+            threshold={{ status: 'warning', message: 'Monitor closely for delays' }}
+          />
+          <EnhancedStatCard
+            title="Avg Lead Time"
+            value={`${Math.round(materialRequirements.reduce((sum, m) => sum + m.leadTime, 0) / materialRequirements.length)} days`}
+            icon={Clock}
+            description="Average material delivery"
+            trend={{ value: -5, label: "improvement" }}
+            threshold={{ status: 'good', message: 'Lead times improving' }}
+          />
+          <EnhancedStatCard
+            title="Materials Tracked"
+            value={materialRequirements.length}
+            icon={Package}
+            description="Total items in forecast"
+            trend={{ value: 15, label: "new additions" }}
+            threshold={{ status: 'good', message: 'Comprehensive tracking' }}
+          />
+        </div> */}
+
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -231,60 +268,6 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-blue-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Items</p>
-                      <p className="text-2xl font-bold">{materialRequirements.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Estimated Cost</p>
-                      <p className="text-2xl font-bold">₹{(totalEstimatedCost / 100000).toFixed(1)}L</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Critical Items</p>
-                      <p className="text-2xl font-bold">
-                        {materialRequirements.filter(m => m.priority === 'critical').length}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-purple-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Avg Lead Time</p>
-                      <p className="text-2xl font-bold">
-                        {Math.round(materialRequirements.reduce((sum, m) => sum + m.leadTime, 0) / materialRequirements.length)} days
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
 
             {/* Category Breakdown */}
             <Card>

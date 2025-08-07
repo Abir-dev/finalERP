@@ -471,7 +471,7 @@ const Inventory = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Project & Inventory Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
           <p className="text-muted-foreground">Comprehensive project tracking, inventory management and material planning</p>
         </div>
         <div className="flex gap-2">
@@ -730,18 +730,18 @@ const Inventory = () => {
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="project-overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="project-overview">Project Overview</TabsTrigger>
+      <Tabs defaultValue="inventory" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          {/* <TabsTrigger value="project-overview">Project Overview</TabsTrigger> */}
+          <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="material-forecast">Material Forecast</TabsTrigger>
           <TabsTrigger value="issue-tracking">Issue Tracking</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="transfers">Transfers</TabsTrigger>
           <TabsTrigger value="warehouse">Warehouse</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
         </TabsList>
 
-        <TabsContent value="project-overview" className="space-y-6">
+        {/* <TabsContent value="project-overview" className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard
               title="Active Projects"
@@ -772,19 +772,19 @@ const Inventory = () => {
               trend={{ value: 5, label: "improvement" }}
               threshold={{ status: 'good', message: 'Excellent project delivery' }}
             />
-          </div>
+          </div> */}
 
           {/* Enhanced Gantt Chart */}
-          <GanttChart
+          {/* <GanttChart
             projectId="PROJ001"
             tasks={tasks}
             onTaskUpdate={(taskId, updates) => {
               console.log('Task updated:', taskId, updates);
             }}
-          />
+          /> */}
 
           {/* Quick Actions Dashboard with updated buttons */}
-          <Card>
+          {/* <Card>
             <CardHeader>
               <CardTitle>Quick Actions & Project Health</CardTitle>
               <CardDescription>Real-time project monitoring and immediate actions</CardDescription>
@@ -836,45 +836,48 @@ const Inventory = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
           {/* <div className="flex justify-end mb-4">
             <Button variant="outline" onClick={() => handleExport('project-overview')}>
               <Download className="mr-2 h-4 w-4" />
               Export Project Data
             </Button>
           </div> */}
-        </TabsContent>
+        {/* </TabsContent> */}
 
         <TabsContent value="material-forecast" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <EnhancedStatCard
-              title="Forecast Accuracy"
-              value="94.2%"
-              icon={TrendingUp}
-              description="Material prediction accuracy"
-              trend={{ value: 3, label: "improvement this month" }}
-              threshold={{ status: 'good', message: 'Excellent forecasting performance' }}
+              title="Total Items"
+              value="12"
+              icon={Package}
+              description="Materials in forecast"
+              trend={{ value: 8, label: "new additions" }}
+              threshold={{ status: 'good', message: 'Comprehensive material tracking' }}
             />
             <EnhancedStatCard
-              title="Upcoming Requirements"
+              title="Estimated Cost"
               value="₹24.5L"
-              icon={Package}
-              description="Next 2 weeks material cost"
-              trend={{ value: 12, label: "increase from last period" }}
+              icon={TrendingUp}
+              description="Total procurement value"
+              trend={{ value: 12, label: "vs last forecast" }}
+              threshold={{ status: 'good', message: 'Within budget parameters' }}
             />
             <EnhancedStatCard
-              title="Lead Time Variance"
-              value="±2.1 days"
-              icon={Clock}
-              description="Average delivery variance"
-              threshold={{ status: 'warning', message: 'Monitor supplier performance' }}
+              title="Critical Items"
+              value="3"
+              icon={AlertTriangle}
+              description="Require immediate action"
+              trend={{ value: -25, label: "reduction" }}
+              threshold={{ status: 'warning', message: 'Monitor for potential delays' }}
             />
             <EnhancedStatCard
-              title="Stock Optimization"
-              value="87%"
-              icon={Package}
-              description="Inventory efficiency score"
-              trend={{ value: 5, label: "improvement" }}
+              title="Avg Lead Time"
+              value="7 days"
+              icon={Calendar}
+              description="Average delivery time"
+              trend={{ value: -10, label: "improvement" }}
+              threshold={{ status: 'good', message: 'Lead times optimizing' }}
             />
           </div>
 
