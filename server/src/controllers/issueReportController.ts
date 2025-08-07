@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import logger from '../logger/logger';
 
+// Type assertion to work around Prisma client generation issues
+const prismaClient = prisma as any;
+
 export const issueReportController = {
   async createIssueReport(req: Request, res: Response) {
     try {
@@ -24,7 +27,7 @@ export const issueReportController = {
         });
       }
 
-      const issueReport = await prisma.issueReport.create({
+      const issueReport = await prismaClient.issueReport.create({
         data: {
           title,
           type: type || 'OTHER',
@@ -62,7 +65,7 @@ export const issueReportController = {
       if (type) where.type = type;
       if (assignedToId) where.assignedToId = assignedToId;
 
-      const issueReports = await prisma.issueReport.findMany({
+      const issueReports = await prismaClient.issueReport.findMany({
         where,
         include: {
           assignedTo: true,
@@ -94,7 +97,7 @@ export const issueReportController = {
         });
       }
 
-      const issueReport = await prisma.issueReport.findUnique({
+      const issueReport = await prismaClient.issueReport.findUnique({
         where: { id },
         include: {
           assignedTo: true,
@@ -140,7 +143,7 @@ export const issueReportController = {
         });
       }
 
-      const existingIssueReport = await prisma.issueReport.findUnique({
+      const existingIssueReport = await prismaClient.issueReport.findUnique({
         where: { id }
       });
 
@@ -151,7 +154,7 @@ export const issueReportController = {
         });
       }
 
-      const updatedIssueReport = await prisma.issueReport.update({
+      const updatedIssueReport = await prismaClient.issueReport.update({
         where: { id },
         data: {
           ...(title && { title }),
@@ -190,7 +193,7 @@ export const issueReportController = {
         });
       }
 
-      const existingIssueReport = await prisma.issueReport.findUnique({
+      const existingIssueReport = await prismaClient.issueReport.findUnique({
         where: { id }
       });
 
@@ -201,7 +204,7 @@ export const issueReportController = {
         });
       }
 
-      await prisma.issueReport.delete({
+      await prismaClient.issueReport.delete({
         where: { id }
       });
 
@@ -238,7 +241,7 @@ export const issueReportController = {
         });
       }
 
-      const existingIssueReport = await prisma.issueReport.findUnique({
+      const existingIssueReport = await prismaClient.issueReport.findUnique({
         where: { id }
       });
 
@@ -249,7 +252,7 @@ export const issueReportController = {
         });
       }
 
-      const updatedIssueReport = await prisma.issueReport.update({
+      const updatedIssueReport = await prismaClient.issueReport.update({
         where: { id },
         data: { status },
         include: {
@@ -280,7 +283,7 @@ export const issueReportController = {
         });
       }
 
-      const existingIssueReport = await prisma.issueReport.findUnique({
+      const existingIssueReport = await prismaClient.issueReport.findUnique({
         where: { id }
       });
 
@@ -292,7 +295,7 @@ export const issueReportController = {
       }
 
       if (assignedToId) {
-        const assignedUser = await prisma.user.findUnique({
+        const assignedUser = await prismaClient.user.findUnique({
           where: { id: assignedToId }
         });
 
@@ -304,7 +307,7 @@ export const issueReportController = {
         }
       }
 
-      const updatedIssueReport = await prisma.issueReport.update({
+      const updatedIssueReport = await prismaClient.issueReport.update({
         where: { id },
         data: { assignedToId },
         include: {
@@ -334,7 +337,7 @@ export const issueReportController = {
         });
       }
 
-      const existingIssueReport = await prisma.issueReport.findUnique({
+      const existingIssueReport = await prismaClient.issueReport.findUnique({
         where: { id }
       });
 
@@ -345,7 +348,7 @@ export const issueReportController = {
         });
       }
 
-      const updatedIssueReport = await prisma.issueReport.update({
+      const updatedIssueReport = await prismaClient.issueReport.update({
         where: { id },
         data: {
           isStartResolution: true,
@@ -379,7 +382,7 @@ export const issueReportController = {
         });
       }
 
-      const existingIssueReport = await prisma.issueReport.findUnique({
+      const existingIssueReport = await prismaClient.issueReport.findUnique({
         where: { id }
       });
 
@@ -399,7 +402,7 @@ export const issueReportController = {
         actualResolutionTime = timeDiffMs / (1000 * 60 * 60); // Convert to hours
       }
 
-      const updatedIssueReport = await prisma.issueReport.update({
+      const updatedIssueReport = await prismaClient.issueReport.update({
         where: { id },
         data: {
           isMarkedResolved: true,

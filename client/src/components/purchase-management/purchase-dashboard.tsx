@@ -33,6 +33,7 @@ import {
   Edit,
   Trash2,
   Star,
+  ChevronDown,
 } from "lucide-react";
 import {
   Table,
@@ -598,93 +599,233 @@ export function PurchaseDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">
-                  Recent Purchase Orders
-                </CardTitle>
+                <CardTitle>Recent Purchase Orders</CardTitle>
+                <CardDescription>Track and manage purchase orders with detailed information</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {purchaseOrders.slice(0, 3).map((po) => (
-                    <div
-                      key={po.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{po.poNumber}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {po.Vendor?.name || "N/A"} • {po.items.length} item(s)
-                        </p>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant="secondary">
-                            {po.items.length} items
+                <div className="space-y-4">
+                  {purchaseOrders.slice(0, 10).map((po) => (
+                    <div key={po.id} className="border rounded-lg">
+                      <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const expanded = document.getElementById(`po-${po.id}`);
+                              if (expanded) {
+                                expanded.style.display = expanded.style.display === 'none' ? 'block' : 'none';
+                              }
+                            }}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <div>
+                            <div className="font-medium">{po.poNumber}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {po.Vendor?.name || "N/A"} • {po.items?.length || 0} item(s)
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-semibold">₹{((po.grandTotal || 0) / 100000).toFixed(1)}L</div>
+                            <div className="text-sm text-muted-foreground">
+                              Due: {new Date(po.requiredBy).toLocaleDateString('en-IN')}
+                            </div>
+                          </div>
+                          <Badge variant={po.advancePaid > 0 ? 'default' : 'secondary'}>
+                            {po.advancePaid > 0 ? 'PAID' : 'PENDING'}
                           </Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          ₹{po.grandTotal?.toLocaleString() || "0"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Due: {new Date(po.requiredBy).toLocaleDateString()}
-                        </p>
+
+                      <div id={`po-${po.id}`} style={{ display: 'none' }} className="border-t bg-muted/50 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Purchase Order Details</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Order Date: {new Date(po.date).toLocaleDateString('en-IN')}</div>
+                              <div>Vendor: {po.Vendor?.name || 'N/A'}</div>
+                              <div>Contact: {po.Vendor?.contact || 'N/A'}</div>
+                              <div>Email: {po.Vendor?.email || 'N/A'}</div>
+                              <div>Total Quantity: {po.totalQuantity || 0}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Amount Breakdown</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Subtotal: ₹{((po.total || 0) / 100000).toFixed(1)}L</div>
+                              <div>Tax Amount: ₹{((po.taxesAndChargesTotal || 0) / 1000).toFixed(0)}K</div>
+                              {po.advancePaid > 0 && (
+                                <div>Advance Paid: ₹{((po.advancePaid || 0) / 1000).toFixed(0)}K</div>
+                              )}
+                              <div className="font-medium border-t pt-1">
+                                Total: ₹{((po.grandTotal || 0) / 100000).toFixed(1)}L
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Purchase Order Items</h4>
+                            <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                              {(po.items || []).length > 0 ? (
+                                (po.items || []).map((item: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>• {item.itemCode || item.description || item.itemName}</span>
+                                    <span>{item.quantity} {item.unit || 'units'}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-muted-foreground">No items listed</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
+                  {purchaseOrders.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>No purchase orders found</p>
+                      <p className="text-sm">Generated purchase orders will appear here</p>
+                    </div>
+                  )}
+                  {purchaseOrders.length > 10 && (
+                    <Button variant="outline" className="w-full">
+                      View All {purchaseOrders.length} Purchase Orders
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">
-                  Pending Material Requests
-                </CardTitle>
+                <CardTitle>Pending Material Requests</CardTitle>
+                <CardDescription>Review and approve material requests with detailed information</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {materialRequests.slice(0, 3).map((mr) => (
-                    <div
-                      key={mr.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h4 className="font-medium">{mr.requestNumber}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {mr.requester?.name || "Unknown"}
-                        </p>
-                        <div className="flex gap-2 mt-1">
-                          <Badge
-                            variant={getStatusColor(mr.status.toLowerCase())}
+                <div className="space-y-4">
+                  {materialRequests.slice(0, 10).map((mr) => (
+                    <div key={mr.id} className="border rounded-lg">
+                      <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const expanded = document.getElementById(`mr-${mr.id}`);
+                              if (expanded) {
+                                expanded.style.display = expanded.style.display === 'none' ? 'block' : 'none';
+                              }
+                            }}
                           >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <div>
+                            <div className="font-medium">{mr.requestNumber || `REQ-${mr.id?.slice(0, 8)}`}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {mr.requester?.name || "Unknown"} • {mr.purpose || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-semibold">₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 100000).toFixed(1)}L</div>
+                            <div className="text-sm text-muted-foreground">
+                              Need: {mr.requiredBy ? new Date(mr.requiredBy).toLocaleDateString('en-IN') : "Not specified"}
+                            </div>
+                          </div>
+                          <Badge variant={
+                            mr.status === 'APPROVED' ? 'default' :
+                              mr.status === 'REJECTED' ? 'destructive' :
+                                'secondary'
+                          }>
                             {mr.status}
                           </Badge>
-                          <Badge variant="secondary">{mr.purpose}</Badge>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold">
-                          {Array.isArray(mr.items) ? mr.items.length : 0}{" "}
-                          item(s)
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Need:{" "}
-                          {mr.requiredBy
-                            ? new Date(mr.requiredBy).toLocaleDateString()
-                            : "Not specified"}
-                        </p>
-                        {mr.status === "SUBMITTED" && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-1"
-                            onClick={() => handleApproveRequest(mr.id)}
-                          >
-                            Approve
-                          </Button>
-                        )}
+
+                      <div id={`mr-${mr.id}`} style={{ display: 'none' }} className="border-t bg-muted/50 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Material Request Details</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Request Date: {new Date(mr.transactionDate).toLocaleDateString('en-IN')}</div>
+                              <div>Purpose: {mr.purpose || 'N/A'}</div>
+                              <div>Priority: {mr.priority || 'Normal'}</div>
+                              <div>Department: {mr.department || 'N/A'}</div>
+                              <div>Items Count: {Array.isArray(mr.items) ? mr.items.length : 0}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Cost Breakdown</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Total Items: {Array.isArray(mr.items) ? mr.items.length : 0}</div>
+                              <div>Est. Amount: ₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 1000).toFixed(0)}K</div>
+                              {Array.isArray(mr.items) && mr.items.length > 0 && (
+                                <div>Avg. Cost/Item: ₹{(mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) / mr.items.length).toFixed(0)}</div>
+                              )}
+                              <div className="font-medium border-t pt-1">
+                                Total: ₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 100000).toFixed(1)}L
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Material Request Items</h4>
+                            <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                              {Array.isArray(mr.items) && mr.items.length > 0 ? (
+                                mr.items.map((item: MaterialRequestItem, idx: number) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>• {item.itemName || item.description}</span>
+                                    <span>{item.quantity} {item.unit || 'units'}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-muted-foreground">No items listed</div>
+                              )}
+                            </div>
+                            {mr.status === "SUBMITTED" && (
+                              <div className="mt-3">
+                                <h5 className="font-medium text-xs mb-1">Actions Available</h5>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleApproveRequest(mr.id)}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleRejectRequest(mr.id)}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
+                  {materialRequests.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertTriangle className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>No material requests found</p>
+                      <p className="text-sm">Submitted requests will appear here</p>
+                    </div>
+                  )}
+                  {materialRequests.length > 10 && (
+                    <Button variant="outline" className="w-full">
+                      View All {materialRequests.length} Material Requests
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -724,101 +865,157 @@ export function PurchaseDashboard() {
                   <TableBody>
                     {materialRequests.length > 0 ? (
                       materialRequests.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell className="font-medium">
-                            {request.requestNumber}
-                          </TableCell>
-                          <TableCell>
-                            {request.requester?.name || "Unknown"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{request.purpose}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {Array.isArray(request.items)
-                              ? request.items.length
-                              : 0}{" "}
-                            item(s)
-                          </TableCell>
-                          <TableCell>
-                            {new Date(
-                              request.transactionDate
-                            ).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {request.requiredBy
-                              ? new Date(
-                                  request.requiredBy
-                                ).toLocaleDateString()
-                              : "Not specified"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={getStatusColor(
-                                request.status.toLowerCase()
+                        <React.Fragment key={request.id}>
+                          <TableRow>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const expanded = document.getElementById(`request-${request.id}`);
+                                    if (expanded) {
+                                      expanded.style.display = expanded.style.display === 'none' ? 'table-row' : 'none';
+                                    }
+                                  }}
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                                <span className="font-medium">{request.requestNumber}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {request.requester?.name || "Unknown"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{request.purpose}</Badge>
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              {Array.isArray(request.items) && request.items.length > 0 ? (
+                                `${request.items.length} items`
+                              ) : (
+                                "No items"
                               )}
-                            >
-                              {request.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              {request.status === "SUBMITTED" && (
-                                <>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                request.transactionDate
+                              ).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {request.requiredBy
+                                ? new Date(
+                                    request.requiredBy
+                                  ).toLocaleDateString()
+                                : "Not specified"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getStatusColor(
+                                  request.status.toLowerCase()
+                                )}
+                              >
+                                {request.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                {request.status === "SUBMITTED" && (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleApproveRequest(request.id)
+                                      }
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleRejectRequest(request.id)
+                                      }
+                                    >
+                                      Reject
+                                    </Button>
+                                  </>
+                                )}
+                                {request.status === "APPROVED" && (
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() =>
-                                      handleApproveRequest(request.id)
+                                      handleCreatePOFromRequest(request)
                                     }
                                   >
-                                    Approve
+                                    Create PO
                                   </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleRejectRequest(request.id)
-                                    }
-                                  >
-                                    Reject
-                                  </Button>
-                                </>
-                              )}
-                              {request.status === "APPROVED" && (
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditRequest(request)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() =>
-                                    handleCreatePOFromRequest(request)
+                                    handleDeleteMaterialRequest(request.id)
                                   }
                                 >
-                                  Create PO
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
-                              )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditRequest(request)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() =>
-                                  handleDeleteMaterialRequest(request.id)
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow id={`request-${request.id}`} style={{ display: 'none' }} className="bg-muted/50">
+                            <TableCell colSpan={8}>
+                              <div className="p-4">
+                                <h4 className="font-medium mb-2 text-sm">Material Items</h4>
+                                <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
+                                  {(request.items || []).length > 0 ? (
+                                    (request.items || []).map((item: MaterialRequestItem, idx: number) => (
+                                      <div key={idx} className="border rounded p-3 bg-background">
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Item Code</div>
+                                            <div className="font-medium">{item.itemCode || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Quantity</div>
+                                            <div>{item.quantity || 0}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">UOM</div>
+                                            <div>{item.uom || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Required By</div>
+                                            <div>{request.requiredBy ? new Date(request.requiredBy).toLocaleDateString('en-IN') : 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Targeted Warehouse</div>
+                                            <div>{item.targetedWarehouse || item.warehouse || 'N/A'}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-muted-foreground">No items listed</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           No material requests found
                         </TableCell>
                       </TableRow>
@@ -934,50 +1131,105 @@ export function PurchaseDashboard() {
                   <TableBody>
                     {filteredPurchaseOrders.length > 0 ? (
                       filteredPurchaseOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">
-                            {order.poNumber}
-                          </TableCell>
-                          <TableCell>{order.Vendor?.name || "N/A"}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {order.items.length > 0
-                              ? `${order.items.length} item(s): ${
-                                  order.items[0]?.itemCode || ""
-                                }`
-                              : "No items"}
-                          </TableCell>
-                          <TableCell>
-                            ₹{order.grandTotal?.toLocaleString() || "0"}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(order.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(order.requiredBy).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditOrder(order)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteOrder(order.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <React.Fragment key={order.id}>
+                          <TableRow>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const expanded = document.getElementById(`order-${order.id}`);
+                                    if (expanded) {
+                                      expanded.style.display = expanded.style.display === 'none' ? 'table-row' : 'none';
+                                    }
+                                  }}
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                                <span className="font-medium">{order.poNumber}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{order.Vendor?.name || "N/A"}</TableCell>
+                            <TableCell className="max-w-[200px]">
+                              {order.items && order.items.length > 0 ? (
+                                `${order.items.length} items`
+                              ) : (
+                                "No items"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              ₹{order.grandTotal?.toLocaleString() || "0"}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(order.date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(order.requiredBy).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditOrder(order)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow id={`order-${order.id}`} style={{ display: 'none' }} className="bg-muted/50">
+                            <TableCell colSpan={7}>
+                              <div className="p-4">
+                                <h4 className="font-medium mb-2 text-sm">Purchase Items</h4>
+                                <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
+                                  {(order.items || []).length > 0 ? (
+                                    (order.items || []).map((item: any, idx: number) => (
+                                      <div key={idx} className="border rounded p-3 bg-background">
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Item Code</div>
+                                            <div className="font-medium">{item.itemCode || item.description || item.itemName || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Quantity</div>
+                                            <div>{item.quantity || 0}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">UOM</div>
+                                            <div>{item.unit || item.uom || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Required By</div>
+                                            <div>{new Date(order.requiredBy).toLocaleDateString('en-IN')}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Targeted Warehouse</div>
+                                            <div>{item.warehouse || item.targetedWarehouse || 'N/A'}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-muted-foreground">No items listed</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={9} className="h-24 text-center">
+                        <TableCell colSpan={7} className="h-24 text-center">
                           No purchase orders found
                         </TableCell>
                       </TableRow>
