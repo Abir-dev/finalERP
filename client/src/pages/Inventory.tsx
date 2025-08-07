@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { GanttChart } from "@/components/project-management/gantt-chart";
 import { MaterialForecast } from "@/components/project-management/material-forecast";
-import { IssueReporting } from "@/components/project-management/issue-reporting";
+import { IssueReportingFunctional } from "@/components/project-management/issue-reporting-functional";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -888,7 +888,7 @@ const Inventory = () => {
         </TabsContent>
 
         <TabsContent value="issue-tracking" className="space-y-6">
-          <IssueReporting
+          <IssueReportingFunctional
             projectId="PROJ001"
             siteId="SITE001"
           />
