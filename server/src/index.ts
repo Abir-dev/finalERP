@@ -20,6 +20,7 @@ import taxRoutes from './routes/tax';
 import materialRoutes from './routes/material';
 import nonBillableRoutes from './routes/nonBillable';
 import issueReportRoutes from './routes/issueReport';
+import vehicleRoutes from './routes/vehicle';
 import logger from './logger/logger';
 
 dotenv.config();
@@ -74,6 +75,7 @@ app.use('/api/tax', taxRoutes);
 app.use('/api/material', materialRoutes);
 app.use('/api/non-billables', nonBillableRoutes);
 app.use('/api/issue-reports', issueReportRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {
