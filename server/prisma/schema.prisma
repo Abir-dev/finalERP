@@ -213,7 +213,7 @@ model MaterialRequest {
   targetWarehouse String? // Default warehouse for all items
   terms           String? // Terms and conditions
   moreInfo        String? // Additional information
-  status          MaterialRequestStatus  @default(DRAFT)
+  status          MaterialRequestStatus  @default(PENDING)
   submittedAt     DateTime?              @db.Timestamptz(6)
   approvedAt      DateTime?              @db.Timestamptz(6)
   approvedBy      String?                @db.Uuid
@@ -602,13 +602,10 @@ enum PartyType {
 }
 
 enum MaterialRequestStatus {
-  DRAFT
-  SUBMITTED
-  APPROVED
-  REJECTED
+  PENDING
   IN_PROGRESS
+  REJECTED
   COMPLETED
-  CANCELLED
 }
 
 enum MaterialRequestPurpose {
