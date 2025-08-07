@@ -19,39 +19,40 @@ enum UserRole {
 }
 
 model User {
-  id               String            @id @default(uuid()) @db.Uuid
-  email            String            @unique
-  name             String
-  role             UserRole
-  avatar           String?
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  status           String            @default("inactive")
-  lastLogin        DateTime?         @map("last_login") @db.Timestamptz(6)
-  password         String
-  documents        Document[]
-  managedProjects  Project[] @relation("ProjectManagers")
-  memberProjects   Project[] @relation("ProjectMembers")
-  clientProjects   Project[] @relation("ProjectClient")
-  invoices         Invoice[]         @relation("UserInvoices")
+  id                  String            @id @default(uuid()) @db.Uuid
+  email               String            @unique
+  name                String
+  role                UserRole
+  avatar              String?
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status              String            @default("inactive")
+  lastLogin           DateTime?         @map("last_login") @db.Timestamptz(6)
+  password            String
+  documents           Document[]
+  managedProjects     Project[]         @relation("ProjectManagers")
+  memberProjects      Project[]         @relation("ProjectMembers")
+  clientProjects      Project[]         @relation("ProjectClient")
+  invoices            Invoice[]         @relation("UserInvoices")
   // bids             Bid[]             @relation("UserBids")
-  notifications    Notification[]    @relation("UserNotifications")
-  messagesSent     Message[]         @relation("MessagesSent")
-  messagesReceived Message[]         @relation("MessagesReceived")
-  materialRequests MaterialRequest[] @relation("UserMaterialRequests")
-  employeeProfile  Employee?
-  taxes            Tax[]
-  Invoice          Invoice[]
-  Payment          Payment[]
-  MaterialRequest  MaterialRequest[] @relation("MaterialRequestApprovals")
-  PurchaseOrder    PurchaseOrder[]
-  createdVendors   Vendor[]          @relation("VendorCreator")
-  createdNonBillables NonBillable[]  @relation("NonBillableCreator")
-  Bid              Bid[]
-  createdIssues    IssueReport[]     @relation("IssueCreator")
-  assignedIssues   IssueReport[]     @relation("IssueAssignments")
+  notifications       Notification[]    @relation("UserNotifications")
+  messagesSent        Message[]         @relation("MessagesSent")
+  messagesReceived    Message[]         @relation("MessagesReceived")
+  materialRequests    MaterialRequest[] @relation("UserMaterialRequests")
+  employeeProfile     Employee?
+  taxes               Tax[]
+  Invoice             Invoice[]
+  Payment             Payment[]
+  MaterialRequest     MaterialRequest[] @relation("MaterialRequestApprovals")
+  PurchaseOrder       PurchaseOrder[]
+  createdVendors      Vendor[]          @relation("VendorCreator")
+  createdNonBillables NonBillable[]     @relation("NonBillableCreator")
+  Bid                 Bid[]
+  createdIssues       IssueReport[]     @relation("IssueCreator")
+  assignedIssues      IssueReport[]     @relation("IssueAssignments")
 
   @@map("users")
+  Vehicle Vehicle[] @relation("VehicleCreator")
 }
 
 model UserInvitation {
@@ -176,8 +177,8 @@ model Payment {
   partyName String
 
   accountPaidTo String
-  amount    Float        // Base payment amount (excluding taxes)
-  total     Float        // Total amount (including taxes)
+  amount        Float // Base payment amount (excluding taxes)
+  total         Float // Total amount (including taxes)
 
   taxes TaxCharge[] // Relation to TaxCharge
 
@@ -307,39 +308,39 @@ model Document {
 }
 
 model PurchaseOrder {
-  id                        String              @id @default(uuid()) @db.Uuid
-  poNumber                  String
-  date                      DateTime
-//  vendor                    String
-  requiredBy                DateTime
+  id         String   @id @default(uuid()) @db.Uuid
+  poNumber   String
+  date       DateTime
+  //  vendor                    String
+  requiredBy DateTime
 
-  setTargetWarehouse        String?
-  vendorAddress             String
-  vendorContact             String
-  shippingAddress           String
-  dispatchAddress           String
-  companyBillingAddress     String
-  placeOfSupply             String
-  paymentTermsTemplate      String
-  terms                     String
-  totalQuantity             Decimal
-  total                     Decimal
-  grandTotal                Decimal
-  roundingAdjustment        Decimal
-  roundedTotal              Decimal
+  setTargetWarehouse    String?
+  vendorAddress         String
+  vendorContact         String
+  shippingAddress       String
+  dispatchAddress       String
+  companyBillingAddress String
+  placeOfSupply         String
+  paymentTermsTemplate  String
+  terms                 String
+  totalQuantity         Decimal
+  total                 Decimal
+  grandTotal            Decimal
+  roundingAdjustment    Decimal
+  roundedTotal          Decimal
 
-  advancePaid               Decimal
-  taxesAndChargesTotal      Decimal
-  userId                    String              @db.Uuid
-  user                      User                @relation(fields: [userId], references: [id])
-  items                     PurchaseOrderItem[]
-  taxesAndCharges           TaxCharge[]
-  paymentSchedule           PaymentTerm[]
-  createdAt                 DateTime            @default(now())
-  updatedAt                 DateTime            @updatedAt
-  GRN                       GRN[]
-  Vendor                    Vendor             @relation(fields: [vendorId], references: [id])
-  vendorId                  String             @db.Uuid
+  advancePaid          Decimal
+  taxesAndChargesTotal Decimal
+  userId               String              @db.Uuid
+  user                 User                @relation(fields: [userId], references: [id])
+  items                PurchaseOrderItem[]
+  taxesAndCharges      TaxCharge[]
+  paymentSchedule      PaymentTerm[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  GRN                  GRN[]
+  Vendor               Vendor              @relation(fields: [vendorId], references: [id])
+  vendorId             String              @db.Uuid
 }
 
 model PurchaseOrderItem {
@@ -407,27 +408,27 @@ model BudgetAdjustment {
 }
 
 model IssueReport {
-  id                    String           @id @default(uuid()) @db.Uuid
-  title                 String
-  type                  IssueType        @default(OTHER)
-  priority              IssuePriority    @default(MEDIUM)
-  status                IssueStatus      @default(OPEN)
-  reportedBy            String
-  reportedAt            DateTime         @default(now()) @map("reported_at") @db.Timestamptz(6)
-  assignedToId          String?          @map("assigned_to_id") @db.Uuid
-  assignedTo            User?            @relation("IssueAssignments", fields: [assignedToId], references: [id], onDelete: Cascade)
-  description           String
-  location              String
+  id                      String        @id @default(uuid()) @db.Uuid
+  title                   String
+  type                    IssueType     @default(OTHER)
+  priority                IssuePriority @default(MEDIUM)
+  status                  IssueStatus   @default(OPEN)
+  reportedBy              String
+  reportedAt              DateTime      @default(now()) @map("reported_at") @db.Timestamptz(6)
+  assignedToId            String?       @map("assigned_to_id") @db.Uuid
+  assignedTo              User?         @relation("IssueAssignments", fields: [assignedToId], references: [id], onDelete: Cascade)
+  description             String
+  location                String
   estimatedResolutionTime Float?        @map("estimated_resolution_time")
-  actualResolutionTime  Float?          @map("actual_resolution_time")
-  startResolutionAt     DateTime?       @map("start_resolution_at") @db.Timestamptz(6)
-  markedResolvedAt      DateTime?       @map("marked_resolved_at") @db.Timestamptz(6)
-  isStartResolution     Boolean         @default(false) @map("is_start_resolution")
-  isMarkedResolved      Boolean         @default(false) @map("is_marked_resolved")
-  createdById           String          @map("created_by_id") @db.Uuid
-  createdBy             User            @relation("IssueCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  actualResolutionTime    Float?        @map("actual_resolution_time")
+  startResolutionAt       DateTime?     @map("start_resolution_at") @db.Timestamptz(6)
+  markedResolvedAt        DateTime?     @map("marked_resolved_at") @db.Timestamptz(6)
+  isStartResolution       Boolean       @default(false) @map("is_start_resolution")
+  isMarkedResolved        Boolean       @default(false) @map("is_marked_resolved")
+  createdById             String        @map("created_by_id") @db.Uuid
+  createdBy               User          @relation("IssueCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt               DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("issue_reports")
 }
@@ -571,6 +572,43 @@ model MaterialRequestItem {
   @@map("material_request_items")
 }
 
+model Vehicle {
+  id                 String            @id @default(uuid()) @db.Uuid
+  vehicleName        String
+  registrationNumber String
+  assignedSite       String
+  licensePlate       String
+  driverName         String
+  movement           VehicleMovement[]
+  maintenanceHistory Maintenance[]
+  createdById        String            @map("created_by_id") @db.Uuid
+  createdBy          User              @relation("VehicleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model VehicleMovement {
+  id        String   @id @default(uuid())
+  Vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId String?  @db.Uuid
+  from      String
+  to        String
+  date      DateTime
+}
+
+model Maintenance {
+  id           String        @id @default(uuid()) @db.Uuid
+  Vehicle      Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleId    String?       @db.Uuid
+  lastServiced DateTime
+  nextDue      DateTime
+  status       VehicleStatus
+}
+
+enum VehicleStatus {
+  ACTIVE
+  IDLE
+  MAINTENANCE
+}
+
 enum TaxType {
   TDS
   GST
@@ -654,11 +692,11 @@ enum GstCategory {
 
 // Issue Report Enums
 enum IssueType {
-  LABOR_SHORTAGE    @map("labor-shortage")
-  MACHINERY_DEFECT  @map("machinery-defect")
-  QUALITY_ISSUE     @map("quality-issue")
-  SAFETY_CONCERN    @map("safety-concern")
-  MATERIAL_DELAY    @map("material-delay")
+  LABOR_SHORTAGE   @map("labor-shortage")
+  MACHINERY_DEFECT @map("machinery-defect")
+  QUALITY_ISSUE    @map("quality-issue")
+  SAFETY_CONCERN   @map("safety-concern")
+  MATERIAL_DELAY   @map("material-delay")
   OTHER
 }
 
@@ -671,6 +709,6 @@ enum IssuePriority {
 
 enum IssueStatus {
   OPEN
-  IN_PROGRESS       @map("in-progress")
+  IN_PROGRESS @map("in-progress")
   RESOLVED
 }
