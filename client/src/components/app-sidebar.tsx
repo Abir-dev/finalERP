@@ -127,7 +127,7 @@ export function AppSidebar() {
       title: "Billing Management",
       url: "/billing-management",
       icon: Receipt,
-      allowedRoles: ["admin", "md", "accounts", "site"],
+      allowedRoles: ["admin", "md", "accounts"],
     },
     {
       title: "Purchase Management",
