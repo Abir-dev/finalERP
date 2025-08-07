@@ -50,9 +50,9 @@ model User {
   Bid                 Bid[]
   createdIssues       IssueReport[]     @relation("IssueCreator")
   assignedIssues      IssueReport[]     @relation("IssueAssignments")
+  Vehicle             Vehicle[]         @relation("VehicleCreator")
 
   @@map("users")
-  Vehicle Vehicle[] @relation("VehicleCreator")
 }
 
 model UserInvitation {
@@ -575,6 +575,7 @@ model MaterialRequestItem {
 model Vehicle {
   id                 String            @id @default(uuid()) @db.Uuid
   vehicleName        String
+  vehicleType        String
   registrationNumber String
   assignedSite       String
   licensePlate       String

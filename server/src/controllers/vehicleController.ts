@@ -8,15 +8,22 @@ export const vehicleController = {
   // Vehicle CRUD Operations
   async createVehicle(req: Request, res: Response) {
     try {
-      const { vehicleName, registrationNumber, assignedSite, licensePlate, driverName, createdById } = req.body;
+      const { vehicleName, vehicleType, registrationNumber, assignedSite, licensePlate, driverName, createdById } = req.body;
       
-      if (!vehicleName || !registrationNumber || !assignedSite || !licensePlate || !driverName || !createdById) {
+      if (!vehicleName || !vehicleType || !registrationNumber || !assignedSite || !licensePlate || !driverName || !createdById) {
         return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Validate UUID format for createdById
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(createdById)) {
+        return res.status(400).json({ error: "Invalid createdById format. Must be a valid UUID." });
       }
 
       const vehicle = await prisma.vehicle.create({
         data: {
           vehicleName,
+          vehicleType,
           registrationNumber,
           assignedSite,
           licensePlate,
@@ -424,6 +431,7 @@ export const vehicleController = {
     try {
       const totalVehicles = await prisma.vehicle.count();
       
+      // Get vehicles by current maintenance status
       const vehiclesByStatus = await prisma.maintenance.groupBy({
         by: ['status'],
         _count: {
@@ -431,12 +439,38 @@ export const vehicleController = {
         }
       });
 
-      const vehiclesBySite = await prisma.vehicle.groupBy({
+      // Get all vehicles by site (for total count per site)
+      const allVehiclesBySite = await prisma.vehicle.groupBy({
         by: ['assignedSite'],
         _count: {
           _all: true
         }
       });
+
+      // Get only active vehicles by site (for active vehicles on site count)
+      const activeVehiclesBySite = await prisma.vehicle.findMany({
+        where: {
+          maintenanceHistory: {
+            some: {
+              status: 'ACTIVE'
+            }
+          }
+        },
+        select: {
+          assignedSite: true
+        }
+      });
+
+      // Count active vehicles by site
+      const activeVehiclesBySiteCount = activeVehiclesBySite.reduce((acc: any, vehicle) => {
+        acc[vehicle.assignedSite] = (acc[vehicle.assignedSite] || 0) + 1;
+        return acc;
+      }, {});
+
+      const activeVehiclesBySiteFormatted = Object.entries(activeVehiclesBySiteCount).map(([site, count]) => ({
+        assignedSite: site,
+        _count: { _all: count }
+      }));
 
       const recentMovements = await prisma.vehicleMovement.findMany({
         take: 10,
@@ -465,7 +499,9 @@ export const vehicleController = {
       res.status(200).json({
         totalVehicles,
         vehiclesByStatus,
-        vehiclesBySite,
+        allVehiclesBySite,
+        activeVehiclesBySite: activeVehiclesBySiteFormatted,
+        totalActiveVehiclesOnSite: activeVehiclesBySite.length,
         recentMovements,
         upcomingMaintenance
       });
