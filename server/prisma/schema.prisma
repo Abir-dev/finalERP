@@ -51,6 +51,7 @@ model User {
   createdIssues       IssueReport[]     @relation("IssueCreator")
   assignedIssues      IssueReport[]     @relation("IssueAssignments")
   Vehicle             Vehicle[]         @relation("VehicleCreator")
+  createdEvents       Event[]           @relation("EventCreator")
   Inventory           Inventory[]       @relation("InventoryCreator")
   
 
@@ -494,7 +495,12 @@ model Event {
   date        DateTime
   time        String
   description String?
+  createdById String   @map("created_by_id") @db.Uuid
+  createdBy   User     @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("events")
 }
 
 model Vendor {

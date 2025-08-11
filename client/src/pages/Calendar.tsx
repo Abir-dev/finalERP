@@ -3,15 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AddEventModal } from "@/components/modals/AddEventModal";
+import { ViewEventsModal } from "@/components/modals/ViewEventsModal";
 import { useToast } from "@/components/ui/use-toast";
+import { useUser } from "@/contexts/UserContext";
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface CalendarEvent {
+  id: string;
   name: string;
   type: string;
+  date: string;
   time: string;
   description: string;
+  createdById: string;
 }
 
 interface CalendarDay {
@@ -23,16 +28,46 @@ interface CalendarDay {
 const Calendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [showViewEventsModal, setShowViewEventsModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDateEvents, setSelectedDateEvents] = useState<CalendarEvent[]>([]);
   const [events, setEvents] = useState<{ [key: string]: CalendarEvent[] }>({});
   const { toast } = useToast();
+  const { user, isLoading } = useUser();
+  
+  const fetchEvents = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await axios.get(`${API_URL}/events`, { 
+        headers,
+        params: { userId: user.id }
+      });
+      
+      // Group events by date
+      const eventsByDate: { [key: string]: CalendarEvent[] } = {};
+      response.data.forEach((event: CalendarEvent) => {
+        const dateKey = event.date.split('T')[0]; // Extract date part from ISO string
+        if (!eventsByDate[dateKey]) {
+          eventsByDate[dateKey] = [];
+        }
+        eventsByDate[dateKey].push(event);
+      });
+      
+      setEvents(eventsByDate);
+    } catch (error) {
+      console.error('Failed to fetch events:', error);
+    }
+  };
   
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/events`, { headers })
-      .then(res => setEvents(res.data))
-      .catch(() => {});
-  }, [currentMonth]);
+    if (!isLoading && user?.id) {
+      fetchEvents();
+    }
+  }, [currentMonth, user?.id, isLoading]);
   
   // Function to get days in month
   const getDaysInMonth = (date: Date) => {
@@ -59,39 +94,49 @@ const Calendar = () => {
     return daysArray;
   };
   
-  const handleAddEvent = (eventDetails: {
+  const handleAddEvent = async (eventDetails: {
     name: string;
     type: string;
     date: string;
     time: string;
     description: string;
   }) => {
-    const newEvent = {
-      name: eventDetails.name,
-      type: eventDetails.type,
-      time: eventDetails.time,
-      description: eventDetails.description
-    };
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.post(`${API_URL}/events`, { ...eventDetails }, { headers })
-      .then(() => {
-        setEvents(prev => ({
-          ...prev,
-          [eventDetails.date]: [...(prev[eventDetails.date] || []), newEvent]
-        }));
-        toast({
-          title: "Event Added",
-          description: `${eventDetails.name} has been added to your calendar.`,
-        });
-      })
-      .catch(() => {
-        toast({
-          title: "Error",
-          description: "Failed to add event.",
-          variant: "destructive"
-        });
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add events.",
+        variant: "destructive"
       });
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      // Convert date to ISO string format
+      const eventPayload = {
+        ...eventDetails,
+        date: new Date(eventDetails.date).toISOString(),
+      };
+      
+      await axios.post(`${API_URL}/events`, eventPayload, { headers });
+      
+      // Refresh events after successful creation
+      await fetchEvents();
+      
+      toast({
+        title: "Event Added",
+        description: `${eventDetails.name} has been added to your calendar.`,
+      });
+    } catch (error) {
+      console.error('Failed to add event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add event.",
+        variant: "destructive"
+      });
+    }
   };
   
   const days = getDaysInMonth(currentMonth);
@@ -105,6 +150,46 @@ const Calendar = () => {
   const nextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
+
+  const handleDateClick = (day: CalendarDay) => {
+    if (!day.current) return; // Don't handle clicks on previous/next month days
+    
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
+    
+    setSelectedDate(dateKey);
+    setSelectedDateEvents(day.events);
+    setShowViewEventsModal(true);
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+            <p className="text-muted-foreground">Loading your calendar...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication required message
+  if (!user) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
+            <p className="text-muted-foreground">Please log in to view your calendar.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4">
@@ -149,9 +234,10 @@ const Calendar = () => {
             {days.map((day, index) => (
               <div 
                 key={index}
+                onClick={() => handleDateClick(day)}
                 className={`
-                  p-2 min-h-[100px] border text-sm
-                  ${day.current ? 'bg-background' : 'bg-muted/30 text-muted-foreground'}
+                  p-2 min-h-[100px] border text-sm transition-colors
+                  ${day.current ? 'bg-background hover:bg-muted/50 cursor-pointer' : 'bg-muted/30 text-muted-foreground'}
                   ${new Date().getDate() === day.day && 
                     new Date().getMonth() === currentMonth.getMonth() && 
                     new Date().getFullYear() === currentMonth.getFullYear() && 
@@ -183,6 +269,13 @@ const Calendar = () => {
         open={showAddEventModal}
         onClose={() => setShowAddEventModal(false)}
         onAdd={handleAddEvent}
+      />
+
+      <ViewEventsModal
+        open={showViewEventsModal}
+        onClose={() => setShowViewEventsModal(false)}
+        events={selectedDateEvents}
+        selectedDate={selectedDate}
       />
     </div>
   );
