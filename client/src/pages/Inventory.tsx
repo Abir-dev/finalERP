@@ -25,6 +25,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import axios from "axios";
 import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
+import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 // Add backend state
@@ -178,7 +179,7 @@ const Inventory = () => {
   const [grnData, setGrnData] = useState([]);
   const [transferData, setTransferData] = useState([]);
   const [tasks, setTasks] = useState([]);
-
+  // const { user } = useUser();
   // Add new state variables for quick action dialogs
   const [isResolveIssuesOpen, setIsResolveIssuesOpen] = useState(false);
   const [isTrackMaterialsOpen, setIsTrackMaterialsOpen] = useState(false);

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertTriangle, Users, Clock, Plus, CheckCircle, TrendingUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
+import { useUser } from "@/contexts/UserContext";
 
 interface IssueReport {
   id: string;
@@ -62,6 +63,8 @@ interface Project {
 interface IssueReportingProps {
   projectId?: string;
   siteId?: string;
+  userID?: string;
+  // headers?: any;
 }
 
 interface NewIssueForm {
@@ -76,7 +79,11 @@ interface NewIssueForm {
   createdById: string;
 }
 
-export function IssueReportingFunctional({ projectId, siteId }: IssueReportingProps) {
+export function IssueReportingFunctional({ projectId, siteId}: IssueReportingProps) {
+  const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const { user } = useUser();
+  const userID: string = user?.id || "";  
   const [issues, setIssues] = useState<IssueReport[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -97,12 +104,14 @@ export function IssueReportingFunctional({ projectId, siteId }: IssueReportingPr
     createdById: ''
   });
 
-  // Fetch all data on component mount
+  // Fetch all data on component mount and when userID changes
   useEffect(() => {
-    fetchIssues();
-    fetchUsers();
-    fetchProjects();
-  }, []);
+    if (userID) {
+      fetchIssues();
+      fetchUsers();
+      fetchProjects();
+    }
+  }, [userID]);
 
   const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -110,7 +119,8 @@ export function IssueReportingFunctional({ projectId, siteId }: IssueReportingPr
 
   const fetchIssues = async () => {
     try {
-      const response = await fetch(`${API_URL}/issue-reports`);
+      const url = userID ? `${API_URL}/site-ops/issue-report?userId=${userID}` : `${API_URL}/site-ops/issue-report`;
+      const response = await fetch(url,{headers:headers});
       if (!response.ok) throw new Error('Failed to fetch issues');
       const data = await response.json();
       setIssues(data);
@@ -150,7 +160,7 @@ export function IssueReportingFunctional({ projectId, siteId }: IssueReportingPr
   const handleNewIssue = async () => {
     try {
       if (!newIssueForm.title || !newIssueForm.type || !newIssueForm.reportedBy || 
-          !newIssueForm.description || !newIssueForm.location || !newIssueForm.createdById) {
+          !newIssueForm.description || !newIssueForm.location || !userID) {
         toast.error('Please fill in all required fields');
         return;
       }
@@ -162,13 +172,13 @@ export function IssueReportingFunctional({ projectId, siteId }: IssueReportingPr
         reportedBy: newIssueForm.reportedBy,
         description: newIssueForm.description,
         location: newIssueForm.location,
-        createdById: newIssueForm.createdById,
+        createdById: userID,
         assignedToId: newIssueForm.assignedToId || null,
         estimatedResolutionTime: newIssueForm.estimatedResolutionTime ? 
           parseFloat(newIssueForm.estimatedResolutionTime) : null
       };
 
-      const response = await fetch(`${API_URL}/issue-reports`, {
+      const response = await fetch(`${API_URL}/site-ops/issue-report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -314,11 +324,11 @@ export function IssueReportingFunctional({ projectId, siteId }: IssueReportingPr
   const averageResolutionTime = resolvedWithTime.length > 0 ? 
     resolvedWithTime.reduce((sum, issue) => sum + (issue.actualResolutionTime || 0), 0) / resolvedWithTime.length : 0;
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2">Loading issues...</span>
+        <span className="ml-2">{!user ? "Please log in to view issues..." : "Loading issues..."}</span>
       </div>
     );
   }
@@ -579,20 +589,13 @@ export function IssueReportingFunctional({ projectId, siteId }: IssueReportingPr
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="created-by">Created By *</Label>
-                      <Select value={newIssueForm.createdById} onValueChange={(value) => 
-                        setNewIssueForm(prev => ({ ...prev, createdById: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select creator" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="created-by">Created By</Label>
+                      <Input 
+                        id="created-by" 
+                        value={user?.name || 'Current User'}
+                        disabled
+                        className="bg-gray-50"
+                      />
                     </div>
                   </div>
                   

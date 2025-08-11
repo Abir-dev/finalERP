@@ -56,8 +56,12 @@ export const prismaSiteOpsService = {
   async createIssueReport(data: any) {
     return prisma.issueReport.create({ data });
   },
-  async getIssueReports(filter: any = {}) {
-    return prisma.issueReport.findMany({ where: filter });
+  async getIssueReports(filter: any = {}, userID: string) {
+    const { userId, ...validFilter } = filter;
+    return prisma.issueReport.findMany({ where: {
+      createdById: userID as string,
+      ...validFilter
+    } });
   },
   async getIssueReportById(id: string) {
     return prisma.issueReport.findUnique({ where: { id } });
