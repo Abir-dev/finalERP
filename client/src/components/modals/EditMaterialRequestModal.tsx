@@ -54,6 +54,7 @@ export function EditMaterialRequestModal({
     terms: "",
     moreInfo: "",
     projectId: "",
+    status: "SUBMITTED",
   });
 
   const [items, setItems] = useState<
@@ -100,6 +101,7 @@ export function EditMaterialRequestModal({
         terms: materialRequest.terms || "",
         moreInfo: materialRequest.moreInfo || "",
         projectId: materialRequest.projectId || "",
+        status: materialRequest.status || "SUBMITTED",
       });
 
       // Initialize items
@@ -495,17 +497,31 @@ export function EditMaterialRequestModal({
             </div>
           </div>
 
-          {/* Current Status */}
+          {/* Status */}
           <div className="space-y-2">
-            <Label>Current Status</Label>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{materialRequest.status}</Badge>
-              {materialRequest.requester && (
-                <span className="text-sm text-muted-foreground">
-                  Requested by: {materialRequest.requester.name}
-                </span>
-              )}
-            </div>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={formData.status}
+              onValueChange={(value) => handleInputChange("status", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="DRAFT">Draft</SelectItem>
+                <SelectItem value="SUBMITTED">Submitted</SelectItem>
+                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
+                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+            {materialRequest.requester && (
+              <span className="text-sm text-muted-foreground">
+                Requested by: {materialRequest.requester.name}
+              </span>
+            )}
           </div>
         </div>
 
