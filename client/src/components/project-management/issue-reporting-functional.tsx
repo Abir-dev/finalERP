@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Users, Clock, Plus, CheckCircle, TrendingUp, Loader2 } from "lucide-react";
+import { AlertTriangle, Users, Clock, Plus, CheckCircle, TrendingUp, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { useUser } from "@/contexts/UserContext";
@@ -90,7 +90,9 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
   const [loading, setLoading] = useState(true);
   const [isNewIssueOpen, setIsNewIssueOpen] = useState(false);
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<IssueReport | null>(null);
+  const [issueToDelete, setIssueToDelete] = useState<IssueReport | null>(null);
   
   const [newIssueForm, setNewIssueForm] = useState<NewIssueForm>({
     title: '',
@@ -282,6 +284,40 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
     }
   };
 
+  const handleDeleteIssue = async (issueId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/site-ops/issue-report/${issueId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete issue');
+      }
+
+      // Remove the issue from the local state
+      setIssues(prev => prev.filter(issue => issue.id !== issueId));
+      
+      // Close dialogs if the deleted issue was selected
+      if (selectedIssue && selectedIssue.id === issueId) {
+        setSelectedIssue(null);
+        setIsViewDetailsOpen(false);
+      }
+      
+      setIsDeleteConfirmOpen(false);
+      setIssueToDelete(null);
+
+      toast.success('Issue deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting issue:', error);
+      toast.error('Failed to delete issue');
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'MACHINERY_DEFECT':
@@ -470,29 +506,78 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
               )}
 
               {/* Action Buttons */}
+              <div className="flex justify-between">
+                <Button 
+                  variant="destructive" 
+                  onClick={() => {
+                    setIssueToDelete(selectedIssue);
+                    setIsDeleteConfirmOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
+                <div className="flex gap-2">
+                  {selectedIssue.status === 'OPEN' && (
+                    <Button 
+                      onClick={() => {
+                        handleStartResolution(selectedIssue.id);
+                        setIsViewDetailsOpen(false);
+                      }}
+                    >
+                      Start Resolution
+                    </Button>
+                  )}
+                  {selectedIssue.status === 'IN_PROGRESS' && (
+                    <Button 
+                      onClick={() => {
+                        handleMarkResolved(selectedIssue.id);
+                        setIsViewDetailsOpen(false);
+                      }}
+                    >
+                      Mark as Resolved
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Issue</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this issue? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {issueToDelete && (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h4 className="font-medium">{issueToDelete.title}</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {issueToDelete.description}
+                </p>
+              </div>
               <div className="flex justify-end gap-2">
-                {selectedIssue.status === 'OPEN' && (
-                  <Button 
-                    onClick={() => {
-                      handleStartResolution(selectedIssue.id);
-                      setIsViewDetailsOpen(false);
-                    }}
-                  >
-                    Start Resolution
-                  </Button>
-                )}
-                {selectedIssue.status === 'IN_PROGRESS' && (
-                  <Button 
-                    onClick={() => {
-                      handleMarkResolved(selectedIssue.id);
-                      setIsViewDetailsOpen(false);
-                    }}
-                  >
-                    Mark as Resolved
-                  </Button>
-                )}
-                <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>
-                  Close
+                <Button variant="outline" onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  setIssueToDelete(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDeleteIssue(issueToDelete.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete Issue
                 </Button>
               </div>
             </div>
@@ -703,16 +788,28 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
                         </div>
                       </div>
                       <div className="md:col-span-3 flex flex-col gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedIssue(issue);
-                            setIsViewDetailsOpen(true);
-                          }}
-                        >
-                          View Details
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedIssue(issue);
+                              setIsViewDetailsOpen(true);
+                            }}
+                          >
+                            View Details
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setIssueToDelete(issue);
+                              setIsDeleteConfirmOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                         {issue.status === 'OPEN' && (
                           <Button
                             size="sm"
