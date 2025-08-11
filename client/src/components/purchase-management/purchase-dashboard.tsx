@@ -103,11 +103,12 @@ export function PurchaseDashboard() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentOrder, setCurrentOrder] = useState<PurchaseOrder | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<PurchaseOrder | null>(null);
+  const [isLoadingEditData, setIsLoadingEditData] = useState(false);
   const [showNewVendorModal, setShowNewVendorModal] = useState(false);
   const [materialRequestToDelete, setMaterialRequestToDelete] = useState<
     string | null
@@ -232,9 +233,30 @@ export function PurchaseDashboard() {
     setShowComprehensiveForm(true);
   };
 
-  const handleEditOrder = (order: PurchaseOrder) => {
-    setCurrentOrder(order);
-    setIsDialogOpen(true);
+  const handleEditOrder = async (order: PurchaseOrder) => {
+    setIsLoadingEditData(true);
+    setShowEditForm(true);
+    
+    try {
+      // Fetch complete purchase order details from API
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/purchase-orders/${order.id}`, { headers });
+      const fullOrderData = response.data;
+      
+      setEditingOrder(fullOrderData);
+    } catch (error) {
+      console.error("Error fetching purchase order details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch purchase order details",
+        variant: "destructive",
+      });
+      // Fallback to the order data we have
+      setEditingOrder(order);
+    } finally {
+      setIsLoadingEditData(false);
+    }
   };
 
   const handleDeleteOrder = (orderId: string) => {
@@ -309,47 +331,7 @@ export function PurchaseDashboard() {
     }
   };
 
-  const saveOrder = () => {
-    if (!currentOrder) return;
 
-    if (currentOrder.id) {
-      // Update existing order
-      setPurchaseOrders(
-        purchaseOrders.map((order) =>
-          order.id === currentOrder.id ? currentOrder : order
-        )
-      );
-    } else {
-      // Add new order
-      const newOrder = {
-        ...currentOrder,
-        id: `PO${(purchaseOrders.length + 1).toString().padStart(3, "0")}`,
-      };
-      setPurchaseOrders([...purchaseOrders, newOrder]);
-    }
-
-    setIsDialogOpen(false);
-    setCurrentOrder(null);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!currentOrder) return;
-
-    const { name, value } = e.target;
-    setCurrentOrder({
-      ...currentOrder,
-      [name]: value,
-    });
-  };
-
-  const handleSelectChange = (name: keyof PurchaseOrder, value: string) => {
-    if (!currentOrder) return;
-
-    setCurrentOrder({
-      ...currentOrder,
-      [name]: value,
-    });
-  };
 
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>(
     []
@@ -437,19 +419,22 @@ export function PurchaseDashboard() {
 
   const handleCreatePOFromRequest = (request: MaterialRequest) => {
     // Create a new PO from the material request
-    const newPO: PurchaseOrder = {
-      id: "",
+    const newPOData = {
       poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1)
         .toString()
         .padStart(3, "0")}`,
       date: new Date().toISOString().split("T")[0],
       vendorId: "",
-      requiredBy: request.requiredBy || new Date().toISOString().split("T")[0],
+      requiredBy: request.requiredBy ? new Date(request.requiredBy).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
       items: request.items.map((item) => ({
+        id: Date.now().toString() + Math.random(),
         itemCode: item.itemCode,
         description: item.itemCode,
+        requiredBy: "",
         quantity: item.quantity,
-        unit: item.uom,
+        uom: item.uom,
+        rate: 0,
+        amount: 0,
       })),
       totalQuantity: request.items.reduce(
         (sum, item) => sum + item.quantity,
@@ -460,12 +445,23 @@ export function PurchaseDashboard() {
       roundedTotal: 0,
       advancePaid: 0,
       taxesAndChargesTotal: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      setTargetWarehouse: "",
+      vendorAddress: "",
+      vendorContact: "",
+      shippingAddress: "",
+      dispatchAddress: "",
+      companyBillingAddress: "",
+      placeOfSupply: "",
+      paymentTermsTemplate: "",
+      terms: "",
+      roundingAdjustment: 0,
+      userId: "",
+      taxesAndCharges: [],
+      paymentSchedule: [],
     };
 
-    setCurrentOrder(newPO);
-    setIsDialogOpen(true);
+    setEditingOrder(newPOData as any);
+    setShowEditForm(true);
   };
 
   // Remove handleCreateNewRequest and saveRequest for the old modal
@@ -1246,175 +1242,7 @@ export function PurchaseDashboard() {
         </TabsContent>
       </Tabs>
       {/* </CardContent> */}
-      {/* Add/Edit Purchase Order Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {currentOrder?.id
-                ? "Edit Purchase Order"
-                : "Create New Purchase Order"}
-            </DialogTitle>
-            <DialogDescription>
-              {currentOrder?.id
-                ? `Update details for ${currentOrder.poNumber}`
-                : "Fill in the details for the new purchase order"}
-            </DialogDescription>
-          </DialogHeader>
 
-          {currentOrder && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="poNumber" className="text-right">
-                  PO Number
-                </label>
-                <Input
-                  id="poNumber"
-                  name="poNumber"
-                  value={currentOrder.poNumber}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  disabled={!!currentOrder.id}
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="vendor" className="text-right">
-                  Vendor
-                </label>
-                <Input
-                  id="vendor"
-                  name="vendor"
-                  value={currentOrder.vendor}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="items" className="text-right">
-                  Items
-                </label>
-                <Input
-                  id="items"
-                  name="items"
-                  value={currentOrder.items}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="totalAmount" className="text-right">
-                  Amount (₹)
-                </label>
-                <Input
-                  id="totalAmount"
-                  name="totalAmount"
-                  type="number"
-                  value={currentOrder.totalAmount}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="orderDate" className="text-right">
-                  Order Date
-                </label>
-                <Input
-                  id="orderDate"
-                  name="orderDate"
-                  type="date"
-                  value={currentOrder.orderDate}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="expectedDelivery" className="text-right">
-                  Expected Delivery
-                </label>
-                <Input
-                  id="expectedDelivery"
-                  name="expectedDelivery"
-                  type="date"
-                  value={currentOrder.expectedDelivery}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="status" className="text-right">
-                  Status
-                </label>
-                <Select
-                  value={currentOrder.status}
-                  onValueChange={(value) => handleSelectChange("status", value)}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="invoiced">Invoiced</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="priority" className="text-right">
-                  Priority
-                </label>
-                <Select
-                  value={currentOrder.priority}
-                  onValueChange={(value) =>
-                    handleSelectChange("priority", value)
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="project" className="text-right">
-                  Project
-                </label>
-                <Input
-                  id="project"
-                  name="project"
-                  value={currentOrder.project}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" onClick={saveOrder}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -1456,6 +1284,74 @@ export function PurchaseDashboard() {
                 setShowComprehensiveForm(false);
               }}
             />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Purchase Order Form Dialog */}
+      <Dialog
+        open={showEditForm}
+        onOpenChange={(open) => {
+          setShowEditForm(open);
+          if (!open) {
+            setEditingOrder(null);
+            setIsLoadingEditData(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle>Edit Purchase Order</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            {isLoadingEditData ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p>Loading purchase order details...</p>
+                </div>
+              </div>
+            ) : editingOrder ? (
+              <PurchaseOrderForm
+                isEditing={true}
+                initialData={{
+                  id: editingOrder.id,
+                  poNumber: editingOrder.poNumber,
+                  date: editingOrder.date ? new Date(editingOrder.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                  vendorId: editingOrder.vendorId,
+                  requiredBy: editingOrder.requiredBy ? new Date(editingOrder.requiredBy).toISOString().split('T')[0] : "",
+                  setTargetWarehouse: editingOrder.setTargetWarehouse || "",
+                  vendorAddress: editingOrder.vendorAddress || editingOrder.Vendor?.location || "",
+                  vendorContact: editingOrder.vendorContact || editingOrder.Vendor?.contact || editingOrder.Vendor?.email || "",
+                  shippingAddress: editingOrder.shippingAddress || "",
+                  dispatchAddress: editingOrder.dispatchAddress || "",
+                  companyBillingAddress: editingOrder.companyBillingAddress || "",
+                  placeOfSupply: editingOrder.placeOfSupply || "",
+                  paymentTermsTemplate: editingOrder.paymentTermsTemplate || "",
+                  terms: editingOrder.terms || "",
+                  totalQuantity: editingOrder.totalQuantity || 0,
+                  total: editingOrder.total || 0,
+                  grandTotal: editingOrder.grandTotal || 0,
+                  roundingAdjustment: editingOrder.roundingAdjustment || 0,
+                  roundedTotal: editingOrder.roundedTotal || 0,
+                  advancePaid: editingOrder.advancePaid || 0,
+                  taxesAndChargesTotal: editingOrder.taxesAndChargesTotal || 0,
+                  userId: editingOrder.userId || "",
+                  items: editingOrder.items || [],
+                  taxesAndCharges: editingOrder.taxesAndCharges || [],
+                  paymentSchedule: editingOrder.paymentSchedule || [],
+                }}
+                onSuccess={() => {
+                  fetchPurchaseOrders();
+                  setShowEditForm(false);
+                  setEditingOrder(null);
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8">
+                <p>No purchase order data available</p>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

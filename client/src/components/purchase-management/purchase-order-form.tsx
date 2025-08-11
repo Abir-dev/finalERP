@@ -74,6 +74,7 @@ interface PaymentTerm {
 }
 
 interface PurchaseOrderFormData {
+  id?: string; // Optional for editing
   poNumber: string;
   date: string; // Will be converted to DateTime when saving
   vendorId: string; // Required field
@@ -103,37 +104,40 @@ interface PurchaseOrderFormData {
 
 interface PurchaseOrderFormProps {
   onSuccess?: () => void;
+  initialData?: Partial<PurchaseOrderFormData>;
+  isEditing?: boolean;
 }
 
-export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
+export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }: PurchaseOrderFormProps) {
   const { user } = useUser();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [formData, setFormData] = useState<PurchaseOrderFormData>({
-    poNumber: "",
-    date: new Date().toISOString().split("T")[0],
-    vendorId: "", // Required field
-    requiredBy: "",
-    setTargetWarehouse: "", // Optional warehouse field
-    vendorAddress: "",
-    vendorContact: "",
-    shippingAddress: "",
-    dispatchAddress: "",
-    companyBillingAddress: "",
-    placeOfSupply: "",
-    paymentTermsTemplate: "",
-    terms: "",
-    totalQuantity: 0,
-    total: 0,
-    grandTotal: 0,
-    roundingAdjustment: 0,
-    roundedTotal: 0,
-    advancePaid: 0,
-    taxesAndChargesTotal: 0,
-    userId: "",
-    items: [],
-    taxesAndCharges: [],
-    paymentSchedule: [],
+    id: initialData?.id || undefined,
+    poNumber: initialData?.poNumber || "",
+    date: initialData?.date || new Date().toISOString().split("T")[0],
+    vendorId: initialData?.vendorId || "", // Required field
+    requiredBy: initialData?.requiredBy || "",
+    setTargetWarehouse: initialData?.setTargetWarehouse || "", // Optional warehouse field
+    vendorAddress: initialData?.vendorAddress || "",
+    vendorContact: initialData?.vendorContact || "",
+    shippingAddress: initialData?.shippingAddress || "",
+    dispatchAddress: initialData?.dispatchAddress || "",
+    companyBillingAddress: initialData?.companyBillingAddress || "",
+    placeOfSupply: initialData?.placeOfSupply || "",
+    paymentTermsTemplate: initialData?.paymentTermsTemplate || "",
+    terms: initialData?.terms || "",
+    totalQuantity: initialData?.totalQuantity || 0,
+    total: initialData?.total || 0,
+    grandTotal: initialData?.grandTotal || 0,
+    roundingAdjustment: initialData?.roundingAdjustment || 0,
+    roundedTotal: initialData?.roundedTotal || 0,
+    advancePaid: initialData?.advancePaid || 0,
+    taxesAndChargesTotal: initialData?.taxesAndChargesTotal || 0,
+    userId: initialData?.userId || "",
+    items: initialData?.items || [],
+    taxesAndCharges: initialData?.taxesAndCharges || [],
+    paymentSchedule: initialData?.paymentSchedule || [],
   });
   
   // State to track selected item IDs
@@ -151,7 +155,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
   const [isCurrencyPriceListOpen, setIsCurrencyPriceListOpen] = useState(false);
   const [isAdditionalDiscountOpen, setIsAdditionalDiscountOpen] =
     useState(false);
-  const [terms, setTerms] = useState("");
+  const [terms, setTerms] = useState(initialData?.terms || "");
 
   // Fetch vendors on component mount
   useEffect(() => {
@@ -169,6 +173,54 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
 
     fetchVendors();
   }, []);
+
+  // Initialize selected vendor from initial data
+  useEffect(() => {
+    if (initialData?.vendorId && vendors.length > 0) {
+      const vendor = vendors.find(v => v.id === initialData.vendorId);
+      setSelectedVendor(vendor || null);
+    }
+  }, [initialData?.vendorId, vendors]);
+
+  // Update terms when initial data changes
+  useEffect(() => {
+    if (initialData?.terms) {
+      setTerms(initialData.terms);
+    }
+  }, [initialData?.terms]);
+
+  // Update form data when initial data changes (for async loading)
+  useEffect(() => {
+    if (initialData && isEditing) {
+      setFormData({
+        id: initialData.id || undefined,
+        poNumber: initialData.poNumber || "",
+        date: initialData.date || new Date().toISOString().split("T")[0],
+        vendorId: initialData.vendorId || "",
+        requiredBy: initialData.requiredBy || "",
+        setTargetWarehouse: initialData.setTargetWarehouse || "",
+        vendorAddress: initialData.vendorAddress || "",
+        vendorContact: initialData.vendorContact || "",
+        shippingAddress: initialData.shippingAddress || "",
+        dispatchAddress: initialData.dispatchAddress || "",
+        companyBillingAddress: initialData.companyBillingAddress || "",
+        placeOfSupply: initialData.placeOfSupply || "",
+        paymentTermsTemplate: initialData.paymentTermsTemplate || "",
+        terms: initialData.terms || "",
+        totalQuantity: initialData.totalQuantity || 0,
+        total: initialData.total || 0,
+        grandTotal: initialData.grandTotal || 0,
+        roundingAdjustment: initialData.roundingAdjustment || 0,
+        roundedTotal: initialData.roundedTotal || 0,
+        advancePaid: initialData.advancePaid || 0,
+        taxesAndChargesTotal: initialData.taxesAndChargesTotal || 0,
+        userId: initialData.userId || "",
+        items: initialData.items || [],
+        taxesAndCharges: initialData.taxesAndCharges || [],
+        paymentSchedule: initialData.paymentSchedule || [],
+      });
+    }
+  }, [initialData, isEditing]);
 
   // Update form data when vendor is selected
   useEffect(() => {
@@ -309,12 +361,20 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
     };
 
     try {
-      const response = await axios.post(`${API_URL}/purchase-orders`, submitData, { headers });
-      toast.success("Purchase order saved successfully!");
+      let response;
+      if (isEditing && formData.id) {
+        // Update existing purchase order
+        response = await axios.put(`${API_URL}/purchase-orders/${formData.id}`, submitData, { headers });
+        toast.success("Purchase order updated successfully!");
+      } else {
+        // Create new purchase order
+        response = await axios.post(`${API_URL}/purchase-orders`, submitData, { headers });
+        toast.success("Purchase order saved successfully!");
+      }
       onSuccess?.();
     } catch (err) {
       console.error("Error saving purchase order:", err);
-      toast.error("Failed to save purchase order.");
+      toast.error(`Failed to ${isEditing ? 'update' : 'save'} purchase order.`);
     }
   };
 
@@ -336,8 +396,8 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
       <div className="border-b bg-background px-0 py-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">New Purchase Order</h1>
-            <p className="text-sm text-muted-foreground">Not Saved</p>
+            <h1 className="text-xl font-semibold">{isEditing ? 'Edit Purchase Order' : 'New Purchase Order'}</h1>
+            <p className="text-sm text-muted-foreground">{isEditing ? (initialData?.poNumber || 'Editing') : 'Not Saved'}</p>
           </div>
           <div className="flex items-center gap-2">
             {/* <span className="text-sm text-muted-foreground">
@@ -777,7 +837,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
                           </TableCell>
                           <TableCell>
                             <span className="font-medium">
-                              ₹ {item.amount.toFixed(2)}
+                              ₹ {(Number(item.amount) || 0).toFixed(2)}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -804,7 +864,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Total (INR):</span> ₹{" "}
-                  {formData.total.toFixed(2)}
+                  {(Number(formData.total) || 0).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -993,7 +1053,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
                           </TableCell>
                           <TableCell>
                             <span className="font-medium">
-                              ₹ {tax.total.toFixed(2)}
+                              ₹ {(Number(tax.total) || 0).toFixed(2)}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -1023,7 +1083,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
               <div className="text-right">
                 <div className="text-sm font-medium">
                   Total Taxes and Charges (INR): ₹{" "}
-                  {formData.taxesAndChargesTotal.toFixed(2)}
+                  {(Number(formData.taxesAndChargesTotal) || 0).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -1059,13 +1119,13 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
                   <div className="flex justify-between">
                     <span className="text-sm">Grand Total (INR)</span>
                     <span className="font-medium">
-                      ₹ {formData.grandTotal.toFixed(2)}
+                      ₹ {(Number(formData.grandTotal) || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Rounding Adjustment (INR)</span>
                     <span className="font-medium">
-                      ₹ {formData.roundingAdjustment.toFixed(2)}
+                      ₹ {(Number(formData.roundingAdjustment) || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
@@ -1073,7 +1133,7 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
                       Rounded Total (INR)
                     </span>
                     <span className="font-semibold">
-                      ₹ {formData.roundedTotal.toFixed(2)}
+                      ₹ {(Number(formData.roundedTotal) || 0).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1548,8 +1608,8 @@ export function PurchaseOrderForm({ onSuccess }: PurchaseOrderFormProps) {
             Save
           </Button>
           <Button onClick={handleSubmit}>
-            <Send className="h-4 w-4 mr-2" />
-            Submit
+          <Send className="h-4 w-4 mr-2" />
+          {isEditing ? 'Update' : 'Submit'}
           </Button>
         </div>
       </div>

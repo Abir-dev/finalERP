@@ -108,14 +108,90 @@ export const purchaseOrderController = {
   },
   async updatePurchaseOrder(req: Request, res: Response) {
     try {
+      logger.info(`Updating purchase order ${req.params.id} with data:`, JSON.stringify(req.body, null, 2));
+      const { items, taxesAndCharges, paymentSchedule, ...purchaseOrderData } = req.body;
+      
+      // Prepare nested data for Prisma update
+      const data: any = {
+        ...purchaseOrderData,
+      };
+
+      // Only update date fields if they exist and are valid
+      if (purchaseOrderData.date) {
+        data.date = new Date(purchaseOrderData.date);
+      }
+      if (purchaseOrderData.requiredBy) {
+        data.requiredBy = new Date(purchaseOrderData.requiredBy);
+      }
+
+      // Update items - always delete existing and recreate
+      if (items !== undefined) {
+        data.items = {
+          deleteMany: {},
+        };
+        
+        if (items.length > 0) {
+          data.items.create = items.map((item: any) => {
+            const { id, ...itemData } = item; // Remove frontend-generated id
+            return {
+              ...itemData,
+              requiredBy: itemData.requiredBy ? new Date(itemData.requiredBy) : new Date(purchaseOrderData.requiredBy),
+              quantity: parseFloat(itemData.quantity) || 0,
+              rate: parseFloat(itemData.rate) || 0,
+              amount: parseFloat(itemData.amount) || 0,
+            };
+          });
+        }
+      }
+
+      // Update taxes and charges - always delete existing and recreate
+      if (taxesAndCharges !== undefined) {
+        data.taxesAndCharges = {
+          deleteMany: {},
+        };
+        
+        if (taxesAndCharges.length > 0) {
+          data.taxesAndCharges.create = taxesAndCharges.map((tax: any, index: number) => {
+            const { id, ...taxData } = tax; // Remove frontend-generated id
+            return {
+              ...taxData,
+              serialNo: index + 1,
+              type: (['TDS', 'GST', 'TCS'].includes(tax.type?.toUpperCase())) ? tax.type.toUpperCase() : 'GST',
+              taxRate: parseFloat(taxData.taxRate) || 0,
+              amount: parseFloat(taxData.amount) || 0,
+              total: parseFloat(taxData.total) || 0,
+            };
+          });
+        }
+      }
+
+      // Update payment schedule - always delete existing and recreate
+      if (paymentSchedule !== undefined) {
+        data.paymentSchedule = {
+          deleteMany: {},
+        };
+        
+        if (paymentSchedule.length > 0) {
+          data.paymentSchedule.create = paymentSchedule.map((term: any) => {
+            const { id, ...termData } = term; // Remove frontend-generated id
+            return {
+              ...termData,
+              dueDate: termData.dueDate ? new Date(termData.dueDate) : new Date(),
+              invoicePortion: parseFloat(termData.invoicePortion) || 0,
+              paymentAmount: parseFloat(termData.paymentAmount) || 0,
+            };
+          });
+        }
+      }
+
       const po = await prisma.purchaseOrder.update({ 
         where: { id: req.params.id }, 
-        data: req.body,
-        include: { items: true, paymentSchedule: true, GRN: true, Vendor: true }
+        data,
+        include: { items: true, paymentSchedule: true, taxesAndCharges: true, GRN: true, Vendor: true }
       });
       res.json(po);
     } catch (error) {
-      logger.error("Error:", error);
+      logger.error("Error updating purchase order:", error);
       res.status(500).json({
         message: "Internal server error",
         error: error instanceof Error ? error.message : "Unknown error",
