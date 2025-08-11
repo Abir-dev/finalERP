@@ -91,6 +91,25 @@ export const purchaseOrderController = {
       });
     }
   },
+  async getPurchaseOrdersByUser(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      const pos = await prisma.purchaseOrder.findMany({
+        where: {
+          userId: userId
+        },
+        include: { items: true, paymentSchedule: true, GRN: true, Vendor: true }
+      });
+      res.json(pos);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
   async getPurchaseOrderById(req: Request, res: Response) {
     try {
       const po = await prisma.purchaseOrder.findUnique({ 

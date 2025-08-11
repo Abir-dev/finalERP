@@ -7,6 +7,7 @@ const router = Router();
 // Purchase Orders
 router.post('/', authenticateUser, purchaseOrderController.createPurchaseOrder);
 router.get('/', authenticateUser, purchaseOrderController.getPurchaseOrders);
+router.get('/user/:userId', authenticateUser, purchaseOrderController.getPurchaseOrdersByUser);
 router.get('/:id', authenticateUser, purchaseOrderController.getPurchaseOrderById);
 router.put('/:id', authenticateUser, purchaseOrderController.updatePurchaseOrder);
 router.delete('/:id', authenticateUser, purchaseOrderController.deletePurchaseOrder);

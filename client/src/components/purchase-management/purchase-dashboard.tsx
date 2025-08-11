@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -99,6 +100,7 @@ interface PurchaseOrder {
 }
 
 export function PurchaseDashboard() {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
@@ -131,7 +133,13 @@ export function PurchaseDashboard() {
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/purchase-orders`, {
+      
+      // Use user-specific route if role is not 'accounts'
+      const endpoint = user?.role !== 'accounts' && user?.id 
+        ? `${API_URL}/purchase-orders/user/${user.id}`
+        : `${API_URL}/purchase-orders`;
+      
+      const response = await axios.get(endpoint, {
         headers,
       });
       setPurchaseOrders(response.data);
@@ -343,10 +351,13 @@ export function PurchaseDashboard() {
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(
-        `${API_URL}/material/material-requests`,
-        { headers }
-      );
+      
+      // Use user-specific route if role is not 'accounts'
+      const endpoint = user?.role !== 'accounts' && user?.id 
+        ? `${API_URL}/material/material-requests/user/${user.id}`
+        : `${API_URL}/material/material-requests`;
+      
+      const response = await axios.get(endpoint, { headers });
       setMaterialRequests(response.data);
     } catch (error) {
       console.error("Error fetching material requests:", error);

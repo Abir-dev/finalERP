@@ -6,6 +6,7 @@ const router = Router();
 
 router.post('/', authenticateUser, vendorController.createVendor);
 router.get('/', authenticateUser, vendorController.getVendors);
+router.get('/user/:userId', authenticateUser, vendorController.getVendorsByUser);
 router.get('/:id', authenticateUser, vendorController.getVendorById);
 router.put('/:id', authenticateUser, vendorController.updateVendor);
 router.delete('/:id', authenticateUser, vendorController.deleteVendor);

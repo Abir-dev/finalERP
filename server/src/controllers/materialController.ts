@@ -78,6 +78,34 @@ export const materialController = {
       });
     }
   },
+  
+  async getMaterialRequestsByUser(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      const materialRequests = await prisma.materialRequest.findMany({
+        where: {
+          requestedBy: userId
+        },
+        include: {
+          requester: true,
+          project: true,
+          items: true,
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+      
+      res.json(materialRequests);
+    } catch (error) {
+      logger.error("Error listing material requests by user:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
 
   async getMaterialRequest(req: Request, res: Response) {
     try {
