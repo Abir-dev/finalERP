@@ -53,7 +53,6 @@ model User {
   Vehicle             Vehicle[]         @relation("VehicleCreator")
   createdEvents       Event[]           @relation("EventCreator")
   Inventory           Inventory[]       @relation("InventoryCreator")
-  
 
   @@map("users")
 }
@@ -200,22 +199,27 @@ model Payment {
 }
 
 model Inventory {
-  id                  String            @id @default(uuid()) @db.Uuid
-  itemName            String
-  category            InventoryCategory
-  quantity            Int
-  unit                Unit
-  location            String
-  reorderLevel        Int
-  maximumStock        Int
-  safetyStock         Int
-  primarySupplierName String
-  unitCost            Int
-  createdById         String            @map("created_by_id") @db.Uuid
-  createdBy           User              @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  requests            MaterialRequest[]
+  id                    String            @id @default(uuid()) @db.Uuid
+  itemName              String
+  category              InventoryCategory
+  quantity              Int
+  unit                  Unit
+  location              String
+  reorderLevel          Int
+  maximumStock          Int
+  safetyStock           Int
+  primarySupplierName   String
+  vendorId              String            @db.Uuid
+  primarySupplier       Vendor            @relation("PrimaryVendor", fields: [vendorId], references: [id])
+  secondarySupplierName String?
+  secondarySupplier     Vendor?           @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id])
+  secondaryVendorId     String?           @db.Uuid
+  unitCost              Int
+  createdById           String            @map("created_by_id") @db.Uuid
+  createdBy             User              @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  requests              MaterialRequest[]
 }
 
 model MaterialRequest {
@@ -538,9 +542,11 @@ model Vendor {
   paymentTerms String?
   documents    String? // JSON or comma separated file links
 
-  // Relations to other models
-  purchaseOrders PurchaseOrder[]
-  bids           Bid[]
+  purchaseOrders     PurchaseOrder[]
+  bids               Bid[]
+  PrimaryInventory   Inventory[]     @relation("PrimaryVendor")
+  SecondaryInventory Inventory[]     @relation("SecondaryVendor")
+  inventoryId        String?         @db.Uuid
 
   @@map("vendors")
 }
