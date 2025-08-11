@@ -127,13 +127,13 @@ export function AppSidebar() {
       title: "Billing Management",
       url: "/billing-management",
       icon: Receipt,
-      allowedRoles: ["admin", "md", "accounts", "site"],
+      allowedRoles: ["admin", "md", "accounts"],
     },
     {
       title: "Purchase Management",
       url: "/purchase-management",
       icon: ShoppingCart,
-      allowedRoles: ["admin", "md", "store", "site", "accounts"],
+      allowedRoles: ["admin", "md", "site", "accounts"],
     },
     {
       title: "Human Resources",

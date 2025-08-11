@@ -30,7 +30,19 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import axios from "axios";
+import RichTextEditor from "../ui/RichTextEditor";
+import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
+interface Vendor {
+  id: string;
+  name: string;
+  email?: string;
+  contact?: string;
+  mobile?: string;
+  category?: string;
+  location?: string;
+}
 
 interface PurchaseOrderItem {
   id: string;
@@ -62,69 +74,80 @@ interface PaymentTerm {
 }
 
 interface PurchaseOrderFormData {
-  series: string;
+  id?: string; // Optional for editing
   poNumber: string;
-  date: string;
-  supplier: string;
-  requiredBy: string;
-  applyTaxWithholdingAmount: boolean;
-  isReverseCharge: boolean;
-  isSubcontracted: boolean;
-  scanBarcode: string;
-  setTargetWarehouse: string;
-  items: PurchaseOrderItem[];
-  supplierAddress: string;
-  supplierContact: string;
+  date: string; // Will be converted to DateTime when saving
+  vendorId: string; // Required field
+  requiredBy: string; // Will be converted to DateTime when saving
+  setTargetWarehouse?: string; // Optional warehouse field
+  vendorAddress: string;
+  vendorContact: string;
   shippingAddress: string;
   dispatchAddress: string;
   companyBillingAddress: string;
   placeOfSupply: string;
   paymentTermsTemplate: string;
-  paymentSchedule: PaymentTerm[];
   terms: string;
+  totalQuantity: number; // Will be converted to Decimal
+  total: number; // Will be converted to Decimal
+  grandTotal: number; // Will be converted to Decimal
+  roundingAdjustment: number; // Will be converted to Decimal
+  roundedTotal: number; // Will be converted to Decimal
+  advancePaid: number; // Will be converted to Decimal
+  taxesAndChargesTotal: number; // Will be converted to Decimal
+  userId: string;
+  items: PurchaseOrderItem[];
   taxesAndCharges: TaxCharge[];
-  totalQuantity: number;
-  total: number;
-  grandTotal: number;
-  roundingAdjustment: number;
-  roundedTotal: number;
-  disableRoundedTotal: boolean;
-  advancePaid: number;
-  taxesAndChargesTotal: number;
+  paymentSchedule: PaymentTerm[];
 }
 
-export function PurchaseOrderForm() {
+
+interface PurchaseOrderFormProps {
+  onSuccess?: () => void;
+  initialData?: Partial<PurchaseOrderFormData>;
+  isEditing?: boolean;
+}
+
+export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }: PurchaseOrderFormProps) {
+  const { user } = useUser();
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [formData, setFormData] = useState<PurchaseOrderFormData>({
-    series: "PUR-ORD-YYYY-",
-    poNumber: "",
-    date: new Date().toISOString().split("T")[0],
-    supplier: "",
-    requiredBy: "",
-    applyTaxWithholdingAmount: false,
-    isReverseCharge: false,
-    isSubcontracted: false,
-    scanBarcode: "",
-    setTargetWarehouse: "",
-    items: [],
-    supplierAddress: "",
-    supplierContact: "",
-    shippingAddress: "",
-    dispatchAddress: "",
-    companyBillingAddress: "",
-    placeOfSupply: "",
-    paymentTermsTemplate: "",
-    paymentSchedule: [],
-    terms: "",
-    taxesAndCharges: [],
-    totalQuantity: 0,
-    total: 0,
-    grandTotal: 0,
-    roundingAdjustment: 0,
-    roundedTotal: 0,
-    disableRoundedTotal: false,
-    advancePaid: 0,
-    taxesAndChargesTotal: 0,
+    id: initialData?.id || undefined,
+    poNumber: initialData?.poNumber || "",
+    date: initialData?.date || new Date().toISOString().split("T")[0],
+    vendorId: initialData?.vendorId || "", // Required field
+    requiredBy: initialData?.requiredBy || "",
+    setTargetWarehouse: initialData?.setTargetWarehouse || "", // Optional warehouse field
+    vendorAddress: initialData?.vendorAddress || "",
+    vendorContact: initialData?.vendorContact || "",
+    shippingAddress: initialData?.shippingAddress || "",
+    dispatchAddress: initialData?.dispatchAddress || "",
+    companyBillingAddress: initialData?.companyBillingAddress || "",
+    placeOfSupply: initialData?.placeOfSupply || "",
+    paymentTermsTemplate: initialData?.paymentTermsTemplate || "",
+    terms: initialData?.terms || "",
+    totalQuantity: initialData?.totalQuantity || 0,
+    total: initialData?.total || 0,
+    grandTotal: initialData?.grandTotal || 0,
+    roundingAdjustment: initialData?.roundingAdjustment || 0,
+    roundedTotal: initialData?.roundedTotal || 0,
+    advancePaid: initialData?.advancePaid || 0,
+    taxesAndChargesTotal: initialData?.taxesAndChargesTotal || 0,
+    userId: initialData?.userId || "",
+    items: initialData?.items || [],
+    taxesAndCharges: initialData?.taxesAndCharges || [],
+    paymentSchedule: initialData?.paymentSchedule || [],
   });
+  
+  // State to track selected item IDs
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+
+  // State to track selected tax/charge IDs
+  const [selectedTaxIds, setSelectedTaxIds] = useState<string[]>([]);
+
+  // State to track selected payment term IDs
+  const [selectedPaymentTermIds, setSelectedPaymentTermIds] = useState<string[]>([]);
 
   const [activeTab, setActiveTab] = useState("details");
   const [isAccountingDimensionsOpen, setIsAccountingDimensionsOpen] =
@@ -132,6 +155,84 @@ export function PurchaseOrderForm() {
   const [isCurrencyPriceListOpen, setIsCurrencyPriceListOpen] = useState(false);
   const [isAdditionalDiscountOpen, setIsAdditionalDiscountOpen] =
     useState(false);
+  const [terms, setTerms] = useState(initialData?.terms || "");
+
+  // Fetch vendors on component mount
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await axios.get(`${API_URL}/vendors`, { headers });
+        setVendors(response.data);
+      } catch (error) {
+        console.error("Error fetching vendors:", error);
+        toast.error("Failed to fetch vendors");
+      }
+    };
+
+    fetchVendors();
+  }, []);
+
+  // Initialize selected vendor from initial data
+  useEffect(() => {
+    if (initialData?.vendorId && vendors.length > 0) {
+      const vendor = vendors.find(v => v.id === initialData.vendorId);
+      setSelectedVendor(vendor || null);
+    }
+  }, [initialData?.vendorId, vendors]);
+
+  // Update terms when initial data changes
+  useEffect(() => {
+    if (initialData?.terms) {
+      setTerms(initialData.terms);
+    }
+  }, [initialData?.terms]);
+
+  // Update form data when initial data changes (for async loading)
+  useEffect(() => {
+    if (initialData && isEditing) {
+      setFormData({
+        id: initialData.id || undefined,
+        poNumber: initialData.poNumber || "",
+        date: initialData.date || new Date().toISOString().split("T")[0],
+        vendorId: initialData.vendorId || "",
+        requiredBy: initialData.requiredBy || "",
+        setTargetWarehouse: initialData.setTargetWarehouse || "",
+        vendorAddress: initialData.vendorAddress || "",
+        vendorContact: initialData.vendorContact || "",
+        shippingAddress: initialData.shippingAddress || "",
+        dispatchAddress: initialData.dispatchAddress || "",
+        companyBillingAddress: initialData.companyBillingAddress || "",
+        placeOfSupply: initialData.placeOfSupply || "",
+        paymentTermsTemplate: initialData.paymentTermsTemplate || "",
+        terms: initialData.terms || "",
+        totalQuantity: initialData.totalQuantity || 0,
+        total: initialData.total || 0,
+        grandTotal: initialData.grandTotal || 0,
+        roundingAdjustment: initialData.roundingAdjustment || 0,
+        roundedTotal: initialData.roundedTotal || 0,
+        advancePaid: initialData.advancePaid || 0,
+        taxesAndChargesTotal: initialData.taxesAndChargesTotal || 0,
+        userId: initialData.userId || "",
+        items: initialData.items || [],
+        taxesAndCharges: initialData.taxesAndCharges || [],
+        paymentSchedule: initialData.paymentSchedule || [],
+      });
+    }
+  }, [initialData, isEditing]);
+
+  // Update form data when vendor is selected
+  useEffect(() => {
+    if (selectedVendor) {
+      setFormData(prev => ({
+        ...prev,
+        vendorId: selectedVendor.id,
+        vendorContact: selectedVendor.contact || selectedVendor.mobile || "",
+        vendorAddress: selectedVendor.location || "",
+      }));
+    }
+  }, [selectedVendor]);
 
   const addItem = () => {
     const newItem: PurchaseOrderItem = {
@@ -251,31 +352,42 @@ export function PurchaseOrderForm() {
   const handleSave = async () => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    // Prepare data for backend
+    const submitData = {
+      ...formData,
+      terms: terms,
+      userId: user?.id || "",
+    };
+
     try {
-      if (formData.poNumber) {
-        await axios.put(`${API_URL}/purchase-orders/${formData.poNumber}`, formData, { headers });
+      let response;
+      if (isEditing && formData.id) {
+        // Update existing purchase order
+        response = await axios.put(`${API_URL}/purchase-orders/${formData.id}`, submitData, { headers });
+        toast.success("Purchase order updated successfully!");
       } else {
-        await axios.post(`${API_URL}/purchase-orders`, formData, { headers });
+        // Create new purchase order
+        response = await axios.post(`${API_URL}/purchase-orders`, submitData, { headers });
+        toast.success("Purchase order saved successfully!");
       }
-      toast.success("Purchase order saved successfully!");
+      onSuccess?.();
     } catch (err) {
-      toast.error("Failed to save purchase order.");
+      console.error("Error saving purchase order:", err);
+      toast.error(`Failed to ${isEditing ? 'update' : 'save'} purchase order.`);
     }
   };
 
   const handleSubmit = async () => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    try {
-      if (formData.poNumber) {
-        await axios.put(`${API_URL}/purchase-orders/${formData.poNumber}`, formData, { headers });
-      } else {
-        await axios.post(`${API_URL}/purchase-orders`, formData, { headers });
-      }
-      toast.success("Purchase order submitted successfully!");
-    } catch (err) {
-      toast.error("Failed to submit purchase order.");
+    if (!formData.vendorId || !formData.poNumber) {
+      toast.error("Please fill in required fields: Vendor and PO Number");
+      return;
     }
+    if (!user?.id) {
+      toast.error("User not authenticated");
+      return;
+    }
+    await handleSave();
   };
 
   return (
@@ -284,14 +396,14 @@ export function PurchaseOrderForm() {
       <div className="border-b bg-background px-0 py-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">New Purchase Order</h1>
-            <p className="text-sm text-muted-foreground">Not Saved</p>
+            <h1 className="text-xl font-semibold">{isEditing ? 'Edit Purchase Order' : 'New Purchase Order'}</h1>
+            <p className="text-sm text-muted-foreground">{isEditing ? (initialData?.poNumber || 'Editing') : 'Not Saved'}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+            {/* <span className="text-sm text-muted-foreground">
               Get Items From:
-            </span>
-            <Select>
+            </span> */}
+            {/* <Select>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Tools" />
               </SelectTrigger>
@@ -304,7 +416,7 @@ export function PurchaseOrderForm() {
                 </SelectItem>
                 <SelectItem value="purchase-order">Purchase Order</SelectItem>
               </SelectContent>
-            </Select>
+            </Select> */}
             <Button variant="outline" size="sm">
               <Eye className="h-4 w-4 mr-1" />
               Preview
@@ -333,22 +445,17 @@ export function PurchaseOrderForm() {
 
           <TabsContent value="details" className="space-y-6 w-full">
             {/* Basic Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="series">Series *</Label>
-                <Select
-                  value={formData.series}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, series: value }))
+                <Label htmlFor="poNumber">Purchase Order Number *</Label>
+                <Input
+                  id="poNumber"
+                  value={formData.poNumber}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, poNumber: e.target.value }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PUR-ORD-YYYY-">PUR-ORD-YYYY-</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Enter PO number"
+                />
               </div>
 
               <div className="space-y-2">
@@ -363,7 +470,7 @@ export function PurchaseOrderForm() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2 pt-6">
+              {/* <div className="flex items-center space-x-2 pt-6">
                 <Checkbox
                   id="apply-tax"
                   checked={formData.applyTaxWithholdingAmount}
@@ -377,23 +484,41 @@ export function PurchaseOrderForm() {
                 <Label htmlFor="apply-tax" className="text-sm">
                   Apply Tax Withholding Amount
                 </Label>
-              </div>
+              </div> */}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="supplier">Supplier *</Label>
-                <Input
-                  id="supplier"
-                  value={formData.supplier}
-                  onChange={(e) =>
+                <Label htmlFor="vendor">Vendor *</Label>
+                <Select
+                  value={formData.vendorId}
+                  onValueChange={(value) => {
+                    const vendor = vendors.find(v => v.id === value);
+                    setSelectedVendor(vendor || null);
                     setFormData((prev) => ({
                       ...prev,
-                      supplier: e.target.value,
-                    }))
-                  }
-                  placeholder="Select supplier"
-                />
+                      vendorId: value,
+                    }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        <div className="flex flex-col">
+                          <span>{vendor.name}</span>
+                          {vendor.email && (
+                            <span className="text-xs text-muted-foreground">
+                              {vendor.email}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -412,7 +537,21 @@ export function PurchaseOrderForm() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="target-warehouse">Set Target Warehouse</Label>
+                <Input
+                  id="target-warehouse"
+                  value={formData.setTargetWarehouse || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, setTargetWarehouse: e.target.value }))
+                  }
+                  placeholder="Enter target warehouse"
+                />
+              </div>
+            </div>
+
+            {/* <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="reverse-charge"
@@ -444,10 +583,10 @@ export function PurchaseOrderForm() {
                   Is Subcontracted
                 </Label>
               </div>
-            </div>
+            </div> */}
 
             {/* Collapsible Sections */}
-            <Collapsible
+            {/* <Collapsible
               open={isAccountingDimensionsOpen}
               onOpenChange={setIsAccountingDimensionsOpen}
             >
@@ -489,10 +628,10 @@ export function PurchaseOrderForm() {
                   Configure currency and pricing information.
                 </div>
               </CollapsibleContent>
-            </Collapsible>
+            </Collapsible> */}
 
-            {/* Barcode and Warehouse */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Barcode Section - commented out for now */}
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="scan-barcode">Scan Barcode</Label>
                 <Input
@@ -507,34 +646,31 @@ export function PurchaseOrderForm() {
                   placeholder="Scan or enter barcode"
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="target-warehouse">Set Target Warehouse</Label>
-                <Input
-                  id="target-warehouse"
-                  value={formData.setTargetWarehouse}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      setTargetWarehouse: e.target.value,
-                    }))
-                  }
-                  placeholder="Select warehouse"
-                />
-              </div>
-            </div>
+            </div> */}
 
             {/* Items Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="text-base font-medium">Items</Label>
-                <div className="flex gap-2">
+                <div className="flex flex-row gap-2">
                   <Button onClick={addItem} size="sm" variant="outline">
                     <Plus className="h-4 w-4 mr-1" />
                     Add Row
                   </Button>
-                  <Button size="sm" variant="outline">
-                    Add Multiple
+                  <Button
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        items: prev.items.filter((item) => !selectedItemIds.includes(item.id)),
+                      }));
+                      setSelectedItemIds([]);
+                    }}
+                    size="sm"
+                    variant="destructive"
+                    disabled={selectedItemIds.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete All
                   </Button>
                 </div>
               </div>
@@ -543,9 +679,31 @@ export function PurchaseOrderForm() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-12"></TableHead>
+                      {/* Select All Checkbox */}
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={
+                            formData.items.length === 0
+                              ? false
+                              : selectedItemIds.length === formData.items.length
+                              ? true
+                              : selectedItemIds.length > 0
+                              ? "indeterminate"
+                              : false
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedItemIds(formData.items.map((item) => item.id));
+                            } else {
+                              setSelectedItemIds([]);
+                            }
+                          }}
+                          aria-label="Select all items"
+                        />
+                      </TableHead>
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="min-w-32">Item Code *</TableHead>
+                      <TableHead className="min-w-40">Description</TableHead>
                       <TableHead className="min-w-32">Required By *</TableHead>
                       <TableHead className="w-24">Quantity *</TableHead>
                       <TableHead className="w-20">UOM *</TableHead>
@@ -558,7 +716,7 @@ export function PurchaseOrderForm() {
                     {formData.items.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={9}
+                          colSpan={10}
                           className="text-center py-8 text-muted-foreground"
                         >
                           <div className="flex flex-col items-center space-y-2">
@@ -578,7 +736,16 @@ export function PurchaseOrderForm() {
                       formData.items.map((item, index) => (
                         <TableRow key={item.id}>
                           <TableCell>
-                            <Checkbox />
+                            <Checkbox
+                              checked={selectedItemIds.includes(item.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedItemIds([...selectedItemIds, item.id]);
+                                } else {
+                                  setSelectedItemIds(selectedItemIds.filter((id) => id !== item.id));
+                                }
+                              }}
+                            />
                           </TableCell>
                           <TableCell className="font-medium">
                             {index + 1}
@@ -595,6 +762,17 @@ export function PurchaseOrderForm() {
                           </TableCell>
                           <TableCell>
                             <Input
+                              value={item.description}
+                              onChange={(e) =>
+                                updateItem(item.id, "description", e.target.value)
+                              }
+                              placeholder="Item description"
+                              className="min-w-40"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="date"
                               value={item.requiredBy}
                               onChange={(e) =>
                                 updateItem(
@@ -659,7 +837,7 @@ export function PurchaseOrderForm() {
                           </TableCell>
                           <TableCell>
                             <span className="font-medium">
-                              ₹ {item.amount.toFixed(2)}
+                              ₹ {(Number(item.amount) || 0).toFixed(2)}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -686,7 +864,7 @@ export function PurchaseOrderForm() {
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Total (INR):</span> ₹{" "}
-                  {formData.total.toFixed(2)}
+                  {(Number(formData.total) || 0).toFixed(2)}
                 </div>
               </div>
             </div>
@@ -697,13 +875,30 @@ export function PurchaseOrderForm() {
                 <Label className="text-base font-medium">
                   Taxes and Charges
                 </Label>
-                <Button onClick={addTaxCharge} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Row
-                </Button>
+                <div className="flex flex-row gap-2">
+                  <Button onClick={addTaxCharge} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Row
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        taxesAndCharges: prev.taxesAndCharges.filter((tax) => !selectedTaxIds.includes(tax.id)),
+                      }));
+                      setSelectedTaxIds([]);
+                    }}
+                    size="sm"
+                    variant="destructive"
+                    disabled={selectedTaxIds.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete All
+                  </Button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="tax-category">Tax Category</Label>
                   <Input id="tax-category" placeholder="Select tax category" />
@@ -726,13 +921,34 @@ export function PurchaseOrderForm() {
                   <Label htmlFor="tax-template">Tax Template</Label>
                   <Input id="tax-template" placeholder="Select template" />
                 </div>
-              </div>
+              </div> */}
 
               <div className="border rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead className="w-12"></TableHead>
+                      {/* Select All Checkbox for Taxes and Charges */}
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={
+                            formData.taxesAndCharges.length === 0
+                              ? false
+                              : selectedTaxIds.length === formData.taxesAndCharges.length
+                              ? true
+                              : selectedTaxIds.length > 0
+                              ? "indeterminate"
+                              : false
+                          }
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedTaxIds(formData.taxesAndCharges.map((tax) => tax.id));
+                            } else {
+                              setSelectedTaxIds([]);
+                            }
+                          }}
+                          aria-label="Select all taxes and charges"
+                        />
+                      </TableHead>
                       <TableHead className="w-16">No.</TableHead>
                       <TableHead className="min-w-32">Type *</TableHead>
                       <TableHead className="min-w-40">Account Head *</TableHead>
@@ -756,7 +972,16 @@ export function PurchaseOrderForm() {
                       formData.taxesAndCharges.map((tax, index) => (
                         <TableRow key={tax.id}>
                           <TableCell>
-                            <Checkbox />
+                            <Checkbox
+                              checked={selectedTaxIds.includes(tax.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedTaxIds([...selectedTaxIds, tax.id]);
+                                } else {
+                                  setSelectedTaxIds(selectedTaxIds.filter((id) => id !== tax.id));
+                                }
+                              }}
+                            />
                           </TableCell>
                           <TableCell className="font-medium">
                             {index + 1}
@@ -828,7 +1053,7 @@ export function PurchaseOrderForm() {
                           </TableCell>
                           <TableCell>
                             <span className="font-medium">
-                              ₹ {tax.total.toFixed(2)}
+                              ₹ {(Number(tax.total) || 0).toFixed(2)}
                             </span>
                           </TableCell>
                           <TableCell>
@@ -858,13 +1083,13 @@ export function PurchaseOrderForm() {
               <div className="text-right">
                 <div className="text-sm font-medium">
                   Total Taxes and Charges (INR): ₹{" "}
-                  {formData.taxesAndChargesTotal.toFixed(2)}
+                  {(Number(formData.taxesAndChargesTotal) || 0).toFixed(2)}
                 </div>
               </div>
             </div>
 
             {/* Additional Discount */}
-            <Collapsible
+            {/* <Collapsible
               open={isAdditionalDiscountOpen}
               onOpenChange={setIsAdditionalDiscountOpen}
             >
@@ -884,7 +1109,7 @@ export function PurchaseOrderForm() {
                   Configure additional discounts for this purchase order.
                 </div>
               </CollapsibleContent>
-            </Collapsible>
+            </Collapsible> */}
 
             {/* Totals Section */}
             <div className="bg-muted/20 p-6 rounded-lg space-y-3">
@@ -894,13 +1119,13 @@ export function PurchaseOrderForm() {
                   <div className="flex justify-between">
                     <span className="text-sm">Grand Total (INR)</span>
                     <span className="font-medium">
-                      ₹ {formData.grandTotal.toFixed(2)}
+                      ₹ {(Number(formData.grandTotal) || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Rounding Adjustment (INR)</span>
                     <span className="font-medium">
-                      ₹ {formData.roundingAdjustment.toFixed(2)}
+                      ₹ {(Number(formData.roundingAdjustment) || 0).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
@@ -908,12 +1133,12 @@ export function PurchaseOrderForm() {
                       Rounded Total (INR)
                     </span>
                     <span className="font-semibold">
-                      ₹ {formData.roundedTotal.toFixed(2)}
+                      ₹ {(Number(formData.roundedTotal) || 0).toFixed(2)}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
+                  {/* <div className="flex items-center space-x-2">
                     <Checkbox
                       id="disable-rounded"
                       checked={formData.disableRoundedTotal}
@@ -927,7 +1152,7 @@ export function PurchaseOrderForm() {
                     <Label htmlFor="disable-rounded" className="text-sm">
                       Disable Rounded Total
                     </Label>
-                  </div>
+                  </div> */}
                   <div className="space-y-2">
                     <Label htmlFor="advance-paid" className="text-sm">
                       Advance Paid
@@ -953,39 +1178,39 @@ export function PurchaseOrderForm() {
 
           <TabsContent value="address-contact" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Supplier Address */}
+              {/* Vendor Address */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Supplier Address</CardTitle>
+                  <CardTitle className="text-base">Vendor Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="supplier-address">Supplier Address</Label>
+                    <Label htmlFor="vendor-address">Vendor Address</Label>
                     <Textarea
-                      id="supplier-address"
-                      value={formData.supplierAddress}
+                      id="vendor-address"
+                      value={formData.vendorAddress}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          supplierAddress: e.target.value,
+                          vendorAddress: e.target.value,
                         }))
                       }
-                      placeholder="Enter supplier address"
+                      placeholder="Enter vendor address"
                       rows={3}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="supplier-contact">Supplier Contact</Label>
+                    <Label htmlFor="vendor-contact">Vendor Contact</Label>
                     <Input
-                      id="supplier-contact"
-                      value={formData.supplierContact}
+                      id="vendor-contact"
+                      value={formData.vendorContact}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          supplierContact: e.target.value,
+                          vendorContact: e.target.value,
                         }))
                       }
-                      placeholder="Enter supplier contact"
+                      placeholder="Enter vendor contact"
                     />
                   </div>
                 </CardContent>
@@ -1093,7 +1318,7 @@ export function PurchaseOrderForm() {
                         paymentTermsTemplate: e.target.value,
                       }))
                     }
-                    placeholder="Select payment terms template"
+                    placeholder="Enter payment terms template"
                   />
                 </div>
 
@@ -1102,21 +1327,59 @@ export function PurchaseOrderForm() {
                     <Label className="text-sm font-medium">
                       Payment Schedule
                     </Label>
-                    <Button
-                      onClick={addPaymentTerm}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Row
-                    </Button>
+                    <div className="flex flex-row gap-2">
+                      <Button
+                        onClick={addPaymentTerm}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Row
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            paymentSchedule: prev.paymentSchedule.filter((term) => !selectedPaymentTermIds.includes(term.id)),
+                          }));
+                          setSelectedPaymentTermIds([]);
+                        }}
+                        size="sm"
+                        variant="destructive"
+                        disabled={selectedPaymentTermIds.length === 0}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete All
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/50">
-                          <TableHead className="w-12"></TableHead>
+                          {/* Select All Checkbox for Payment Terms */}
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={
+                                formData.paymentSchedule.length === 0
+                                  ? false
+                                  : selectedPaymentTermIds.length === formData.paymentSchedule.length
+                                  ? true
+                                  : selectedPaymentTermIds.length > 0
+                                  ? "indeterminate"
+                                  : false
+                              }
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedPaymentTermIds(formData.paymentSchedule.map((term) => term.id));
+                                } else {
+                                  setSelectedPaymentTermIds([]);
+                                }
+                              }}
+                              aria-label="Select all payment terms"
+                            />
+                          </TableHead>
                           <TableHead className="w-16">No.</TableHead>
                           <TableHead className="min-w-32">
                             Payment Term
@@ -1148,7 +1411,16 @@ export function PurchaseOrderForm() {
                           formData.paymentSchedule.map((payment, index) => (
                             <TableRow key={payment.id}>
                               <TableCell>
-                                <Checkbox />
+                                <Checkbox
+                                  checked={selectedPaymentTermIds.includes(payment.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedPaymentTermIds([...selectedPaymentTermIds, payment.id]);
+                                    } else {
+                                      setSelectedPaymentTermIds(selectedPaymentTermIds.filter((id) => id !== payment.id));
+                                    }
+                                  }}
+                                />
                               </TableCell>
                               <TableCell className="font-medium">
                                 {index + 1}
@@ -1293,44 +1565,20 @@ export function PurchaseOrderForm() {
             </Card>
 
             {/* Terms & Conditions */}
-            <Card>
+            <Card className="shadow-lg border border-gray-200 bg-gray-50 dark:bg-gray-900/40 mt-6">
               <CardHeader>
-                <CardTitle className="text-base">Terms & Conditions</CardTitle>
+                <CardTitle className="text-base font-semibold text-gray-800 dark:text-gray-100">Terms & Conditions</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Label htmlFor="terms">Terms</Label>
-                  <Textarea
-                    id="terms"
-                    value={formData.terms}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        terms: e.target.value,
-                      }))
-                    }
+                  <label htmlFor="terms" className="block font-medium text-gray-700 dark:text-gray-200 mb-1">
+                    Please enter any terms and conditions for this purchase order:
+                  </label>
+                  <RichTextEditor
+                    value={terms}
+                    onChange={setTerms}
                     placeholder="Enter terms and conditions"
-                    rows={6}
-                    className="resize-none"
                   />
-                </div>
-                <div className="flex items-center gap-2 mt-4 p-2 border-t">
-                  <Button size="sm" variant="outline">
-                    <strong>B</strong>
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <em>I</em>
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <u>U</u>
-                  </Button>
-                  <Separator orientation="vertical" className="h-6" />
-                  <Button size="sm" variant="outline">
-                    List
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    Link
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1360,8 +1608,8 @@ export function PurchaseOrderForm() {
             Save
           </Button>
           <Button onClick={handleSubmit}>
-            <Send className="h-4 w-4 mr-2" />
-            Submit
+          <Send className="h-4 w-4 mr-2" />
+          {isEditing ? 'Update' : 'Submit'}
           </Button>
         </div>
       </div>

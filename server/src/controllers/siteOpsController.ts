@@ -203,8 +203,10 @@ export const siteOpsController = {
     }
   },
   async getIssueReports(req: Request, res: Response) {
+
     try {
-      const result = await prismaSiteOpsService.getIssueReports(req.query);
+      const {userId} = req.query;
+      const result = await prismaSiteOpsService.getIssueReports(req.query, userId as string);
       res.json(result);
     } catch (error) {
       logger.error("Error:", error);

@@ -1,23 +1,62 @@
 // Project type for use throughout the client
 export interface Project {
-  id: number;
+  id: string;
   name: string;
-  client: string;
-  status: string;
-  progress: number;
-  budget: number;
-  spent: number;
-  deadline: string;
-  location: string;
-  manager: string;
-  designDate?: string;
-  foundationDate?: string;
-  structureDate?: string;
-  interiorDate?: string;
-  finalDate?: string;
-  milestones?: Array<{
+  clientId: string;
+  client: {
+    id: string;
     name: string;
-    date: string;
-    completed: boolean;
+    email: string;
+    role: string;
+    avatar?: string;
+    status: string;
+  };
+  startDate: string;
+  endDate: string;
+  status: string;
+  managers: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+  }>;
+  members: Array<{
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+  }>;
+  tasks?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    assignedTo?: string;
+    status: string;
+    dueDate?: string;
+  }>;
+  invoices?: Array<{
+    id: string;
+    invoiceNumber: string;
+    total: number;
+    status: string;
+  }>;
+  materialRequests?: Array<{
+    id: string;
+    status: string;
+    purpose: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  Tender?: Array<{
+    id: string;
+    title: string;
+    status: string;
+  }>;
+  Payment?: Array<{
+    id: string;
+    amount: number;
+    status: string;
   }>;
 } 

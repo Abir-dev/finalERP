@@ -13,8 +13,14 @@ router.get('/invoices/:id', authenticateUser, billingController.getInvoice);
 router.put('/invoices/:id', authenticateUser, checkRole('accounts'), validateInvoice, billingController.updateInvoice);
 router.delete('/invoices/:id', authenticateUser, checkRole('admin'), billingController.deleteInvoice);
 
+// Invoice Items CRUD
+router.post('/invoices/:invoiceId/items', authenticateUser, checkRole('accounts'), billingController.createInvoiceItem);
+router.put('/invoices/:invoiceId/items/:itemId', authenticateUser, checkRole('accounts'), billingController.updateInvoiceItem);
+router.delete('/invoices/:invoiceId/items/:itemId', authenticateUser, checkRole('accounts'), billingController.deleteInvoiceItem);
+
 // Payment management
 router.post('/invoices/:id/payments', authenticateUser, checkRole('accounts'), validatePayment, billingController.addPayment);
 router.get('/invoices/:id/payments', authenticateUser, billingController.listPayments);
+router.get('/payments', authenticateUser, billingController.getAllPayments);
 
 export default router; 

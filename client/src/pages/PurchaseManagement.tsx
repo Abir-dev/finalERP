@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge";
+import { AddVendorModal } from "@/components/modals/AddVendorModal";
 
 // Mock low stock items data
 const generateLowStockItems = (count: number) => {
@@ -644,7 +645,7 @@ const handleCompareVendors = async (material: string) => {
       vendors = [
         {
           id: 'default-1',
-          name: 'General Supplier 1',
+          name: 'General Vendor 1',
           price: 500,
           deliveryTime: '3-5 days',
           qualityRating: 4.0,
@@ -652,7 +653,7 @@ const handleCompareVendors = async (material: string) => {
         },
         {
           id: 'default-2',
-          name: 'General Supplier 2',
+          name: 'General Vendor 2',
           price: 480,
           deliveryTime: '4-7 days',
           qualityRating: 3.8,
@@ -826,16 +827,16 @@ const handleNewContractSubmit = async () => {
     </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        {/* <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="procurement">Smart Procurement</TabsTrigger>
           <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
           <TabsTrigger value="optimization">Cost Optimization</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
-        <TabsContent value="dashboard" className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+       
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard 
               title="Total Orders" 
               value="₹8.5L" 
@@ -847,9 +848,9 @@ const handleNewContractSubmit = async () => {
               title="Active Vendors" 
               value="24" 
               icon={Users}
-              description="Approved supplier network"
+              description="Approved vendor network"
               trend={{ value: 3, label: "new vendors added" }}
-              threshold={{ status: 'good', message: 'Diverse supplier base' }}
+              threshold={{ status: 'good', message: 'Diverse vendor base' }}
             />
             <EnhancedStatCard 
               title="Cost Savings" 
@@ -867,10 +868,10 @@ const handleNewContractSubmit = async () => {
               trend={{ value: 5, label: "improvement" }}
               threshold={{ status: 'good', message: 'Excellent delivery performance' }}
             />
-          </div>
+          </div> */}
 
           <PurchaseDashboard />
-        </TabsContent>
+        
 
         <TabsContent value="procurement" className="space-y-6">
           <Card>
@@ -1046,7 +1047,7 @@ const handleNewContractSubmit = async () => {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <Button 
+                                    {/* <Button 
                                       variant="outline" 
                                       size="sm"
                                       onClick={() => {
@@ -1061,7 +1062,7 @@ const handleNewContractSubmit = async () => {
                                       }}
                                     >
                                       Create PO
-                                    </Button>
+                                    </Button> */}
                                   </td>
                                 </tr>
                               ))}
@@ -1299,7 +1300,7 @@ const handleNewContractSubmit = async () => {
             <SelectContent>
               <SelectItem value="steel-corp">Steel Corp Ltd (24h delivery)</SelectItem>
               <SelectItem value="express-supply">Express Supply Co (12h delivery)</SelectItem>
-              <SelectItem value="local-urgent">Local Urgent Suppliers (6h delivery)</SelectItem>
+              <SelectItem value="local-urgent">Local Urgent Vendors (6h delivery)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -1436,7 +1437,7 @@ const handleNewContractSubmit = async () => {
       {activeContracts > 0 ? (
         `${activeContracts} active contracts (${expiringSoon} expiring soon)`
       ) : (
-        "Manage long-term contracts with suppliers"
+        "Manage long-term contracts with vendors"
       )}
     </p>
     <div className="space-y-2">
@@ -1573,7 +1574,7 @@ const handleNewContractSubmit = async () => {
     <DialogHeader>
       <DialogTitle>Create New Contract</DialogTitle>
       <DialogDescription>
-        Set up a new supplier contract or service agreement
+        Set up a new vendor contract or service agreement
       </DialogDescription>
     </DialogHeader>
     
@@ -2647,7 +2648,7 @@ const handleNewContractSubmit = async () => {
           </div>
           
           <div className="flex justify-end gap-2 pt-4">
-            <Button 
+            {/* <Button 
               variant="outline"
               onClick={() => {
                 setPoFormData({
@@ -2660,7 +2661,7 @@ const handleNewContractSubmit = async () => {
               }}
             >
               Create PO
-            </Button>
+            </Button> */}
             {/* <Button 
               variant="outline"
               onClick={() => {
@@ -2677,187 +2678,7 @@ const handleNewContractSubmit = async () => {
   </Dialog>
 
   {/* New Vendor Modal */}
-  <Dialog open={showNewVendorModal} onOpenChange={setShowNewVendorModal}>
-    <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>Add New Vendor</DialogTitle>
-        <DialogDescription>
-          Register a new vendor in the procurement system
-        </DialogDescription>
-      </DialogHeader>
-      
-      <div className="space-y-4 py-4">
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorName" className="text-right">
-            Vendor Name *
-          </Label>
-          <Input
-            id="vendorName"
-            value={newVendor.name}
-            onChange={(e) => setNewVendor({...newVendor, name: e.target.value})}
-            className="col-span-3"
-            placeholder="Enter vendor name"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorCategory" className="text-right">
-            Category *
-          </Label>
-          <Select
-            value={newVendor.category}
-            onValueChange={(value) => setNewVendor({...newVendor, category: value})}
-            required
-          >
-            <SelectTrigger className="col-span-3">
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Raw Materials">Raw Materials</SelectItem>
-              <SelectItem value="Building Materials">Building Materials</SelectItem>
-              <SelectItem value="Tools & Equipment">Tools & Equipment</SelectItem>
-              <SelectItem value="Safety Equipment">Safety Equipment</SelectItem>
-              <SelectItem value="Services">Services</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorContact" className="text-right">
-            Contact *
-          </Label>
-          <Input
-            id="vendorContact"
-            value={newVendor.contact}
-            onChange={(e) => setNewVendor({...newVendor, contact: e.target.value})}
-            className="col-span-3"
-            placeholder="Contact person and phone"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorEmail" className="text-right">
-            Email *
-          </Label>
-          <Input
-            id="vendorEmail"
-            type="email"
-            value={newVendor.email}
-            onChange={(e) => setNewVendor({...newVendor, email: e.target.value})}
-            className="col-span-3"
-            placeholder="vendor@example.com"
-            required
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorAddress" className="text-right">
-            Address
-          </Label>
-          <Textarea
-            id="vendorAddress"
-            value={newVendor.address}
-            onChange={(e) => setNewVendor({...newVendor, address: e.target.value})}
-            className="col-span-3"
-            placeholder="Full business address"
-            rows={3}
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorPaymentTerms" className="text-right">
-            Payment Terms *
-          </Label>
-          <Select
-            value={newVendor.paymentTerms}
-            onValueChange={(value) => setNewVendor({...newVendor, paymentTerms: value})}
-            required
-          >
-            <SelectTrigger className="col-span-3">
-              <SelectValue placeholder="Select payment terms" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Net 15">Net 15</SelectItem>
-              <SelectItem value="Net 30">Net 30</SelectItem>
-              <SelectItem value="Net 45">Net 45</SelectItem>
-              <SelectItem value="Net 60">Net 60</SelectItem>
-              <SelectItem value="Advance">Advance Payment</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="vendorDocs" className="text-right">
-            Documents
-          </Label>
-          <Input
-            id="vendorDocs"
-            type="file"
-            className="col-span-3"
-            multiple
-            onChange={(e) => {
-              if (e.target.files) {
-                setNewVendor({...newVendor, documents: Array.from(e.target.files)});
-              }
-            }}
-          />
-        </div>
-      </div>
-      
-      <DialogFooter>
-        <Button 
-          variant="outline" 
-          onClick={() => setShowNewVendorModal(false)}
-        >
-          Cancel
-        </Button>
-        <Button 
-          onClick={async () => {
-            if (!newVendor.name || !newVendor.category || !newVendor.contact || !newVendor.email || !newVendor.paymentTerms) {
-              toast({
-                title: "Missing required fields",
-                description: "Please fill out all required fields",
-                variant: "destructive"
-              });
-              return;
-            }
-            
-            try {
-              // Simulate API call
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              toast({
-                title: "Vendor added successfully",
-                description: `${newVendor.name} has been registered in the system`,
-              });
-              
-              setNewVendor({
-                name: "",
-                category: "",
-                contact: "",
-                email: "",
-                address: "",
-                paymentTerms: "",
-                documents: []
-              });
-              
-              setShowNewVendorModal(false);
-            } catch (error) {
-              toast({
-                title: "Error adding vendor",
-                description: "Please try again",
-                variant: "destructive"
-              });
-            }
-          }}
-        >
-          Add Vendor
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+  <AddVendorModal open={showNewVendorModal} onOpenChange={setShowNewVendorModal} />
 </TabsContent>
 
         <TabsContent value="optimization" className="space-y-6">
@@ -3076,12 +2897,12 @@ const handleNewContractSubmit = async () => {
                   </div>
 
                   <div>
-                    <h4 className="font-medium mb-3">Supplier Diversity</h4>
+                    <h4 className="font-medium mb-3">Vendor Diversity</h4>
                     <div className="space-y-3">
                       {[
-                        { type: 'Local Suppliers', count: 12, percentage: 50 },
-                        { type: 'Regional Suppliers', count: 8, percentage: 33 },
-                        { type: 'National Suppliers', count: 4, percentage: 17 }
+                        { type: 'Local Vendors', count: 12, percentage: 50 },
+                        { type: 'Regional Vendors', count: 8, percentage: 33 },
+                        { type: 'National Vendors', count: 4, percentage: 17 }
                       ].map((type) => (
                         <div key={type.type} className="flex justify-between items-center">
                           <span className="text-sm">{type.type}</span>

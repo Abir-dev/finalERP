@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Invoice {
   id: string;
+  invoiceNumber: string;
   project: string;
   client: string;
   amount: number;
@@ -31,6 +32,7 @@ const ViewInvoiceModal = ({ invoice, isOpen, onClose }: ViewInvoiceModalProps) =
   if (!invoice) return null;
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-500';
     switch (status) {
       case 'Paid':
         return 'bg-green-500';
@@ -47,12 +49,12 @@ const ViewInvoiceModal = ({ invoice, isOpen, onClose }: ViewInvoiceModalProps) =
     <div className="flex flex-col space-y-1 py-3 border-b last:border-b-0">
       <span className="text-sm text-gray-500">{label}</span>
       {badge ? (
-        <Badge className={getStatusColor(value as string)}>
-          {value}
+        <Badge className={getStatusColor(value as string || 'Unknown')}>
+          {value || 'Unknown'}
         </Badge>
       ) : (
         <span className="font-medium">
-          {typeof value === 'number' ? `₹${value.toLocaleString('en-IN')}` : value}
+          {typeof value === 'number' ? `₹${value ? value.toLocaleString('en-IN') : '0'}` : (value || 'N/A')}
         </span>
       )}
     </div>
@@ -65,7 +67,7 @@ const ViewInvoiceModal = ({ invoice, isOpen, onClose }: ViewInvoiceModalProps) =
           <DialogTitle className="flex items-center justify-between">
             <span>Invoice Details</span>
             <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-              {invoice.id}
+              {invoice.invoiceNumber || 'Unknown'}
             </span>
           </DialogTitle>
         </DialogHeader>
@@ -74,21 +76,21 @@ const ViewInvoiceModal = ({ invoice, isOpen, onClose }: ViewInvoiceModalProps) =
           <div className="space-y-4 pb-4">
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Project Information</h3>
-              <DetailRow label="Project Name" value={invoice.project} />
-              <DetailRow label="Client" value={invoice.client} />
+              <DetailRow label="Project Name" value={invoice.project || 'N/A'} />
+              <DetailRow label="Client" value={invoice.client || 'N/A'} />
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Payment Details</h3>
-              <DetailRow label="Amount" value={invoice.amount} />
-              <DetailRow label="Status" value={invoice.status} badge />
-              <DetailRow label="Payment Method" value={invoice.paymentMethod} />
+              <DetailRow label="Amount" value={invoice.amount || 0} />
+              <DetailRow label="Status" value={invoice.status || 'Unknown'} badge />
+              <DetailRow label="Payment Method" value={invoice.paymentMethod || 'N/A'} />
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Dates</h3>
-              <DetailRow label="Due Date" value={invoice.dueDate} />
-              <DetailRow label="Sent Date" value={invoice.sentDate} />
+              <DetailRow label="Due Date" value={invoice.dueDate?new Date(invoice.dueDate).toLocaleDateString(): 'N/A'} />
+              <DetailRow label="Sent Date" value={invoice.sentDate?new Date(invoice.sentDate).toLocaleDateString(): 'N/A'} />
             </div>
           </div>
         </ScrollArea>

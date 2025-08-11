@@ -55,16 +55,26 @@ import {
   TrendingDown,
   BarChart3,
   Download,
+  Trash2,
+  Edit,
+  PauseCircle,
 } from "lucide-react";
 import { inventoryData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import AddVehicleModal from "@/components/modals/AddVehicleModal";
+import MaintenanceModal from "@/components/modals/MaintenanceModal";
+import VehicleMovementLogsTable from "@/components/VehicleMovementLogsTable";
+import ActiveVehiclesView from "@/components/ActiveVehiclesView";
+import IdleVehiclesView from "@/components/IdleVehiclesView";
+import MaintenanceVehiclesView from "@/components/MaintenanceVehiclesView";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
+import { useUser } from "@/contexts/UserContext";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const transferData = [
   { name: "Completed", value: 45, fill: "#10b981" },
@@ -211,6 +221,13 @@ const StoreDashboard = () => {
   const [vehicleSite, setVehicleSite] = useState("all");
   const [vehicleStatus, setVehicleStatus] = useState("all");
   const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [maintenanceModalMode, setMaintenanceModalMode] = useState<
+    "create" | "edit"
+  >("create");
+  const [selectedMaintenance, setSelectedMaintenance] = useState<any>(null);
+  const [selectedVehicleForMaintenance, setSelectedVehicleForMaintenance] =
+    useState<string>("");
   const [purchaseRequests, setPurchaseRequests] = useState([]);
   const [maintenanceSchedules, setMaintenanceSchedules] = useState([]);
   const [selectedAsset, setSelectedAsset] =
@@ -232,12 +249,12 @@ const StoreDashboard = () => {
     "main" | "spend" | "turnover" | "deadStock" | "leadTime"
   >("main");
   const [vehicleSubview, setVehicleSubview] = useState<
-    "main" | "active" | "onSite" | "maintenance"
+    "main" | "active" | "onSite" | "maintenance" | "idle"
   >("main");
 
   // Add backend state
   const [transfers, setTransfers] = useState([]);
-  const [vehicleKpis, setVehicleKpis] = useState([]);
+  const [vehicleKpis, setVehicleKpis] = useState<any>({});
   const [vehicleMovementLogs, setVehicleMovementLogs] = useState([]);
   const [fuelTrendData, setFuelTrendData] = useState([]);
   const [utilizationByProject, setUtilizationByProject] = useState([]);
@@ -245,6 +262,8 @@ const StoreDashboard = () => {
   const [storageUtilization, setStorageUtilization] = useState([]);
 
   const { toast } = useToast();
+  const { user } = useUser();
+  const userID: string = user?.id || "";
 
   const [inventory, setInventory] = useState<any[]>([]);
   const [stockData, setStockData] = useState<any[]>([]);
@@ -375,14 +394,128 @@ const StoreDashboard = () => {
     }
   };
 
-  function handleAddVehicle(vehicle) {
+  function handleAddVehicle(vehicle: any) {
     toast({
       title: "Vehicle Added",
-      description: `${vehicle.name} (${vehicle.type}) was added successfully.`,
+      description: `${vehicle.vehicleName} was added successfully.`,
       duration: 3000,
     });
-    // Optionally, update your vehicle list here
+    // Refresh vehicle data after adding
+    fetchVehicleData();
   }
+
+  const fetchVehicleData = async (filters?: {
+    vehicleType?: string;
+    assignedSite?: string;
+    status?: string;
+  }) => {
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    try {
+      // Build query parameters for filtering
+      const params = new URLSearchParams();
+      if (filters?.vehicleType && filters.vehicleType !== "all") {
+        params.append("vehicleType", filters.vehicleType);
+      }
+      if (filters?.assignedSite && filters.assignedSite !== "all") {
+        params.append("assignedSite", filters.assignedSite);
+      }
+      if (filters?.status && filters.status !== "all") {
+        params.append("status", filters.status);
+      }
+      // Always include userId for scoped vehicle queries
+      if (userID) {
+        params.append("userId", userID);
+      }
+
+      // Fetch updated vehicle analytics
+      const analyticsResponse = await axios.get(
+        `${API_URL}/vehicles/analytics?userId=${userID}`,
+        { headers },
+      );
+      setVehicleKpis(analyticsResponse.data);
+      setTopVehicles(analyticsResponse.data.allVehiclesBySite || []);
+
+      // Fetch filtered movements (scoped by user)
+      const movementsQuery = params.toString();
+      const movementsUrl = `${API_URL}/vehicles/movements/list${
+        movementsQuery ? `?${movementsQuery}` : ""
+      }`;
+      const movementsResponse = await axios.get(movementsUrl, { headers });
+      setVehicleMovementLogs(movementsResponse.data);
+
+      // Fetch filtered maintenance (scoped by user)
+      const maintenanceQuery = params.toString();
+      const maintenanceUrl = `${API_URL}/vehicles/maintenance/list${
+        maintenanceQuery ? `?${maintenanceQuery}` : ""
+      }`;
+      const maintenanceResponse = await axios.get(maintenanceUrl, { headers });
+      setMaintenanceSchedules(maintenanceResponse.data);
+      const costly = maintenanceResponse.data
+        .filter((item: any) => item.cost && item.cost > 5000)
+        .sort((a: any, b: any) => (b.cost || 0) - (a.cost || 0))
+        .slice(0, 5);
+      setCostlyMaintenance(costly);
+    } catch (error) {
+      console.error("Error fetching vehicle data:", error);
+    }
+  };
+
+  // Update vehicle data when filters change
+  useEffect(() => {
+    fetchVehicleData({
+      vehicleType,
+      assignedSite: vehicleSite,
+      status: vehicleStatus,
+    });
+  }, [vehicleType, vehicleSite, vehicleStatus]);
+
+  // Maintenance CRUD Functions
+  const handleAddMaintenance = (vehicleId: string) => {
+    setSelectedVehicleForMaintenance(vehicleId);
+    setMaintenanceModalMode("create");
+    setSelectedMaintenance(null);
+    setShowMaintenanceModal(true);
+  };
+
+  const handleEditMaintenance = (maintenance: any) => {
+    setSelectedMaintenance(maintenance);
+    setMaintenanceModalMode("edit");
+    setShowMaintenanceModal(true);
+  };
+
+  const handleDeleteMaintenance = async (maintenanceId: string) => {
+    if (!confirm("Are you sure you want to delete this maintenance record?")) {
+      return;
+    }
+
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await axios.delete(`${API_URL}/vehicles/maintenance/${maintenanceId}`, {
+        headers,
+      });
+
+      toast({
+        title: "Success",
+        description: "Maintenance record deleted successfully",
+      });
+
+      fetchVehicleData();
+    } catch (error: any) {
+      console.error("Error deleting maintenance:", error);
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error || "Failed to delete maintenance record",
+      });
+    }
+  };
 
   const handleReorder = (item: any) => {
     // Create a purchase request for the item
@@ -480,46 +613,79 @@ const StoreDashboard = () => {
   };
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/inventory/items`, { headers })
-      .then(res => setInventory(res.data))
+
+    // Inventory data
+    axios
+      .get(`${API_URL}/inventory/items`, { headers })
+      .then((res) => setInventory(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/inventory/stock`, { headers })
-      .then(res => setStockData(res.data))
+    axios
+      .get(`${API_URL}/inventory/stock`, { headers })
+      .then((res) => setStockData(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/inventory/transfers`, { headers })
-      .then(res => setTransfers(res.data))
+    axios
+      .get(`${API_URL}/inventory/transfers`, { headers })
+      .then((res) => setTransfers(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/vehicles/top`, { headers })
-      .then(res => setTopVehicles(res.data))
+    axios
+      .get(`${API_URL}/inventory/transactions`, { headers })
+      .then((res) => setRecentTransactions(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/maintenance/costly`, { headers })
-      .then(res => setCostlyMaintenance(res.data))
+    axios
+      .get(`${API_URL}/inventory/storage-utilization`, { headers })
+      .then((res) => setStorageUtilization(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/vehicles/kpis`, { headers })
-      .then(res => setVehicleKpis(res.data))
+
+    // Vehicle data - using new vehicle APIs
+    axios
+      .get(`${API_URL}/vehicles/analytics?userId=${userID}`, { headers })
+      .then((res) => {
+        setVehicleKpis(res.data);
+        setTopVehicles(res.data.allVehiclesBySite || []);
+      })
       .catch(() => {});
-    axios.get(`${API_URL}/vehicles/movements`, { headers })
-      .then(res => setVehicleMovementLogs(res.data))
+
+    axios
+      .get(`${API_URL}/vehicles/movements/list?userId=${userID}`, { headers })
+      .then((res) => setVehicleMovementLogs(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/vehicles/fuel-trends`, { headers })
-      .then(res => setFuelTrendData(res.data))
+
+    axios
+      .get(`${API_URL}/vehicles/maintenance/list?userId=${userID}`, { headers })
+      .then((res) => {
+        setMaintenanceSchedules(res.data);
+        // Filter costly maintenance from the data
+        const costly = res.data
+          .filter((item) => item.cost && item.cost > 5000)
+          .sort((a, b) => (b.cost || 0) - (a.cost || 0))
+          .slice(0, 5);
+        setCostlyMaintenance(costly);
+      })
       .catch(() => {});
-    axios.get(`${API_URL}/vehicles/utilization`, { headers })
-      .then(res => setUtilizationByProject(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/purchase-requests`, { headers })
-      .then(res => setPurchaseRequests(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/maintenance/schedules`, { headers })
-      .then(res => setMaintenanceSchedules(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/inventory/transactions`, { headers })
-      .then(res => setRecentTransactions(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/inventory/storage-utilization`, { headers })
-      .then(res => setStorageUtilization(res.data))
+
+    // Temporary mock data for fuel trends and utilization until endpoints are implemented
+    setFuelTrendData([
+      { name: "Week 1", Truck1: 120, Truck2: 110 },
+      { name: "Week 2", Truck1: 115, Truck2: 105 },
+      { name: "Week 3", Truck1: 125, Truck2: 115 },
+      { name: "Week 4", Truck1: 118, Truck2: 108 },
+    ]);
+
+    setUtilizationByProject([
+      { project: "Site A", utilization: 85 },
+      { project: "Site B", utilization: 72 },
+      { project: "Site C", utilization: 90 },
+      { project: "Depot", utilization: 45 },
+    ]);
+
+    // Purchase requests
+    axios
+      .get(`${API_URL}/purchase-requests`, { headers })
+      .then((res) => setPurchaseRequests(res.data))
       .catch(() => {});
   }, []);
 
@@ -554,11 +720,8 @@ const StoreDashboard = () => {
         defaultValue="overview"
         className="space-y-6 sticky top-0 z-10 bg-background"
       >
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="inventory">Inventory</TabsTrigger>
-          <TabsTrigger value="transfers">Transfers</TabsTrigger>
-          <TabsTrigger value="procurement">Procurement</TabsTrigger>
           {/* <TabsTrigger value="warehouse">Warehouse</TabsTrigger> */}
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger>
@@ -676,11 +839,17 @@ const StoreDashboard = () => {
                               }`}
                             ></div>
                             <div>
-                              <p className="font-medium text-gray-900">{transaction.item}</p>
-                              <p className="text-sm text-gray-600">{transaction.location}</p>
+                              <p className="font-medium text-gray-900">
+                                {transaction.item}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                {transaction.location}
+                              </p>
                             </div>
                           </div>
-                          <span className="text-xs text-gray-500">{transaction.time}</span>
+                          <span className="text-xs text-gray-500">
+                            {transaction.time}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -696,12 +865,17 @@ const StoreDashboard = () => {
                       {storageUtilization.map((storage, index) => (
                         <div key={index}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="font-medium">{storage.location}</span>
+                            <span className="font-medium">
+                              {storage.location}
+                            </span>
                             <span>
                               {storage.utilization}% ({storage.capacity})
                             </span>
                           </div>
-                          <Progress value={storage.utilization} className="h-2" />
+                          <Progress
+                            value={storage.utilization}
+                            className="h-2"
+                          />
                         </div>
                       ))}
                     </div>
@@ -1623,7 +1797,8 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {transfers.filter((t) => t.status === "In Transit")
+                    {transfers
+                      .filter((t) => t.status === "In Transit")
                       .map((transfer) => (
                         <div
                           key={transfer.id}
@@ -1659,7 +1834,8 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {transfers.filter((t) => t.status === "Completed")
+                    {transfers
+                      .filter((t) => t.status === "Completed")
                       .map((transfer) => (
                         <div
                           key={transfer.id}
@@ -1695,7 +1871,8 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {transfers.filter((t) => t.status === "Pending")
+                    {transfers
+                      .filter((t) => t.status === "Pending")
                       .map((transfer) => (
                         <div
                           key={transfer.id}
@@ -2536,14 +2713,17 @@ const StoreDashboard = () => {
 
         <TabsContent value="vehicle-tracking" className="space-y-6">
           {/* Filters */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <Select value={vehicleType} onValueChange={setVehicleType}>
+          <div className="flex flex-wrap gap-4 justify-between items-center mr-4">
+            {/* <Select value={vehicleType} onValueChange={setVehicleType}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Vehicle Type" />
               </SelectTrigger>
               <SelectContent>
                 {vehicleTypes.map((type) => (
-                  <SelectItem key={type.toLowerCase()} value={type.toLowerCase()}>
+                  <SelectItem
+                    key={type.toLowerCase()}
+                    value={type.toLowerCase()}
+                  >
                     {type}
                   </SelectItem>
                 ))}
@@ -2555,7 +2735,10 @@ const StoreDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {projectSites.map((site) => (
-                  <SelectItem key={site.toLowerCase()} value={site.toLowerCase()}>
+                  <SelectItem
+                    key={site.toLowerCase()}
+                    value={site.toLowerCase()}
+                  >
                     {site}
                   </SelectItem>
                 ))}
@@ -2567,23 +2750,26 @@ const StoreDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 {statusOptions.map((status) => (
-                  <SelectItem key={status.toLowerCase()} value={status.toLowerCase()}>
+                  <SelectItem
+                    key={status.toLowerCase()}
+                    value={status.toLowerCase()}
+                  >
                     {status}
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
-
+            </Select> */}
+            <h1 className="text-2xl font-semibold ml-4">Vehicle Status</h1>
             <Button onClick={() => setShowAddVehicleModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Vehicle
             </Button>
-            <div className="ml-auto">
+            {/* <div className="ml-auto">
               <Badge variant="outline">
                 RFID/GPS Sync:{" "}
                 <span className="text-green-600 ml-1">Active</span>
               </Badge>
-            </div>
+            </div> */}
           </div>
           {vehicleSubview === "main" && (
             <>
@@ -2591,21 +2777,31 @@ const StoreDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <StatCard
                   title="Total Active Vehicles"
-                  value="18"
+                  value={(
+                    vehicleKpis?.vehiclesByStatus?.find(
+                      (status: any) => status.status === "ACTIVE"
+                    )?._count?._all || "0"
+                  ).toString()}
                   icon={Truck}
                   description="Currently operational"
                   onClick={() => setVehicleSubview("active")}
                 />
                 <StatCard
-                  title="Vehicles on Site"
-                  value="12"
-                  icon={MapPin}
-                  description="Deployed at sites"
-                  onClick={() => setVehicleSubview("onSite")}
+                  title="Idle Vehicles"
+                  value={
+                    (vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "IDLE")?._count._all?.toString() || "0"
+                  }
+                  icon={PauseCircle}
+                  description="Currently not in use"
+                  onClick={() => setVehicleSubview("idle")}
                 />
                 <StatCard
                   title="Under Maintenance"
-                  value="3"
+                  value={
+                    (vehicleKpis as any)?.vehiclesByStatus
+                      ?.find((status: any) => status.status === "MAINTENANCE")
+                      ?._count._all?.toString() || "0"
+                  }
                   icon={AlertTriangle}
                   description="Currently in workshop"
                   onClick={() => setVehicleSubview("maintenance")}
@@ -2613,75 +2809,29 @@ const StoreDashboard = () => {
               </div>
               {/* All original vehicle tracking tab content below */}
               {/* Vehicle Movement Logs Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Vehicle Movement Logs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="p-2 text-left">Date</th>
-                          <th className="p-2 text-left">Time</th>
-                          <th className="p-2 text-left">From → To</th>
-                          <th className="p-2 text-left">Driver</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {vehicleMovementLogs.map((log, idx) => (
-                          <tr key={idx} className="border-b">
-                            <td className="p-2">{log.date}</td>
-                            <td className="p-2">{log.time}</td>
-                            <td className="p-2">
-                              {log.from} → {log.to}
-                            </td>
-                            <td className="p-2">{log.driver}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-              {/* Fuel Consumption Trend Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Fuel Consumption Trend</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={fuelTrendData}
-                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="Truck1"
-                          stroke="#0ea5e9"
-                          name="Truck 1"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="Truck2"
-                          stroke="#22c55e"
-                          name="Truck 2"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+              <VehicleMovementLogsTable
+                vehicleMovementLogs={vehicleMovementLogs}
+                onRefresh={() =>
+                  fetchVehicleData({
+                    vehicleType,
+                    assignedSite: vehicleSite,
+                    status: vehicleStatus,
+                  })
+                }
+              />
               {/* Maintenance Schedule & History Table */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Maintenance Schedule & History</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Maintenance Schedule & History</CardTitle>
+                  </div>
+                  {/* <Button
+                    onClick={() => handleAddMaintenance('')}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Maintenance
+                  </Button> */}
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -2692,133 +2842,94 @@ const StoreDashboard = () => {
                           <th className="p-2 text-left">Last Serviced</th>
                           <th className="p-2 text-left">Next Due</th>
                           <th className="p-2 text-left">Status</th>
+                          <th className="p-2 text-left">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {maintenanceSchedules.map((row, idx) => (
-                          <tr key={idx} className="border-b">
-                            <td className="p-2">{row.vehicle}</td>
-                            <td className="p-2">{row.last}</td>
-                            <td className="p-2">{row.next}</td>
+                          <tr key={row.id || idx} className="border-b">
+                            <td className="p-2">
+                              {row.Vehicle?.vehicleName || "N/A"}
+                            </td>
+                            <td className="p-2">
+                              {new Date(row.lastServiced).toLocaleDateString()}
+                            </td>
+                            <td className="p-2">
+                              {new Date(row.nextDue).toLocaleDateString()}
+                            </td>
                             <td className="p-2">
                               <Badge
                                 variant={
-                                  row.status === "Overdue"
+                                  row.status === "MAINTENANCE"
                                     ? "destructive"
+                                    : row.status === "ACTIVE"
+                                    ? "default"
                                     : "outline"
                                 }
                               >
                                 {row.status}
                               </Badge>
                             </td>
+                            <td className="p-2">
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditMaintenance(row)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteMaintenance(row.id)
+                                  }
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
                           </tr>
                         ))}
+                        {maintenanceSchedules.length === 0 && (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              className="p-4 text-center text-muted-foreground"
+                            >
+                              No maintenance schedules found
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
-                  </div>
-                </CardContent>
-              </Card>
-              {/* Vehicle Utilization by Project */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Vehicle Utilization by Project</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={utilizationByProject}
-                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="project" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar
-                          dataKey="utilization"
-                          fill="#6366f1"
-                          name="Utilization (%)"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
             </>
           )}
           {vehicleSubview === "active" && (
-            <Card className="shadow-lg">
-              <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle className="text-xl">Total Active Vehicles</CardTitle>
-                <Button
-                  variant="outline"
-                  onClick={() => setVehicleSubview("main")}
-                >
-                  Back to Vehicle Tracking
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-3xl font-bold mb-1">18</div>
-                    <div className="text-sm text-muted-foreground">
-                      Currently active and operational
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="ml-4">
-                    Last updated: Today
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="bg-muted/50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">By Type</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        <li>
-                          <Truck className="inline h-4 w-4 mr-2 text-blue-500" />
-                          Trucks: <span className="font-semibold">8</span>
-                        </li>
-                        <li>
-                          <Truck className="inline h-4 w-4 mr-2 text-green-500" />
-                          Excavators: <span className="font-semibold">5</span>
-                        </li>
-                        <li>
-                          <Truck className="inline h-4 w-4 mr-2 text-yellow-500" />
-                          Cranes: <span className="font-semibold">3</span>
-                        </li>
-                        <li>
-                          <Truck className="inline h-4 w-4 mr-2 text-gray-500" />
-                          Others: <span className="font-semibold">2</span>
-                        </li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-muted/50">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base">By Site</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        <li>
-                          Site A: <span className="font-semibold">6</span>
-                        </li>
-                        <li>
-                          Site B: <span className="font-semibold">5</span>
-                        </li>
-                        <li>
-                          Site C: <span className="font-semibold">4</span>
-                        </li>
-                        <li>
-                          Depot: <span className="font-semibold">3</span>
-                        </li>
-                      </ul>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+          <ActiveVehiclesView 
+          onBack={() => setVehicleSubview("main")}
+          totalActiveCount={(vehicleKpis as any)?.totalVehicles || 0}
+          userId={userID}
+          />
+          )}
+          {vehicleSubview === "idle" && (
+            <IdleVehiclesView 
+              onBack={() => setVehicleSubview("main")}
+              totalIdleCount={(vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "IDLE")?._count._all || 0}
+              userId={userID}
+            />
+          )}
+          {vehicleSubview === "maintenance" && (
+            <MaintenanceVehiclesView 
+              onBack={() => setVehicleSubview("main")}
+              totalMaintenanceCount={(vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "MAINTENANCE")?._count._all || 0}
+              userId={userID}
+            />
           )}
           {vehicleSubview === "onSite" && (
             <Card className="shadow-lg">
@@ -3384,6 +3495,18 @@ const StoreDashboard = () => {
         <AddVehicleModal
           onClose={() => setShowAddVehicleModal(false)}
           onAdd={handleAddVehicle}
+          onSuccess={fetchVehicleData}
+        />
+      )}
+
+      {/* Maintenance Modal */}
+      {showMaintenanceModal && (
+        <MaintenanceModal
+          onClose={() => setShowMaintenanceModal(false)}
+          onSuccess={fetchVehicleData}
+          maintenance={selectedMaintenance}
+          mode={maintenanceModalMode}
+          vehicleId={selectedVehicleForMaintenance}
         />
       )}
 

@@ -51,21 +51,106 @@ export type InventoryItem = {
   updatedAt?: string;
 };
 
-// Invoice type (merged backend and frontend fields)
+// Invoice type (matched to database schema)
 export type Invoice = {
   id: string;
-  clientName?: string;
-  projectId?: string;
-  clientId?: string;
-  amount: number;
+  userId: string;
+  projectId: string;
+  clientId: string;
+  invoiceNumber: string;
+  date: string;
   dueDate: string;
-  sentDate?: string;
-  paymentMethod?: string;
-  status: string;
-  verified?: boolean;
-  paid?: boolean;
+  status: 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+  type: 'STANDARD' | 'MILESTONE' | 'FINAL';
+  applyGst: boolean;
+  applyRetention: boolean;
+  subtotal: number;
+  retentionAmount: number;
+  baseAfterRetention: number;
+  taxAmount: number;
+  total: number;
+  workCompletedPercent?: number;
+  termsAndConditions?: string;
+  internalNotes?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Relations
+  user?: { id: string; name: string };
+  project?: { id: string; name: string };
+  client?: { id: string; name: string };
+  items?: InvoiceItem[];
+  Payment?: Payment[];
+  // Legacy fields for backward compatibility
+  clientName?: string;
+  amount?: number;
+};
+
+export type InvoiceItem = {
+  id: string;
+  invoiceId: string;
+  serialNumber: string;
+  description: string;
+  item: string;
+  unit: 'METER' | 'SQUAREMETER' | 'CUBICMETER' | 'KILOGRAM' | 'TON' | 'PIECES' | 'HOURS' | 'DAYS';
+  quantity: number;
+  rate: number;
+  amount: number;
+};
+
+export type Payment = {
+  id: string;
+  userId: string;
+  paymentType: 'RECEIVE' | 'PAY';
+  postingDate: string;
+  modeOfPayment?: string;
+  partyType: 'CUSTOMER' | 'VENDOR' | 'EMPLOYEE' | 'BANK';
+  party: string;
+  partyName: string;
+  accountPaidTo: string;
+  total: number;
+  companyAddress?: string;
+  customerAddress?: string;
+  placeOfSupply?: string;
+  projectId: string;
+  costCenter?: string;
+  invoiceId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Relations
+  user?: { id: string; name: string };
+  project?: { id: string; name: string };
+  Invoice?: Invoice;
+  taxes?: TaxCharge[];
+};
+
+export type Tax = {
+  id: string;
+  title: string;
+  company: string;
+  taxCategory?: string;
+  userId: string;
+  taxCharges: TaxCharge[];
+  createdAt?: string;
+  updatedAt?: string;
+  // Relations
+  user?: { id: string; name: string };
+};
+
+export type TaxCharge = {
+  id: string;
+  serialNo: number;
+  paymentId?: string;
+  taxId?: string;
+  type: 'TDS' | 'GST' | 'TCS';
+  accountHead: string;
+  taxRate: number;
+  amount: number;
+  total: number;
+  purchaseOrderId?: string;
+  // Relations
+  payment?: Payment;
+  tax?: Tax;
+  PurchaseOrder?: any;
 };
 
 // Employee type (merged backend and frontend fields)

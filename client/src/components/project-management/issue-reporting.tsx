@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Users, Clock, Camera, Plus, CheckCircle } from "lucide-react";
+import { AlertTriangle, Users, Clock, Camera, Plus, CheckCircle, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 
 interface Issue {
   id: string;
@@ -108,54 +109,39 @@ export function IssueReporting({ projectId, siteId }: IssueReportingProps) {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Open Issues</p>
-                <p className="text-2xl font-bold">{issues.filter(i => i.status === 'open').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold">{issues.filter(i => i.status === 'in-progress').length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Resolved Today</p>
-                <p className="text-2xl font-bold">3</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-purple-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Avg Resolution</p>
-                <p className="text-2xl font-bold">6.2h</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <EnhancedStatCard
+          title="Open Issues"
+          value={issues.filter(i => i.status === 'open').length}
+          icon={AlertTriangle}
+          description="Require immediate attention"
+          trend={{ value: -20, label: "vs last week" }}
+          threshold={{ status: 'warning', message: 'Multiple issues need resolution' }}
+        />
+        <EnhancedStatCard
+          title="In Progress"
+          value={issues.filter(i => i.status === 'in-progress').length}
+          icon={Clock}
+          description="Currently being resolved"
+          trend={{ value: 15, label: "increase in activity" }}
+          threshold={{ status: 'good', message: 'Teams actively working on issues' }}
+        />
+        <EnhancedStatCard
+          title="Resolved Today"
+          value="3"
+          icon={CheckCircle}
+          description="Issues closed successfully"
+          trend={{ value: 25, label: "vs yesterday" }}
+          threshold={{ status: 'good', message: 'Excellent resolution rate' }}
+        />
+        <EnhancedStatCard
+          title="Avg Resolution"
+          value="6.2h"
+          icon={TrendingUp}
+          description="Average time to resolve"
+          trend={{ value: -15, label: "improvement" }}
+          threshold={{ status: 'good', message: 'Resolution time improving' }}
+        />
       </div>
 
       {/* View Details Dialog */}
@@ -334,6 +320,22 @@ export function IssueReporting({ projectId, siteId }: IssueReportingProps) {
                     </div>
                   </div>
                   
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="raised-by">Raised By</Label>
+                      <Input id="raised-by" placeholder="Enter name of person reporting" />
+                    </div>
+                    <div>
+                      <Label htmlFor="estimated-resolution">Estimated Resolution</Label>
+                      <Input id="estimated-resolution" placeholder="Enter estimated resolution time" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="assigned-to">Assigned To</Label>
+                    <Input id="assigned-to" placeholder="Enter name of person assigned" />
+                  </div>
+                  
                   <div>
                     <Label htmlFor="title">Issue Title</Label>
                     <Input id="title" placeholder="Brief description of the issue" />
@@ -353,7 +355,7 @@ export function IssueReporting({ projectId, siteId }: IssueReportingProps) {
                     />
                   </div>
                   
-                  <div>
+                  {/* <div>
                     <Label htmlFor="photos">Attach Photos</Label>
                     <div className="flex items-center gap-2">
                       <Input id="photos" type="file" multiple accept="image/*" />
@@ -362,7 +364,7 @@ export function IssueReporting({ projectId, siteId }: IssueReportingProps) {
                         Camera
                       </Button>
                     </div>
-                  </div>
+                  </div> */}
                   
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setIsNewIssueOpen(false)}>

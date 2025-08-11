@@ -13,9 +13,10 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
+import { Checkbox } from "@/components/ui/checkbox";
 // Remove: import { supabase } from "@/lib/supabase";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -47,6 +48,8 @@ const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast(); // Extract token from URL query parameters and validate it
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const inviteToken = params.get("token");
@@ -241,30 +244,92 @@ const Register = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground focus:outline-none"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  className={passwordError ? "border-destructive" : ""}
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className={passwordError ? "border-destructive" : ""}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground focus:outline-none"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 {passwordError && (
                   <p className="text-sm text-destructive">{passwordError}</p>
                 )}
               </div>
+              {password && confirmPassword && (
+                <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card/50">
+                  <div className={`flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all duration-200 ease-in-out ${
+                    password === confirmPassword 
+                      ? "border-green-500 bg-green-500" 
+                      : "border-red-400 bg-red-50"
+                  }`}>
+                    {password === confirmPassword && (
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <span
+                    className={`text-sm font-medium transition-colors duration-200 ${
+                      password === confirmPassword 
+                        ? "text-green-700" 
+                        : "text-red-600"
+                    }`}
+                  >
+                    {password === confirmPassword
+                      ? "Passwords match"
+                      : "Passwords do not match"}
+                  </span>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="role">Role</Label>
                 <Input

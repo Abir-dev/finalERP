@@ -22,7 +22,7 @@ export const prismaInventoryService = {
     return prisma.materialRequest.create({ data });
   },
   async getMaterialRequests(filter: any = {}) {
-    return prisma.materialRequest.findMany({ where: filter, include: { item: true, project: true, requester: true } });
+    return prisma.materialRequest.findMany({ where: filter, include: { items: true, project: true, requester: true } });
   },
   async updateMaterialRequest(id: string, data: Prisma.MaterialRequestUpdateInput) {
     return prisma.materialRequest.update({ where: { id }, data });

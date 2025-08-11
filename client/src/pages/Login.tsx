@@ -13,7 +13,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import axios from "axios";
 
@@ -25,6 +25,7 @@ const Login = () => {
   const { login, isLoading, error } = useUser();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,14 +88,28 @@ const Login = () => {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground focus:outline-none"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>

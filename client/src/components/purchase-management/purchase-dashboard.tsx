@@ -32,6 +32,8 @@ import {
   X,
   Edit,
   Trash2,
+  Star,
+  ChevronDown,
 } from "lucide-react";
 import {
   Table,
@@ -49,35 +51,51 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PurchaseOrderForm } from "./purchase-order-form";
 import axios from "axios";
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+import { Label } from "../ui/label";
+import { Textarea } from "../ui/textarea";
+// import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
+import { AddVendorModal } from "@/components/modals/AddVendorModal";
+import { NewMaterialRequestModal } from "@/components/modals/NewMaterialRequestModal";
+import { EditMaterialRequestModal } from "@/components/modals/EditMaterialRequestModal";
+import { VendorManagement } from "@/components/vendor-management/VendorManagement";
+import { MaterialRequest, MaterialRequestItem } from "@/types/material-request";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
   id: string;
   poNumber: string;
-  vendor: string;
-  items: string;
-  totalAmount: number;
-  orderDate: string;
-  expectedDelivery: string;
-  status: "draft" | "sent" | "acknowledged" | "delivered" | "invoiced" | "paid";
-  priority: "low" | "medium" | "high" | "urgent";
-  project: string;
-}
-
-interface MaterialRequest {
-  id: string;
-  requestNumber: string;
-  requestedBy: string;
-  items: string;
-  quantity: number;
-  unit: string;
-  requestDate: string;
-  requiredDate: string;
-  status: "pending" | "approved" | "ordered" | "delivered";
-  project: string;
-  urgency: "normal" | "urgent" | "emergency";
+  date: string;
+  vendorId: string;
+  Vendor?: {
+    id: string;
+    name: string;
+    email?: string;
+    contact?: string;
+  };
+  requiredBy: string;
+  items: any[];
+  totalQuantity: number;
+  total: number;
+  grandTotal: number;
+  roundedTotal: number;
+  advancePaid: number;
+  taxesAndChargesTotal: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function PurchaseDashboard() {
@@ -85,35 +103,89 @@ export function PurchaseDashboard() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentOrder, setCurrentOrder] = useState<PurchaseOrder | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [showComprehensiveForm, setShowComprehensiveForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<PurchaseOrder | null>(null);
+  const [isLoadingEditData, setIsLoadingEditData] = useState(false);
+  const [showNewVendorModal, setShowNewVendorModal] = useState(false);
+  const [materialRequestToDelete, setMaterialRequestToDelete] = useState<
+    string | null
+  >(null);
+  const [isDeleteRequestDialogOpen, setIsDeleteRequestDialogOpen] =
+    useState(false);
 
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [selectedVendor, setSelectedVendor] = useState<any>(null);
+  const [showVendorDetails, setShowVendorDetails] = useState(false);
+  const [paymentSummary, setPaymentSummary] = useState({
+    received: { count: 0, amount: "₹0" },
+    pending: { count: 0, amount: "₹0" },
+    overdue: { count: 0, amount: "₹0" },
+  });
+
+  const fetchPurchaseOrders = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/purchase-orders`, {
+        headers,
+      });
+      setPurchaseOrders(response.data);
+    } catch (error) {
+      console.error("Error fetching purchase orders:", error);
+    }
+  };
+
+  const fetchPaymentSummary = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      console.log(
+        "Fetching payment summary from:",
+        `${API_URL}/billing/payment-summary`
+      );
+      const response = await axios.get(`${API_URL}/billing/payment-summary`, {
+        headers,
+      });
+      console.log("Payment summary response:", response.data);
+      setPaymentSummary(
+        response.data || {
+          received: { count: 0, amount: "₹0" },
+          pending: { count: 0, amount: "₹0" },
+          overdue: { count: 0, amount: "₹0" },
+        }
+      );
+    } catch (error) {
+      console.error("Error fetching payment summary:", error);
+      console.error("API URL:", API_URL);
+    }
+  };
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/purchase-orders`, { headers })
-      .then(res => setPurchaseOrders(res.data))
-      .catch(() => {});
+    fetchPurchaseOrders();
+    fetchPaymentSummary();
   }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "delivered":
+      case "completed":
       case "approved":
         return "default";
+      case "in_progress":
       case "acknowledged":
-      case "ordered":
         return "secondary";
-      case "sent":
-      case "pending":
+      case "submitted":
+      case "draft":
         return "outline";
-      case "paid":
-        return "default";
+      case "rejected":
+      case "cancelled":
+        return "destructive";
       default:
         return "outline";
     }
@@ -135,49 +207,56 @@ export function PurchaseDashboard() {
   };
 
   const totalOrderValue = purchaseOrders.reduce(
-    (sum, po) => sum + po.totalAmount,
-    0,
+    (sum, po) => sum + po.grandTotal,
+    0
   );
-  const deliveredOrders = purchaseOrders.filter(
-    (po) => po.status === "delivered",
+  const completedOrders = purchaseOrders.filter(
+    (po) => po.advancePaid > 0
   ).length;
-  // Filter purchase orders based on selected filters and search query
+
+  // Filter purchase orders based on search query
   const filteredPurchaseOrders = purchaseOrders.filter((order) => {
-    const matchesStatus =
-      selectedStatus === "all" || order.status === selectedStatus;
-    const matchesPriority =
-      selectedPriority === "all" || order.priority === selectedPriority;
     const matchesSearch =
       searchQuery === "" ||
       order.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.project.toLowerCase().includes(searchQuery.toLowerCase());
+      order.Vendor?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.items.some(
+        (item) =>
+          item.itemCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
 
-    return matchesStatus && matchesPriority && matchesSearch;
+    return matchesSearch;
   });
 
   const handleCreateNewOrder = () => {
-    setCurrentOrder({
-      id: "",
-      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1).toString().padStart(3, "0")}`,
-      vendor: "",
-      items: "",
-      totalAmount: 0,
-      orderDate: new Date().toISOString().split("T")[0],
-      expectedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      status: "draft",
-      priority: "medium",
-      project: "",
-    });
-    setIsDialogOpen(true);
+    setShowComprehensiveForm(true);
   };
 
-  const handleEditOrder = (order: PurchaseOrder) => {
-    setCurrentOrder(order);
-    setIsDialogOpen(true);
+  const handleEditOrder = async (order: PurchaseOrder) => {
+    setIsLoadingEditData(true);
+    setShowEditForm(true);
+    
+    try {
+      // Fetch complete purchase order details from API
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/purchase-orders/${order.id}`, { headers });
+      const fullOrderData = response.data;
+      
+      setEditingOrder(fullOrderData);
+    } catch (error) {
+      console.error("Error fetching purchase order details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch purchase order details",
+        variant: "destructive",
+      });
+      // Fallback to the order data we have
+      setEditingOrder(order);
+    } finally {
+      setIsLoadingEditData(false);
+    }
   };
 
   const handleDeleteOrder = (orderId: string) => {
@@ -185,428 +264,659 @@ export function PurchaseDashboard() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDeleteOrder = () => {
+  const handleDeleteMaterialRequest = (requestId: string) => {
+    setMaterialRequestToDelete(requestId);
+    setIsDeleteRequestDialogOpen(true);
+  };
+
+  const confirmDeleteMaterialRequest = async () => {
+    if (materialRequestToDelete) {
+      try {
+        const token = sessionStorage.getItem("jwt_token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        await axios.delete(
+          `${API_URL}/material/material-requests/${materialRequestToDelete}`,
+          {
+            headers,
+          }
+        );
+        await fetchMaterialRequests();
+        toast({
+          title: "Success",
+          description: "Material request deleted successfully",
+        });
+      } catch (error) {
+        console.error("Error deleting material request:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete material request",
+          variant: "destructive",
+        });
+      }
+    }
+    setIsDeleteRequestDialogOpen(false);
+    setMaterialRequestToDelete(null);
+  };
+  const confirmDeleteOrder = async () => {
     if (orderToDelete) {
-      setPurchaseOrders(
-        purchaseOrders.filter((order) => order.id !== orderToDelete),
-      );
+      try {
+        const token =
+          sessionStorage.getItem("jwt_token") ||
+          localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        await axios.delete(`${API_URL}/purchase-orders/${orderToDelete}`, {
+          headers,
+        });
+
+        setPurchaseOrders(
+          purchaseOrders.filter((order) => order.id !== orderToDelete)
+        );
+
+        toast({
+          title: "Success",
+          description: "Purchase order deleted successfully",
+        });
+      } catch (error) {
+        console.error("Error deleting purchase order:", error);
+        toast({
+          title: "Error",
+          description: "Failed to delete purchase order",
+          variant: "destructive",
+        });
+      }
+
       setIsDeleteDialogOpen(false);
       setOrderToDelete(null);
     }
   };
 
-  const saveOrder = () => {
-    if (!currentOrder) return;
 
-    if (currentOrder.id) {
-      // Update existing order
-      setPurchaseOrders(
-        purchaseOrders.map((order) =>
-          order.id === currentOrder.id ? currentOrder : order,
-        ),
+
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>(
+    []
+  );
+
+  const fetchMaterialRequests = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(
+        `${API_URL}/material/material-requests`,
+        { headers }
       );
-    } else {
-      // Add new order
-      const newOrder = {
-        ...currentOrder,
-        id: `PO${(purchaseOrders.length + 1).toString().padStart(3, "0")}`,
-      };
-      setPurchaseOrders([...purchaseOrders, newOrder]);
+      setMaterialRequests(response.data);
+    } catch (error) {
+      console.error("Error fetching material requests:", error);
     }
-
-    setIsDialogOpen(false);
-    setCurrentOrder(null);
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!currentOrder) return;
-
-    const { name, value } = e.target;
-    setCurrentOrder({
-      ...currentOrder,
-      [name]: value,
-    });
-  };
-
-  const handleSelectChange = (name: keyof PurchaseOrder, value: string) => {
-    if (!currentOrder) return;
-
-    setCurrentOrder({
-      ...currentOrder,
-      [name]: value,
-    });
-  };
-
-  // Remove static array
-  // const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([
-  //   {
-  //     id: "MR001",
-  //     requestNumber: "MR-2024-001",
-  //     requestedBy: "Site Engineer - Team A",
-  //     items: "Steel Rods",
-  //     quantity: 500,
-  //     unit: "kg",
-  //     requestDate: "2024-01-22",
-  //     requiredDate: "2024-01-30",
-  //     status: "approved",
-  //     project: "Commercial Complex",
-  //     urgency: "normal",
-  //   },
-  //   {
-  //     id: "MR002",
-  //     requestNumber: "MR-2024-002",
-  //     requestedBy: "Project Manager",
-  //     items: "RMC M25",
-  //     quantity: 25,
-  //     unit: "cum",
-  //     requestDate: "2024-01-23",
-  //     requiredDate: "2024-01-25",
-  //     status: "pending",
-  //     project: "Residential Towers",
-  //     urgency: "urgent",
-  //   },
-  // ]);
-  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/material-requests`, { headers })
-      .then(res => setMaterialRequests(res.data))
-      .catch(() => {});
+    fetchMaterialRequests();
   }, []);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
-  const [currentRequest, setCurrentRequest] = useState<MaterialRequest | null>(
-    null,
-  );
+  const [isEditRequestDialogOpen, setIsEditRequestDialogOpen] = useState(false);
+  const [currentEditRequest, setCurrentEditRequest] =
+    useState<MaterialRequest | null>(null);
 
   // Update approve/reject/create/update/delete to use backend API
   const handleApproveRequest = async (requestId: string) => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.patch(`${API_URL}/material-requests/${requestId}/approve`, {}, { headers });
-    const res = await axios.get(`${API_URL}/material-requests`, { headers });
-    setMaterialRequests(res.data);
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post(
+        `${API_URL}/material/material-requests/${requestId}/approve`,
+        {},
+        { headers }
+      );
+      await fetchMaterialRequests();
+      toast({
+        title: "Success",
+        description: "Material request approved successfully",
+      });
+    } catch (error) {
+      console.error("Error approving material request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve material request",
+        variant: "destructive",
+      });
+    }
   };
+
   const handleRejectRequest = async (requestId: string) => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    await axios.delete(`${API_URL}/material-requests/${requestId}`, { headers });
-    const res = await axios.get(`${API_URL}/material-requests`, { headers });
-    setMaterialRequests(res.data);
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.post(
+        `${API_URL}/material/material-requests/${requestId}/reject`,
+        {
+          rejectionReason: "Rejected by admin",
+        },
+        { headers }
+      );
+      await fetchMaterialRequests();
+      toast({
+        title: "Success",
+        description: "Material request rejected successfully",
+      });
+    } catch (error) {
+      console.error("Error rejecting material request:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reject material request",
+        variant: "destructive",
+      });
+    }
   };
+
   const handleCreatePOFromRequest = (request: MaterialRequest) => {
     // Create a new PO from the material request
-    const newPO: PurchaseOrder = {
-      id: "",
-      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1).toString().padStart(3, "0")}`,
-      vendor: "", // Will be selected when creating PO
-      items: request.items,
-      totalAmount: 0, // To be calculated
-      orderDate: new Date().toISOString().split("T")[0],
-      expectedDelivery: request.requiredDate,
-      status: "draft",
-      priority: request.urgency === "urgent" ? "high" : "medium",
-      project: request.project,
+    const newPOData = {
+      poNumber: `PO-${new Date().getFullYear()}-${(purchaseOrders.length + 1)
+        .toString()
+        .padStart(3, "0")}`,
+      date: new Date().toISOString().split("T")[0],
+      vendorId: "",
+      requiredBy: request.requiredBy ? new Date(request.requiredBy).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      items: request.items.map((item) => ({
+        id: Date.now().toString() + Math.random(),
+        itemCode: item.itemCode,
+        description: item.itemCode,
+        requiredBy: "",
+        quantity: item.quantity,
+        uom: item.uom,
+        rate: 0,
+        amount: 0,
+      })),
+      totalQuantity: request.items.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      ),
+      total: 0,
+      grandTotal: 0,
+      roundedTotal: 0,
+      advancePaid: 0,
+      taxesAndChargesTotal: 0,
+      setTargetWarehouse: "",
+      vendorAddress: "",
+      vendorContact: "",
+      shippingAddress: "",
+      dispatchAddress: "",
+      companyBillingAddress: "",
+      placeOfSupply: "",
+      paymentTermsTemplate: "",
+      terms: "",
+      roundingAdjustment: 0,
+      userId: "",
+      taxesAndCharges: [],
+      paymentSchedule: [],
     };
 
-    setCurrentOrder(newPO);
-    setIsDialogOpen(true);
-
-    // Update request status to 'ordered'
-    // setMaterialRequests(
-    //   materialRequests.map((mr) =>
-    //     mr.id === request.id ? { ...mr, status: "ordered" } : mr,
-    //   ),
-    // );
+    setEditingOrder(newPOData as any);
+    setShowEditForm(true);
   };
 
-  const handleCreateNewRequest = () => {
-    setCurrentRequest({
-      id: "",
-      requestNumber: `MR-${new Date().getFullYear()}-${(materialRequests.length + 1).toString().padStart(3, "0")}`,
-      requestedBy: "",
-      items: "",
-      quantity: 0,
-      unit: "",
-      requestDate: new Date().toISOString().split("T")[0],
-      requiredDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      status: "pending",
-      project: "",
-      urgency: "normal",
-    });
-    setIsRequestDialogOpen(true);
+  // Remove handleCreateNewRequest and saveRequest for the old modal
+
+  // Add handler for new modal save
+  const handleNewMaterialRequestSave = async (data: any) => {
+    // The modal already makes the API call, so we just need to refresh the list
+    await fetchMaterialRequests();
   };
 
-  const saveRequest = async () => {
-    if (!currentRequest) return;
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    if (currentRequest.id) {
-      await axios.put(`${API_URL}/material-requests/${currentRequest.id}`, currentRequest, { headers });
-    } else {
-      await axios.post(`${API_URL}/material-requests`, currentRequest, { headers });
-    }
-    const res = await axios.get(`${API_URL}/material-requests`, { headers });
-    setMaterialRequests(res.data);
-    setIsRequestDialogOpen(false);
-    setCurrentRequest(null);
+  // Add handler for edit modal
+  const handleEditRequest = (request: MaterialRequest) => {
+    setCurrentEditRequest(request);
+    setIsEditRequestDialogOpen(true);
   };
+
+  const handleEditRequestSave = async () => {
+    await fetchMaterialRequests();
+  };
+
+  console.log("Current paymentSummary state:", paymentSummary);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Purchase Management</CardTitle>
-            <CardDescription>
-              Material procurement, vendor management, and purchase tracking
-            </CardDescription>
+    <div>
+      {/* <CardHeader></CardHeader> */}
+      {/* <CardContent className="mt-6"> */}
+      <Tabs
+        defaultValue="overview"
+        className="space-y-4"
+        onValueChange={setActiveTab}
+      >
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="requests">Material Requests</TabsTrigger>
+          <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
+          {/* <TabsTrigger value="vendors">Vendors</TabsTrigger> */}
+          {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
+          <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Total Orders
+                    </p>
+                    <p className="text-2xl font-bold">
+                      ₹{(totalOrderValue / 100000).toFixed(1)}L
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Completed</p>
+                    <p className="text-2xl font-bold">{completedOrders}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Payments Received
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {paymentSummary.received.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentSummary.received.count} invoices
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Pending Payments
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {paymentSummary.pending.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentSummary.pending.count} invoices
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Overdue Payments
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {paymentSummary.overdue.amount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {paymentSummary.overdue.count} invoices
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          {activeTab === "orders" && (
-            <div className="flex gap-2">
-              <Button onClick={() => setShowComprehensiveForm(true)}>
-                <Plus className="mr-2 h-4 w-4" /> New Purchase Order
-              </Button>
-              <Button onClick={handleCreateNewOrder} variant="outline">
-                <Plus className="mr-2 h-4 w-4" /> Quick Order
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs
-          defaultValue="overview"
-          className="space-y-4"
-          onValueChange={setActiveTab}
-        >
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="requests">Material Requests</TabsTrigger>
-            <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
-            {/* <TabsTrigger value="vendors">Vendors</TabsTrigger> */}
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-4 w-4 text-blue-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Total Orders
-                      </p>
-                      <p className="text-2xl font-bold">
-                        ₹{(totalOrderValue / 100000).toFixed(1)}L
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Delivered</p>
-                      <p className="text-2xl font-bold">{deliveredOrders}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-orange-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Pending Requests
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Urgent Items
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Recent Purchase Orders
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {purchaseOrders.slice(0, 3).map((po) => (
-                      <div
-                        key={po.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h4 className="font-medium">{po.poNumber}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {po.vendor} • {po.items}
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant={getStatusColor(po.status)}>
-                              {po.status}
-                            </Badge>
-                            <Badge variant={getPriorityColor(po.priority)}>
-                              {po.priority}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            ₹{(po.totalAmount / 1000).toFixed(0)}K
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Due: {po.expectedDelivery}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    Pending Material Requests
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {materialRequests.map((mr) => (
-                      <div
-                        key={mr.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <h4 className="font-medium">{mr.requestNumber}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {mr.requestedBy}
-                          </p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant={getStatusColor(mr.status)}>
-                              {mr.status}
-                            </Badge>
-                            <Badge variant={getPriorityColor(mr.urgency)}>
-                              {mr.urgency}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            {mr.quantity} {mr.unit}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Need: {mr.requiredDate}
-                          </p>
-                          {mr.status === "pending" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-1"
-                            >
-                              Approve
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="requests" className="space-y-4">
+          {/* Recent Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Material Requests</CardTitle>
-                    <CardDescription>
-                      Review and approve material requests from site teams
-                    </CardDescription>
-                  </div>
-                  <Button onClick={handleCreateNewRequest}>
-                    <Plus className="mr-2 h-4 w-4" /> New Request
-                  </Button>
-                </div>
+                <CardTitle>Recent Purchase Orders</CardTitle>
+                <CardDescription>Track and manage purchase orders with detailed information</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Request #</TableHead>
-                        <TableHead>Requested By</TableHead>
-                        <TableHead>Items</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Request Date</TableHead>
-                        <TableHead>Required By</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {materialRequests.length > 0 ? (
-                        materialRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell className="font-medium">
-                              {request.requestNumber}
-                            </TableCell>
-                            <TableCell>{request.requestedBy}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {request.items}
+                <div className="space-y-4">
+                  {purchaseOrders.slice(0, 10).map((po) => (
+                    <div key={po.id} className="border rounded-lg">
+                      <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const expanded = document.getElementById(`po-${po.id}`);
+                              if (expanded) {
+                                expanded.style.display = expanded.style.display === 'none' ? 'block' : 'none';
+                              }
+                            }}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <div>
+                            <div className="font-medium">{po.poNumber}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {po.Vendor?.name || "N/A"} • {po.items?.length || 0} item(s)
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-semibold">₹{((po.grandTotal || 0) / 100000).toFixed(1)}L</div>
+                            <div className="text-sm text-muted-foreground">
+                              Due: {new Date(po.requiredBy).toLocaleDateString('en-IN')}
+                            </div>
+                          </div>
+                          <Badge variant={po.advancePaid > 0 ? 'default' : 'secondary'}>
+                            {po.advancePaid > 0 ? 'PAID' : 'PENDING'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div id={`po-${po.id}`} style={{ display: 'none' }} className="border-t bg-muted/50 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Purchase Order Details</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Order Date: {new Date(po.date).toLocaleDateString('en-IN')}</div>
+                              <div>Vendor: {po.Vendor?.name || 'N/A'}</div>
+                              <div>Contact: {po.Vendor?.contact || 'N/A'}</div>
+                              <div>Email: {po.Vendor?.email || 'N/A'}</div>
+                              <div>Total Quantity: {po.totalQuantity || 0}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Amount Breakdown</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Subtotal: ₹{((po.total || 0) / 100000).toFixed(1)}L</div>
+                              <div>Tax Amount: ₹{((po.taxesAndChargesTotal || 0) / 1000).toFixed(0)}K</div>
+                              {po.advancePaid > 0 && (
+                                <div>Advance Paid: ₹{((po.advancePaid || 0) / 1000).toFixed(0)}K</div>
+                              )}
+                              <div className="font-medium border-t pt-1">
+                                Total: ₹{((po.grandTotal || 0) / 100000).toFixed(1)}L
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Purchase Order Items</h4>
+                            <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                              {(po.items || []).length > 0 ? (
+                                (po.items || []).map((item: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>• {item.itemCode || item.description || item.itemName}</span>
+                                    <span>{item.quantity} {item.unit || 'units'}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-muted-foreground">No items listed</div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {purchaseOrders.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>No purchase orders found</p>
+                      <p className="text-sm">Generated purchase orders will appear here</p>
+                    </div>
+                  )}
+                  {purchaseOrders.length > 10 && (
+                    <Button variant="outline" className="w-full">
+                      View All {purchaseOrders.length} Purchase Orders
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Pending Material Requests</CardTitle>
+                <CardDescription>Review and approve material requests with detailed information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {materialRequests.slice(0, 10).map((mr) => (
+                    <div key={mr.id} className="border rounded-lg">
+                      <div className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const expanded = document.getElementById(`mr-${mr.id}`);
+                              if (expanded) {
+                                expanded.style.display = expanded.style.display === 'none' ? 'block' : 'none';
+                              }
+                            }}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <div>
+                            <div className="font-medium">{mr.requestNumber || `REQ-${mr.id?.slice(0, 8)}`}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {mr.requester?.name || "Unknown"} • {mr.purpose || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-semibold">₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 100000).toFixed(1)}L</div>
+                            <div className="text-sm text-muted-foreground">
+                              Need: {mr.requiredBy ? new Date(mr.requiredBy).toLocaleDateString('en-IN') : "Not specified"}
+                            </div>
+                          </div>
+                          <Badge variant={
+                            mr.status === 'APPROVED' ? 'default' :
+                              mr.status === 'REJECTED' ? 'destructive' :
+                                'secondary'
+                          }>
+                            {mr.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div id={`mr-${mr.id}`} style={{ display: 'none' }} className="border-t bg-muted/50 p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Material Request Details</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Request Date: {new Date(mr.transactionDate).toLocaleDateString('en-IN')}</div>
+                              <div>Purpose: {mr.purpose || 'N/A'}</div>
+                              <div>Priority: {mr.priority || 'Normal'}</div>
+                              <div>Department: {mr.department || 'N/A'}</div>
+                              <div>Items Count: {Array.isArray(mr.items) ? mr.items.length : 0}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Cost Breakdown</h4>
+                            <div className="space-y-1 text-sm">
+                              <div>Total Items: {Array.isArray(mr.items) ? mr.items.length : 0}</div>
+                              <div>Est. Amount: ₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 1000).toFixed(0)}K</div>
+                              {Array.isArray(mr.items) && mr.items.length > 0 && (
+                                <div>Avg. Cost/Item: ₹{(mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) / mr.items.length).toFixed(0)}</div>
+                              )}
+                              <div className="font-medium border-t pt-1">
+                                Total: ₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 100000).toFixed(1)}L
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">Material Request Items</h4>
+                            <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                              {Array.isArray(mr.items) && mr.items.length > 0 ? (
+                                mr.items.map((item: MaterialRequestItem, idx: number) => (
+                                  <div key={idx} className="flex justify-between">
+                                    <span>• {item.itemName || item.description}</span>
+                                    <span>{item.quantity} {item.unit || 'units'}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-muted-foreground">No items listed</div>
+                              )}
+                            </div>
+                            {mr.status === "SUBMITTED" && (
+                              <div className="mt-3">
+                                <h5 className="font-medium text-xs mb-1">Actions Available</h5>
+                                <div className="space-y-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleApproveRequest(mr.id)}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleRejectRequest(mr.id)}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {materialRequests.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertTriangle className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>No material requests found</p>
+                      <p className="text-sm">Submitted requests will appear here</p>
+                    </div>
+                  )}
+                  {materialRequests.length > 10 && (
+                    <Button variant="outline" className="w-full">
+                      View All {materialRequests.length} Material Requests
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="requests" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Material Requests</CardTitle>
+                  <CardDescription>
+                    Review and approve material requests from site teams
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setIsRequestDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New Request
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Request #</TableHead>
+                      <TableHead>Requested By</TableHead>
+                      <TableHead>Purpose</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Transaction Date</TableHead>
+                      <TableHead>Required By</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {materialRequests.length > 0 ? (
+                      materialRequests.map((request) => (
+                        <React.Fragment key={request.id}>
+                          <TableRow>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const expanded = document.getElementById(`request-${request.id}`);
+                                    if (expanded) {
+                                      expanded.style.display = expanded.style.display === 'none' ? 'table-row' : 'none';
+                                    }
+                                  }}
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                                <span className="font-medium">{request.requestNumber}</span>
+                              </div>
                             </TableCell>
                             <TableCell>
-                              {request.quantity} {request.unit}
+                              {request.requester?.name || "Unknown"}
                             </TableCell>
-                            <TableCell>{request.requestDate}</TableCell>
-                            <TableCell>{request.requiredDate}</TableCell>
                             <TableCell>
-                              <Badge variant={getStatusColor(request.status)}>
+                              <Badge variant="secondary">{request.purpose}</Badge>
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              {Array.isArray(request.items) && request.items.length > 0 ? (
+                                `${request.items.length} items`
+                              ) : (
+                                "No items"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(
+                                request.transactionDate
+                              ).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {request.requiredBy
+                                ? new Date(
+                                    request.requiredBy
+                                  ).toLocaleDateString()
+                                : "Not specified"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getStatusColor(
+                                  request.status.toLowerCase()
+                                )}
+                              >
                                 {request.status}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant={getPriorityColor(request.urgency)}
-                              >
-                                {request.urgency}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
                               <div className="flex gap-2">
-                                {request.status === "pending" && (
+                                {request.status === "SUBMITTED" && (
                                   <>
                                     <Button
                                       variant="outline"
@@ -628,7 +938,7 @@ export function PurchaseDashboard() {
                                     </Button>
                                   </>
                                 )}
-                                {request.status === "approved" && (
+                                {request.status === "APPROVED" && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -642,458 +952,297 @@ export function PurchaseDashboard() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => {
-                                    setCurrentRequest(request);
-                                    setIsRequestDialogOpen(true);
-                                  }}
+                                  onClick={() => handleEditRequest(request)}
                                 >
                                   <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteMaterialRequest(request.id)
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={9} className="h-24 text-center">
-                            No material requests found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="orders" className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
-              <div className="flex gap-4">
-                <Select
-                  value={selectedStatus}
-                  onValueChange={setSelectedStatus}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="invoiced">Invoiced</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={selectedPriority}
-                  onValueChange={setSelectedPriority}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Priority</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search orders..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                {searchQuery && (
-                  <X
-                    className="absolute right-3 top-3 h-4 w-4 text-muted-foreground cursor-pointer"
-                    onClick={() => setSearchQuery("")}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Purchase Orders Table */}
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>PO Number</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Order Date</TableHead>
-                    <TableHead>Delivery Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPurchaseOrders.length > 0 ? (
-                    filteredPurchaseOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">
-                          {order.poNumber}
-                        </TableCell>
-                        <TableCell>{order.vendor}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {order.items}
-                        </TableCell>
-                        <TableCell>
-                          ₹{(order.totalAmount / 1000).toFixed(0)}K
-                        </TableCell>
-                        <TableCell>{order.orderDate}</TableCell>
-                        <TableCell>{order.expectedDelivery}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getPriorityColor(order.priority)}>
-                            {order.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditOrder(order)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteOrder(order.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <TableRow id={`request-${request.id}`} style={{ display: 'none' }} className="bg-muted/50">
+                            <TableCell colSpan={8}>
+                              <div className="p-4">
+                                <h4 className="font-medium mb-2 text-sm">Material Items</h4>
+                                <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
+                                  {(request.items || []).length > 0 ? (
+                                    (request.items || []).map((item: MaterialRequestItem, idx: number) => (
+                                      <div key={idx} className="border rounded p-3 bg-background">
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Item Code</div>
+                                            <div className="font-medium">{item.itemCode || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Quantity</div>
+                                            <div>{item.quantity || 0}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">UOM</div>
+                                            <div>{item.uom || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Required By</div>
+                                            <div>{request.requiredBy ? new Date(request.requiredBy).toLocaleDateString('en-IN') : 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Targeted Warehouse</div>
+                                            <div>{item.targetedWarehouse || item.warehouse || 'N/A'}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-muted-foreground">No items listed</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                          No material requests found
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
-                        No purchase orders found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+          <NewMaterialRequestModal
+            open={isRequestDialogOpen}
+            onOpenChange={setIsRequestDialogOpen}
+            onSave={handleNewMaterialRequestSave}
+          />{" "}
+          <AlertDialog
+            open={isDeleteRequestDialogOpen}
+            onOpenChange={setIsDeleteRequestDialogOpen}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the
+                  material request{" "}
+                  <span className="font-semibold text-black">
+                    {
+                      materialRequests.find(
+                        (mr) => mr.id === materialRequestToDelete
+                      )?.requestNumber
+                    }
+                  </span>{" "}
+                  and remove all associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={confirmDeleteMaterialRequest}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete Vendor
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </TabsContent>
 
-          {/* <TabsContent value="vendors" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendor Management</CardTitle>
-                <CardDescription>Track vendor performance and relationships</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Steel Corp Ltd', orders: 12, onTimeDelivery: 95, avgRating: 4.5, totalValue: 2500000 },
-                    { name: 'Cement Industries', orders: 8, onTimeDelivery: 88, avgRating: 4.2, totalValue: 1800000 },
-                    { name: 'Hardware Solutions', orders: 15, onTimeDelivery: 92, avgRating: 4.3, totalValue: 950000 }
-                  ].map((vendor) => (
-                    <div key={vendor.name} className="p-4 border rounded-lg">
-                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div>
-                          <h4 className="font-medium">{vendor.name}</h4>
-                          <p className="text-sm text-muted-foreground">{vendor.orders} orders</p>
-                        </div>
-                        
-                        <div>
-                          <p className="text-sm text-muted-foreground">On-Time Delivery</p>
-                          <div className="flex items-center gap-2">
-                            <Progress value={vendor.onTimeDelivery} className="flex-1" />
-                            <span className="text-sm">{vendor.onTimeDelivery}%</span>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <p className="text-sm text-muted-foreground">Rating</p>
-                          <p className="font-medium">{vendor.avgRating}/5.0</p>
-                        </div>
-                        
-                        <div>
-                          <p className="text-sm text-muted-foreground">Total Value</p>
-                          <p className="font-medium">₹{(vendor.totalValue / 100000).toFixed(1)}L</p>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
-                            Contact
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            History
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+        <TabsContent value="orders" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full">
+                <div>
+                  <CardTitle>Purchase Orders</CardTitle>
+                  <CardDescription>
+                    View, filter, and manage all purchase orders in the system
+                  </CardDescription>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent> */}
-
-          <TabsContent value="analytics" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Purchase Trends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      {
-                        category: "Raw Materials",
-                        amount: 850000,
-                        percentage: 45,
-                      },
-                      { category: "Equipment", amount: 450000, percentage: 24 },
-                      { category: "Services", amount: 350000, percentage: 18 },
-                      {
-                        category: "Consumables",
-                        amount: 245000,
-                        percentage: 13,
-                      },
-                    ].map((category) => (
-                      <div key={category.category} className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">
-                            {category.category}
-                          </span>
-                          <span>
-                            ₹{(category.amount / 1000).toFixed(0)}K (
-                            {category.percentage}%)
-                          </span>
-                        </div>
-                        <Progress value={category.percentage} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Cost Savings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">₹2.8L</p>
-                      <p className="text-sm text-muted-foreground">
-                        Total savings this quarter
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      {[
-                        { method: "Bulk Purchasing", savings: 125000 },
-                        { method: "Vendor Negotiations", savings: 95000 },
-                        { method: "Alternative Sourcing", savings: 60000 },
-                      ].map((saving) => (
-                        <div
-                          key={saving.method}
-                          className="flex justify-between items-center"
-                        >
-                          <span className="text-sm">{saving.method}</span>
-                          <span className="font-medium text-green-600">
-                            ₹{(saving.savings / 1000).toFixed(0)}K
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-      {/* Add/Edit Purchase Order Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {currentOrder?.id
-                ? "Edit Purchase Order"
-                : "Create New Purchase Order"}
-            </DialogTitle>
-            <DialogDescription>
-              {currentOrder?.id
-                ? `Update details for ${currentOrder.poNumber}`
-                : "Fill in the details for the new purchase order"}
-            </DialogDescription>
-          </DialogHeader>
-
-          {currentOrder && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="poNumber" className="text-right">
-                  PO Number
-                </label>
-                <Input
-                  id="poNumber"
-                  name="poNumber"
-                  value={currentOrder.poNumber}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  disabled={!!currentOrder.id}
-                />
+                <div className="flex flex-1 gap-4 items-center md:justify-end">
+                  <Select
+                    value={selectedStatus}
+                    onValueChange={setSelectedStatus}
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="acknowledged">Acknowledged</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="invoiced">Invoiced</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/*
+                    <Select
+                      value={selectedPriority}
+                      onValueChange={setSelectedPriority}
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Filter by priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priority</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    */}
+                  <Button onClick={() => setShowComprehensiveForm(true)}>
+                    <Plus className="mr-2 h-4 w-4" /> New Purchase Order
+                  </Button>
+                </div>
               </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="vendor" className="text-right">
-                  Vendor
-                </label>
-                <Input
-                  id="vendor"
-                  name="vendor"
-                  value={currentOrder.vendor}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>PO Number</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Total Amount</TableHead>
+                      <TableHead>Order Date</TableHead>
+                      <TableHead>Required By</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPurchaseOrders.length > 0 ? (
+                      filteredPurchaseOrders.map((order) => (
+                        <React.Fragment key={order.id}>
+                          <TableRow>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const expanded = document.getElementById(`order-${order.id}`);
+                                    if (expanded) {
+                                      expanded.style.display = expanded.style.display === 'none' ? 'table-row' : 'none';
+                                    }
+                                  }}
+                                >
+                                  <ChevronDown className="h-4 w-4" />
+                                </Button>
+                                <span className="font-medium">{order.poNumber}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>{order.Vendor?.name || "N/A"}</TableCell>
+                            <TableCell className="max-w-[200px]">
+                              {order.items && order.items.length > 0 ? (
+                                `${order.items.length} items`
+                              ) : (
+                                "No items"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              ₹{order.grandTotal?.toLocaleString() || "0"}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(order.date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(order.requiredBy).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditOrder(order)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          <TableRow id={`order-${order.id}`} style={{ display: 'none' }} className="bg-muted/50">
+                            <TableCell colSpan={7}>
+                              <div className="p-4">
+                                <h4 className="font-medium mb-2 text-sm">Purchase Items</h4>
+                                <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
+                                  {(order.items || []).length > 0 ? (
+                                    (order.items || []).map((item: any, idx: number) => (
+                                      <div key={idx} className="border rounded p-3 bg-background">
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Item Code</div>
+                                            <div className="font-medium">{item.itemCode || item.description || item.itemName || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Quantity</div>
+                                            <div>{item.quantity || 0}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">UOM</div>
+                                            <div>{item.unit || item.uom || 'N/A'}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Required By</div>
+                                            <div>{new Date(order.requiredBy).toLocaleDateString('en-IN')}</div>
+                                          </div>
+                                          <div>
+                                            <div className="font-medium text-xs text-muted-foreground uppercase">Targeted Warehouse</div>
+                                            <div>{item.warehouse || item.targetedWarehouse || 'N/A'}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="text-muted-foreground">No items listed</div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          No purchase orders found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="items" className="text-right">
-                  Items
-                </label>
-                <Input
-                  id="items"
-                  name="items"
-                  value={currentOrder.items}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
+        <TabsContent value="vendors" className="space-y-6">
+          <VendorManagement />
+        </TabsContent>
+      </Tabs>
+      {/* </CardContent> */}
 
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="totalAmount" className="text-right">
-                  Amount (₹)
-                </label>
-                <Input
-                  id="totalAmount"
-                  name="totalAmount"
-                  type="number"
-                  value={currentOrder.totalAmount}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="orderDate" className="text-right">
-                  Order Date
-                </label>
-                <Input
-                  id="orderDate"
-                  name="orderDate"
-                  type="date"
-                  value={currentOrder.orderDate}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="expectedDelivery" className="text-right">
-                  Expected Delivery
-                </label>
-                <Input
-                  id="expectedDelivery"
-                  name="expectedDelivery"
-                  type="date"
-                  value={currentOrder.expectedDelivery}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="status" className="text-right">
-                  Status
-                </label>
-                <Select
-                  value={currentOrder.status}
-                  onValueChange={(value) => handleSelectChange("status", value)}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="invoiced">Invoiced</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="priority" className="text-right">
-                  Priority
-                </label>
-                <Select
-                  value={currentOrder.priority}
-                  onValueChange={(value) =>
-                    handleSelectChange("priority", value)
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="project" className="text-right">
-                  Project
-                </label>
-                <Input
-                  id="project"
-                  name="project"
-                  value={currentOrder.project}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" onClick={saveOrder}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -1119,213 +1268,6 @@ export function PurchaseDashboard() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isRequestDialogOpen} onOpenChange={setIsRequestDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {currentRequest?.id
-                ? "Edit Material Request"
-                : "Create New Material Request"}
-            </DialogTitle>
-            <DialogDescription>
-              {currentRequest?.id
-                ? `Update details for ${currentRequest.requestNumber}`
-                : "Fill in the details for the new material request"}
-            </DialogDescription>
-          </DialogHeader>
-
-          {currentRequest && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requestNumber" className="text-right">
-                  Request #
-                </label>
-                <Input
-                  id="requestNumber"
-                  name="requestNumber"
-                  value={currentRequest.requestNumber}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requestNumber: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                  disabled={!!currentRequest.id}
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requestedBy" className="text-right">
-                  Requested By
-                </label>
-                <Input
-                  id="requestedBy"
-                  name="requestedBy"
-                  value={currentRequest.requestedBy}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requestedBy: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="items" className="text-right">
-                  Items
-                </label>
-                <Input
-                  id="items"
-                  name="items"
-                  value={currentRequest.items}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      items: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="quantity" className="text-right">
-                  Quantity
-                </label>
-                <div className="col-span-3 flex gap-2">
-                  <Input
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    value={currentRequest.quantity}
-                    onChange={(e) =>
-                      setCurrentRequest({
-                        ...currentRequest,
-                        quantity: Number(e.target.value),
-                      })
-                    }
-                    className="w-3/4"
-                  />
-                  <Select
-                    value={currentRequest.unit}
-                    onValueChange={(value) =>
-                      setCurrentRequest({ ...currentRequest, unit: value })
-                    }
-                  >
-                    <SelectTrigger className="w-1/4">
-                      <SelectValue placeholder="Unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kg">kg</SelectItem>
-                      <SelectItem value="g">g</SelectItem>
-                      <SelectItem value="cum">cum</SelectItem>
-                      <SelectItem value="l">l</SelectItem>
-                      <SelectItem value="m">m</SelectItem>
-                      <SelectItem value="pcs">pcs</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requestDate" className="text-right">
-                  Request Date
-                </label>
-                <Input
-                  id="requestDate"
-                  name="requestDate"
-                  type="date"
-                  value={currentRequest.requestDate}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requestDate: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="requiredDate" className="text-right">
-                  Required By
-                </label>
-                <Input
-                  id="requiredDate"
-                  name="requiredDate"
-                  type="date"
-                  value={currentRequest.requiredDate}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      requiredDate: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="project" className="text-right">
-                  Project
-                </label>
-                <Input
-                  id="project"
-                  name="project"
-                  value={currentRequest.project}
-                  onChange={(e) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      project: e.target.value,
-                    })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label htmlFor="urgency" className="text-right">
-                  Urgency
-                </label>
-                <Select
-                  value={currentRequest.urgency}
-                  onValueChange={(value) =>
-                    setCurrentRequest({
-                      ...currentRequest,
-                      urgency: value as any,
-                    })
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Select urgency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsRequestDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" onClick={saveRequest}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Comprehensive Purchase Order Form Dialog */}
       <Dialog
         open={showComprehensiveForm}
@@ -1336,10 +1278,104 @@ export function PurchaseDashboard() {
             <DialogTitle>Purchase Order</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6">
-            <PurchaseOrderForm />
+            <PurchaseOrderForm
+              onSuccess={() => {
+                fetchPurchaseOrders();
+                setShowComprehensiveForm(false);
+              }}
+            />
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+
+      {/* Edit Purchase Order Form Dialog */}
+      <Dialog
+        open={showEditForm}
+        onOpenChange={(open) => {
+          setShowEditForm(open);
+          if (!open) {
+            setEditingOrder(null);
+            setIsLoadingEditData(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-y-auto p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle>Edit Purchase Order</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            {isLoadingEditData ? (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p>Loading purchase order details...</p>
+                </div>
+              </div>
+            ) : editingOrder ? (
+              <PurchaseOrderForm
+                isEditing={true}
+                initialData={{
+                  id: editingOrder.id,
+                  poNumber: editingOrder.poNumber,
+                  date: editingOrder.date ? new Date(editingOrder.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                  vendorId: editingOrder.vendorId,
+                  requiredBy: editingOrder.requiredBy ? new Date(editingOrder.requiredBy).toISOString().split('T')[0] : "",
+                  setTargetWarehouse: editingOrder.setTargetWarehouse || "",
+                  vendorAddress: editingOrder.vendorAddress || editingOrder.Vendor?.location || "",
+                  vendorContact: editingOrder.vendorContact || editingOrder.Vendor?.contact || editingOrder.Vendor?.email || "",
+                  shippingAddress: editingOrder.shippingAddress || "",
+                  dispatchAddress: editingOrder.dispatchAddress || "",
+                  companyBillingAddress: editingOrder.companyBillingAddress || "",
+                  placeOfSupply: editingOrder.placeOfSupply || "",
+                  paymentTermsTemplate: editingOrder.paymentTermsTemplate || "",
+                  terms: editingOrder.terms || "",
+                  totalQuantity: editingOrder.totalQuantity || 0,
+                  total: editingOrder.total || 0,
+                  grandTotal: editingOrder.grandTotal || 0,
+                  roundingAdjustment: editingOrder.roundingAdjustment || 0,
+                  roundedTotal: editingOrder.roundedTotal || 0,
+                  advancePaid: editingOrder.advancePaid || 0,
+                  taxesAndChargesTotal: editingOrder.taxesAndChargesTotal || 0,
+                  userId: editingOrder.userId || "",
+                  items: editingOrder.items || [],
+                  taxesAndCharges: editingOrder.taxesAndCharges || [],
+                  paymentSchedule: editingOrder.paymentSchedule || [],
+                }}
+                onSuccess={() => {
+                  fetchPurchaseOrders();
+                  setShowEditForm(false);
+                  setEditingOrder(null);
+                }}
+              />
+            ) : (
+              <div className="flex items-center justify-center p-8">
+                <p>No purchase order data available</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Material Request Modal */}
+      <NewMaterialRequestModal
+        open={isRequestDialogOpen}
+        onOpenChange={setIsRequestDialogOpen}
+        onSave={handleNewMaterialRequestSave}
+      />
+
+      {/* Edit Material Request Modal */}
+      <EditMaterialRequestModal
+        open={isEditRequestDialogOpen}
+        onOpenChange={setIsEditRequestDialogOpen}
+        materialRequest={currentEditRequest}
+        onSave={handleEditRequestSave}
+      />
+
+      {/* Add Vendor Modal */}
+      <AddVendorModal
+        open={showNewVendorModal}
+        onOpenChange={setShowNewVendorModal}
+      />
+    </div>
   );
 }

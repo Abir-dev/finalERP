@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/components/ui/use-toast";
@@ -37,6 +38,13 @@ interface Project {
     date: string;
     completed: boolean;
   }>;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 const StatCard = ({ title, value, icon: Icon, trend, onClick = undefined }) => (
@@ -453,6 +461,11 @@ const Projects = () => {
   const [editMilestones, setEditMilestones] = useState([]);
   const [editSpent, setEditSpent] = useState(0);
   
+  // Data for dropdowns
+  const [clients, setClients] = useState<User[]>([]);
+  const [managers, setManagers] = useState<User[]>([]);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  
   // Add subview state management
   const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus' | 'dprSubmissions'>('main');
   const [newProject, setNewProject] = useState<Partial<Project>>({
@@ -465,11 +478,11 @@ const Projects = () => {
     deadline: '',
     location: '',
     manager: '',
-    designDate: '',
-    foundationDate: '',
-    structureDate: '',
-    interiorDate: '',
-    finalDate: ''
+    // designDate: '',
+    // foundationDate: '',
+    // structureDate: '',
+    // interiorDate: '',
+    // finalDate: ''
   });
 
   const filteredProjects = projects.filter(
@@ -619,12 +632,126 @@ const downloadTextFile = (content: string, filename: string) => {
 
   const [heatmapProjects, setHeatmapProjects] = useState([]);
 
+  // Helper function to get auth token
+  const getToken = () => {
+    return sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+  };
+
+  // Fetch users for clients and managers
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/users`, {
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+        },
+      });
+      if (response.data) {
+        // Filter clients (role === "client")
+        const clientUsers = response.data.filter((user: User) => user.role === 'client');
+        setClients(clientUsers);
+        
+        // Filter managers (roles that can manage projects)
+        const managerUsers = response.data.filter((user: User) => 
+          ['admin', 'md', 'client_manager', 'site'].includes(user.role)
+        );
+        setManagers(managerUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Function to create project
+  const createProject = async () => {
+    if (!newProject.name || !newProject.client) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in project name and client",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingProject(true);
+    try {
+      const projectData = {
+        name: newProject.name,
+        clientId: newProject.client, // This should be the client ID
+        startDate: new Date().toISOString(),
+        endDate: newProject.deadline ? new Date(newProject.deadline).toISOString() : new Date(Date.now() + 365*24*60*60*1000).toISOString(),
+        status: newProject.status || 'active',
+        // Optional fields based on your form
+        ...(newProject.location && { location: newProject.location }),
+        ...(newProject.budget && { budget: newProject.budget }),
+        ...(projectType && { projectType }),
+      };
+
+      const response = await axios.post(`${API_URL}/projects`, projectData, {
+        headers: {
+          'Authorization': `Bearer ${getToken()}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.data) {
+        // Refresh projects list
+        fetchProjects();
+        
+        // Reset form
+        setNewProject({
+          name: '',
+          client: '',
+          status: 'Planning',
+          progress: 0,
+          budget: 0,
+          spent: 0,
+          deadline: '',
+          location: '',
+          manager: '',
+        });
+        setProjectType('');
+        
+        toast({
+          title: "Project Created",
+          description: `${response.data.name} has been created successfully`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create project. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingProject(false);
+    }
+  };
+
+  // Function to fetch projects
+  const fetchProjects = async () => {
+    try {
+      const token = getToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/projects`, { headers });
+      setProjects(response.data);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    fetchProjects();
+    fetchUsers();
+    
+    // Fetch heatmap data if needed
+    const token = getToken();
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/projects`, { headers })
-      .then(res => setProjects(res.data))
-      .catch(() => {});
     axios.get(`${API_URL}/projects/activity`, { headers })
       .then(res => setHeatmapProjects(res.data))
       .catch(() => {});
@@ -676,13 +803,22 @@ const downloadTextFile = (content: string, filename: string) => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="client">Client</Label>
-                      <Input 
-                        id="client" 
-                        placeholder="Enter client name"
-                        value={newProject.client || ''}
-                        onChange={(e) => setNewProject({...newProject, client: e.target.value})}
-                      />
+                      <Label htmlFor="client">Client *</Label>
+                      <Select 
+                        value={newProject.client || ''} 
+                        onValueChange={(value) => setNewProject({...newProject, client: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name} ({client.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="budget">Budget (₹)</Label>
@@ -698,7 +834,7 @@ const downloadTextFile = (content: string, filename: string) => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
+                      <Label htmlFor="location">Location *</Label>
                       <Input 
                         id="location" 
                         placeholder="Enter project location"
@@ -708,17 +844,26 @@ const downloadTextFile = (content: string, filename: string) => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="manager">Project Manager</Label>
-                      <Input 
-                        id="manager" 
-                        placeholder="Assign project manager"
-                        value={newProject.manager || ''}
-                        onChange={(e) => setNewProject({...newProject, manager: e.target.value})}
-                      />
+                      <Select 
+                        value={newProject.manager || ''} 
+                        onValueChange={(value) => setNewProject({...newProject, manager: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a project manager" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {managers.map((manager) => (
+                            <SelectItem key={manager.id} value={manager.id}>
+                              {manager.name} ({manager.role})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="deadline">Project Deadline</Label>
+                    <Label htmlFor="deadline">Project Deadline *</Label>
                     <Input 
                       id="deadline" 
                       type="date"
@@ -760,7 +905,8 @@ const downloadTextFile = (content: string, filename: string) => {
                   </div>
                 </div>
 
-                {/* Key Milestones Section */}
+                {/* Key Milestones Section - Commented out for now */}
+                {/* 
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold border-b pb-2">Key Milestones</h3>
                   <div className="space-y-2">
@@ -788,57 +934,13 @@ const downloadTextFile = (content: string, filename: string) => {
                     ))}
                   </div>
                 </div>
+                */}
               </div>
               
               <DialogFooter className="pt-4 border-t">
                 <Button 
                   variant="outline" 
-                  onClick={() => setNewProject({
-                    name: '',
-                    client: '',
-                    status: 'Planning',
-                    progress: 0,
-                    budget: 0,
-                    spent: 0,
-                    deadline: '',
-                    location: '',
-                    manager: '',
-                    designDate: '',
-                    foundationDate: '',
-                    structureDate: '',
-                    interiorDate: '',
-                    finalDate: ''
-                  })}
-                >
-                  Clear
-                </Button>
-                <Button 
                   onClick={() => {
-                    // Create the new project object
-                    const projectToAdd: Project = {
-                      id: projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1,
-                      name: newProject.name || '',
-                      client: newProject.client || '',
-                      status: newProject.status || 'Planning',
-                      progress: newProject.progress || 0,
-                      budget: newProject.budget || 0,
-                      spent: newProject.spent || 0,
-                      deadline: newProject.deadline || '',
-                      location: newProject.location || '',
-                      manager: newProject.manager || '',
-                      milestones: [
-                        { name: 'Design Approval', date: newProject.designDate || '', completed: false },
-                        { name: 'Foundation Complete', date: newProject.foundationDate || '', completed: false },
-                        { name: 'Structure Complete', date: newProject.structureDate || '', completed: false },
-                        { name: 'Interior Work', date: newProject.interiorDate || '', completed: false },
-                        { name: 'Final Inspection', date: newProject.finalDate || newProject.deadline || '', completed: false }
-                      ]
-                    };
-                    
-                    // Add to projects list
-                    setProjects([...projects, projectToAdd]);
-                    
-                    // Reset form
                     setNewProject({
                       name: '',
                       client: '',
@@ -849,24 +951,29 @@ const downloadTextFile = (content: string, filename: string) => {
                       deadline: '',
                       location: '',
                       manager: '',
-                      designDate: '',
-                      foundationDate: '',
-                      structureDate: '',
-                      interiorDate: '',
-                      finalDate: ''
                     });
-                    
-                    // Show success message
-                    toast({
-                      title: "Project Created",
-                      description: `${projectToAdd.name} has been added to your projects`,
-                    });
+                    setProjectType('');
                   }}
-                  disabled={!newProject.name || !newProject.client}
+                  disabled={isCreatingProject}
+                >
+                  Clear
+                </Button>
+                <Button 
+                  onClick={createProject}
+                  disabled={!newProject.name || !newProject.client || !newProject.location || !newProject.deadline || isCreatingProject}
                   className="flex-1"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Project
+                  {isCreatingProject ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Project
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -995,7 +1102,7 @@ const downloadTextFile = (content: string, filename: string) => {
                             <span className="text-xs w-9 text-right">{project.progress}%</span>
                           </div>
                         </td>
-                        <td className="p-4 align-middle">₹{project.budget.toLocaleString()}</td>
+                        <td className="p-4 align-middle">₹{(project.budget || 0).toLocaleString()}</td>
                         <td className="p-4 align-middle">{project.location}</td>
                       </tr>
                     ))}
@@ -1100,7 +1207,7 @@ const downloadTextFile = (content: string, filename: string) => {
                           <span className="text-sm text-muted-foreground">{project.deadline}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Budget: ₹{project.spent.toLocaleString()} / ₹{project.budget.toLocaleString()}
+                          Budget: ₹{(project.spent || 0).toLocaleString()} / ₹{(project.budget || 0).toLocaleString()}
                         </div>
                       </div>
 

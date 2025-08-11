@@ -15,8 +15,8 @@ router.put('/:id', authenticateUser, checkRole('md'), validateTender, tenderCont
 router.delete('/:id', authenticateUser, checkRole('admin'), tenderController.deleteTender);
 
 // Bid management
-router.post('/:id/bids', authenticateUser, checkRole(UserRole.client_manager), validateBid, tenderController.createBid);
+router.post('/:id/bids', authenticateUser, checkRole('client-manager'), validateBid, tenderController.createBid);
 router.get('/:id/bids', authenticateUser, tenderController.listBids);
-router.put('/:id/bids/:bidId', authenticateUser, checkRole(UserRole.client_manager), validateBid, tenderController.updateBid);
+router.put('/:id/bids/:bidId', authenticateUser, checkRole('client-manager'), validateBid, tenderController.updateBid);
 
 export default router; 

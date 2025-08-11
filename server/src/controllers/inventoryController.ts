@@ -100,7 +100,7 @@ export const inventoryController = {
     try {
       const request = await prismaInventoryService.updateMaterialRequest(req.params.id, req.body);
       // If approved, notify requester
-      if (request.status === 'approved') {
+      if (request.status === 'APPROVED') {
         await prismaNotificationService.createNotification({
           to: request.requestedBy,
           type: 'material-request-approved',

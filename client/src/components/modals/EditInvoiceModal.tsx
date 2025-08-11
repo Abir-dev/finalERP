@@ -17,6 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Invoice {
   id: string;
@@ -38,6 +41,8 @@ interface EditInvoiceModalProps {
 
 const EditInvoiceModal = ({ invoice, isOpen, onClose, onSave }: EditInvoiceModalProps) => {
   const [editedInvoice, setEditedInvoice] = React.useState<Invoice | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setEditedInvoice(invoice);
@@ -45,10 +50,45 @@ const EditInvoiceModal = ({ invoice, isOpen, onClose, onSave }: EditInvoiceModal
 
   if (!editedInvoice) return null;
 
-  const handleSave = () => {
-    if (editedInvoice) {
-      onSave(editedInvoice);
-      onClose();
+  const handleSave = async () => {
+    if (!editedInvoice) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/billing/invoices/${editedInvoice.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup")}`
+        },
+        body: JSON.stringify(editedInvoice)
+      });
+
+      if (response.ok) {
+        const updatedInvoice = await response.json();
+        onSave(updatedInvoice);
+        toast({
+          title: "Success",
+          description: "Invoice updated successfully"
+        });
+        onClose();
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Error",
+          description: errorData.message || "Failed to update invoice",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update invoice",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,7 +196,9 @@ const EditInvoiceModal = ({ invoice, isOpen, onClose, onSave }: EditInvoiceModal
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save Changes</Button>
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
