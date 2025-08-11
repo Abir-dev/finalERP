@@ -182,6 +182,7 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...headers
         },
         body: JSON.stringify(issueData),
       });
@@ -238,6 +239,9 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
         setSelectedIssue(updatedIssue);
       }
 
+      // Refetch all issues to ensure we have the latest data
+      await fetchIssues();
+
       toast.success('Resolution started successfully!');
     } catch (error) {
       console.error('Error starting resolution:', error);
@@ -267,6 +271,9 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
       if (selectedIssue && selectedIssue.id === issueId) {
         setSelectedIssue(updatedIssue);
       }
+
+      // Refetch all issues to ensure we have the latest data
+      await fetchIssues();
 
       toast.success('Issue marked as resolved!');
     } catch (error) {
@@ -398,7 +405,7 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
                   <Label className="text-muted-foreground">Assigned To</Label>
                   <p className="font-medium mt-1">
                     {selectedIssue.assignedTo 
-                      ? `${selectedIssue.assignedTo.name}`
+                      ? `${selectedIssue.assignedTo.name || `${selectedIssue.assignedTo.firstName} ${selectedIssue.assignedTo.lastName}`}`
                       : 'Unassigned'}
                   </p>
                 </div>
@@ -678,7 +685,7 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
                           <p className="text-muted-foreground">Assigned to:</p>
                           <p className="font-medium">
                             {issue.assignedTo 
-                              ? `${issue.assignedTo.name}`
+                              ? `${issue.assignedTo.name || `${issue.assignedTo.firstName} ${issue.assignedTo.lastName}`}`
                               : 'Unassigned'}
                           </p>
                           {issue.estimatedResolutionTime && (

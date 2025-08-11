@@ -54,20 +54,48 @@ export const prismaSiteOpsService = {
 
   // Issue Report
   async createIssueReport(data: any) {
-    return prisma.issueReport.create({ data });
+    return prisma.issueReport.create({ 
+      data,
+      include: {
+        assignedTo: true,
+        createdBy: true
+      }
+    });
   },
   async getIssueReports(filter: any = {}, userID: string) {
     const { userId, ...validFilter } = filter;
-    return prisma.issueReport.findMany({ where: {
-      createdById: userID as string,
-      ...validFilter
-    } });
+    return prisma.issueReport.findMany({ 
+      where: {
+        createdById: userID as string,
+        ...validFilter
+      },
+      include: {
+        assignedTo: true,
+        createdBy: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
   },
   async getIssueReportById(id: string) {
-    return prisma.issueReport.findUnique({ where: { id } });
+    return prisma.issueReport.findUnique({ 
+      where: { id },
+      include: {
+        assignedTo: true,
+        createdBy: true
+      }
+    });
   },
   async updateIssueReport(id: string, data: any) {
-    return prisma.issueReport.update({ where: { id }, data });
+    return prisma.issueReport.update({ 
+      where: { id }, 
+      data,
+      include: {
+        assignedTo: true,
+        createdBy: true
+      }
+    });
   },
   async deleteIssueReport(id: string) {
     return prisma.issueReport.delete({ where: { id } });
