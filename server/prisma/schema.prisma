@@ -51,6 +51,8 @@ model User {
   createdIssues       IssueReport[]     @relation("IssueCreator")
   assignedIssues      IssueReport[]     @relation("IssueAssignments")
   Vehicle             Vehicle[]         @relation("VehicleCreator")
+  Inventory           Inventory[]       @relation("InventoryCreator")
+  
 
   @@map("users")
 }
@@ -196,14 +198,23 @@ model Payment {
   invoiceId String   @db.Uuid
 }
 
-model InventoryItem {
-  id        String            @id @default(uuid()) @db.Uuid
-  name      String
-  quantity  Int
-  unit      String
-  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  requests  MaterialRequest[]
+model Inventory {
+  id                  String            @id @default(uuid()) @db.Uuid
+  itemName            String
+  category            InventoryCategory
+  quantity            Int
+  unit                Unit
+  location            String
+  reorderLevel        Int
+  maximumStock        Int
+  safetyStock         Int
+  primarySupplierName String
+  unitCost            Int
+  createdById         String            @map("created_by_id") @db.Uuid
+  createdBy           User              @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  requests            MaterialRequest[]
 }
 
 model MaterialRequest {
@@ -229,7 +240,7 @@ model MaterialRequest {
   items           MaterialRequestItem[]
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  InventoryItem   InventoryItem?         @relation(fields: [inventoryItemId], references: [id])
+  InventoryItem   Inventory?             @relation(fields: [inventoryItemId], references: [id])
   inventoryItemId String?                @db.Uuid
 
   @@map("material_requests")
@@ -712,4 +723,15 @@ enum IssueStatus {
   OPEN
   IN_PROGRESS @map("in-progress")
   RESOLVED
+}
+
+enum InventoryCategory {
+  CONSTRUCTION_MATERIALS
+  TOOLS_AND_EQUIPMENT
+  SAFETY_EQUIPMENT
+  ELECTRICAL_COMPONENTS
+  PLUMBING_MATERIALS
+  HVAC_EQUIPMENT
+  FINISHING_MATERIALS
+  HARDWARE_AND_FASTENERS
 }
