@@ -38,9 +38,10 @@ interface Vehicle {
 interface IdleVehiclesViewProps {
   onBack: () => void;
   totalIdleCount: number;
+  userId: string;
 }
 
-const IdleVehiclesView: React.FC<IdleVehiclesViewProps> = ({ onBack, totalIdleCount }) => {
+const IdleVehiclesView: React.FC<IdleVehiclesViewProps> = ({ onBack, totalIdleCount, userId }) => {
   const [idleVehicles, setIdleVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -55,7 +56,7 @@ const IdleVehiclesView: React.FC<IdleVehiclesViewProps> = ({ onBack, totalIdleCo
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       // Fetch all vehicles and filter for idle ones based on maintenance status
-      const response = await axios.get(`${API_URL}/vehicles`, { headers });
+      const response = await axios.get(`${API_URL}/vehicles?userId=${userId}`, { headers });
       const allVehicles = response.data || [];
       
       // Filter vehicles that are currently idle (have IDLE maintenance status)

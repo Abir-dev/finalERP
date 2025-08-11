@@ -54,9 +54,13 @@ export const vehicleController = {
 
   async getVehicles(req: Request, res: Response) {
     try {
-      const { vehicleType, assignedSite, status, search } = req.query;
+      const { vehicleType, assignedSite, status, search, userId } = req.query;
       
       const where: any = {};
+      
+      if (userId) {
+        where.createdById = userId as string;
+      }
       
       if (vehicleType && vehicleType !== "All") {
         where.vehicleName = { contains: vehicleType as string };
@@ -224,11 +228,16 @@ export const vehicleController = {
 
   async getVehicleMovements(req: Request, res: Response) {
     try {
-      const { vehicleId } = req.query;
+      const { vehicleId, userId } = req.query;
       
       const where: any = {};
       if (vehicleId) {
         where.vehicleId = vehicleId as string;
+      }
+      if (userId) {
+        where.Vehicle = {
+          createdById: userId as string
+        };
       }
 
       const movements = await prisma.vehicleMovement.findMany({
@@ -341,7 +350,7 @@ export const vehicleController = {
 
   async getMaintenanceRecords(req: Request, res: Response) {
     try {
-      const { vehicleId, status } = req.query;
+      const { vehicleId, status, userId } = req.query;
       
       const where: any = {};
       if (vehicleId) {
@@ -349,6 +358,11 @@ export const vehicleController = {
       }
       if (status && status !== "All") {
         where.status = status as VehicleStatus;
+      }
+      if (userId) {
+        where.Vehicle = {
+          createdById: userId as string
+        };
       }
 
       const maintenanceRecords = await prisma.maintenance.findMany({
@@ -429,11 +443,20 @@ export const vehicleController = {
   // Dashboard Analytics
   async getVehicleAnalytics(req: Request, res: Response) {
     try {
-      const totalVehicles = await prisma.vehicle.count();
+      const { userId } = req.query;
+      
+      const where =  { createdById: userId as string };
+      
+      const totalVehicles = await prisma.vehicle.count({ where });
       
       // Get vehicles by current maintenance status
       const vehiclesByStatus = await prisma.maintenance.groupBy({
         by: ['status'],
+        where: userId ? {
+          Vehicle: {
+            createdById: userId as string
+          }
+        } : {},
         _count: {
           _all: true
         }
@@ -442,6 +465,7 @@ export const vehicleController = {
       // Get all vehicles by site (for total count per site)
       const allVehiclesBySite = await prisma.vehicle.groupBy({
         by: ['assignedSite'],
+        where,
         _count: {
           _all: true
         }
@@ -450,6 +474,7 @@ export const vehicleController = {
       // Get only active vehicles by site (for active vehicles on site count)
       const activeVehiclesBySite = await prisma.vehicle.findMany({
         where: {
+          ...where,
           maintenanceHistory: {
             some: {
               status: 'ACTIVE'
@@ -473,6 +498,11 @@ export const vehicleController = {
       }));
 
       const recentMovements = await prisma.vehicleMovement.findMany({
+        where: userId ? {
+          Vehicle: {
+            createdById: userId as string
+          }
+        } : {},
         take: 10,
         orderBy: { date: 'desc' },
         include: {
@@ -486,7 +516,12 @@ export const vehicleController = {
         where: {
           nextDue: {
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
-          }
+          },
+          ...(userId && {
+            Vehicle: {
+              createdById: userId as string
+            }
+          })
         },
         include: {
           Vehicle: {

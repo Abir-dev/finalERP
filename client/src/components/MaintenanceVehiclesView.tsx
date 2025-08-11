@@ -38,9 +38,10 @@ interface Vehicle {
 interface MaintenanceVehiclesViewProps {
   onBack: () => void;
   totalMaintenanceCount: number;
+  userId: string;
 }
 
-const MaintenanceVehiclesView: React.FC<MaintenanceVehiclesViewProps> = ({ onBack, totalMaintenanceCount }) => {
+const MaintenanceVehiclesView: React.FC<MaintenanceVehiclesViewProps> = ({ onBack, totalMaintenanceCount, userId }) => {
   const [maintenanceVehicles, setMaintenanceVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -55,7 +56,7 @@ const MaintenanceVehiclesView: React.FC<MaintenanceVehiclesViewProps> = ({ onBac
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       // Fetch all vehicles and filter for maintenance ones based on maintenance status
-      const response = await axios.get(`${API_URL}/vehicles`, { headers });
+      const response = await axios.get(`${API_URL}/vehicles?userId=${userId}`, { headers });
       const allVehicles = response.data || [];
       
       // Filter vehicles that are currently under maintenance (have MAINTENANCE maintenance status)

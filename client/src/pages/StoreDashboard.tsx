@@ -262,6 +262,8 @@ const StoreDashboard = () => {
   const [storageUtilization, setStorageUtilization] = useState([]);
 
   const { toast } = useToast();
+  const { user } = useUser();
+  const userID: string = user?.id || "";
 
   const [inventory, setInventory] = useState<any[]>([]);
   const [stockData, setStockData] = useState<any[]>([]);
@@ -423,26 +425,32 @@ const StoreDashboard = () => {
       if (filters?.status && filters.status !== "all") {
         params.append("status", filters.status);
       }
+      // Always include userId for scoped vehicle queries
+      if (userID) {
+        params.append("userId", userID);
+      }
 
       // Fetch updated vehicle analytics
       const analyticsResponse = await axios.get(
-        `${API_URL}/vehicles/analytics`,
+        `${API_URL}/vehicles/analytics?userId=${userID}`,
         { headers },
       );
       setVehicleKpis(analyticsResponse.data);
       setTopVehicles(analyticsResponse.data.allVehiclesBySite || []);
 
-      // Fetch filtered movements
-      const movementsUrl = params.toString()
-        ? `${API_URL}/vehicles/movements/list?${params}`
-        : `${API_URL}/vehicles/movements/list`;
+      // Fetch filtered movements (scoped by user)
+      const movementsQuery = params.toString();
+      const movementsUrl = `${API_URL}/vehicles/movements/list${
+        movementsQuery ? `?${movementsQuery}` : ""
+      }`;
       const movementsResponse = await axios.get(movementsUrl, { headers });
       setVehicleMovementLogs(movementsResponse.data);
 
-      // Fetch filtered maintenance
-      const maintenanceUrl = params.toString()
-        ? `${API_URL}/vehicles/maintenance/list?${params}`
-        : `${API_URL}/vehicles/maintenance/list`;
+      // Fetch filtered maintenance (scoped by user)
+      const maintenanceQuery = params.toString();
+      const maintenanceUrl = `${API_URL}/vehicles/maintenance/list${
+        maintenanceQuery ? `?${maintenanceQuery}` : ""
+      }`;
       const maintenanceResponse = await axios.get(maintenanceUrl, { headers });
       setMaintenanceSchedules(maintenanceResponse.data);
       const costly = maintenanceResponse.data
@@ -634,7 +642,7 @@ const StoreDashboard = () => {
 
     // Vehicle data - using new vehicle APIs
     axios
-      .get(`${API_URL}/vehicles/analytics`, { headers })
+      .get(`${API_URL}/vehicles/analytics?userId=${userID}`, { headers })
       .then((res) => {
         setVehicleKpis(res.data);
         setTopVehicles(res.data.allVehiclesBySite || []);
@@ -642,12 +650,12 @@ const StoreDashboard = () => {
       .catch(() => {});
 
     axios
-      .get(`${API_URL}/vehicles/movements/list`, { headers })
+      .get(`${API_URL}/vehicles/movements/list?userId=${userID}`, { headers })
       .then((res) => setVehicleMovementLogs(res.data))
       .catch(() => {});
 
     axios
-      .get(`${API_URL}/vehicles/maintenance/list`, { headers })
+      .get(`${API_URL}/vehicles/maintenance/list?userId=${userID}`, { headers })
       .then((res) => {
         setMaintenanceSchedules(res.data);
         // Filter costly maintenance from the data
@@ -2906,18 +2914,21 @@ const StoreDashboard = () => {
           <ActiveVehiclesView 
           onBack={() => setVehicleSubview("main")}
           totalActiveCount={(vehicleKpis as any)?.totalVehicles || 0}
+          userId={userID}
           />
           )}
           {vehicleSubview === "idle" && (
             <IdleVehiclesView 
               onBack={() => setVehicleSubview("main")}
               totalIdleCount={(vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "IDLE")?._count._all || 0}
+              userId={userID}
             />
           )}
           {vehicleSubview === "maintenance" && (
             <MaintenanceVehiclesView 
               onBack={() => setVehicleSubview("main")}
               totalMaintenanceCount={(vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "MAINTENANCE")?._count._all || 0}
+              userId={userID}
             />
           )}
           {vehicleSubview === "onSite" && (
