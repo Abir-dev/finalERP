@@ -66,6 +66,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { AddVendorModal } from "@/components/modals/AddVendorModal";
+import { EditVendorModal } from "@/components/modals/EditVendorModal";
 import axios from "axios";
 
 const API_URL =
@@ -113,8 +114,10 @@ export function VendorManagement() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [showVendorDetails, setShowVendorDetails] = useState(false);
   const [showNewVendorModal, setShowNewVendorModal] = useState(false);
+  const [showEditVendorModal, setShowEditVendorModal] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [vendorToDelete, setVendorToDelete] = useState<Vendor | null>(null);
+  const [vendorToEdit, setVendorToEdit] = useState<Vendor | null>(null);
 
   // Fetch vendors from API
   const fetchVendors = async () => {
@@ -262,6 +265,47 @@ export function VendorManagement() {
     await handleDeleteVendor(vendorToDelete.id);
     setShowDeleteAlert(false);
     setVendorToDelete(null);
+  };
+
+  const handleEditVendor = (vendor: Vendor) => {
+    setVendorToEdit(vendor);
+    setShowEditVendorModal(true);
+  };
+
+  const handleUpdateVendor = async (updatedVendorData: Partial<Vendor>) => {
+    if (!vendorToEdit) return;
+
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      if (!token) return;
+
+      const headers = { Authorization: `Bearer ${token}` };
+      const response = await axios.put(
+        `${API_URL}/vendors/${vendorToEdit.id}`,
+        updatedVendorData,
+        { headers }
+      );
+
+      // Update the vendor in the local state
+      setVendors(vendors.map(v => v.id === vendorToEdit.id ? response.data : v));
+      
+      toast({
+        title: "Success",
+        description: "Vendor updated successfully",
+      });
+      
+      setShowEditVendorModal(false);
+      setVendorToEdit(null);
+    } catch (error) {
+      console.error("Error updating vendor:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update vendor",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -420,6 +464,13 @@ export function VendorManagement() {
                             }}
                           >
                             View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditVendor(vendor)}
+                          >
+                            <Edit className="h-3 w-3" />
                           </Button>
                           <Button
                             variant="outline"
@@ -587,6 +638,16 @@ export function VendorManagement() {
           }
         }}
       />
+
+      {/* Edit Vendor Modal */}
+      {vendorToEdit && (
+        <EditVendorModal
+          vendor={vendorToEdit}
+          open={showEditVendorModal}
+          onOpenChange={setShowEditVendorModal}
+          onUpdate={handleUpdateVendor}
+        />
+      )}
 
       {/* Delete Confirmation Alert Dialog */}
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
