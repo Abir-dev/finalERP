@@ -2713,8 +2713,8 @@ const StoreDashboard = () => {
 
         <TabsContent value="vehicle-tracking" className="space-y-6">
           {/* Filters */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <Select value={vehicleType} onValueChange={setVehicleType}>
+          <div className="flex flex-wrap gap-4 justify-between items-center mr-4">
+            {/* <Select value={vehicleType} onValueChange={setVehicleType}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Vehicle Type" />
               </SelectTrigger>
@@ -2758,18 +2758,18 @@ const StoreDashboard = () => {
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
-
+            </Select> */}
+            <h1 className="text-2xl font-semibold ml-4">Vehicle Status</h1>
             <Button onClick={() => setShowAddVehicleModal(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Vehicle
             </Button>
-            <div className="ml-auto">
+            {/* <div className="ml-auto">
               <Badge variant="outline">
                 RFID/GPS Sync:{" "}
                 <span className="text-green-600 ml-1">Active</span>
               </Badge>
-            </div>
+            </div> */}
           </div>
           {vehicleSubview === "main" && (
             <>
