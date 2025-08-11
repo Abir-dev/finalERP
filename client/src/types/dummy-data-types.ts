@@ -40,6 +40,7 @@ export type InventoryItem = {
   safetyStock?: number;
   isFlagged?: boolean;
   primarySupplier?: string;
+  secondarySupplier?: string;
   unitCost?: number;
   description?: string;
   lastOrderDate?: string;

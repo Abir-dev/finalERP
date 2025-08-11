@@ -120,9 +120,20 @@ export const validateInvoice = [
 ];
 
 export const validateInventoryItem = [
-  body('name').isString().notEmpty(),
-  body('quantity').isInt({ gt: 0 }),
+  body('itemName').isString().notEmpty(),
+  body('category').isString().notEmpty(),
+  body('quantity').isInt({ min: 0 }),
   body('unit').isString().notEmpty(),
+  body('location').isString().notEmpty(),
+  body('reorderLevel').isInt({ min: 0 }),
+  body('maximumStock').isInt({ min: 0 }),
+  body('safetyStock').isInt({ min: 0 }),
+  body('primarySupplierName').isString().notEmpty(),
+  body('vendorId').isString().notEmpty(),
+  body('secondarySupplierName').optional().isString(),
+  body('secondaryVendorId').optional().isString(),
+  body('unitCost').isInt({ min: 0 }),
+  body('createdById').isString().notEmpty(),
 ];
 
 export const validateMaterialRequest = [
