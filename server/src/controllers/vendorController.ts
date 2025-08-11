@@ -32,6 +32,25 @@ export const vendorController = {
       });
     }
   },
+  
+  async getVendorsByUser(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      const vendors = await prisma.vendor.findMany({
+        where: {
+          createdBy: userId
+        }
+      });
+      res.json(vendors);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
 
   async getVendorById(req: Request, res: Response) {
     try {

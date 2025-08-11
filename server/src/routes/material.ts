@@ -9,6 +9,7 @@ const router = Router();
 // MaterialRequest CRUD
 router.post('/material-requests', authenticateUser, checkRole('accounts'), validateMaterialRequest, materialController.createMaterialRequest);
 router.get('/material-requests', authenticateUser, materialController.listMaterialRequests);
+router.get('/material-requests/user/:userId', authenticateUser, materialController.getMaterialRequestsByUser);
 router.get('/material-requests/:id', authenticateUser, materialController.getMaterialRequest);
 router.put('/material-requests/:id', authenticateUser, checkRole('accounts'), validateMaterialRequest, materialController.updateMaterialRequest);
 router.delete('/material-requests/:id', authenticateUser,materialController.deleteMaterialRequest);

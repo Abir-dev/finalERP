@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -105,6 +106,7 @@ interface Vendor {
 }
 
 export function VendorManagement() {
+  const { user } = useUser();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,13 @@ export function VendorManagement() {
       if (!token) return;
 
       const headers = { Authorization: `Bearer ${token}` };
-      const response = await axios.get(`${API_URL}/vendors`, { headers });
+      
+      // Use user-specific route if role is not 'accounts'
+      const endpoint = user?.role !== 'accounts' && user?.id 
+        ? `${API_URL}/vendors/user/${user.id}`
+        : `${API_URL}/vendors`;
+      
+      const response = await axios.get(endpoint, { headers });
       setVendors(response.data);
       setFilteredVendors(response.data);
     } catch (error) {

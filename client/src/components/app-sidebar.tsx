@@ -133,7 +133,7 @@ export function AppSidebar() {
       title: "Purchase Management",
       url: "/purchase-management",
       icon: ShoppingCart,
-      allowedRoles: ["admin", "md", "site", "accounts"],
+      allowedRoles: ["admin", "md", "site", "store", "accounts"],
     },
     {
       title: "Human Resources",
