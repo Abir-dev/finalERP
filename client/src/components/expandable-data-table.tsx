@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ChevronDown, ChevronRight, Search, Filter, Download,
-  Edit, Eye, MoreHorizontal, AlertTriangle, Flag, Check, X
+  Edit, Eye, MoreHorizontal, AlertTriangle, Flag, Check, X, Trash
 } from "lucide-react"
 import {
   Dialog,
@@ -50,6 +50,8 @@ interface ExpandableTableProps {
   }>
   onRowAction?: (action: string, row: any, updatedData?: any) => void
   showExport?: boolean
+  rowActions?: Array<'view' | 'edit' | 'delete' | 'flag'>
+  onEditClick?: (row: any) => void
 }
 
 export function ExpandableDataTable({
@@ -61,7 +63,9 @@ export function ExpandableDataTable({
   searchKey,
   filters,
   onRowAction,
-  showExport = true
+  showExport = true,
+  rowActions,
+  onEditClick,
 }: ExpandableTableProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({})
@@ -71,6 +75,10 @@ export function ExpandableDataTable({
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [editFormData, setEditFormData] = useState<any>(null)
+
+  const effectiveRowActions: Array<'view' | 'edit' | 'delete' | 'flag'> = rowActions && rowActions.length > 0
+    ? rowActions
+    : ['view', 'edit', 'flag']
 
   const filteredData = data.filter(row => {
     const matchesSearch = !searchKey || !searchQuery ||
@@ -167,11 +175,18 @@ export function ExpandableDataTable({
         setIsViewDetailsOpen(true)
         break
       case 'edit':
-        setSelectedRow(row)
-        setEditFormData({ ...row })
-        setIsEditOpen(true)
+        if (onEditClick) {
+          onEditClick(row)
+        } else {
+          setSelectedRow(row)
+          setEditFormData({ ...row })
+          setIsEditOpen(true)
+        }
         break
       case 'flag':
+        onRowAction?.(action, row)
+        break
+      case 'delete':
         onRowAction?.(action, row)
         break
     }
@@ -425,30 +440,46 @@ export function ExpandableDataTable({
       case 'actions':
         return (
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => handleAction('view', row)}
-              className={buttonFlaggedStyle}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => handleAction('edit', row)}
-              className={buttonFlaggedStyle}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => handleAction('flag', row)}
-              className={buttonFlaggedStyle}
-            >
-              <Flag className="h-4 w-4" />
-            </Button>
+            {effectiveRowActions.includes('view') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('view', row)}
+                className={buttonFlaggedStyle}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
+            {effectiveRowActions.includes('edit') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('edit', row)}
+                className={buttonFlaggedStyle}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {effectiveRowActions.includes('flag') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('flag', row)}
+                className={buttonFlaggedStyle}
+              >
+                <Flag className="h-4 w-4" />
+              </Button>
+            )}
+            {effectiveRowActions.includes('delete') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('delete', row)}
+                className={buttonFlaggedStyle}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         )
 

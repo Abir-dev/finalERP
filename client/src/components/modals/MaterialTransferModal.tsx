@@ -53,7 +53,10 @@ interface ItemRow {
 interface MaterialTransferModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave?: (created: any) => void;
+  onSave?: (createdOrUpdated: any) => void;
+  mode?: 'create' | 'edit';
+  transferId?: string; // DB id for edit mode
+  onRequestNew?: () => void;
 }
 
 const UNITS: { value: Unit; label: string }[] = [
@@ -71,7 +74,7 @@ const UNITS: { value: Unit; label: string }[] = [
   { value: "LUMPSUM", label: "Lump Sum" },
 ];
 
-export default function MaterialTransferModal({ open, onOpenChange, onSave }: MaterialTransferModalProps) {
+export default function MaterialTransferModal({ open, onOpenChange, onSave, mode = 'create', transferId, onRequestNew }: MaterialTransferModalProps) {
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -103,27 +106,61 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave }: Ma
   useEffect(() => {
     if (!open) return;
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     // Load vehicles and users
     Promise.all([
-      fetch(`${API_URL}/vehicles`, { headers }).then((r) => r.ok ? r.json() : []),
-      fetch(`${API_URL}/users`, { headers }).then((r) => r.ok ? r.json() : []),
+      fetch(`${API_URL}/vehicles`, { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch(`${API_URL}/users`, { headers }).then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([vehiclesRes, usersRes]) => {
+      .then(async ([vehiclesRes, usersRes]) => {
         setVehicles(Array.isArray(vehiclesRes) ? vehiclesRes : []);
         const normalizedUsers: UserOption[] = Array.isArray(usersRes)
           ? usersRes.map((u: any) => ({ id: u.id, name: u.name || u.email || "User", email: u.email }))
           : [];
-        // Fallback: include current user if list is empty or missing the user
         if (user && !normalizedUsers.some((u) => u.id === user.id)) {
           normalizedUsers.push({ id: user.id, name: user.name || user.email || "Current User", email: user.email || "" });
         }
         setUsers(normalizedUsers);
+
+        // If edit mode, fetch the transfer details
+        if (mode === 'edit' && transferId && user?.id) {
+          try {
+            const resp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers });
+            if (resp.ok) {
+              const t = await resp.json();
+              setTransferID(t.transferID || "");
+              setFromLocation(t.fromLocation || "");
+              setToLocation(t.toLocation || "");
+              setRequestedDate(t.requestedDate ? new Date(t.requestedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+              setStatus((t.status || 'PENDING') as TransferStatus);
+              setDriverName(t.driverName || "");
+              setEtaMinutes(typeof t.etaMinutes === 'number' ? String(t.etaMinutes) : "");
+              setVehicleId(t.vehicleId || "");
+              setApprovedById(t.approvedById || "");
+              setPriority((t.priority || 'NORMAL') as TransferPriority);
+              const mappedItems: ItemRow[] = Array.isArray(t.items)
+                ? t.items.map((it: any, idx: number) => ({
+                    id: idx + 1,
+                    description: it.description || "",
+                    quantity: typeof it.quantity === 'number' ? it.quantity : 0,
+                    unit: (it.unit || "") as Unit | "",
+                    inventoryId: it.inventoryId || undefined,
+                  }))
+                : [{ id: 1, description: "", quantity: 0, unit: "" }];
+              setItems(mappedItems);
+              setNotes("");
+            } else {
+              toast({ title: "Error", description: "Failed to load transfer details", variant: "destructive" });
+            }
+          } catch (e) {
+            toast({ title: "Error", description: "Failed to load transfer details", variant: "destructive" });
+          }
+        }
       })
       .catch(() => {
         toast({ title: "Warning", description: "Failed to load reference data", variant: "destructive" });
       });
-  }, [open]);
+  }, [open, mode, transferId]);
 
   const addRow = () => {
     const newId = items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1;
@@ -191,55 +228,82 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave }: Ma
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
+      if (mode === 'edit' && transferId && user?.id) {
+        // Update the transfer header
+        const putResp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(payload),
+        });
+        if (!putResp.ok) {
+          const err = await putResp.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to update material transfer');
+        }
 
-      const resp = await fetch(`${API_URL}/inventory/transfers`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
+        // Replace items: delete existing then create new
+        const itemsResp = await fetch(`${API_URL}/inventory/transfers/${transferId}/items?userId=${user.id}`, { headers });
+        if (!itemsResp.ok) throw new Error('Failed to load existing items');
+        const existingItems = await itemsResp.json();
+        await Promise.all(
+          (existingItems || []).map((it: any) =>
+            fetch(`${API_URL}/inventory/transfers/${transferId}/items/${it.id}?userId=${user.id}`, {
+              method: 'DELETE',
+              headers,
+            })
+          )
+        );
+        // Create new items
+        for (const i of payload.items) {
+          const createItemResp = await fetch(`${API_URL}/inventory/transfers/${transferId}/items?userId=${user.id}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(i),
+          });
+          if (!createItemResp.ok) {
+            const err = await createItemResp.json().catch(() => ({}));
+            throw new Error(err.error || 'Failed to create transfer item');
+          }
+        }
 
-      if (resp.ok) {
-        const created = await resp.json();
-        toast({ title: "Success", description: "Material transfer created successfully" });
-        if (onSave) onSave(created);
+        const updatedResp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers });
+        const updated = updatedResp.ok ? await updatedResp.json() : null;
+        toast({ title: 'Success', description: 'Material transfer updated successfully' });
+        if (onSave) onSave(updated || { id: transferId, ...payload });
         onOpenChange(false);
-        // reset
-        setTransferID("");
-        setFromLocation("");
-        setToLocation("");
-        setRequestedDate(new Date().toISOString().split("T")[0]);
-        setStatus("PENDING");
-        setDriverName("");
-        setEtaMinutes("");
-        setVehicleId("");
-        setApprovedById("");
-        setPriority("NORMAL");
-        setItems([{ id: 1, description: "", quantity: 0, unit: "" }]);
-        setNotes("");
-      } else if (resp.status === 404) {
-        // Fallback to local save when backend route is not available
-        toast({ title: "Saved Locally", description: "Backend endpoint not found. Added transfer locally.", variant: "default" });
-        if (onSave) onSave(payload);
-        onOpenChange(false);
-        // reset
-        setTransferID("");
-        setFromLocation("");
-        setToLocation("");
-        setRequestedDate(new Date().toISOString().split("T")[0]);
-        setStatus("PENDING");
-        setDriverName("");
-        setEtaMinutes("");
-        setVehicleId("");
-        setApprovedById("");
-        setPriority("NORMAL");
-        setItems([{ id: 1, description: "", quantity: 0, unit: "" }]);
-        setNotes("");
       } else {
-        const err = await resp.json().catch(() => ({}));
-        toast({ title: "Error", description: err.error || "Failed to create material transfer", variant: "destructive" });
+        // Create new transfer
+        const resp = await fetch(`${API_URL}/inventory/transfers`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (resp.ok) {
+          const created = await resp.json();
+          toast({ title: "Success", description: "Material transfer created successfully" });
+          if (onSave) onSave(created);
+          onOpenChange(false);
+        } else {
+          const err = await resp.json().catch(() => ({}));
+          toast({ title: "Error", description: err.error || "Failed to create material transfer", variant: "destructive" });
+        }
       }
+
+      // reset form after successful close
+      setTransferID("");
+      setFromLocation("");
+      setToLocation("");
+      setRequestedDate(new Date().toISOString().split("T")[0]);
+      setStatus("PENDING");
+      setDriverName("");
+      setEtaMinutes("");
+      setVehicleId("");
+      setApprovedById("");
+      setPriority("NORMAL");
+      setItems([{ id: 1, description: "", quantity: 0, unit: "" }]);
+      setNotes("");
     } catch (e) {
-      toast({ title: "Error", description: "Failed to create material transfer", variant: "destructive" });
+      toast({ title: "Error", description: (e as Error).message || (mode === 'edit' ? 'Failed to update material transfer' : 'Failed to create material transfer'), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -249,8 +313,8 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave }: Ma
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-full max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New Material Transfer</DialogTitle>
-          <DialogDescription>Capture transfer details and items.</DialogDescription>
+          <DialogTitle>{mode === 'edit' ? 'Edit Material Transfer' : 'New Material Transfer'}</DialogTitle>
+          <DialogDescription>{mode === 'edit' ? 'Update transfer details and items.' : 'Capture transfer details and items.'}</DialogDescription>
         </DialogHeader>
 
         {/* Details */}

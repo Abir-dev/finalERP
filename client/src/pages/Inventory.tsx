@@ -182,6 +182,7 @@ interface InventoryItem {
 }
 
 interface Transfer {
+  dbId?: string;
   id: string;
   from: string;
   to: string;
@@ -262,6 +263,8 @@ const Inventory = () => {
   const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [isAddTransferOpen, setIsAddTransferOpen] = useState(false);
+  const [isEditTransferOpen, setIsEditTransferOpen] = useState(false);
+  const [editingTransfer, setEditingTransfer] = useState<Transfer | null>(null);
 
   // Add state for search and filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -396,6 +399,7 @@ const Inventory = () => {
           { headers }
         );
         const mappedTransfers: Transfer[] = (Array.isArray(transfersResponse.data) ? transfersResponse.data : []).map((t: any) => ({
+          dbId: t?.id,
           id: t?.transferID || t?.id || `TRF-${Date.now()}`,
           from: t?.fromLocation || t?.from || "-",
           to: t?.toLocation || t?.to || "-",
@@ -608,17 +612,28 @@ const Inventory = () => {
         toast.success("Transfer updated successfully");
         break;
 
-      case "flag":
-        const flaggedTransfers = transfers.map((t) =>
-          t.id === transfer.id ? { ...t, isFlagged: !t.isFlagged } : t
-        );
-        setTransfers(flaggedTransfers);
-        toast.success(
-          `Transfer ${
-            transfer.isFlagged ? "unflagged" : "flagged"
-          } successfully`
-        );
+      case "delete": {
+        if (!user?.id) {
+          toast.error("User not authenticated. Please log in.");
+          return;
+        }
+        const token =
+          sessionStorage.getItem("jwt_token") ||
+          localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const idForDelete = transfer.dbId || transfer.id;
+        axios
+          .delete(`${API_URL}/inventory/transfers/${idForDelete}?userId=${user.id}`, { headers })
+          .then(() => {
+            setTransfers((prev) => prev.filter((t) => t.id !== transfer.id));
+            toast.success("Transfer deleted successfully");
+          })
+          .catch((err) => {
+            console.error(err);
+            toast.error("Failed to delete transfer");
+          });
         break;
+      }
     }
   };
 
@@ -2608,6 +2623,7 @@ const Inventory = () => {
             description="Track material movement between locations"
             data={transfers}
             columns={transferColumns}
+            rowActions={['view', 'edit', 'delete']}
             expandableContent={(row) => (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -2638,6 +2654,10 @@ const Inventory = () => {
               },
             ]}
             onRowAction={handleTransferAction}
+            onEditClick={(row) => {
+              setEditingTransfer(row);
+              setIsEditTransferOpen(true);
+            }}
           />
           <MaterialTransferModal
             open={isAddTransferOpen}
@@ -2656,6 +2676,29 @@ const Inventory = () => {
               setTransfers((prev) => [mapped, ...prev]);
             }}
           />
+          {editingTransfer && (
+            <MaterialTransferModal
+              open={isEditTransferOpen}
+              onOpenChange={setIsEditTransferOpen}
+              mode="edit"
+              transferId={editingTransfer?.dbId || editingTransfer?.id}
+              onRequestNew={() => setIsAddTransferOpen(true)}
+              onSave={(updated: any) => {
+                const mapped: Transfer = {
+                  id: updated?.transferID || updated?.id || editingTransfer.id,
+                  from: updated?.fromLocation || updated?.from || editingTransfer.from,
+                  to: updated?.toLocation || updated?.to || editingTransfer.to,
+                  items: Array.isArray(updated?.items) ? updated.items.length : (updated?.items ?? editingTransfer.items),
+                  status: updated?.status || editingTransfer.status,
+                  driver: updated?.driverName || updated?.driver || editingTransfer.driver,
+                  eta: updated?.etaMinutes != null ? `${updated.etaMinutes} min` : (updated?.eta || editingTransfer.eta),
+                  isFlagged: editingTransfer.isFlagged,
+                };
+                setTransfers((prev) => prev.map(t => (t.id === editingTransfer.id ? mapped : t)));
+                setEditingTransfer(null);
+              }}
+            />
+          )}
           {/* <div className="flex justify-end mb-4">
             <Button variant="outline" onClick={() => handleExport('transfers')}>
               <Download className="mr-2 h-4 w-4" />
