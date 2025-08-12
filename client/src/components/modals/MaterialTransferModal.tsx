@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
+import { useUser } from "@/contexts/UserContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -72,6 +73,7 @@ const UNITS: { value: Unit; label: string }[] = [
 
 export default function MaterialTransferModal({ open, onOpenChange, onSave }: MaterialTransferModalProps) {
   const { toast } = useToast();
+  const { user } = useUser();
 
   // Form state
   const [transferID, setTransferID] = useState("");
@@ -109,7 +111,14 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave }: Ma
     ])
       .then(([vehiclesRes, usersRes]) => {
         setVehicles(Array.isArray(vehiclesRes) ? vehiclesRes : []);
-        setUsers(Array.isArray(usersRes) ? usersRes : []);
+        const normalizedUsers: UserOption[] = Array.isArray(usersRes)
+          ? usersRes.map((u: any) => ({ id: u.id, name: u.name || u.email || "User", email: u.email }))
+          : [];
+        // Fallback: include current user if list is empty or missing the user
+        if (user && !normalizedUsers.some((u) => u.id === user.id)) {
+          normalizedUsers.push({ id: user.id, name: user.name || user.email || "Current User", email: user.email || "" });
+        }
+        setUsers(normalizedUsers);
       })
       .catch(() => {
         toast({ title: "Warning", description: "Failed to load reference data", variant: "destructive" });

@@ -387,7 +387,17 @@ const Inventory = () => {
           `${API_URL}/inventory/transfers`,
           { headers }
         );
-        setTransfers(transfersResponse.data);
+        const mappedTransfers: Transfer[] = (Array.isArray(transfersResponse.data) ? transfersResponse.data : []).map((t: any) => ({
+          id: t?.transferID || t?.id || `TRF-${Date.now()}`,
+          from: t?.fromLocation || t?.from || "-",
+          to: t?.toLocation || t?.to || "-",
+          items: Array.isArray(t?.items) ? t.items.length : (t?.items ?? 0),
+          status: t?.status || "PENDING",
+          driver: t?.driverName || t?.driver || "-",
+          eta: t?.etaMinutes != null ? `${t.etaMinutes} min` : (t?.eta || "-"),
+          isFlagged: false,
+        }));
+        setTransfers(mappedTransfers);
       } catch (error) {
         console.log("Transfers data not available");
       }
