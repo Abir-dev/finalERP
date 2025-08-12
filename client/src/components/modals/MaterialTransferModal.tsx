@@ -178,11 +178,14 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave }: Ma
       };
 
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
 
       const resp = await fetch(`${API_URL}/inventory/transfers`, {
         method: "POST",
-        headers : headers,
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -190,6 +193,24 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave }: Ma
         const created = await resp.json();
         toast({ title: "Success", description: "Material transfer created successfully" });
         if (onSave) onSave(created);
+        onOpenChange(false);
+        // reset
+        setTransferID("");
+        setFromLocation("");
+        setToLocation("");
+        setRequestedDate(new Date().toISOString().split("T")[0]);
+        setStatus("PENDING");
+        setDriverName("");
+        setEtaMinutes("");
+        setVehicleId("");
+        setApprovedById("");
+        setPriority("NORMAL");
+        setItems([{ id: 1, description: "", quantity: 0, unit: "" }]);
+        setNotes("");
+      } else if (resp.status === 404) {
+        // Fallback to local save when backend route is not available
+        toast({ title: "Saved Locally", description: "Backend endpoint not found. Added transfer locally.", variant: "default" });
+        if (onSave) onSave(payload);
         onOpenChange(false);
         // reset
         setTransferID("");

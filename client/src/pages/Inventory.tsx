@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { InteractiveChart } from "@/components/interactive-chart";
 import { ExpandableDataTable } from "@/components/expandable-data-table";
+import MaterialTransferModal from "@/components/modals/MaterialTransferModal";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -235,6 +236,7 @@ const Inventory = () => {
   // Add state for inventory items and transfers
   const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
+  const [isAddTransferOpen, setIsAddTransferOpen] = useState(false);
 
   // Add state for search and filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -2432,6 +2434,17 @@ const Inventory = () => {
             />
           </div>
 
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold">Material Transfers</h2>
+              <p className="text-sm text-muted-foreground">Track material movement between locations</p>
+            </div>
+            <Button onClick={() => setIsAddTransferOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Transfer
+            </Button>
+          </div>
+
           <ExpandableDataTable
             title="Material Transfers"
             description="Track material movement between locations"
@@ -2467,6 +2480,23 @@ const Inventory = () => {
               },
             ]}
             onRowAction={handleTransferAction}
+          />
+          <MaterialTransferModal
+            open={isAddTransferOpen}
+            onOpenChange={setIsAddTransferOpen}
+            onSave={(created: any) => {
+              const mapped: Transfer = {
+                id: created?.transferID || created?.id || `TRF-${Date.now()}`,
+                from: created?.fromLocation || created?.from || "-",
+                to: created?.toLocation || created?.to || "-",
+                items: Array.isArray(created?.items) ? created.items.length : (created?.items ?? 0),
+                status: created?.status || "PENDING",
+                driver: created?.driverName || created?.driver || "-",
+                eta: created?.etaMinutes != null ? `${created.etaMinutes} min` : (created?.eta || "-"),
+                isFlagged: false,
+              };
+              setTransfers((prev) => [mapped, ...prev]);
+            }}
           />
           {/* <div className="flex justify-end mb-4">
             <Button variant="outline" onClick={() => handleExport('transfers')}>
