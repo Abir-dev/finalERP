@@ -109,7 +109,20 @@ const addItemFormSchema = z.object({
   unitCost: z.number().min(0, "Unit cost must be 0 or greater"),
 });
 
+// Add maintenance form schema
+const maintenanceFormSchema = z.object({
+  equipment: z.string().min(1, "Please select equipment"),
+  maintenanceType: z.string().min(1, "Please select maintenance type"),
+  scheduledDate: z.string().min(1, "Please select a date"),
+  priority: z.string().min(1, "Please select priority"),
+  technician: z.string().min(1, "Please assign a technician"),
+  estimatedDuration: z.number().min(1, "Duration must be at least 1 hour"),
+  description: z.string().optional(),
+  notes: z.string().optional(),
+});
+
 type AddItemFormValues = z.infer<typeof addItemFormSchema>;
+type MaintenanceFormValues = z.infer<typeof maintenanceFormSchema>;
 
 const defaultValues: Partial<AddItemFormValues> = {
   quantity: 0,
@@ -122,6 +135,17 @@ const defaultValues: Partial<AddItemFormValues> = {
   location: "",
   primarySupplier: "",
   secondarySupplier: "",
+};
+
+const maintenanceDefaultValues: Partial<MaintenanceFormValues> = {
+  equipment: "",
+  maintenanceType: "",
+  scheduledDate: "",
+  priority: "Medium",
+  technician: "",
+  estimatedDuration: 2,
+  description: "",
+  notes: "",
 };
 
 // Update the interface for filters
@@ -263,6 +287,10 @@ const Inventory = () => {
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Add state for Schedule Maintenance dialog
+  const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
 
   // Add loading state
   const [isLoading, setIsLoading] = useState(true);
@@ -499,6 +527,11 @@ const Inventory = () => {
   const editForm = useForm<AddItemFormValues>({
     resolver: zodResolver(addItemFormSchema),
     defaultValues,
+  });
+
+  const maintenanceForm = useForm<MaintenanceFormValues>({
+    resolver: zodResolver(maintenanceFormSchema),
+    defaultValues: maintenanceDefaultValues,
   });
 
   const onSubmit = async (data: AddItemFormValues) => {
@@ -2548,8 +2581,8 @@ const Inventory = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Warehouse Space Utilization</CardTitle>
                 <CardDescription>
@@ -2577,14 +2610,25 @@ const Inventory = () => {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
               <CardHeader>
-                <CardTitle>Equipment & Maintenance</CardTitle>
-                <CardDescription>
-                  Warehouse equipment status and schedules
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Equipment & Maintenance</CardTitle>
+                    <CardDescription>
+                      Warehouse equipment status and schedules
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={() => setIsScheduleMaintenanceOpen(true)}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Schedule Maintenance
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -2965,6 +3009,199 @@ const Inventory = () => {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Schedule Maintenance Dialog */}
+      <Dialog open={isScheduleMaintenanceOpen} onOpenChange={setIsScheduleMaintenanceOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Schedule Equipment Maintenance</DialogTitle>
+            <DialogDescription>
+              Schedule maintenance for warehouse equipment to ensure optimal operation
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...maintenanceForm}>
+            <form onSubmit={maintenanceForm.handleSubmit((data) => {
+              console.log('Maintenance scheduled:', data);
+              toast.success(`Maintenance scheduled for ${data.equipment}`);
+              setIsScheduleMaintenanceOpen(false);
+              maintenanceForm.reset();
+            })} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={maintenanceForm.control}
+                  name="equipment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Equipment</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter equipment name"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={maintenanceForm.control}
+                  name="maintenanceType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Maintenance Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="preventive">Preventive</SelectItem>
+                          <SelectItem value="corrective">Corrective</SelectItem>
+                          <SelectItem value="emergency">Emergency</SelectItem>
+                          <SelectItem value="inspection">Inspection</SelectItem>
+                          <SelectItem value="calibration">Calibration</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={maintenanceForm.control}
+                  name="scheduledDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Scheduled Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          min={new Date().toISOString().slice(0, 16)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={maintenanceForm.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Low">Low</SelectItem>
+                          <SelectItem value="Medium">Medium</SelectItem>
+                          <SelectItem value="High">High</SelectItem>
+                          <SelectItem value="Critical">Critical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={maintenanceForm.control}
+                  name="technician"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assigned Technician</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter technician name"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={maintenanceForm.control}
+                  name="estimatedDuration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estimated Duration (hours)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="24"
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={maintenanceForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Maintenance Description</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Brief description of maintenance work"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={maintenanceForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Any additional information or special requirements"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsScheduleMaintenanceOpen(false);
+                    maintenanceForm.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Schedule Maintenance
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
