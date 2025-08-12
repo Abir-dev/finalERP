@@ -2667,41 +2667,95 @@ const Inventory = () => {
         <TabsContent value="warehouse" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <EnhancedStatCard
-              title="Storage Utilization"
-              value="82%"
-              icon={Warehouse}
-              description="Average across locations"
-              trend={{ value: 5, label: "increase" }}
+              title="Total Maintenance"
+              value={scheduleMaintenances.length.toString()}
+              icon={Calendar}
+              description="Scheduled maintenance tasks"
               threshold={{
-                status: "good",
-                message: "Optimal storage utilization",
+                status: scheduleMaintenances.length > 0 ? "good" : "warning",
+                message: scheduleMaintenances.length > 0 ? "Active maintenance schedule" : "No maintenance scheduled",
               }}
             />
             <EnhancedStatCard
-              title="Available Space"
-              value="2,450 sqft"
-              icon={Map}
-              description="Across all warehouses"
-              threshold={{
-                status: "good",
-                message: "Adequate space available",
-              }}
-            />
-            <EnhancedStatCard
-              title="Equipment Status"
-              value="94%"
-              icon={TrendingUp}
-              description="Operational equipment"
-              trend={{ value: 2, label: "improvement" }}
-            />
-            <EnhancedStatCard
-              title="Security Score"
-              value="9.2/10"
+              title="Overdue Tasks"
+              value={(() => {
+                const now = new Date();
+                const overdue = scheduleMaintenances.filter(m => {
+                  const scheduledDate = new Date(m.scheduledDate);
+                  return scheduledDate < now;
+                });
+                return overdue.length.toString();
+              })()}
               icon={AlertTriangle}
-              description="Security assessment"
+              description="Past due maintenance"
+              threshold={{
+                status: (() => {
+                  const now = new Date();
+                  const overdue = scheduleMaintenances.filter(m => {
+                    const scheduledDate = new Date(m.scheduledDate);
+                    return scheduledDate < now;
+                  });
+                  return overdue.length === 0 ? "good" : overdue.length <= 2 ? "warning" : "critical";
+                })(),
+                message: (() => {
+                  const now = new Date();
+                  const overdue = scheduleMaintenances.filter(m => {
+                    const scheduledDate = new Date(m.scheduledDate);
+                    return scheduledDate < now;
+                  });
+                  return overdue.length === 0 ? "All tasks on schedule" : `${overdue.length} task(s) overdue`;
+                })(),
+              }}
+            />
+            <EnhancedStatCard
+              title="High Priority"
+              value={(() => {
+                const highPriority = scheduleMaintenances.filter(m => 
+                  m.Priority === 'HIGH' || m.Priority === 'CRITICAL'
+                );
+                return highPriority.length.toString();
+              })()}
+              icon={TrendingUp}
+              description="Critical & high priority"
+              threshold={{
+                status: (() => {
+                  const highPriority = scheduleMaintenances.filter(m => 
+                    m.Priority === 'HIGH' || m.Priority === 'CRITICAL'
+                  );
+                  return highPriority.length === 0 ? "good" : highPriority.length <= 3 ? "warning" : "critical";
+                })(),
+                message: (() => {
+                  const highPriority = scheduleMaintenances.filter(m => 
+                    m.Priority === 'HIGH' || m.Priority === 'CRITICAL'
+                  );
+                  return highPriority.length === 0 ? "No urgent tasks" : `${highPriority.length} urgent task(s)`;
+                })(),
+              }}
+            />
+            <EnhancedStatCard
+              title="This Week"
+              value={(() => {
+                const now = new Date();
+                const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                const thisWeek = scheduleMaintenances.filter(m => {
+                  const scheduledDate = new Date(m.scheduledDate);
+                  return scheduledDate >= now && scheduledDate <= weekFromNow;
+                });
+                return thisWeek.length.toString();
+              })()}
+              icon={Clock}
+              description="Due within 7 days"
               threshold={{
                 status: "good",
-                message: "Excellent security measures",
+                message: (() => {
+                  const now = new Date();
+                  const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                  const thisWeek = scheduleMaintenances.filter(m => {
+                    const scheduledDate = new Date(m.scheduledDate);
+                    return scheduledDate >= now && scheduledDate <= weekFromNow;
+                  });
+                  return thisWeek.length === 0 ? "No tasks this week" : "Upcoming maintenance";
+                })(),
               }}
             />
           </div>
@@ -2829,8 +2883,8 @@ const Inventory = () => {
                                   maintenanceForm.reset({
                                     equipment: maintenance.equipmentName,
                                     maintenanceType: maintenance.maintenanceType.toLowerCase(),
-                                    scheduledDate: new Date(maintenance.scheduledDate).toISOString().slice(0, 16),
-                                    priority: maintenance.Priority,
+                                    scheduledDate: new Date(maintenance.scheduledDate).toISOString().slice(0, 10),
+                                    priority: maintenance.Priority.charAt(0).toUpperCase() + maintenance.Priority.slice(1).toLowerCase(),
                                     technician: maintenance.technicianName,
                                     estimatedDuration: maintenance.estimatedTime,
                                     description: maintenance.description,
@@ -3286,9 +3340,9 @@ const Inventory = () => {
                       <FormLabel>Scheduled Date</FormLabel>
                       <FormControl>
                         <Input
-                          type="datetime-local"
+                          type="date"
                           {...field}
-                          min={new Date().toISOString().slice(0, 16)}
+                          // min={new Date().toISOString().slice(0, 10)}
                         />
                       </FormControl>
                       <FormMessage />
