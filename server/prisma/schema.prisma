@@ -40,7 +40,6 @@ model User {
   messagesSent        Message[]          @relation("MessagesSent")
   messagesReceived    Message[]          @relation("MessagesReceived")
   materialRequests    MaterialRequest[]  @relation("UserMaterialRequests")
-  employeeProfile     Employee?
   taxes               Tax[]
   Invoice             Invoice[]
   Payment             Payment[]
@@ -283,16 +282,66 @@ model Bid {
 }
 
 model Employee {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @unique @db.Uuid
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  position   String
-  department String
-  salary     Float
-  joinedAt   DateTime
-  leftAt     DateTime?
-  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id              String           @id @default(uuid()) @db.Uuid
+  position        String
+  department      String
+  salary          Float
+  joinedAt        DateTime
+  leftAt          DateTime?
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  salaryRecords   EmployeeSalary[]
+}
+
+model EmployeeSalary {
+  id          String                   @id @default(uuid()) @db.Uuid
+  employeeId  String                   @db.Uuid
+  employee    Employee                 @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  netSalary   Float
+  paymentDate DateTime?                @db.Timestamptz(6)
+  remarks     String?
+  earningsId  String                   @unique @db.Uuid
+  earnings    EmployeeSalaryEarnings   @relation(fields: [earningsId], references: [id], onDelete: Cascade)
+  deductionsId String                  @unique @db.Uuid
+  deductions  EmployeeSalaryDeductions @relation(fields: [deductionsId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("employee_salaries")
+}
+
+model EmployeeSalaryEarnings {
+  id               String          @id @default(uuid()) @db.Uuid
+  basic            Float           @default(0)
+  da               Float           @default(0) // Dearness Allowance
+  hra              Float           @default(0) // House Rent Allowance
+  conveyance       Float           @default(0)
+  allowance        Float           @default(0)
+  medicalAllowance Float           @default(0) @map("medical_allowance")
+  others           Float           @default(0)
+  total            Float           @default(0) // Calculated field
+  employeeSalary   EmployeeSalary?
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("employee_salary_earnings")
+}
+
+model EmployeeSalaryDeductions {
+  id             String          @id @default(uuid()) @db.Uuid
+  tds            Float           @default(0) // Tax Deducted at Source
+  esi            Float           @default(0) // Employee State Insurance
+  pf             Float           @default(0) // Provident Fund
+  leave          Float           @default(0) // Leave deduction
+  profTax        Float           @default(0) @map("prof_tax") // Professional Tax
+  labourWelfare  Float           @default(0) @map("labour_welfare") // Labour Welfare Fund
+  others         Float           @default(0)
+  total          Float           @default(0) // Calculated field
+  employeeSalary EmployeeSalary?
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("employee_salary_deductions")
 }
 
 model Notification {
