@@ -139,7 +139,7 @@ export function AppSidebar() {
       title: "Human Resources",
       url: "/hr",
       icon: Users,
-      allowedRoles: ["admin", "md"],
+      allowedRoles: ["admin", "md", "hr"],
     },
     {
       title: "Inventory",
@@ -159,6 +159,7 @@ export function AppSidebar() {
         "accounts",
         "site",
         "client",
+        "hr"
       ],
     },
     {
@@ -173,6 +174,7 @@ export function AppSidebar() {
         "accounts",
         "site",
         "client",
+        "hr"
       ],
     },
     {

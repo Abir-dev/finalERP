@@ -25,13 +25,14 @@ export const ProtectedRoute = ({ allowedRoles, redirectPath }: ProtectedRoutePro
       "store": "/store-manager",
       "accounts": "/accounts-manager",
       "site": "/site-manager",
-      "client": "/client-portal"
+      "client": "/client-portal",
+      "hr": "/hr"
     };
     
     return <Navigate to={roleDashboardMap[user.role]} replace />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && user && !allowedRoles.includes(user.role as UserRole)) {
     return <Navigate to={redirectPath || "/unauthorized"} replace />;
   }
 

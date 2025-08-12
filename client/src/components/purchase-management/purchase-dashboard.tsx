@@ -77,6 +77,8 @@ const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
+  vendorAddress: any;
+  setTargetWarehouse: string;
   id: string;
   poNumber: string;
   date: string;
@@ -138,7 +140,7 @@ export function PurchaseDashboard() {
       const endpoint = user?.role !== 'accounts' && user?.id 
         ? `${API_URL}/purchase-orders/user/${user.id}`
         : `${API_URL}/purchase-orders`;
-      
+       
       const response = await axios.get(endpoint, {
         headers,
       });

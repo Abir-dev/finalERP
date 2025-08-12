@@ -19,7 +19,8 @@ export type UserRole =
   | "store"
   | "accounts"
   | "site"
-  | "client";
+  | "client"
+  | "hr";
 
 interface User {
   id: string;
