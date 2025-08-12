@@ -22,6 +22,7 @@ import nonBillableRoutes from './routes/nonBillable';
 import issueReportRoutes from './routes/issueReport';
 import vehicleRoutes from './routes/vehicle';
 import eventRoutes from './routes/events';
+import scheduleMaintenanceRoutes from './routes/scheduleMaintenance';
 import logger from './logger/logger';
 
 dotenv.config();
@@ -78,6 +79,7 @@ app.use('/api/non-billables', nonBillableRoutes);
 app.use('/api/issue-reports', issueReportRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api', eventRoutes);
+app.use('/api', scheduleMaintenanceRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {

@@ -28,6 +28,7 @@ import {
   Check,
   Pencil,
   Trash,
+  Edit,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
@@ -292,6 +293,13 @@ const Inventory = () => {
   const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<string | null>(null);
 
+  // Add state for Schedule Maintenance CRUD
+  const [scheduleMaintenances, setScheduleMaintenances] = useState<any[]>([]);
+  const [isEditMaintenanceOpen, setIsEditMaintenanceOpen] = useState(false);
+  const [editingMaintenance, setEditingMaintenance] = useState<any | null>(null);
+  const [maintenanceToDelete, setMaintenanceToDelete] = useState<any | null>(null);
+  const [isDeletingMaintenance, setIsDeletingMaintenance] = useState(false);
+
   // Add loading state
   const [isLoading, setIsLoading] = useState(true);
 
@@ -446,9 +454,116 @@ const Inventory = () => {
     }
   };
 
+  // Schedule Maintenance CRUD functions
+  const fetchScheduleMaintenances = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await axios.get(`${API_URL}/schedule-maintenance`, {
+        headers,
+      });
+      setScheduleMaintenances(response.data);
+    } catch (error) {
+      console.error("Error fetching schedule maintenances:", error);
+    }
+  };
+
+  const createScheduleMaintenance = async (data: any) => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const maintenanceData = {
+        equipmentName: data.equipment,
+        maintenanceType: data.maintenanceType.toUpperCase(),
+        scheduledDate: new Date(data.scheduledDate).toISOString(),
+        Priority: data.priority.toUpperCase(),
+        technicianName: data.technician,
+        estimatedTime: data.estimatedDuration,
+        description: data.description || "",
+        additionalNotes: data.notes || "",
+      };
+
+      const response = await axios.post(
+        `${API_URL}/schedule-maintenance`,
+        maintenanceData,
+        { headers }
+      );
+      
+      toast.success(`Maintenance scheduled for ${data.equipment}`);
+      fetchScheduleMaintenances(); // Refresh the list
+      return response.data;
+    } catch (error) {
+      console.error("Error creating schedule maintenance:", error);
+      toast.error("Failed to schedule maintenance");
+      throw error;
+    }
+  };
+
+  const updateScheduleMaintenance = async (id: string, data: any) => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const maintenanceData = {
+        equipmentName: data.equipment,
+        maintenanceType: data.maintenanceType.toUpperCase(),
+        scheduledDate: new Date(data.scheduledDate).toISOString(),
+        Priority: data.priority.toUpperCase(),
+        technicianName: data.technician,
+        estimatedTime: data.estimatedDuration,
+        description: data.description || "",
+        additionalNotes: data.notes || "",
+      };
+
+      const response = await axios.put(
+        `${API_URL}/schedule-maintenance/${id}`,
+        maintenanceData,
+        { headers }
+      );
+      
+      toast.success("Maintenance updated successfully");
+      fetchScheduleMaintenances(); // Refresh the list
+      return response.data;
+    } catch (error) {
+      console.error("Error updating schedule maintenance:", error);
+      toast.error("Failed to update maintenance");
+      throw error;
+    }
+  };
+
+  const deleteScheduleMaintenance = async (id: string) => {
+    try {
+      setIsDeletingMaintenance(true);
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await axios.delete(`${API_URL}/schedule-maintenance/${id}`, { headers });
+      
+      toast.success("Maintenance deleted successfully");
+      fetchScheduleMaintenances(); // Refresh the list
+    } catch (error) {
+      console.error("Error deleting schedule maintenance:", error);
+      toast.error("Failed to delete maintenance");
+    } finally {
+      setIsDeletingMaintenance(false);
+      setMaintenanceToDelete(null);
+    }
+  };
+
   useEffect(() => {
     fetchInventoryData();
     fetchVendors();
+    fetchScheduleMaintenances();
   }, []);
 
   // Add action handlers
@@ -2642,58 +2757,126 @@ const Inventory = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    {
-                      equipment: "Forklift A",
-                      status: "Operational",
-                      nextMaintenance: "5 days",
-                      efficiency: 95,
-                    },
-                    {
-                      equipment: "Conveyor Belt",
-                      status: "Maintenance Due",
-                      nextMaintenance: "Overdue",
-                      efficiency: 80,
-                    },
-                    {
-                      equipment: "Loading Dock 1",
-                      status: "Operational",
-                      nextMaintenance: "12 days",
-                      efficiency: 98,
-                    },
-                    {
-                      equipment: "Crane System",
-                      status: "Operational",
-                      nextMaintenance: "8 days",
-                      efficiency: 92,
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.equipment}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div>
-                        <h4 className="font-medium">{item.equipment}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Next maintenance: {item.nextMaintenance}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge
-                          variant={
-                            item.status === "Operational"
-                              ? "default"
-                              : "destructive"
-                          }
-                        >
-                          {item.status}
-                        </Badge>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {item.efficiency}% efficiency
-                        </div>
-                      </div>
+                  {scheduleMaintenances.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>No maintenance schedules yet</p>
+                      <p className="text-sm">Click "Schedule Maintenance" to add one</p>
                     </div>
-                  ))}
+                  ) : (
+                    scheduleMaintenances.map((maintenance) => {
+                      const scheduledDate = new Date(maintenance.scheduledDate);
+                      const now = new Date();
+                      const daysUntil = Math.ceil((scheduledDate.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                      const isOverdue = daysUntil < 0;
+                      const isDue = daysUntil <= 7 && daysUntil >= 0;
+                      
+                      return (
+                        <div
+                          key={maintenance.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium">{maintenance.equipmentName}</h4>
+                              <Badge
+                                variant={maintenance.maintenanceType === 'EMERGENCY' ? 'destructive' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {maintenance.maintenanceType}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Scheduled: {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString()}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Technician: {maintenance.technicianName} • {maintenance.estimatedTime}h estimated
+                            </p>
+                            {maintenance.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {maintenance.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right mr-3">
+                              <Badge
+                                variant={
+                                  isOverdue
+                                    ? "destructive"
+                                    : isDue
+                                    ? "secondary"
+                                    : "default"
+                                }
+                              >
+                                {maintenance.Priority}
+                              </Badge>
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {isOverdue 
+                                  ? `${Math.abs(daysUntil)} days overdue`
+                                  : isDue
+                                  ? `${daysUntil} days left`
+                                  : `${daysUntil} days left`
+                                }
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingMaintenance(maintenance);
+                                  maintenanceForm.reset({
+                                    equipment: maintenance.equipmentName,
+                                    maintenanceType: maintenance.maintenanceType.toLowerCase(),
+                                    scheduledDate: new Date(maintenance.scheduledDate).toISOString().slice(0, 16),
+                                    priority: maintenance.Priority,
+                                    technician: maintenance.technicianName,
+                                    estimatedDuration: maintenance.estimatedTime,
+                                    description: maintenance.description,
+                                    notes: maintenance.additionalNotes,
+                                  });
+                                  setIsScheduleMaintenanceOpen(true);
+                                }}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-destructive hover:text-destructive"
+                                  >
+                                    <Trash className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Maintenance Schedule</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete the maintenance schedule for "{maintenance.equipmentName}"? 
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteScheduleMaintenance(maintenance.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      disabled={isDeletingMaintenance}
+                                    >
+                                      {isDeletingMaintenance ? "Deleting..." : "Delete"}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -3026,17 +3209,31 @@ const Inventory = () => {
       <Dialog open={isScheduleMaintenanceOpen} onOpenChange={setIsScheduleMaintenanceOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Schedule Equipment Maintenance</DialogTitle>
+            <DialogTitle>
+              {editingMaintenance ? 'Edit Equipment Maintenance' : 'Schedule Equipment Maintenance'}
+            </DialogTitle>
             <DialogDescription>
-              Schedule maintenance for warehouse equipment to ensure optimal operation
+              {editingMaintenance 
+                ? 'Update the maintenance schedule for warehouse equipment'
+                : 'Schedule maintenance for warehouse equipment to ensure optimal operation'
+              }
             </DialogDescription>
           </DialogHeader>
           <Form {...maintenanceForm}>
-            <form onSubmit={maintenanceForm.handleSubmit((data) => {
-              console.log('Maintenance scheduled:', data);
-              toast.success(`Maintenance scheduled for ${data.equipment}`);
-              setIsScheduleMaintenanceOpen(false);
-              maintenanceForm.reset();
+            <form onSubmit={maintenanceForm.handleSubmit(async (data) => {
+              try {
+                if (editingMaintenance) {
+                  await updateScheduleMaintenance(editingMaintenance.id, data);
+                } else {
+                  await createScheduleMaintenance(data);
+                }
+                setIsScheduleMaintenanceOpen(false);
+                setIsEditMaintenanceOpen(false);
+                setEditingMaintenance(null);
+                maintenanceForm.reset();
+              } catch (error) {
+                // Error handling is done in the API functions
+              }
             })} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -3201,13 +3398,15 @@ const Inventory = () => {
                   variant="outline"
                   onClick={() => {
                     setIsScheduleMaintenanceOpen(false);
+                    setIsEditMaintenanceOpen(false);
+                    setEditingMaintenance(null);
                     maintenanceForm.reset();
                   }}
                 >
                   Cancel
                 </Button>
                 <Button type="submit">
-                  Schedule Maintenance
+                  {editingMaintenance ? 'Update Maintenance' : 'Schedule Maintenance'}
                 </Button>
               </DialogFooter>
             </form>
