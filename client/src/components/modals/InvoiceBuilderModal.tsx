@@ -884,9 +884,9 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
               </Card>
 
           {/* Third Row: Additional Information + Progress Tracking */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
             {/* Left Column - Additional Information */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <Card>
                 <CardHeader>
                   <CardTitle>Additional Information</CardTitle>
@@ -944,7 +944,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
 
             {/* Right Column - Progress Tracking */}
             <div>
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>Progress Tracking</CardTitle>
                 </CardHeader>
@@ -968,7 +968,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </div>
           {/* Footer */}
