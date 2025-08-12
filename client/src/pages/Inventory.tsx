@@ -1711,7 +1711,7 @@ const Inventory = () => {
             />
           </div>
 
-          <MaterialForecast projectId="PROJ001" timeframe="1-month" />
+          <MaterialForecast projectId="PROJ001" timeframe="1-month" inventoryData={inventoryItems} />
         </TabsContent>
 
         <TabsContent value="issue-tracking" className="space-y-6">

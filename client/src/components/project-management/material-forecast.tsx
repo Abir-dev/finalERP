@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, TrendingUp, AlertTriangle, Calendar, Download, DollarSign, Clock } from "lucide-react";
+import { Package, TrendingUp, AlertTriangle, Calendar, Download, DollarSign, Clock, MapPin } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { toast } from "sonner";
@@ -14,24 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
-
-interface MaterialRequirement {
-  id: string;
-  material: string;
-  category: string;
-  requiredQuantity: number;
-  unit: string;
-  estimatedCost: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  plannedDate: string;
-  supplier: string;
-  availability: 'in-stock' | 'low-stock' | 'out-of-stock' | 'on-order';
-  leadTime: number;
-}
+import type { InventoryItem } from "@/types/dummy-data-types";
 
 interface MaterialForecastProps {
   projectId: string;
   timeframe: '2-weeks' | '1-month' | 'custom';
+  inventoryData: InventoryItem[];
 }
 
 interface QuoteRequest {
@@ -42,11 +30,11 @@ interface QuoteRequest {
   additionalNotes: string;
 }
 
-export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps) {
+export function MaterialForecast({ projectId, timeframe, inventoryData }: MaterialForecastProps) {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'2-weeks' | '1-month' | 'custom'>(timeframe);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialRequirement | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<InventoryItem | null>(null);
   const [quoteRequest, setQuoteRequest] = useState<QuoteRequest>({
     materialId: '',
     quantity: 0,
@@ -55,68 +43,53 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
     additionalNotes: ''
   });
 
-  // Mock data - would come from API
-  const materialRequirements: MaterialRequirement[] = [
-    {
-      id: 'MAT001',
-      material: 'Cement (OPC 53)',
-      category: 'Raw Materials',
-      requiredQuantity: 500,
-      unit: 'bags',
-      estimatedCost: 175000,
-      priority: 'critical',
-      plannedDate: '2024-02-01',
-      supplier: 'UltraTech',
-      availability: 'low-stock',
-      leadTime: 3
-    },
-    {
-      id: 'MAT002',
-      material: 'Steel TMT Bars (12mm)',
-      category: 'Structural',
-      requiredQuantity: 2500,
-      unit: 'kg',
-      estimatedCost: 145000,
-      priority: 'high',
-      plannedDate: '2024-02-05',
-      supplier: 'Tata Steel',
-      availability: 'in-stock',
-      leadTime: 5
-    },
-    {
-      id: 'MAT003',
-      material: 'Ready Mix Concrete (M25)',
-      category: 'Concrete',
-      requiredQuantity: 150,
-      unit: 'cum',
-      estimatedCost: 225000,
-      priority: 'high',
-      plannedDate: '2024-02-10',
-      supplier: 'ACC RMC',
-      availability: 'on-order',
-      leadTime: 2
-    }
-  ];
+  // Get unique categories from inventory data
+  const categories = Array.from(new Set(inventoryData.map(item => 
+    Array.isArray(item.category) ? item.category[0] : item.category
+  )));
 
-  const getAvailabilityColor = (availability: MaterialRequirement['availability']) => {
-    switch (availability) {
-      case 'in-stock': return 'default';
-      case 'low-stock': return 'secondary';
-      case 'out-of-stock': return 'destructive';
-      case 'on-order': return 'outline';
-    }
+  // Calculate category statistics
+  const categoryStats = categories.map(category => {
+    const categoryItems = inventoryData.filter(item => 
+      (Array.isArray(item.category) ? item.category[0] : item.category) === category
+    );
+    const totalQuantity = categoryItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalValue = categoryItems.reduce((sum, item) => sum + (item.quantity * (item.unitCost || 0)), 0);
+    const lowStockItems = categoryItems.filter(item => 
+      item.reorderLevel && item.quantity <= item.reorderLevel
+    ).length;
+    
+    return {
+      category,
+      itemCount: categoryItems.length,
+      totalQuantity,
+      totalValue,
+      lowStockItems,
+      items: categoryItems
+    };
+  });
+
+  const totalInventoryValue = categoryStats.reduce((sum, cat) => sum + cat.totalValue, 0);
+  const totalItems = inventoryData.length;
+  const lowStockItemsCount = inventoryData.filter(item => 
+    item.reorderLevel && item.quantity <= item.reorderLevel
+  ).length;
+
+  const getAvailabilityColor = (item: InventoryItem) => {
+    if (!item.reorderLevel) return 'default';
+    if (item.quantity === 0) return 'destructive';
+    if (item.quantity <= item.reorderLevel) return 'secondary';
+    if (item.quantity <= (item.reorderLevel * 1.5)) return 'outline';
+    return 'default';
   };
 
-  const getPriorityColor = (priority: MaterialRequirement['priority']) => {
-    switch (priority) {
-      case 'critical': return 'destructive';
-      case 'high': return 'default';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-    }
+  const getAvailabilityText = (item: InventoryItem) => {
+    if (!item.reorderLevel) return 'Unknown';
+    if (item.quantity === 0) return 'Out of Stock';
+    if (item.quantity <= item.reorderLevel) return 'Low Stock';
+    if (item.quantity <= (item.reorderLevel * 1.5)) return 'Medium Stock';
+    return 'In Stock';
   };
-
-  const totalEstimatedCost = materialRequirements.reduce((sum, item) => sum + item.estimatedCost, 0);
 
   const handleTimeframeChange = (value: string) => {
     setSelectedTimeframe(value as '2-weeks' | '1-month' | 'custom');
@@ -129,63 +102,57 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
     // Overview sheet
     const overviewData = [
       {
-        'Total Items': materialRequirements.length,
-        'Total Estimated Cost': `₹${(totalEstimatedCost / 100000).toFixed(1)}L`,
-        'Critical Items': materialRequirements.filter(m => m.priority === 'critical').length,
-        'Average Lead Time': `${Math.round(materialRequirements.reduce((sum, m) => sum + m.leadTime, 0) / materialRequirements.length)} days`
+        'Total Items': totalItems,
+        'Total Inventory Value': `₹${(totalInventoryValue / 100000).toFixed(1)}L`,
+        'Low Stock Items': lowStockItemsCount,
+        'Categories': categories.length
       }
     ];
     const overviewSheet = XLSX.utils.json_to_sheet(overviewData);
     XLSX.utils.book_append_sheet(wb, overviewSheet, 'Overview');
 
     // Category breakdown sheet
-    const categoryData = ['Raw Materials', 'Structural', 'Concrete', 'Finishing'].map(category => {
-      const categoryItems = materialRequirements.filter(m => m.category === category);
-      const categoryValue = categoryItems.reduce((sum, m) => sum + m.estimatedCost, 0);
-      const percentage = (categoryValue / totalEstimatedCost) * 100;
-      
-      return {
-        'Category': category,
-        'Total Cost': `₹${(categoryValue / 100000).toFixed(1)}L`,
-        'Percentage': `${percentage.toFixed(1)}%`,
-        'Number of Items': categoryItems.length
-      };
-    });
+    const categoryData = categoryStats.map(cat => ({
+      'Category': cat.category,
+      'Total Value': `₹${(cat.totalValue / 100000).toFixed(1)}L`,
+      'Percentage': `${((cat.totalValue / totalInventoryValue) * 100).toFixed(1)}%`,
+      'Number of Items': cat.itemCount,
+      'Low Stock Items': cat.lowStockItems
+    }));
     const categorySheet = XLSX.utils.json_to_sheet(categoryData);
     XLSX.utils.book_append_sheet(wb, categorySheet, 'Category Breakdown');
 
-    // Material requirements sheet
-    const materialsData = materialRequirements.map(item => ({
+    // Inventory sheet
+    const inventorySheetData = inventoryData.map(item => ({
       'ID': item.id,
-      'Material': item.material,
-      'Category': item.category,
-      'Required Quantity': item.requiredQuantity,
+      'Name': item.name,
+      'Category': Array.isArray(item.category) ? item.category[0] : item.category,
+      'Quantity': item.quantity,
       'Unit': item.unit,
-      'Estimated Cost': `₹${item.estimatedCost.toLocaleString()}`,
-      'Priority': item.priority,
-      'Planned Date': item.plannedDate,
-      'Supplier': item.supplier,
-      'Availability': item.availability,
-      'Lead Time': `${item.leadTime} days`
+      'Location': item.location || 'N/A',
+      'Total Value': `₹${(item.quantity * (item.unitCost || 0)).toLocaleString()}`,
+      'Unit Cost': `₹${item.unitCost || 0}`,
+      'Availability': getAvailabilityText(item),
+      'Last Updated': item.lastUpdated || 'N/A'
     }));
-    const materialsSheet = XLSX.utils.json_to_sheet(materialsData);
-    XLSX.utils.book_append_sheet(wb, materialsSheet, 'Material Requirements');
+    const inventorySheet = XLSX.utils.json_to_sheet(inventorySheetData);
+    XLSX.utils.book_append_sheet(wb, inventorySheet, 'Inventory');
 
     // Export the workbook
     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(data, `material-forecast-${selectedTimeframe}-${new Date().toISOString().split('T')[0]}.xlsx`);
+    saveAs(data, `inventory-forecast-${selectedTimeframe}-${new Date().toISOString().split('T')[0]}.xlsx`);
     
-    toast.success("Material forecast data has been exported to Excel");
+    toast.success("Inventory forecast data has been exported to Excel");
   };
 
-  const handleRequestQuote = (material: MaterialRequirement) => {
+  const handleRequestQuote = (material: InventoryItem) => {
     setSelectedMaterial(material);
     setQuoteRequest({
       materialId: material.id,
-      quantity: material.requiredQuantity,
+      quantity: material.quantity,
       unit: material.unit,
-      requiredDate: material.plannedDate,
+      requiredDate: new Date().toISOString().split('T')[0],
       additionalNotes: ''
     });
     setIsQuoteDialogOpen(true);
@@ -193,7 +160,7 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
 
   const handleSubmitQuoteRequest = () => {
     // Here you would typically make an API call to submit the quote request
-    toast.success(`Quote request sent to ${selectedMaterial?.supplier}`);
+    toast.success(`Quote request sent for ${selectedMaterial?.name}`);
     setIsQuoteDialogOpen(false);
   };
 
@@ -224,41 +191,7 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
         </div>
       </CardHeader>
       <CardContent>
-        {/* KPI Cards */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <EnhancedStatCard
-            title="Total Material Cost"
-            value={`₹${(totalEstimatedCost / 100000).toFixed(1)}L`}
-            icon={DollarSign}
-            description="Estimated procurement cost"
-            trend={{ value: 8, label: "vs last forecast" }}
-            threshold={{ status: 'good', message: 'Within budget allocation' }}
-          />
-          <EnhancedStatCard
-            title="Critical Materials"
-            value={materialRequirements.filter(m => m.priority === 'critical').length}
-            icon={AlertTriangle}
-            description="Require immediate action"
-            trend={{ value: -12, label: "vs last week" }}
-            threshold={{ status: 'warning', message: 'Monitor closely for delays' }}
-          />
-          <EnhancedStatCard
-            title="Avg Lead Time"
-            value={`${Math.round(materialRequirements.reduce((sum, m) => sum + m.leadTime, 0) / materialRequirements.length)} days`}
-            icon={Clock}
-            description="Average material delivery"
-            trend={{ value: -5, label: "improvement" }}
-            threshold={{ status: 'good', message: 'Lead times improving' }}
-          />
-          <EnhancedStatCard
-            title="Materials Tracked"
-            value={materialRequirements.length}
-            icon={Package}
-            description="Total items in forecast"
-            trend={{ value: 15, label: "new additions" }}
-            threshold={{ status: 'good', message: 'Comprehensive tracking' }}
-          />
-        </div> */}
+        
 
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
@@ -268,24 +201,58 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
+            {/* Category Breakdown Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categoryStats.map((cat) => (
+                <Card key={cat.category} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Package className="h-5 w-5" />
+                      {cat.category}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Total Value</span>
+                      <span className="font-semibold text-lg">₹{(cat.totalValue / 100000).toFixed(1)}L</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Items</span>
+                      <span className="font-medium">{cat.itemCount}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Low Stock</span>
+                      <Badge variant={cat.lowStockItems > 0 ? "destructive" : "default"}>
+                        {cat.lowStockItems}
+                      </Badge>
+                    </div>
+                    <Progress 
+                      value={(cat.totalValue / totalInventoryValue) * 100} 
+                      className="h-2" 
+                    />
+                    <div className="text-xs text-muted-foreground text-center">
+                      {((cat.totalValue / totalInventoryValue) * 100).toFixed(1)}% of total inventory
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-            {/* Category Breakdown */}
+            {/* Detailed Category Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Category Breakdown</CardTitle>
+                <CardTitle className="text-lg">Category Breakdown Details</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {['Raw Materials', 'Structural', 'Concrete', 'Finishing'].map((category) => {
-                    const categoryItems = materialRequirements.filter(m => m.category === category);
-                    const categoryValue = categoryItems.reduce((sum, m) => sum + m.estimatedCost, 0);
-                    const percentage = (categoryValue / totalEstimatedCost) * 100;
+                  {categoryStats.map((cat) => {
+                    const percentage = (cat.totalValue / totalInventoryValue) * 100;
                     
                     return (
-                      <div key={category} className="space-y-2">
+                      <div key={cat.category} className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="font-medium">{category}</span>
-                          <span>₹{(categoryValue / 100000).toFixed(1)}L ({percentage.toFixed(1)}%)</span>
+                          <span className="font-medium">{cat.category}</span>
+                          <span>₹{(cat.totalValue / 100000).toFixed(1)}L ({percentage.toFixed(1)}%)</span>
                         </div>
                         <Progress value={percentage} className="h-2" />
                       </div>
@@ -304,61 +271,67 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Raw Materials">Raw Materials</SelectItem>
-                  <SelectItem value="Structural">Structural</SelectItem>
-                  <SelectItem value="Concrete">Concrete</SelectItem>
-                  <SelectItem value="Finishing">Finishing</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-3">
-              {materialRequirements
-                .filter(material => selectedCategory === 'all' || material.category === selectedCategory)
+              {inventoryData
+                .filter(material => selectedCategory === 'all' || 
+                  (Array.isArray(material.category) ? material.category[0] : material.category) === selectedCategory)
                 .map((material) => (
                 <Card key={material.id}>
                   <CardContent className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                       <div className="md:col-span-2">
-                        <h4 className="font-medium">{material.material}</h4>
-                        <p className="text-sm text-muted-foreground">{material.category}</p>
+                        <h4 className="font-medium">{material.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {Array.isArray(material.category) ? material.category[0] : material.category}
+                        </p>
                         <div className="flex gap-2 mt-1">
-                          <Badge variant={getPriorityColor(material.priority)}>
-                            {material.priority}
-                          </Badge>
-                          <Badge variant={getAvailabilityColor(material.availability)}>
-                            {material.availability}
+                          <Badge variant={getAvailabilityColor(material)}>
+                            {getAvailabilityText(material)}
                           </Badge>
                         </div>
                       </div>
                       
                       <div>
                         <p className="text-sm text-muted-foreground">Quantity</p>
-                        <p className="font-medium">{material.requiredQuantity} {material.unit}</p>
+                        <p className="font-medium">{material.quantity} {material.unit}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-muted-foreground">Est. Cost</p>
-                        <p className="font-medium">₹{material.estimatedCost.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Total Value</p>
+                        <p className="font-medium">₹{(material.quantity * (material.unitCost || 0)).toLocaleString()}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-muted-foreground">Planned Date</p>
-                        <p className="font-medium">{material.plannedDate}</p>
-                        <p className="text-xs text-muted-foreground">Lead: {material.leadTime} days</p>
+                        <p className="text-sm text-muted-foreground">Location</p>
+                        <p className="font-medium flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {material.location || 'N/A'}
+                        </p>
+                        {material.reorderLevel && (
+                          <p className="text-xs text-muted-foreground">
+                            Reorder: {material.reorderLevel} {material.unit}
+                          </p>
+                        )}
                       </div>
                       
                       <div>
-                        <p className="text-sm text-muted-foreground">Supplier</p>
-                        <p className="font-medium">{material.supplier}</p>
-                        <Button 
+                        <p className="text-sm text-muted-foreground">Unit Cost</p>
+                        <p className="font-medium">₹{material.unitCost || 0}</p>
+                        {/* <Button 
                           variant="outline" 
                           size="sm" 
                           className="mt-1"
                           onClick={() => handleRequestQuote(material)}
                         >
                           Request Quote
-                        </Button>
+                        </Button> */}
                       </div>
                     </div>
                   </CardContent>
@@ -372,7 +345,7 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
                 <DialogHeader>
                   <DialogTitle>Request Quote</DialogTitle>
                   <DialogDescription>
-                    Submit a quote request to {selectedMaterial?.supplier} for {selectedMaterial?.material}
+                    Submit a quote request for {selectedMaterial?.name}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -419,30 +392,31 @@ export function MaterialForecast({ projectId, timeframe }: MaterialForecastProps
 
           <TabsContent value="timeline" className="space-y-4">
             <div className="space-y-3">
-              {materialRequirements
-                .sort((a, b) => new Date(a.plannedDate).getTime() - new Date(b.plannedDate).getTime())
+              {inventoryData
+                .sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''))
                 .map((material) => (
-                <div key={material.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                <div key={material.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="w-20 text-sm text-center">
-                    <div className="font-medium">{new Date(material.plannedDate).toLocaleDateString()}</div>
+                    <div className="font-medium">{material.lastUpdated ? new Date(material.lastUpdated).toLocaleDateString() : 'N/A'}</div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{material.material}</span>
-                      <Badge variant={getPriorityColor(material.priority)} className="text-xs">
-                        {material.priority}
+                      <span className="font-medium">{material.name}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {Array.isArray(material.category) ? material.category[0] : material.category}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {material.requiredQuantity} {material.unit} - ₹{material.estimatedCost.toLocaleString()}
+                      {material.quantity} {material.unit} - ₹{(material.quantity * (material.unitCost || 0)).toLocaleString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <Badge variant={getAvailabilityColor(material.availability)}>
-                      {material.availability}
+                    <Badge variant={getAvailabilityColor(material)}>
+                      {getAvailabilityText(material)}
                     </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {material.leadTime} days lead time
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {material.location || 'N/A'}
                     </p>
                   </div>
                 </div>
