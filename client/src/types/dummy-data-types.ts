@@ -169,6 +169,75 @@ export type Employee = {
   updatedAt?: string;
 };
 
+// Employee Salary types - matching database schema
+export type EmployeeSalaryEarnings = {
+  id: string;
+  basic: number;
+  da: number; // Dearness Allowance
+  hra: number; // House Rent Allowance
+  conveyance: number;
+  allowance: number;
+  medicalAllowance: number;
+  others: number;
+  total: number; // Calculated field
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type EmployeeSalaryDeductions = {
+  id: string;
+  tds: number; // Tax Deducted at Source
+  esi: number; // Employee State Insurance
+  pf: number; // Provident Fund
+  leave: number; // Leave deduction
+  profTax: number; // Professional Tax
+  labourWelfare: number; // Labour Welfare Fund
+  others: number;
+  total: number; // Calculated field
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+// Form data type for AddEmployeeSalaryModal
+export type EmployeeSalaryFormData = {
+  employeeName: string;
+  role: string;
+  status: string;
+  month: string;
+  year: number;
+  netSalary: number;
+  grossSalary: number;
+  earnings: Omit<EmployeeSalaryEarnings, 'id' | 'total' | 'createdAt' | 'updatedAt'>;
+  deductions: Omit<EmployeeSalaryDeductions, 'id' | 'total' | 'createdAt' | 'updatedAt'>;
+  remarks?: string;
+};
+
+// Full database entity type
+export type EmployeeSalary = {
+  id: string;
+  employeeId: string;
+  month: string;
+  year: number;
+  status: 'PENDING' | 'PAID' | 'CANCELLED' | 'DRAFT';
+  grossSalary: number;
+  netSalary: number;
+  paymentDate?: string;
+  remarks?: string;
+  earningsId: string;
+  deductionsId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Relations
+  employee?: Employee;
+  earnings?: EmployeeSalaryEarnings;
+  deductions?: EmployeeSalaryDeductions;
+};
+
+export type UserRole = {
+  value: string;
+  label: string;
+};
+
 // Task type (merged backend and frontend fields)
 export type Task = {
   id: string;

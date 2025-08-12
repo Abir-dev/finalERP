@@ -6,12 +6,7 @@ export const hrController = {
   async createEmployee(req: Request, res: Response) {
     try {
       const employee = await prismaHRService.createEmployee(req.body);
-      // Notify the user
-      await prismaNotificationService.createNotification({
-        to: employee.userId,
-        type: 'employee',
-        message: `You have been added as an employee.`
-      });
+      // Employee created successfully - no notification needed since Employee model doesn't have userId
       res.status(201).json(employee);
     } catch (err) {
       if (err instanceof Error) {
@@ -60,16 +55,8 @@ export const hrController = {
   },
   async deleteEmployee(req: Request, res: Response) {
     try {
-      const employee = await prismaHRService.getEmployeeById(req.params.id);
       await prismaHRService.deleteEmployee(req.params.id);
-      // Notify the user
-      if (employee) {
-        await prismaNotificationService.createNotification({
-          to: employee.userId,
-          type: 'employee-removed',
-          message: `Your employee profile has been removed.`
-        });
-      }
+      // Employee deleted successfully - no notification needed since Employee model doesn't have userId
       res.status(204).send();
     } catch (err) {
       if (err instanceof Error) {
