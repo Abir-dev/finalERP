@@ -287,7 +287,6 @@ model Employee {
   name            String
   position        String
   department      String
-  salary          Float
   joinedAt        DateTime
   leftAt          DateTime?
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
