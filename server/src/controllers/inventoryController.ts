@@ -388,5 +388,298 @@ export const inventoryController = {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
-  }
-}; 
+  },
+
+  // Material Transfers
+  async createMaterialTransfer(req: Request, res: Response) {
+    try {
+      const {
+        transferID,
+        fromLocation,
+        toLocation,
+        requestedDate,
+        status,
+        driverName,
+        etaMinutes,
+        vehicleId,
+        approvedById,
+        priority,
+        items,
+        notes,
+      } = req.body || {};
+
+      if (!transferID || !fromLocation || !toLocation || !requestedDate) {
+        return res.status(400).json({ error: "transferID, fromLocation, toLocation, requestedDate are required" });
+      }
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "At least one item is required" });
+      }
+
+      const created = await (prisma as any).materialTransfer.create({
+        data: {
+          transferID,
+          fromLocation,
+          toLocation,
+          requestedDate: new Date(requestedDate),
+          status: status ?? undefined,
+          driverName: driverName || null,
+          etaMinutes: typeof etaMinutes === 'number' ? etaMinutes : null,
+          vehicleId: vehicleId || null,
+          approvedById: approvedById || null,
+          priority: priority ?? undefined,
+          createdById: (req.user as any)?.id,
+          items: {
+            create: items.map((i: any) => ({
+              description: i.description,
+              quantity: i.quantity,
+              unit: i.unit || null,
+              inventoryId: i.inventoryId || null,
+              notes: i.notes || null,
+            })),
+          },
+          notes: notes || null,
+        },
+        include: {
+          items: true,
+          vehicle: true,
+          approvedBy: { select: { id: true, name: true, email: true } },
+          createdBy: { select: { id: true, name: true, email: true } },
+        },
+      });
+
+      res.status(201).json(created);
+    } catch (error) {
+      logger.error("Error creating material transfer:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  async listMaterialTransfers(req: Request, res: Response) {
+    try {
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const transfers = await (prisma as any).materialTransfer.findMany({
+        where: { createdById: userId as string },
+        include: {
+          items: true,
+          vehicle: true,
+          approvedBy: { select: { id: true, name: true, email: true } },
+          createdBy: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json(transfers);
+    } catch (error) {
+      logger.error("Error fetching material transfers:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  async getMaterialTransfer(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const transfer = await (prisma as any).materialTransfer.findUnique({
+        where: { id },
+        include: {
+          items: true,
+          vehicle: true,
+          approvedBy: { select: { id: true, name: true, email: true } },
+          createdBy: { select: { id: true, name: true, email: true } },
+        },
+      });
+      if (!transfer) return res.status(404).json({ error: 'Material transfer not found' });
+      if (transfer.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+      res.json(transfer);
+    } catch (error) {
+      logger.error("Error getting material transfer:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  async updateMaterialTransfer(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const existing = await (prisma as any).materialTransfer.findUnique({ where: { id } });
+      if (!existing) return res.status(404).json({ error: 'Material transfer not found' });
+      if (existing.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+      const { transferID, fromLocation, toLocation, requestedDate, status, driverName, etaMinutes, vehicleId, approvedById, priority, notes } = req.body || {};
+
+      const updated = await (prisma as any).materialTransfer.update({
+        where: { id },
+        data: {
+          transferID,
+          fromLocation,
+          toLocation,
+          requestedDate: requestedDate ? new Date(requestedDate) : undefined,
+          status,
+          driverName,
+          etaMinutes,
+          vehicleId,
+          approvedById,
+          priority,
+          notes,
+        },
+        include: {
+          items: true,
+          vehicle: true,
+          approvedBy: { select: { id: true, name: true, email: true } },
+          createdBy: { select: { id: true, name: true, email: true } },
+        },
+      });
+      res.json(updated);
+    } catch (error) {
+      logger.error("Error updating material transfer:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  async deleteMaterialTransfer(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const existing = await (prisma as any).materialTransfer.findUnique({ where: { id }, include: { items: true } });
+      if (!existing) return res.status(404).json({ error: 'Material transfer not found' });
+      if (existing.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+      await (prisma as any).materialTransferItem.deleteMany({ where: { transferId: id } });
+      await (prisma as any).materialTransfer.delete({ where: { id } });
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Error deleting material transfer:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  // Material Transfer Items
+  async listMaterialTransferItems(req: Request, res: Response) {
+    try {
+      const { transferId } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
+      if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
+      if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+      const items = await (prisma as any).materialTransferItem.findMany({ where: { transferId }, orderBy: { id: 'asc' } });
+      res.json(items);
+    } catch (error) {
+      logger.error("Error listing material transfer items:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  async createMaterialTransferItem(req: Request, res: Response) {
+    try {
+      const { transferId } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
+      if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
+      if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+
+      const { description, quantity, unit, inventoryId, notes } = req.body || {};
+      if (!description || typeof quantity !== 'number') {
+        return res.status(400).json({ error: 'description and quantity are required' });
+      }
+      const item = await (prisma as any).materialTransferItem.create({
+        data: {
+          transferId,
+          description,
+          quantity,
+          unit: unit || null,
+          inventoryId: inventoryId || null,
+          notes: notes || null,
+        },
+      });
+      res.status(201).json(item);
+    } catch (error) {
+      logger.error("Error creating material transfer item:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  async getMaterialTransferItem(req: Request, res: Response) {
+    try {
+      const { transferId, itemId } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
+      if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
+      if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+      const item = await (prisma as any).materialTransferItem.findUnique({ where: { id: itemId } });
+      if (!item || item.transferId !== transferId) return res.status(404).json({ error: 'Material transfer item not found' });
+      res.json(item);
+    } catch (error) {
+      logger.error("Error getting material transfer item:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  async updateMaterialTransferItem(req: Request, res: Response) {
+    try {
+      const { transferId, itemId } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
+      if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
+      if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+      const { description, quantity, unit, inventoryId, notes } = req.body || {};
+      const item = await (prisma as any).materialTransferItem.update({
+        where: { id: itemId },
+        data: { description, quantity, unit, inventoryId, notes },
+      });
+      if (!item || item.transferId !== transferId) return res.status(404).json({ error: 'Material transfer item not found' });
+      res.json(item);
+    } catch (error) {
+      logger.error("Error updating material transfer item:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+
+  async deleteMaterialTransferItem(req: Request, res: Response) {
+    try {
+      const { transferId, itemId } = req.params;
+      const { userId } = req.query;
+      if (!userId) {
+        return res.status(400).json({ error: "userId query param is required" });
+      }
+      const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
+      if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
+      if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
+      const existing = await (prisma as any).materialTransferItem.findUnique({ where: { id: itemId } });
+      if (!existing || existing.transferId !== transferId) return res.status(404).json({ error: 'Material transfer item not found' });
+      await (prisma as any).materialTransferItem.delete({ where: { id: itemId } });
+      res.status(204).send();
+    } catch (error) {
+      logger.error("Error deleting material transfer item:", error);
+      res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  },
+};

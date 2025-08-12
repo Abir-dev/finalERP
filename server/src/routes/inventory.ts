@@ -25,4 +25,18 @@ router.post('/requests', authenticateUser, checkRole('site'), validateMaterialRe
 router.get('/requests', authenticateUser, inventoryController.listMaterialRequests);
 router.put('/requests/:id', authenticateUser, checkRole('store'), validateMaterialRequest, inventoryController.updateMaterialRequest);
 
+// Material Transfers
+router.post('/transfers', authenticateUser, inventoryController.createMaterialTransfer);
+router.get('/transfers', authenticateUser, inventoryController.listMaterialTransfers);
+router.get('/transfers/:id', authenticateUser, inventoryController.getMaterialTransfer);
+router.put('/transfers/:id', authenticateUser, inventoryController.updateMaterialTransfer);
+router.delete('/transfers/:id', authenticateUser, inventoryController.deleteMaterialTransfer);
+
+// Material Transfer Items
+router.get('/transfers/:transferId/items', authenticateUser, inventoryController.listMaterialTransferItems);
+router.post('/transfers/:transferId/items', authenticateUser, inventoryController.createMaterialTransferItem);
+router.get('/transfers/:transferId/items/:itemId', authenticateUser, inventoryController.getMaterialTransferItem);
+router.put('/transfers/:transferId/items/:itemId', authenticateUser, inventoryController.updateMaterialTransferItem);
+router.delete('/transfers/:transferId/items/:itemId', authenticateUser, inventoryController.deleteMaterialTransferItem);
+
 export default router; 
