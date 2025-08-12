@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -76,12 +76,7 @@ import { useUser } from "@/contexts/UserContext";
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-const transferData = [
-  { name: "Completed", value: 45, fill: "#10b981" },
-  { name: "In Transit", value: 12, fill: "#3b82f6" },
-  { name: "Pending", value: 8, fill: "#f59e0b" },
-  { name: "Cancelled", value: 3, fill: "#ef4444" },
-];
+// Dynamic transfer data will be calculated from actual transfers
 
 type InventoryItem = (typeof inventoryData)[0];
 
@@ -280,6 +275,82 @@ const StoreDashboard = () => {
   // Vendors and Material Requests data
   const [vendors, setVendors] = useState<any[]>([]);
   const [materialRequests, setMaterialRequests] = useState<any[]>([]);
+  console.log(materialRequests)
+  const fetchVendorsData = async () => {
+    if (!userID) return;
+    
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const response = await axios.get(`${API_URL}/vendors/user/${userID}`, { headers });
+      setVendors(response.data || []);
+    } catch (error) {
+      console.error("Error fetching vendors:", error);
+      toast({
+        title: "Error", 
+        description: "Failed to fetch vendor data",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const fetchTransfersData = async () => {
+    if (!userID) return;
+    
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    try {
+      const response = await axios.get(`${API_URL}/store/transfers?userId=${userID}`, { headers });
+      setTransfers(response.data || []);
+    } catch (error) {
+      console.error("Error fetching transfers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch transfer data", 
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Calculate transfer statistics from actual data
+  const getTransferStats = () => {
+    if (!transfers.length) return [];
+    
+    const statuses = ['DELIVERED', 'IN_TRANSIT', 'PENDING', 'CANCELLED'];
+    const colors = { 
+      'DELIVERED': '#10b981', 
+      'IN_TRANSIT': '#3b82f6', 
+      'PENDING': '#f59e0b', 
+      'CANCELLED': '#ef4444' 
+    };
+    const labels = {
+      'DELIVERED': 'Completed',
+      'IN_TRANSIT': 'In Transit', 
+      'PENDING': 'Pending',
+      'CANCELLED': 'Cancelled'
+    };
+
+    return statuses.map(status => ({
+      name: labels[status],
+      value: transfers.filter((t: any) => t.status === status).length,
+      fill: colors[status]
+    }));
+  };
+
+  // Calculate material request statistics
+  const getMaterialRequestStats = () => {
+    const statuses = ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'];
+    return statuses.map(status => ({
+      status,
+      label: status.charAt(0) + status.slice(1).toLowerCase(),
+      count: materialRequests.filter((req: any) => req.status === status).length,
+      color: status === 'APPROVED' || status === 'COMPLETED' ? 'bg-green-500' :
+             status === 'PENDING' ? 'bg-yellow-500' : 
+             status === 'REJECTED' ? 'bg-red-500' : 'bg-blue-500'
+    }));
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -692,10 +763,7 @@ const StoreDashboard = () => {
       .catch((error) => console.error("Error fetching stock levels:", error));
 
     // Store Transfers
-    axios
-      .get(`${API_URL}/store/transfers?userId=${userID}`, { headers })
-      .then((res) => setTransfers(res.data || []))
-      .catch((error) => console.error("Error fetching transfers:", error));
+    fetchTransfersData();
 
     // Vehicle data - using new vehicle APIs
     axios
@@ -760,10 +828,7 @@ const StoreDashboard = () => {
       fetchAnalyticsData();
 
       // Fetch vendors data
-      axios
-        .get(`${API_URL}/vendors/user/${userID}`, { headers })
-        .then((res) => setVendors(res.data || []))
-        .catch((error) => console.error("Error fetching vendors:", error));
+      fetchVendorsData();
 
       // Fetch material requests data
       axios
@@ -1189,8 +1254,8 @@ const StoreDashboard = () => {
                 </Button>
               </div>
               <Card>
-              <CardContent className="space-y-6">
-                  <div className="space-y-3">
+              <CardContent className="p-6">
+                  <div className="space-y-4">
                     {inventory
                       .filter((item) => item.quantity <= item.reorderLevel)
                       .map((item) => {
@@ -1265,57 +1330,83 @@ const StoreDashboard = () => {
               </div>
               <Card>
                 <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {[
-                      {
-                        id: "TR001",
-                        status: "Delivered",
-                        time: "2 hours ago",
-                        from: "Warehouse A",
-                        to: "Site 1",
-                      },
-                      {
-                        id: "TR002",
-                        status: "In Transit",
-                        time: "4 hours ago",
-                        from: "Site 2",
-                        to: "Central",
-                      },
-                      {
-                        id: "TR003",
-                        status: "Packed",
-                        time: "6 hours ago",
-                        from: "Warehouse B",
-                        to: "Site 3",
-                      },
-                      {
-                        id: "TR004",
-                        status: "Requested",
-                        time: "8 hours ago",
-                        from: "Site 1",
-                        to: "Warehouse A",
-                      },
-                    ].map((transfer) => (
-                      <div
-                        key={transfer.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div>
-                          <h3 className="font-medium">{transfer.id}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {transfer.from} → {transfer.to}
-                          </p>
+                    <div className="space-y-4">
+                      {transfers.slice(0, 5).map((transfer, index) => (
+                        <div
+                          key={transfer.id || index}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-3 h-3 rounded-full ${
+                                transfer.status === "DELIVERED"
+                                  ? "bg-green-500"
+                                  : transfer.status === "IN_TRANSIT"
+                                  ? "bg-blue-500"
+                                  : transfer.status === "PENDING"
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
+                              }`}
+                            ></div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <p className="font-medium text-gray-900">
+                                  {transfer.items && transfer.items.length > 0 
+                                    ? transfer.items.slice(0, 2).map((item: any) => item.description).join(', ')
+                                    + (transfer.items.length > 2 ? ` +${transfer.items.length - 2} more` : '')
+                                    : 'No items'
+                                  }
+                                </p>
+                                <Badge variant="outline" className="text-xs">
+                                  {transfer.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center space-x-4 mt-1">
+                                <span className="text-sm text-gray-600">
+                                  {transfer.items?.length || 0} item(s)
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  {transfer.fromLocation} → {transfer.toLocation}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                <span className="font-medium">Transfer ID:</span> {transfer.transferID}
+                                {transfer.items && transfer.items.length > 0 && (
+                                  <span className="ml-3">
+                                    <span className="font-medium">Quantities:</span> {transfer.items.slice(0, 2).map((item: any) => 
+                                      `${item.quantity} ${item.unit || 'units'}`
+                                    ).join(', ')}
+                                    {transfer.items.length > 2 && ` +${transfer.items.length - 2} more`}
+                                  </span>
+                                )}
+                              </p>
+                              {transfer.vehicle && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  <span className="font-medium">Vehicle:</span> {transfer.vehicle.vehicleName} 
+                                  {transfer.driverName && ` • Driver: ${transfer.driverName}`}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-500">
+                              {new Date(transfer.createdAt).toLocaleDateString()}
+                            </span>
+                            <p className="text-xs text-gray-400">
+                              {new Date(transfer.createdAt).toLocaleTimeString()}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <Badge variant="outline">{transfer.status}</Badge>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {transfer.time}
-                          </p>
+                      ))}
+                      {transfers.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <Truck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p className="text-lg font-medium">No Recent Transfers</p>
+                          <p className="text-sm">No material transfers found</p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
+                      )}
+                    </div>
+                  </CardContent>
               </Card>
             </div>
           )}
@@ -1852,21 +1943,22 @@ const StoreDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                   title="Active Transfers"
-                  value="12"
+                  value={transfers.filter((t: any) => t.status === 'IN_TRANSIT').length.toString()}
                   icon={Truck}
                   description="Currently in transit"
                   onClick={() => setTransferSubview("active")}
                 />
                 <StatCard
                   title="Completed Today"
-                  value="8"
+                  value={transfers.filter((t: any) => t.status === 'DELIVERED' && 
+                    new Date(t.createdAt).toDateString() === new Date().toDateString()).length.toString()}
                   icon={CheckCircle}
                   description="Successfully delivered"
                   onClick={() => setTransferSubview("completed")}
                 />
                 <StatCard
                   title="Pending Approval"
-                  value="5"
+                  value={transfers.filter((t: any) => t.status === 'PENDING').length.toString()}
                   icon={Clock}
                   description="Awaiting authorization"
                   onClick={() => setTransferSubview("pending")}
@@ -1884,7 +1976,7 @@ const StoreDashboard = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={transferData}
+                        data={getTransferStats()}
                         cx="50%"
                         cy="50%"
                         innerRadius={60}
@@ -1892,7 +1984,7 @@ const StoreDashboard = () => {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {transferData.map((entry, index) => (
+                        {getTransferStats().map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
@@ -1901,7 +1993,7 @@ const StoreDashboard = () => {
                   </ResponsiveContainer>
                   <div className="flex justify-center mt-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      {transferData.map((item) => (
+                      {getTransferStats().map((item) => (
                         <div
                           key={item.name}
                           className="flex items-center gap-2"
@@ -2388,7 +2480,7 @@ const StoreDashboard = () => {
         <TabsContent value="analytics">
           {analyticsSubview === "main" && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                   title="Monthly Spend"
                   value={`₹${(
@@ -2398,13 +2490,13 @@ const StoreDashboard = () => {
                   description="Average monthly spending"
                   onClick={() => setAnalyticsSubview("spend")}
                 />
-                <StatCard
+                {/* <StatCard
                   title="Total Consumption"
                   value={`${inventoryTurnover?.totalConsumption || 0}`}
                   icon={TrendingDown}
                   description="Last 6 months"
                   onClick={() => setAnalyticsSubview("turnover")}
-                />
+                /> */}
                 <StatCard
                   title="Total Suppliers"
                   value={`${vendors.length}`}
@@ -2421,8 +2513,8 @@ const StoreDashboard = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+                {/* <Card>
                   <CardHeader>
                     <CardTitle>Monthly Consumption Trend</CardTitle>
                     <CardDescription>
@@ -2448,7 +2540,7 @@ const StoreDashboard = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
-                </Card>
+                </Card> */}
 
                 <Card>
                   <CardHeader>
@@ -2533,7 +2625,7 @@ const StoreDashboard = () => {
                 </Card>
               </div>
 
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>Inventory KPI Metrics</CardTitle>
                   <CardDescription>Key performance indicators</CardDescription>
@@ -2588,7 +2680,7 @@ const StoreDashboard = () => {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           )}
           {analyticsSubview === "spend" && (
@@ -2935,7 +3027,6 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="mb-4">
-                    <div className="text-2xl font-bold mb-1">{vendors.length}</div>
                     <div className="text-sm text-muted-foreground mb-4">
                       Total active vendors/suppliers in the system.
                     </div>
@@ -2949,23 +3040,33 @@ const StoreDashboard = () => {
                           <thead>
                             <tr className="bg-muted">
                               <th className="p-3 text-left">Vendor Name</th>
-                              <th className="p-3 text-left">Contact Person</th>
+                              <th className="p-3 text-left">GSTIN</th>
+                              <th className="p-3 text-left">Type</th>
                               <th className="p-3 text-left">Phone</th>
                               <th className="p-3 text-left">Email</th>
                               <th className="p-3 text-left">Location</th>
-                              <th className="p-3 text-left">Status</th>
                             </tr>
                           </thead>
                           <tbody>
                             {vendors.map((vendor, idx) => (
                               <tr key={vendor.id || idx} className="border-b hover:bg-muted/50">
                                 <td className="p-3 font-medium">{vendor.name || 'N/A'}</td>
-                                <td className="p-3">{vendor.contactPerson || 'N/A'}</td>
-                                <td className="p-3">{vendor.phone || 'N/A'}</td>
-                                <td className="p-3">{vendor.email || 'N/A'}</td>
-                                <td className="p-3">{vendor.address || 'N/A'}</td>
+                                  <td className="p-3">
+                                  {vendor.gstin ? (
+                                    <span className="text-xs font-mono">{vendor.gstin}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">Not provided</span>
+                                  )}
+                                </td>
                                 <td className="p-3">
-                                  <Badge variant="default">Active</Badge>
+                                  <Badge variant="outline">{vendor.vendorType || 'COMPANY'}</Badge>
+                                </td>
+                                <td className="p-3">{vendor.mobile || 'N/A'}</td>
+                                <td className="p-3">{vendor.email || 'N/A'}</td>
+                                <td className="p-3">
+                                  {vendor.location || 
+                                   (vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : 
+                                    vendor.addressLine1 ? vendor.addressLine1 : 'N/A')}
                                 </td>
                               </tr>
                             ))}
@@ -2985,7 +3086,7 @@ const StoreDashboard = () => {
           {analyticsSubview === "requests" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Material Requests</h2>
+                <h2 className="text-xl font-bold">Material Transfers & Requests</h2>
                 <Button
                   variant="outline"
                   onClick={() => setAnalyticsSubview("main")}
@@ -2993,14 +3094,14 @@ const StoreDashboard = () => {
                   Back to Analytics
                 </Button>
               </div>
+
+              {/* Material Requests Section */}
               <Card>
+                <CardHeader>
+                  <CardTitle>Material Requests</CardTitle>
+                  <CardDescription>Material requisition requests from sites</CardDescription>
+                </CardHeader>
                 <CardContent className="p-6">
-                  <div className="mb-4">
-                    <div className="text-2xl font-bold mb-1">{materialRequests.length}</div>
-                    <div className="text-sm text-muted-foreground mb-4">
-                      Total material requests in the system.
-                    </div>
-                  </div>
                   
                   {materialRequests.length > 0 ? (
                     <div className="space-y-4">
@@ -3008,30 +3109,22 @@ const StoreDashboard = () => {
                       
                       {/* Status Summary */}
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        {[
-                          { status: 'PENDING', label: 'Pending', color: 'bg-yellow-500' },
-                          { status: 'APPROVED', label: 'Approved', color: 'bg-green-500' },
-                          { status: 'REJECTED', label: 'Rejected', color: 'bg-red-500' },
-                          { status: 'COMPLETED', label: 'Completed', color: 'bg-blue-500' }
-                        ].map((item) => {
-                          const count = materialRequests.filter(req => req.status === item.status).length;
-                          return (
-                            <div key={item.status} className="p-4 border rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                                <span className="text-sm font-medium">{item.label}</span>
-                              </div>
-                              <div className="text-2xl font-bold">{count}</div>
+                        {getMaterialRequestStats().map((item) => (
+                          <div key={item.status} className="p-4 border rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                              <span className="text-sm font-medium">{item.label}</span>
                             </div>
-                          );
-                        })}
+                            <div className="text-2xl font-bold">{item.count}</div>
+                          </div>
+                        ))}
                       </div>
 
                       <div className="overflow-x-auto">
                         <table className="min-w-full text-sm border rounded-lg overflow-hidden">
                           <thead>
                             <tr className="bg-muted">
-                              <th className="p-3 text-left">Request ID</th>
+                              <th className="p-3 text-left">Transfer ID</th>
                               <th className="p-3 text-left">Site</th>
                               <th className="p-3 text-left">Priority</th>
                               <th className="p-3 text-left">Status</th>
@@ -3042,8 +3135,8 @@ const StoreDashboard = () => {
                           <tbody>
                             {materialRequests.map((request, idx) => (
                               <tr key={request.id || idx} className="border-b hover:bg-muted/50">
-                                <td className="p-3 font-medium">REQ-{String(request.id).padStart(3, '0')}</td>
-                                <td className="p-3">{request.site?.name || request.siteName || 'N/A'}</td>
+                                <td className="p-3 font-medium">{request.requestNumber}</td>
+                                <td className="p-3">{request.site?.name || request.targetWarehouse || 'N/A'}</td>
                                 <td className="p-3">
                                   <Badge variant={
                                     request.priority === 'HIGH' ? 'destructive' :
