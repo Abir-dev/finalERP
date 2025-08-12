@@ -55,6 +55,7 @@ model User {
   Inventory           Inventory[]        @relation("InventoryCreator")
   approvedTransfers   MaterialTransfer[] @relation("MaterialTransferApproval")
   createdTransfers    MaterialTransfer[] @relation("MaterialTransferCreator")
+  scheduledMaintenance ScheduleMaintenance[] @relation("MaintenanceScheduler")
 
   @@map("users")
 }
@@ -731,7 +732,34 @@ model MaterialTransferItem {
 
   @@map("material_transfer_items")
 }
+model ScheduleMaintenance {
+  id              String              @id @default(uuid()) @db.Uuid
+  equipmentName   String
+  maintenanceType MaintenanceType
+  scheduledDate   DateTime
+  Priority        MaintenancePriority
+  technicianName  String
+  estimatedTime   Int
+  description     String
+  additionalNotes String
+  createdById     String              @db.Uuid
+  createdBy       User                @relation("MaintenanceScheduler", fields: [createdById], references: [id], onDelete: Cascade)
+}
 
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+  INSPECTION
+  CALIBRATION
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
 enum VehicleStatus {
   ACTIVE
   IDLE
