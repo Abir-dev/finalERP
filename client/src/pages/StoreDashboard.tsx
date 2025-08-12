@@ -1048,18 +1048,6 @@ const StoreDashboard = () => {
                               >
                                 {stockStatus}
                               </Badge>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  toast({
-                                    title: "Reorder Initiated",
-                                    description: `Reorder request created for ${item.itemName}`,
-                                  });
-                                }}
-                              >
-                                Reorder
-                              </Button>
                             </div>
                           </div>
                         );
@@ -1432,18 +1420,6 @@ const StoreDashboard = () => {
                               >
                                 {stockStatus}
                               </Badge>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  toast({
-                                    title: "Reorder Initiated",
-                                    description: `Reorder request created for ${item.itemName}`,
-                                  });
-                                }}
-                              >
-                                Reorder
-                              </Button>
                             </div>
                           </div>
                         );
