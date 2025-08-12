@@ -829,11 +829,11 @@ File Size: ${doc.size}`;
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+          {/* <TabsTrigger value="reports">Reports</TabsTrigger> */}
           {/* <TabsTrigger value="progress-billing">Progress Billing</TabsTrigger> */}
           {/* <TabsTrigger value="milestones">Milestones</TabsTrigger> */}
           {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
