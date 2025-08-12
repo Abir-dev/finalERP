@@ -352,6 +352,62 @@ const StoreDashboard = () => {
     }));
   };
 
+  // Calculate category-wise inventory analysis from real data
+  const getCategoryWiseAnalysis = () => {
+    if (!inventory.length) return [];
+
+    const categoryColors = {
+      'Raw Materials': '#3b82f6',        // Blue
+      'Consumables': '#10b981',          // Green
+      'Tools & Equipment': '#f59e0b',    // Yellow
+      'Safety Items': '#ef4444',         // Red
+      'Electrical': '#8b5cf6',           // Purple
+      'Hardware': '#f97316',             // Orange
+      'Construction': '#06b6d4',         // Cyan
+      'Machinery': '#84cc16',            // Lime
+      'Chemicals': '#ec4899',            // Pink
+      'PPE': '#f43f5e',                  // Rose
+      'Maintenance': '#14b8a6',          // Teal
+      'Steel': '#64748b',                // Slate
+      'Cement': '#78716c',               // Stone
+      'Paint': '#a855f7',                // Violet
+      'Plumbing': '#0ea5e9',             // Sky
+      'Finishing': '#22c55e',            // Green (lighter)
+      'Transport': '#fb7185',            // Pink (lighter)
+      'Office': '#fbbf24',               // Amber
+      'Medical': '#f87171',              // Red (lighter)
+      'Others': '#6b7280'                // Gray
+    };
+
+    // Group inventory by category and sum quantities
+    const categoryData = inventory.reduce((acc: any, item: any) => {
+      const category = item.category || 'Others';
+      if (!acc[category]) {
+        acc[category] = {
+          name: category,
+          value: 0,
+          quantity: 0,
+          fill: categoryColors[category] || categoryColors['Others']
+        };
+      }
+      // Sum quantities for pie chart display
+      acc[category].value += item.quantity || 0;
+      acc[category].quantity += item.quantity || 0;
+      return acc;
+    }, {});
+
+    return Object.values(categoryData);
+  };
+
+  // Format category data for display
+  const formatCategoryData = () => {
+    const data = getCategoryWiseAnalysis();
+    return data.map((item: any) => ({
+      ...item,
+      displayValue: `${item.quantity} items`
+    }));
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Good":
@@ -850,10 +906,10 @@ const StoreDashboard = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsGRNModalOpen(true)} className="gap-2">
+          {/* <Button onClick={() => setIsGRNModalOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             Log GRN
-          </Button>
+          </Button> */}
           <Button
             onClick={() => setIsRequestModalOpen(true)}
             variant="outline"
@@ -2545,82 +2601,65 @@ const StoreDashboard = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Category-wise Analysis</CardTitle>
-                    <CardDescription>Stock value distribution</CardDescription>
+                    <CardDescription>Inventory quantities by category</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={[
-                            {
-                              name: "Raw Materials",
-                              value: 4500000,
-                              fill: "#3b82f6",
-                            },
-                            {
-                              name: "Consumables",
-                              value: 2800000,
-                              fill: "#10b981",
-                            },
-                            {
-                              name: "Tools & Equipment",
-                              value: 1800000,
-                              fill: "#f59e0b",
-                            },
-                            {
-                              name: "Safety Items",
-                              value: 900000,
-                              fill: "#ef4444",
-                            },
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {[
-                            { name: "Raw Materials", fill: "#3b82f6" },
-                            { name: "Consumables", fill: "#10b981" },
-                            { name: "Tools & Equipment", fill: "#f59e0b" },
-                            { name: "Safety Items", fill: "#ef4444" },
-                          ].map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      {[
-                        {
-                          name: "Raw Materials",
-                          value: "₹45L",
-                          fill: "#3b82f6",
-                        },
-                        { name: "Consumables", value: "₹28L", fill: "#10b981" },
-                        {
-                          name: "Tools & Equipment",
-                          value: "₹18L",
-                          fill: "#f59e0b",
-                        },
-                        { name: "Safety Items", value: "₹9L", fill: "#ef4444" },
-                      ].map((item) => (
-                        <div
-                          key={item.name}
-                          className="flex items-center gap-2"
-                        >
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: item.fill }}
-                          ></div>
-                          <span className="text-sm">
-                            {item.name}: {item.value}
-                          </span>
+                    {(() => {
+                      // Get dynamic category data
+                      const categoryData = getCategoryWiseAnalysis();
+                      
+                      // If no real data, use sample data
+                      const defaultData = [
+                        { name: "Raw Materials", value: 150, fill: "#3b82f6" },
+                        { name: "Consumables", value: 120, fill: "#10b981" },
+                        { name: "Tools & Equipment", value: 80, fill: "#f59e0b" },
+                        { name: "Safety Items", value: 45, fill: "#ef4444" },
+                        { name: "Electrical", value: 35, fill: "#8b5cf6" }
+                      ];
+                      
+                      const displayData = categoryData.length > 0 ? categoryData : defaultData;
+                      const isRealData = categoryData.length > 0;
+                      
+                      return (
+                        <div className="space-y-4">
+                          {/* Data status */}
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie
+                                data={displayData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={100}
+                                paddingAngle={5}
+                                dataKey="value"
+                              >
+                                {displayData.map((entry: any, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                              </Pie>
+                              <Tooltip 
+                                formatter={(value: any) => [`${value} items`, 'Quantity']}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            {displayData.map((item: any) => (
+                              <div key={item.name} className="flex items-center gap-2">
+                                <div
+                                  className="w-4 h-4 rounded-full flex-shrink-0 border border-gray-200"
+                                  style={{ backgroundColor: item.fill }}
+                                ></div>
+                                <span className="text-sm font-medium">
+                                  {item.name}: <span className="font-normal">{item.value} items</span>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </div>
