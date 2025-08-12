@@ -405,7 +405,6 @@ export const inventoryController = {
         approvedById,
         priority,
         items,
-        notes,
       } = req.body || {};
 
       if (!transferID || !fromLocation || !toLocation || !requestedDate) {
@@ -437,7 +436,6 @@ export const inventoryController = {
               notes: i.notes || null,
             })),
           },
-          notes: notes || null,
         },
         include: {
           items: true,
@@ -519,7 +517,7 @@ export const inventoryController = {
       if (!existing) return res.status(404).json({ error: 'Material transfer not found' });
       if (existing.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-      const { transferID, fromLocation, toLocation, requestedDate, status, driverName, etaMinutes, vehicleId, approvedById, priority, notes } = req.body || {};
+      const { transferID, fromLocation, toLocation, requestedDate, status, driverName, etaMinutes, vehicleId, approvedById, priority } = req.body || {};
 
       const updated = await (prisma as any).materialTransfer.update({
         where: { id },
@@ -534,7 +532,6 @@ export const inventoryController = {
           vehicleId,
           approvedById,
           priority,
-          notes,
         },
         include: {
           items: true,

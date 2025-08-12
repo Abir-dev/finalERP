@@ -392,7 +392,7 @@ const Inventory = () => {
       // Fetch other data
       try {
         const transfersResponse = await axios.get(
-          `${API_URL}/inventory/transfers`,
+          `${API_URL}/inventory/transfers?userId=${userID}`,
           { headers }
         );
         const mappedTransfers: Transfer[] = (Array.isArray(transfersResponse.data) ? transfersResponse.data : []).map((t: any) => ({
