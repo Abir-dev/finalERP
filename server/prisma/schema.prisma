@@ -19,40 +19,42 @@ enum UserRole {
 }
 
 model User {
-  id                  String            @id @default(uuid()) @db.Uuid
-  email               String            @unique
+  id                  String             @id @default(uuid()) @db.Uuid
+  email               String             @unique
   name                String
   role                UserRole
   avatar              String?
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  status              String            @default("inactive")
-  lastLogin           DateTime?         @map("last_login") @db.Timestamptz(6)
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status              String             @default("inactive")
+  lastLogin           DateTime?          @map("last_login") @db.Timestamptz(6)
   password            String
   documents           Document[]
-  managedProjects     Project[]         @relation("ProjectManagers")
-  memberProjects      Project[]         @relation("ProjectMembers")
-  clientProjects      Project[]         @relation("ProjectClient")
-  invoices            Invoice[]         @relation("UserInvoices")
+  managedProjects     Project[]          @relation("ProjectManagers")
+  memberProjects      Project[]          @relation("ProjectMembers")
+  clientProjects      Project[]          @relation("ProjectClient")
+  invoices            Invoice[]          @relation("UserInvoices")
   // bids             Bid[]             @relation("UserBids")
-  notifications       Notification[]    @relation("UserNotifications")
-  messagesSent        Message[]         @relation("MessagesSent")
-  messagesReceived    Message[]         @relation("MessagesReceived")
-  materialRequests    MaterialRequest[] @relation("UserMaterialRequests")
+  notifications       Notification[]     @relation("UserNotifications")
+  messagesSent        Message[]          @relation("MessagesSent")
+  messagesReceived    Message[]          @relation("MessagesReceived")
+  materialRequests    MaterialRequest[]  @relation("UserMaterialRequests")
   employeeProfile     Employee?
   taxes               Tax[]
   Invoice             Invoice[]
   Payment             Payment[]
-  MaterialRequest     MaterialRequest[] @relation("MaterialRequestApprovals")
+  MaterialRequest     MaterialRequest[]  @relation("MaterialRequestApprovals")
   PurchaseOrder       PurchaseOrder[]
-  createdVendors      Vendor[]          @relation("VendorCreator")
-  createdNonBillables NonBillable[]     @relation("NonBillableCreator")
+  createdVendors      Vendor[]           @relation("VendorCreator")
+  createdNonBillables NonBillable[]      @relation("NonBillableCreator")
   Bid                 Bid[]
-  createdIssues       IssueReport[]     @relation("IssueCreator")
-  assignedIssues      IssueReport[]     @relation("IssueAssignments")
-  Vehicle             Vehicle[]         @relation("VehicleCreator")
-  createdEvents       Event[]           @relation("EventCreator")
-  Inventory           Inventory[]       @relation("InventoryCreator")
+  createdIssues       IssueReport[]      @relation("IssueCreator")
+  assignedIssues      IssueReport[]      @relation("IssueAssignments")
+  Vehicle             Vehicle[]          @relation("VehicleCreator")
+  createdEvents       Event[]            @relation("EventCreator")
+  Inventory           Inventory[]        @relation("InventoryCreator")
+  approvedTransfers   MaterialTransfer[] @relation("MaterialTransferApproval")
+  createdTransfers    MaterialTransfer[] @relation("MaterialTransferCreator")
 
   @@map("users")
 }
@@ -199,7 +201,7 @@ model Payment {
 }
 
 model Inventory {
-  id                    String            @id @default(uuid()) @db.Uuid
+  id                    String                 @id @default(uuid()) @db.Uuid
   itemName              String
   category              InventoryCategory
   quantity              Int
@@ -209,17 +211,18 @@ model Inventory {
   maximumStock          Int
   safetyStock           Int
   primarySupplierName   String
-  vendorId              String            @db.Uuid
-  primarySupplier       Vendor            @relation("PrimaryVendor", fields: [vendorId], references: [id])
+  vendorId              String                 @db.Uuid
+  primarySupplier       Vendor                 @relation("PrimaryVendor", fields: [vendorId], references: [id])
   secondarySupplierName String?
-  secondarySupplier     Vendor?           @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id])
-  secondaryVendorId     String?           @db.Uuid
+  secondarySupplier     Vendor?                @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id])
+  secondaryVendorId     String?                @db.Uuid
   unitCost              Int
-  createdById           String            @map("created_by_id") @db.Uuid
-  createdBy             User              @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById           String                 @map("created_by_id") @db.Uuid
+  createdBy             User                   @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   requests              MaterialRequest[]
+  transferItems         MaterialTransferItem[]
 }
 
 model MaterialRequest {
@@ -596,7 +599,7 @@ model MaterialRequestItem {
 }
 
 model Vehicle {
-  id                 String            @id @default(uuid()) @db.Uuid
+  id                 String             @id @default(uuid()) @db.Uuid
   vehicleName        String
   vehicleType        String
   registrationNumber String
@@ -605,8 +608,9 @@ model Vehicle {
   driverName         String
   movement           VehicleMovement[]
   maintenanceHistory Maintenance[]
-  createdById        String            @map("created_by_id") @db.Uuid
-  createdBy          User              @relation("VehicleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById        String             @map("created_by_id") @db.Uuid
+  createdBy          User               @relation("VehicleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  MaterialTransfer   MaterialTransfer[]
 }
 
 model VehicleMovement {
@@ -625,6 +629,57 @@ model Maintenance {
   lastServiced DateTime
   nextDue      DateTime
   status       VehicleStatus
+}
+
+// Records the movement of materials between locations (e.g., Warehouse → Site)
+model MaterialTransfer {
+  id            String         @id @default(uuid()) @db.Uuid
+  transferID    String         @unique
+  fromLocation  String
+  toLocation    String
+  requestedDate DateTime       @map("requested_date") @db.Timestamptz(6)
+  status        TransferStatus @default(PENDING)
+  driverName    String?
+  etaMinutes    Int?           @map("eta_minutes")
+
+  // Approvals
+  approvedById String? @db.Uuid
+  approvedBy   User?   @relation("MaterialTransferApproval", fields: [approvedById], references: [id])
+
+  // Vehicle used for transport
+  vehicleId String?  @db.Uuid
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // Creator/auditing
+  createdById String @db.Uuid
+  createdBy   User   @relation("MaterialTransferCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  // Priority and items
+  priority TransferPriority       @default(NORMAL)
+  items    MaterialTransferItem[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("material_transfers")
+}
+
+// Line items within a material transfer
+model MaterialTransferItem {
+  id         String           @id @default(uuid()) @db.Uuid
+  transferId String           @db.Uuid
+  transfer   MaterialTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  // Optional link to an inventory master record
+  inventoryId String?    @db.Uuid
+  inventory   Inventory? @relation(fields: [inventoryId], references: [id])
+
+  description String
+  quantity    Float   @default(0)
+  unit        Unit?
+  notes       String?
+
+  @@map("material_transfer_items")
 }
 
 enum VehicleStatus {
@@ -746,4 +801,20 @@ enum InventoryCategory {
   HVAC_EQUIPMENT
   FINISHING_MATERIALS
   HARDWARE_AND_FASTENERS
+}
+
+// Status for material transfer lifecycle
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT @map("in-transit")
+  DELIVERED
+  CANCELLED
+}
+
+// Operational priority for transfers
+enum TransferPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
