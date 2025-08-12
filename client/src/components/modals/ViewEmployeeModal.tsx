@@ -14,9 +14,10 @@ interface ViewEmployeeModalProps {
     joinedAt: string;
   };
   onEdit: () => void;
+  onDelete: () => void;
 }
 
-export function ViewEmployeeModal({ open, onClose, employee, onEdit }: ViewEmployeeModalProps) {
+export function ViewEmployeeModal({ open, onClose, employee, onEdit, onDelete }: ViewEmployeeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -36,10 +37,10 @@ export function ViewEmployeeModal({ open, onClose, employee, onEdit }: ViewEmplo
           </div>
 
           <div className="grid gap-4">
-            <div>
+            {/* <div>
               <p className="text-sm font-medium text-muted-foreground">Employee ID</p>
               <p>{employee.id}</p>
-            </div>
+            </div> */}
             <div>
               <p className="text-sm font-medium text-muted-foreground">Department</p>
               <p>{employee.department}</p>
@@ -60,6 +61,9 @@ export function ViewEmployeeModal({ open, onClose, employee, onEdit }: ViewEmplo
             </Button>
             <Button onClick={onEdit}>
               Edit Details
+            </Button>
+            <Button variant="destructive" onClick={onDelete}>
+              Delete Employee
             </Button>
           </div>
         </div>
