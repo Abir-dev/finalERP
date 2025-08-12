@@ -1661,8 +1661,8 @@ const Inventory = () => {
         {/* </TabsContent> */}
 
         <TabsContent value="material-forecast" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <EnhancedStatCard
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* <EnhancedStatCard
               title="Forecasted Items"
               value={inventoryItems
                 .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
@@ -1674,7 +1674,7 @@ const Inventory = () => {
                 status: "good",
                 message: "Active forecasting in place",
               }}
-            />
+            /> */}
             <EnhancedStatCard
               title="Estimated Cost"
               value={`₹${inventoryItems
