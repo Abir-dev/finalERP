@@ -237,7 +237,7 @@ const StoreDashboard = () => {
     | "inventoryValue"
     | "lowStock"
     | "activeTransfers"
-    | "monthlyConsumption"
+    | "totalItems"
   >("main");
   const [inventorySubview, setInventorySubview] = useState<
     "main" | "lowStock" | "totalItems" | "value"
@@ -246,7 +246,7 @@ const StoreDashboard = () => {
     "main" | "active" | "completed" | "pending"
   >("main");
   const [analyticsSubview, setAnalyticsSubview] = useState<
-    "main" | "spend" | "turnover" | "deadStock" | "leadTime"
+    "main" | "spend" | "turnover" | "deadStock" | "leadTime" | "suppliers" | "requests"
   >("main");
   const [vehicleSubview, setVehicleSubview] = useState<
     "main" | "active" | "onSite" | "maintenance" | "idle"
@@ -269,6 +269,17 @@ const StoreDashboard = () => {
   const [stockData, setStockData] = useState<any[]>([]);
   const [topVehicles, setTopVehicles] = useState<any[]>([]);
   const [costlyMaintenance, setCostlyMaintenance] = useState<any[]>([]);
+
+  // Store analytics data
+  const [storeOverview, setStoreOverview] = useState<any>({});
+  const [inventoryTurnover, setInventoryTurnover] = useState<any>({});
+  const [consumptionTrends, setConsumptionTrends] = useState<any>({});
+  const [supplierPerformance, setSupplierPerformance] = useState<any>({});
+  const [costAnalysis, setCostAnalysis] = useState<any>({});
+
+  // Vendors and Material Requests data
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [materialRequests, setMaterialRequests] = useState<any[]>([]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -612,33 +623,79 @@ const StoreDashboard = () => {
     }
   };
 
+  const fetchAnalyticsData = async () => {
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    if (!userID) return;
+
+    try {
+      // Fetch inventory turnover data
+      const turnoverRes = await axios.get(
+        `${API_URL}/store/analytics/turnover?userId=${userID}`,
+        { headers }
+      );
+      setInventoryTurnover(turnoverRes.data);
+
+      // Fetch consumption trends
+      const consumptionRes = await axios.get(
+        `${API_URL}/store/analytics/consumption?userId=${userID}`,
+        { headers }
+      );
+      setConsumptionTrends(consumptionRes.data);
+
+      // Fetch supplier performance
+      const supplierRes = await axios.get(
+        `${API_URL}/store/analytics/supplier-performance?userId=${userID}`,
+        { headers }
+      );
+      setSupplierPerformance(supplierRes.data);
+
+      // Fetch cost analysis
+      const costRes = await axios.get(
+        `${API_URL}/store/analytics/cost-analysis?userId=${userID}`,
+        { headers }
+      );
+      setCostAnalysis(costRes.data);
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+    }
+  };
+
   useEffect(() => {
     const token =
       sessionStorage.getItem("jwt_token") ||
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-    // Inventory data
+    // Store Overview Data
     axios
-      .get(`${API_URL}/inventory/items`, { headers })
-      .then((res) => setInventory(res.data))
-      .catch(() => {});
+      .get(`${API_URL}/store/overview?userId=${userID}`, { headers })
+      .then((res) => {
+        setStoreOverview(res.data);
+        setRecentTransactions(res.data.recentTransactions || []);
+      })
+      .catch((error) => console.error("Error fetching store overview:", error));
+
+    // Store Inventory Data
     axios
-      .get(`${API_URL}/inventory/stock`, { headers })
-      .then((res) => setStockData(res.data))
-      .catch(() => {});
+      .get(`${API_URL}/store/inventory-data?userId=${userID}`, { headers })
+      .then((res) => setInventory(res.data || []))
+      .catch((error) => console.error("Error fetching inventory data:", error));
+
+    // Store Stock Levels
     axios
-      .get(`${API_URL}/inventory/transfers`, { headers })
-      .then((res) => setTransfers(res.data))
-      .catch(() => {});
+      .get(`${API_URL}/store/stock-levels?userId=${userID}`, { headers })
+      .then((res) => setStockData(res.data.stockData || []))
+      .catch((error) => console.error("Error fetching stock levels:", error));
+
+    // Store Transfers
     axios
-      .get(`${API_URL}/inventory/transactions`, { headers })
-      .then((res) => setRecentTransactions(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/inventory/storage-utilization`, { headers })
-      .then((res) => setStorageUtilization(res.data))
-      .catch(() => {});
+      .get(`${API_URL}/store/transfers?userId=${userID}`, { headers })
+      .then((res) => setTransfers(res.data || []))
+      .catch((error) => console.error("Error fetching transfers:", error));
 
     // Vehicle data - using new vehicle APIs
     axios
@@ -687,7 +744,34 @@ const StoreDashboard = () => {
       .get(`${API_URL}/purchase-requests`, { headers })
       .then((res) => setPurchaseRequests(res.data))
       .catch(() => {});
-  }, []);
+
+    // Store analytics data
+    if (userID) {
+      // Store Overview Data
+      axios
+        .get(`${API_URL}/store/overview?userId=${userID}`, { headers })
+        .then((res) => {
+          setStoreOverview(res.data);
+          setRecentTransactions(res.data.recentTransactions || []);
+        })
+        .catch((error) => console.error("Error fetching store overview:", error));
+
+      // Fetch analytics data
+      fetchAnalyticsData();
+
+      // Fetch vendors data
+      axios
+        .get(`${API_URL}/vendors/user/${userID}`, { headers })
+        .then((res) => setVendors(res.data || []))
+        .catch((error) => console.error("Error fetching vendors:", error));
+
+      // Fetch material requests data
+      axios
+        .get(`${API_URL}/material/material-requests/user/${userID}`, { headers })
+        .then((res) => setMaterialRequests(res.data || []))
+        .catch((error) => console.error("Error fetching material requests:", error));
+    }
+  }, [userID]);
 
   return (
     <div className="space-y-6">
@@ -731,35 +815,37 @@ const StoreDashboard = () => {
           {overviewSubview === "main" && (
             <>
               {/* KPI Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <StatCard
-                  title="Total Inventory Value"
-                  value="₹45L"
+                  title="Total Items"
+                  value={`${storeOverview?.kpis?.totalItems || 0}`}
                   icon={Package}
-                  description="Across all locations"
-                  onClick={() => setOverviewSubview("inventoryValue")}
+                  description="All inventory items"
+                  onClick={() => setOverviewSubview("totalItems")}
                 />
                 <StatCard
                   title="Low Stock Items"
-                  value="7"
+                  value={`${storeOverview?.kpis?.lowStockItems || 0}`}
                   icon={AlertTriangle}
                   description="Need immediate attention"
                   onClick={() => setOverviewSubview("lowStock")}
                 />
                 <StatCard
                   title="Active Transfers"
-                  value="12"
+                  value={`${storeOverview?.kpis?.activeTransfers || 0}`}
                   icon={Truck}
                   description="In transit"
                   onClick={() => setOverviewSubview("activeTransfers")}
                 />
-                <StatCard
-                  title="Monthly Consumption"
-                  value="₹18L"
+                {/* <StatCard
+                  title="Total Inventory Value"
+                  value={`₹${(
+                    storeOverview?.kpis?.totalValue || 0
+                  ).toLocaleString()}`}
                   icon={TrendingDown}
-                  description="-8% vs last month"
-                  onClick={() => setOverviewSubview("monthlyConsumption")}
-                />
+                  description="Across all locations"
+                  onClick={() => setOverviewSubview("inventoryValue")}
+                /> */}
               </div>
 
               {/* Critical Alerts */}
@@ -769,94 +855,176 @@ const StoreDashboard = () => {
                     <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
                     Critical Stock Alerts
                   </CardTitle>
+                  <CardDescription>
+                    Items below reorder level that need immediate attention
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {inventory
-                      .filter(
-                        (item) =>
-                          item.status === "Critical" || item.status === "Low"
-                      )
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
-                        >
-                          <div className="flex items-center">
-                            <AlertTriangle className="h-4 w-4 text-red-500 mr-3" />
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {item.item}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Current: {item.quantity} {item.unit} | Min:{" "}
-                                {item.minStock} {item.unit}
-                              </p>
+                      .filter((item) => item.quantity <= item.reorderLevel)
+                      .map((item) => {
+                        const stockStatus = item.quantity <= (item.reorderLevel * 0.5) ? "Critical" : "Low";
+                        const bgColor = stockStatus === "Critical" ? "bg-red-100 border-red-300" : "bg-yellow-50 border-yellow-200";
+                        const textColor = stockStatus === "Critical" ? "text-red-600" : "text-yellow-600";
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className={`flex items-center justify-between p-3 ${bgColor} border rounded-lg`}
+                          >
+                            <div className="flex items-center">
+                              <AlertTriangle className={`h-4 w-4 mr-3 ${textColor}`} />
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {item.itemName}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Current: {item.quantity} {item.unit} | Reorder Level: {item.reorderLevel} {item.unit}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Location: {item.location} | Supplier: {item.primarySupplier?.name || 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Badge 
+                                variant={stockStatus === "Critical" ? "destructive" : "secondary"}
+                                className={stockStatus === "Critical" ? "bg-red-500" : "bg-yellow-500"}
+                              >
+                                {stockStatus}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  toast({
+                                    title: "Reorder Initiated",
+                                    description: `Reorder request created for ${item.itemName}`,
+                                  });
+                                }}
+                              >
+                                Reorder
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Badge className={getStatusColor(item.status)}>
-                              {item.status}
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReorder(item)}
-                              disabled={item.status === "Reordered"}
-                            >
-                              {item.status === "Reordered"
-                                ? "Reordered"
-                                : "Reorder"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
+                    {inventory.filter(item => item.quantity <= item.reorderLevel).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                        <p className="text-lg font-medium">All Stock Levels Good</p>
+                        <p className="text-sm">No items are below reorder level</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Recent Transactions</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                      Recent Material Transfers
+                      {/* <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          // Navigate to transfers tab
+                          const tabsList = document.querySelector('[role="tablist"]');
+                          const transfersTab = tabsList?.querySelector('[value="analytics"]');
+                          (transfersTab as HTMLElement)?.click();
+                        }}
+                      >
+                        View All
+                      </Button> */}
+                    </CardTitle>
+                    <CardDescription>
+                      Latest material movements between locations
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {recentTransactions.map((transaction, index) => (
+                      {transfers.slice(0, 5).map((transfer, index) => (
                         <div
-                          key={index}
-                          className="flex items-center justify-between p-3 border rounded-lg"
+                          key={transfer.id || index}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                         >
-                          <div className="flex items-center">
+                          <div className="flex items-center space-x-3">
                             <div
-                              className={`w-2 h-2 rounded-full mr-3 ${
-                                transaction.type === "IN"
+                              className={`w-3 h-3 rounded-full ${
+                                transfer.status === "DELIVERED"
                                   ? "bg-green-500"
-                                  : transaction.type === "OUT"
-                                  ? "bg-red-500"
-                                  : "bg-blue-500"
+                                  : transfer.status === "IN_TRANSIT"
+                                  ? "bg-blue-500"
+                                  : transfer.status === "PENDING"
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
                               }`}
                             ></div>
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {transaction.item}
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2">
+                                <p className="font-medium text-gray-900">
+                                  {transfer.items && transfer.items.length > 0 
+                                    ? transfer.items.slice(0, 2).map((item: any) => item.description).join(', ')
+                                    + (transfer.items.length > 2 ? ` +${transfer.items.length - 2} more` : '')
+                                    : 'No items'
+                                  }
+                                </p>
+                                <Badge variant="outline" className="text-xs">
+                                  {transfer.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center space-x-4 mt-1">
+                                <span className="text-sm text-gray-600">
+                                  {transfer.items?.length || 0} item(s)
+                                </span>
+                                <span className="text-sm text-gray-500">
+                                  {transfer.fromLocation} → {transfer.toLocation}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                <span className="font-medium">Transfer ID:</span> {transfer.transferID}
+                                {transfer.items && transfer.items.length > 0 && (
+                                  <span className="ml-3">
+                                    <span className="font-medium">Quantities:</span> {transfer.items.slice(0, 2).map((item: any) => 
+                                      `${item.quantity} ${item.unit || 'units'}`
+                                    ).join(', ')}
+                                    {transfer.items.length > 2 && ` +${transfer.items.length - 2} more`}
+                                  </span>
+                                )}
                               </p>
-                              <p className="text-sm text-gray-600">
-                                {transaction.location}
-                              </p>
+                              {transfer.vehicle && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  <span className="font-medium">Vehicle:</span> {transfer.vehicle.vehicleName} 
+                                  {transfer.driverName && ` • Driver: ${transfer.driverName}`}
+                                </p>
+                              )}
                             </div>
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {transaction.time}
-                          </span>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-500">
+                              {new Date(transfer.createdAt).toLocaleDateString()}
+                            </span>
+                            <p className="text-xs text-gray-400">
+                              {new Date(transfer.createdAt).toLocaleTimeString()}
+                            </p>
+                          </div>
                         </div>
                       ))}
+                      {transfers.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          <Truck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                          <p className="text-lg font-medium">No Recent Transfers</p>
+                          <p className="text-sm">No material transfers found</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                {/* <Card>
                   <CardHeader>
                     <CardTitle>Storage Utilization</CardTitle>
                   </CardHeader>
@@ -880,7 +1048,7 @@ const StoreDashboard = () => {
                       ))}
                     </div>
                   </CardContent>
-                </Card>
+                </Card> */}
               </div>
             </>
           )}
@@ -1021,47 +1189,64 @@ const StoreDashboard = () => {
                 </Button>
               </div>
               <Card>
-                <CardContent className="p-6">
+              <CardContent className="space-y-6">
                   <div className="space-y-3">
                     {inventory
-                      .filter(
-                        (item) =>
-                          item.status === "Critical" || item.status === "Low"
-                      )
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
-                        >
-                          <div className="flex items-center">
-                            <AlertTriangle className="h-4 w-4 text-red-500 mr-3" />
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {item.item}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                Current: {item.quantity} {item.unit} | Min:{" "}
-                                {item.minStock} {item.unit}
-                              </p>
+                      .filter((item) => item.quantity <= item.reorderLevel)
+                      .map((item) => {
+                        const stockStatus = item.quantity <= (item.reorderLevel * 0.5) ? "Critical" : "Low";
+                        const bgColor = stockStatus === "Critical" ? "bg-red-100 border-red-300" : "bg-yellow-50 border-yellow-200";
+                        const textColor = stockStatus === "Critical" ? "text-red-600" : "text-yellow-600";
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className={`flex items-center justify-between p-3 ${bgColor} border rounded-lg`}
+                          >
+                            <div className="flex items-center">
+                              <AlertTriangle className={`h-4 w-4 mr-3 ${textColor}`} />
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {item.itemName}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  Current: {item.quantity} {item.unit} | Reorder Level: {item.reorderLevel} {item.unit}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Location: {item.location} | Supplier: {item.primarySupplier?.name || 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Badge 
+                                variant={stockStatus === "Critical" ? "destructive" : "secondary"}
+                                className={stockStatus === "Critical" ? "bg-red-500" : "bg-yellow-500"}
+                              >
+                                {stockStatus}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  toast({
+                                    title: "Reorder Initiated",
+                                    description: `Reorder request created for ${item.itemName}`,
+                                  });
+                                }}
+                              >
+                                Reorder
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
-                            <Badge className={getStatusColor(item.status)}>
-                              {item.status}
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleReorder(item)}
-                              disabled={item.status === "Reordered"}
-                            >
-                              {item.status === "Reordered"
-                                ? "Reordered"
-                                : "Reorder"}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
+                    {inventory.filter(item => item.quantity <= item.reorderLevel).length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+                        <p className="text-lg font-medium">All Stock Levels Good</p>
+                        <p className="text-sm">No items are below reorder level</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1134,36 +1319,61 @@ const StoreDashboard = () => {
               </Card>
             </div>
           )}
-          {overviewSubview === "monthlyConsumption" && (
+          {overviewSubview === "totalItems" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Monthly Consumption</h2>
+                <h2 className="text-xl font-bold">All Inventory Items</h2>
                 <Button
                   variant="outline"
                   onClick={() => setOverviewSubview("main")}
                 >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Overview
                 </Button>
               </div>
               <Card>
                 <CardContent className="p-6">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart
-                      data={[
-                        { month: "Sep", value: 2800000 },
-                        { month: "Oct", value: 3200000 },
-                        { month: "Nov", value: 2900000 },
-                        { month: "Dec", value: 3500000 },
-                        { month: "Jan", value: 3100000 },
-                      ]}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-3">
+                    {inventory.length > 0 ? inventory.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex items-center">
+                          <Package className="h-4 w-4 mr-3 text-blue-500" />
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {item.itemName}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Quantity: {item.quantity} {item.unit} | Location: {item.location}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Category: {item.category} | Reorder Level: {item.reorderLevel} {item.unit}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Badge 
+                            variant={item.quantity <= item.reorderLevel ? "destructive" : "default"}
+                            className={item.quantity <= item.reorderLevel ? "bg-red-500" : "bg-green-500"}
+                          >
+                            {item.quantity <= item.reorderLevel ? "Low Stock" : "In Stock"}
+                          </Badge>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">₹{(Number(item.unitCost) * item.quantity).toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Total Value</p>
+                          </div>
+                        </div>
+                      </div>
+                    )) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p className="text-lg font-medium">No Inventory Items</p>
+                        <p className="text-sm">No items found in inventory</p>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -2181,31 +2391,33 @@ const StoreDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <StatCard
                   title="Monthly Spend"
-                  value="₹32.5L"
+                  value={`₹${(
+                    costAnalysis?.avgMonthlySpend || 0
+                  ).toLocaleString()}`}
                   icon={BarChart3}
-                  description="+12% vs last month"
+                  description="Average monthly spending"
                   onClick={() => setAnalyticsSubview("spend")}
                 />
                 <StatCard
-                  title="Stock Turnover"
-                  value="4.2x"
+                  title="Total Consumption"
+                  value={`${inventoryTurnover?.totalConsumption || 0}`}
                   icon={TrendingDown}
-                  description="Last 30 days"
+                  description="Last 6 months"
                   onClick={() => setAnalyticsSubview("turnover")}
                 />
                 <StatCard
-                  title="Dead Stock"
-                  value="₹8.2L"
-                  icon={AlertTriangle}
-                  description="No movement > 90 days"
-                  onClick={() => setAnalyticsSubview("deadStock")}
+                  title="Total Suppliers"
+                  value={`${vendors.length}`}
+                  icon={Truck}
+                  description="Active vendors"
+                  onClick={() => setAnalyticsSubview("suppliers")}
                 />
                 <StatCard
-                  title="Avg Lead Time"
-                  value="12 days"
+                  title="Total Requests"
+                  value={`${materialRequests.length}`}
                   icon={Clock}
-                  description="Order to delivery"
-                  onClick={() => setAnalyticsSubview("leadTime")}
+                  description="Material requests"
+                  onClick={() => setAnalyticsSubview("requests")}
                 />
               </div>
 
@@ -2705,6 +2917,166 @@ const StoreDashboard = () => {
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {analyticsSubview === "suppliers" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Total Suppliers</h2>
+                <Button
+                  variant="outline"
+                  onClick={() => setAnalyticsSubview("main")}
+                >
+                  Back to Analytics
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="mb-4">
+                    <div className="text-2xl font-bold mb-1">{vendors.length}</div>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      Total active vendors/suppliers in the system.
+                    </div>
+                  </div>
+                  
+                  {vendors.length > 0 ? (
+                    <div className="space-y-4">
+                      <h3 className="font-semibold mb-2">Vendor Details</h3>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+                          <thead>
+                            <tr className="bg-muted">
+                              <th className="p-3 text-left">Vendor Name</th>
+                              <th className="p-3 text-left">Contact Person</th>
+                              <th className="p-3 text-left">Phone</th>
+                              <th className="p-3 text-left">Email</th>
+                              <th className="p-3 text-left">Location</th>
+                              <th className="p-3 text-left">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {vendors.map((vendor, idx) => (
+                              <tr key={vendor.id || idx} className="border-b hover:bg-muted/50">
+                                <td className="p-3 font-medium">{vendor.name || 'N/A'}</td>
+                                <td className="p-3">{vendor.contactPerson || 'N/A'}</td>
+                                <td className="p-3">{vendor.phone || 'N/A'}</td>
+                                <td className="p-3">{vendor.email || 'N/A'}</td>
+                                <td className="p-3">{vendor.address || 'N/A'}</td>
+                                <td className="p-3">
+                                  <Badge variant="default">Active</Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No vendors found. Add vendors to see them here.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+          {analyticsSubview === "requests" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Material Requests</h2>
+                <Button
+                  variant="outline"
+                  onClick={() => setAnalyticsSubview("main")}
+                >
+                  Back to Analytics
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-6">
+                  <div className="mb-4">
+                    <div className="text-2xl font-bold mb-1">{materialRequests.length}</div>
+                    <div className="text-sm text-muted-foreground mb-4">
+                      Total material requests in the system.
+                    </div>
+                  </div>
+                  
+                  {materialRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      <h3 className="font-semibold mb-2">Request Details</h3>
+                      
+                      {/* Status Summary */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        {[
+                          { status: 'PENDING', label: 'Pending', color: 'bg-yellow-500' },
+                          { status: 'APPROVED', label: 'Approved', color: 'bg-green-500' },
+                          { status: 'REJECTED', label: 'Rejected', color: 'bg-red-500' },
+                          { status: 'COMPLETED', label: 'Completed', color: 'bg-blue-500' }
+                        ].map((item) => {
+                          const count = materialRequests.filter(req => req.status === item.status).length;
+                          return (
+                            <div key={item.status} className="p-4 border rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
+                                <span className="text-sm font-medium">{item.label}</span>
+                              </div>
+                              <div className="text-2xl font-bold">{count}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-sm border rounded-lg overflow-hidden">
+                          <thead>
+                            <tr className="bg-muted">
+                              <th className="p-3 text-left">Request ID</th>
+                              <th className="p-3 text-left">Site</th>
+                              <th className="p-3 text-left">Priority</th>
+                              <th className="p-3 text-left">Status</th>
+                              <th className="p-3 text-left">Created Date</th>
+                              <th className="p-3 text-left">Required By</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {materialRequests.map((request, idx) => (
+                              <tr key={request.id || idx} className="border-b hover:bg-muted/50">
+                                <td className="p-3 font-medium">REQ-{String(request.id).padStart(3, '0')}</td>
+                                <td className="p-3">{request.site?.name || request.siteName || 'N/A'}</td>
+                                <td className="p-3">
+                                  <Badge variant={
+                                    request.priority === 'HIGH' ? 'destructive' :
+                                    request.priority === 'MEDIUM' ? 'default' : 'outline'
+                                  }>
+                                    {request.priority || 'MEDIUM'}
+                                  </Badge>
+                                </td>
+                                <td className="p-3">
+                                  <Badge variant={
+                                    request.status === 'APPROVED' || request.status === 'COMPLETED' ? 'default' :
+                                    request.status === 'PENDING' ? 'outline' : 'destructive'
+                                  }>
+                                    {request.status || 'PENDING'}
+                                  </Badge>
+                                </td>
+                                <td className="p-3">
+                                  {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                                </td>
+                                <td className="p-3">
+                                  {request.requiredBy ? new Date(request.requiredBy).toLocaleDateString() : 'N/A'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No material requests found. Create material requests to see them here.
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -25,7 +25,7 @@ import hrSalaryRoutes from './routes/hrSalary';
 import eventRoutes from './routes/events';
 import scheduleMaintenanceRoutes from './routes/scheduleMaintenance';
 import logger from './logger/logger';
-
+import storeAnalyticsRoutes from './routes/storeAnalytics';
 dotenv.config();
 
 const app = express();
@@ -82,6 +82,7 @@ app.use('/api/issue-reports', issueReportRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api', eventRoutes);
 app.use('/api', scheduleMaintenanceRoutes);
+app.use('/api/store', storeAnalyticsRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {
