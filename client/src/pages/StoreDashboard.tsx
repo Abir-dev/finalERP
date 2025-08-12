@@ -228,11 +228,7 @@ const StoreDashboard = () => {
   const [selectedAsset, setSelectedAsset] =
     useState<MaintenanceSchedule | null>(null);
   const [overviewSubview, setOverviewSubview] = useState<
-    | "main"
-    | "inventoryValue"
-    | "lowStock"
-    | "activeTransfers"
-    | "totalItems"
+    "main" | "inventoryValue" | "lowStock" | "activeTransfers" | "totalItems"
   >("main");
   const [inventorySubview, setInventorySubview] = useState<
     "main" | "lowStock" | "totalItems" | "value"
@@ -241,7 +237,13 @@ const StoreDashboard = () => {
     "main" | "active" | "completed" | "pending"
   >("main");
   const [analyticsSubview, setAnalyticsSubview] = useState<
-    "main" | "spend" | "turnover" | "deadStock" | "leadTime" | "suppliers" | "requests"
+    | "main"
+    | "spend"
+    | "turnover"
+    | "deadStock"
+    | "leadTime"
+    | "suppliers"
+    | "requests"
   >("main");
   const [vehicleSubview, setVehicleSubview] = useState<
     "main" | "active" | "onSite" | "maintenance" | "idle"
@@ -275,41 +277,50 @@ const StoreDashboard = () => {
   // Vendors and Material Requests data
   const [vendors, setVendors] = useState<any[]>([]);
   const [materialRequests, setMaterialRequests] = useState<any[]>([]);
-  console.log(materialRequests)
+  console.log(materialRequests);
   const fetchVendorsData = async () => {
     if (!userID) return;
-    
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
+
     try {
-      const response = await axios.get(`${API_URL}/vendors/user/${userID}`, { headers });
+      const response = await axios.get(`${API_URL}/vendors/user/${userID}`, {
+        headers,
+      });
       setVendors(response.data || []);
     } catch (error) {
       console.error("Error fetching vendors:", error);
       toast({
-        title: "Error", 
+        title: "Error",
         description: "Failed to fetch vendor data",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
   const fetchTransfersData = async () => {
     if (!userID) return;
-    
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
+
     try {
-      const response = await axios.get(`${API_URL}/store/transfers?userId=${userID}`, { headers });
+      const response = await axios.get(
+        `${API_URL}/store/transfers?userId=${userID}`,
+        { headers }
+      );
       setTransfers(response.data || []);
     } catch (error) {
       console.error("Error fetching transfers:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch transfer data", 
-        variant: "destructive"
+        description: "Failed to fetch transfer data",
+        variant: "destructive",
       });
     }
   };
@@ -317,38 +328,44 @@ const StoreDashboard = () => {
   // Calculate transfer statistics from actual data
   const getTransferStats = () => {
     if (!transfers.length) return [];
-    
-    const statuses = ['DELIVERED', 'IN_TRANSIT', 'PENDING', 'CANCELLED'];
-    const colors = { 
-      'DELIVERED': '#10b981', 
-      'IN_TRANSIT': '#3b82f6', 
-      'PENDING': '#f59e0b', 
-      'CANCELLED': '#ef4444' 
+
+    const statuses = ["DELIVERED", "IN_TRANSIT", "PENDING", "CANCELLED"];
+    const colors = {
+      DELIVERED: "#10b981",
+      IN_TRANSIT: "#3b82f6",
+      PENDING: "#f59e0b",
+      CANCELLED: "#ef4444",
     };
     const labels = {
-      'DELIVERED': 'Completed',
-      'IN_TRANSIT': 'In Transit', 
-      'PENDING': 'Pending',
-      'CANCELLED': 'Cancelled'
+      DELIVERED: "Completed",
+      IN_TRANSIT: "In Transit",
+      PENDING: "Pending",
+      CANCELLED: "Cancelled",
     };
 
-    return statuses.map(status => ({
+    return statuses.map((status) => ({
       name: labels[status],
       value: transfers.filter((t: any) => t.status === status).length,
-      fill: colors[status]
+      fill: colors[status],
     }));
   };
 
   // Calculate material request statistics
   const getMaterialRequestStats = () => {
-    const statuses = ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'];
-    return statuses.map(status => ({
+    const statuses = ["PENDING", "APPROVED", "REJECTED", "COMPLETED"];
+    return statuses.map((status) => ({
       status,
       label: status.charAt(0) + status.slice(1).toLowerCase(),
-      count: materialRequests.filter((req: any) => req.status === status).length,
-      color: status === 'APPROVED' || status === 'COMPLETED' ? 'bg-green-500' :
-             status === 'PENDING' ? 'bg-yellow-500' : 
-             status === 'REJECTED' ? 'bg-red-500' : 'bg-blue-500'
+      count: materialRequests.filter((req: any) => req.status === status)
+        .length,
+      color:
+        status === "APPROVED" || status === "COMPLETED"
+          ? "bg-green-500"
+          : status === "PENDING"
+          ? "bg-yellow-500"
+          : status === "REJECTED"
+          ? "bg-red-500"
+          : "bg-blue-500",
     }));
   };
 
@@ -357,37 +374,26 @@ const StoreDashboard = () => {
     if (!inventory.length) return [];
 
     const categoryColors = {
-      'Raw Materials': '#3b82f6',        // Blue
-      'Consumables': '#10b981',          // Green
-      'Tools & Equipment': '#f59e0b',    // Yellow
-      'Safety Items': '#ef4444',         // Red
-      'Electrical': '#8b5cf6',           // Purple
-      'Hardware': '#f97316',             // Orange
-      'Construction': '#06b6d4',         // Cyan
-      'Machinery': '#84cc16',            // Lime
-      'Chemicals': '#ec4899',            // Pink
-      'PPE': '#f43f5e',                  // Rose
-      'Maintenance': '#14b8a6',          // Teal
-      'Steel': '#64748b',                // Slate
-      'Cement': '#78716c',               // Stone
-      'Paint': '#a855f7',                // Violet
-      'Plumbing': '#0ea5e9',             // Sky
-      'Finishing': '#22c55e',            // Green (lighter)
-      'Transport': '#fb7185',            // Pink (lighter)
-      'Office': '#fbbf24',               // Amber
-      'Medical': '#f87171',              // Red (lighter)
-      'Others': '#6b7280'                // Gray
+      CONSTRUCTION_MATERIALS: "#14b8a6", // Teal
+      TOOLS_AND_EQUIPMENT: "#f59e0b", // Yellow
+      SAFETY_EQUIPMENT: "#ef4444", // Red
+      ELECTRICAL_COMPONENTS: "#8b5cf6", // Purple
+      PLUMBING_MATERIALS: "#3b82f6", // Blue
+      HVAC_EQUIPMENT: "#84cc16", // Lime
+      FINISHING_MATERIALS: "#22c55e", // Green (lighter)
+      HARDWARE_AND_FASTENERS: "#f97316", // Orange
+      OTHERS: "#6b7280",
     };
 
     // Group inventory by category and sum quantities
     const categoryData = inventory.reduce((acc: any, item: any) => {
-      const category = item.category || 'Others';
+      const category = item.category || "Others";
       if (!acc[category]) {
         acc[category] = {
           name: category,
           value: 0,
           quantity: 0,
-          fill: categoryColors[category] || categoryColors['Others']
+          fill: categoryColors[category] || categoryColors["Others"],
         };
       }
       // Sum quantities for pie chart display
@@ -404,7 +410,7 @@ const StoreDashboard = () => {
     const data = getCategoryWiseAnalysis();
     return data.map((item: any) => ({
       ...item,
-      displayValue: `${item.quantity} items`
+      displayValue: `${item.quantity} items`,
     }));
   };
 
@@ -571,7 +577,7 @@ const StoreDashboard = () => {
       // Fetch updated vehicle analytics
       const analyticsResponse = await axios.get(
         `${API_URL}/vehicles/analytics?userId=${userID}`,
-        { headers },
+        { headers }
       );
       setVehicleKpis(analyticsResponse.data);
       setTopVehicles(analyticsResponse.data.allVehiclesBySite || []);
@@ -878,7 +884,9 @@ const StoreDashboard = () => {
           setStoreOverview(res.data);
           setRecentTransactions(res.data.recentTransactions || []);
         })
-        .catch((error) => console.error("Error fetching store overview:", error));
+        .catch((error) =>
+          console.error("Error fetching store overview:", error)
+        );
 
       // Fetch analytics data
       fetchAnalyticsData();
@@ -888,9 +896,13 @@ const StoreDashboard = () => {
 
       // Fetch material requests data
       axios
-        .get(`${API_URL}/material/material-requests/user/${userID}`, { headers })
+        .get(`${API_URL}/material/material-requests/user/${userID}`, {
+          headers,
+        })
         .then((res) => setMaterialRequests(res.data || []))
-        .catch((error) => console.error("Error fetching material requests:", error));
+        .catch((error) =>
+          console.error("Error fetching material requests:", error)
+        );
     }
   }, [userID]);
 
@@ -985,33 +997,54 @@ const StoreDashboard = () => {
                     {inventory
                       .filter((item) => item.quantity <= item.reorderLevel)
                       .map((item) => {
-                        const stockStatus = item.quantity <= (item.reorderLevel * 0.5) ? "Critical" : "Low";
-                        const bgColor = stockStatus === "Critical" ? "bg-red-100 border-red-300" : "bg-yellow-50 border-yellow-200";
-                        const textColor = stockStatus === "Critical" ? "text-red-600" : "text-yellow-600";
-                        
+                        const stockStatus =
+                          item.quantity <= item.reorderLevel * 0.5
+                            ? "Critical"
+                            : "Low";
+                        const bgColor =
+                          stockStatus === "Critical"
+                            ? "bg-red-100 border-red-300"
+                            : "bg-yellow-50 border-yellow-200";
+                        const textColor =
+                          stockStatus === "Critical"
+                            ? "text-red-600"
+                            : "text-yellow-600";
+
                         return (
                           <div
                             key={item.id}
                             className={`flex items-center justify-between p-3 ${bgColor} border rounded-lg`}
                           >
                             <div className="flex items-center">
-                              <AlertTriangle className={`h-4 w-4 mr-3 ${textColor}`} />
+                              <AlertTriangle
+                                className={`h-4 w-4 mr-3 ${textColor}`}
+                              />
                               <div>
                                 <p className="font-medium text-gray-900">
                                   {item.itemName}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                  Current: {item.quantity} {item.unit} | Reorder Level: {item.reorderLevel} {item.unit}
+                                  Current: {item.quantity} {item.unit} | Reorder
+                                  Level: {item.reorderLevel} {item.unit}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  Location: {item.location} | Supplier: {item.primarySupplier?.name || 'N/A'}
+                                  Location: {item.location} | Supplier:{" "}
+                                  {item.primarySupplier?.name || "N/A"}
                                 </p>
                               </div>
                             </div>
                             <div className="flex space-x-2">
-                              <Badge 
-                                variant={stockStatus === "Critical" ? "destructive" : "secondary"}
-                                className={stockStatus === "Critical" ? "bg-red-500" : "bg-yellow-500"}
+                              <Badge
+                                variant={
+                                  stockStatus === "Critical"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                                className={
+                                  stockStatus === "Critical"
+                                    ? "bg-red-500"
+                                    : "bg-yellow-500"
+                                }
                               >
                                 {stockStatus}
                               </Badge>
@@ -1031,11 +1064,17 @@ const StoreDashboard = () => {
                           </div>
                         );
                       })}
-                    {inventory.filter(item => item.quantity <= item.reorderLevel).length === 0 && (
+                    {inventory.filter(
+                      (item) => item.quantity <= item.reorderLevel
+                    ).length === 0 && (
                       <div className="text-center py-8 text-gray-500">
                         <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                        <p className="text-lg font-medium">All Stock Levels Good</p>
-                        <p className="text-sm">No items are below reorder level</p>
+                        <p className="text-lg font-medium">
+                          All Stock Levels Good
+                        </p>
+                        <p className="text-sm">
+                          No items are below reorder level
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1087,11 +1126,15 @@ const StoreDashboard = () => {
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <p className="font-medium text-gray-900">
-                                  {transfer.items && transfer.items.length > 0 
-                                    ? transfer.items.slice(0, 2).map((item: any) => item.description).join(', ')
-                                    + (transfer.items.length > 2 ? ` +${transfer.items.length - 2} more` : '')
-                                    : 'No items'
-                                  }
+                                  {transfer.items && transfer.items.length > 0
+                                    ? transfer.items
+                                        .slice(0, 2)
+                                        .map((item: any) => item.description)
+                                        .join(", ") +
+                                      (transfer.items.length > 2
+                                        ? ` +${transfer.items.length - 2} more`
+                                        : "")
+                                    : "No items"}
                                 </p>
                                 <Badge variant="outline" className="text-xs">
                                   {transfer.status}
@@ -1102,34 +1145,55 @@ const StoreDashboard = () => {
                                   {transfer.items?.length || 0} item(s)
                                 </span>
                                 <span className="text-sm text-gray-500">
-                                  {transfer.fromLocation} → {transfer.toLocation}
+                                  {transfer.fromLocation} →{" "}
+                                  {transfer.toLocation}
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
-                                <span className="font-medium">Transfer ID:</span> {transfer.transferID}
-                                {transfer.items && transfer.items.length > 0 && (
-                                  <span className="ml-3">
-                                    <span className="font-medium">Quantities:</span> {transfer.items.slice(0, 2).map((item: any) => 
-                                      `${item.quantity} ${item.unit || 'units'}`
-                                    ).join(', ')}
-                                    {transfer.items.length > 2 && ` +${transfer.items.length - 2} more`}
-                                  </span>
-                                )}
+                                <span className="font-medium">
+                                  Transfer ID:
+                                </span>{" "}
+                                {transfer.transferID}
+                                {transfer.items &&
+                                  transfer.items.length > 0 && (
+                                    <span className="ml-3">
+                                      <span className="font-medium">
+                                        Quantities:
+                                      </span>{" "}
+                                      {transfer.items
+                                        .slice(0, 2)
+                                        .map(
+                                          (item: any) =>
+                                            `${item.quantity} ${
+                                              item.unit || "units"
+                                            }`
+                                        )
+                                        .join(", ")}
+                                      {transfer.items.length > 2 &&
+                                        ` +${transfer.items.length - 2} more`}
+                                    </span>
+                                  )}
                               </p>
                               {transfer.vehicle && (
                                 <p className="text-xs text-gray-400 mt-1">
-                                  <span className="font-medium">Vehicle:</span> {transfer.vehicle.vehicleName} 
-                                  {transfer.driverName && ` • Driver: ${transfer.driverName}`}
+                                  <span className="font-medium">Vehicle:</span>{" "}
+                                  {transfer.vehicle.vehicleName}
+                                  {transfer.driverName &&
+                                    ` • Driver: ${transfer.driverName}`}
                                 </p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
                             <span className="text-xs text-gray-500">
-                              {new Date(transfer.createdAt).toLocaleDateString()}
+                              {new Date(
+                                transfer.createdAt
+                              ).toLocaleDateString()}
                             </span>
                             <p className="text-xs text-gray-400">
-                              {new Date(transfer.createdAt).toLocaleTimeString()}
+                              {new Date(
+                                transfer.createdAt
+                              ).toLocaleTimeString()}
                             </p>
                           </div>
                         </div>
@@ -1137,7 +1201,9 @@ const StoreDashboard = () => {
                       {transfers.length === 0 && (
                         <div className="text-center py-8 text-gray-500">
                           <Truck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p className="text-lg font-medium">No Recent Transfers</p>
+                          <p className="text-lg font-medium">
+                            No Recent Transfers
+                          </p>
                           <p className="text-sm">No material transfers found</p>
                         </div>
                       )}
@@ -1310,38 +1376,59 @@ const StoreDashboard = () => {
                 </Button>
               </div>
               <Card>
-              <CardContent className="p-6">
+                <CardContent className="p-6">
                   <div className="space-y-4">
                     {inventory
                       .filter((item) => item.quantity <= item.reorderLevel)
                       .map((item) => {
-                        const stockStatus = item.quantity <= (item.reorderLevel * 0.5) ? "Critical" : "Low";
-                        const bgColor = stockStatus === "Critical" ? "bg-red-100 border-red-300" : "bg-yellow-50 border-yellow-200";
-                        const textColor = stockStatus === "Critical" ? "text-red-600" : "text-yellow-600";
-                        
+                        const stockStatus =
+                          item.quantity <= item.reorderLevel * 0.5
+                            ? "Critical"
+                            : "Low";
+                        const bgColor =
+                          stockStatus === "Critical"
+                            ? "bg-red-100 border-red-300"
+                            : "bg-yellow-50 border-yellow-200";
+                        const textColor =
+                          stockStatus === "Critical"
+                            ? "text-red-600"
+                            : "text-yellow-600";
+
                         return (
                           <div
                             key={item.id}
                             className={`flex items-center justify-between p-3 ${bgColor} border rounded-lg`}
                           >
                             <div className="flex items-center">
-                              <AlertTriangle className={`h-4 w-4 mr-3 ${textColor}`} />
+                              <AlertTriangle
+                                className={`h-4 w-4 mr-3 ${textColor}`}
+                              />
                               <div>
                                 <p className="font-medium text-gray-900">
                                   {item.itemName}
                                 </p>
                                 <p className="text-sm text-gray-600">
-                                  Current: {item.quantity} {item.unit} | Reorder Level: {item.reorderLevel} {item.unit}
+                                  Current: {item.quantity} {item.unit} | Reorder
+                                  Level: {item.reorderLevel} {item.unit}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                  Location: {item.location} | Supplier: {item.primarySupplier?.name || 'N/A'}
+                                  Location: {item.location} | Supplier:{" "}
+                                  {item.primarySupplier?.name || "N/A"}
                                 </p>
                               </div>
                             </div>
                             <div className="flex space-x-2">
-                              <Badge 
-                                variant={stockStatus === "Critical" ? "destructive" : "secondary"}
-                                className={stockStatus === "Critical" ? "bg-red-500" : "bg-yellow-500"}
+                              <Badge
+                                variant={
+                                  stockStatus === "Critical"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                                className={
+                                  stockStatus === "Critical"
+                                    ? "bg-red-500"
+                                    : "bg-yellow-500"
+                                }
                               >
                                 {stockStatus}
                               </Badge>
@@ -1361,11 +1448,17 @@ const StoreDashboard = () => {
                           </div>
                         );
                       })}
-                    {inventory.filter(item => item.quantity <= item.reorderLevel).length === 0 && (
+                    {inventory.filter(
+                      (item) => item.quantity <= item.reorderLevel
+                    ).length === 0 && (
                       <div className="text-center py-8 text-gray-500">
                         <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
-                        <p className="text-lg font-medium">All Stock Levels Good</p>
-                        <p className="text-sm">No items are below reorder level</p>
+                        <p className="text-lg font-medium">
+                          All Stock Levels Good
+                        </p>
+                        <p className="text-sm">
+                          No items are below reorder level
+                        </p>
                       </div>
                     )}
                   </div>
@@ -1386,83 +1479,102 @@ const StoreDashboard = () => {
               </div>
               <Card>
                 <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {transfers.slice(0, 5).map((transfer, index) => (
-                        <div
-                          key={transfer.id || index}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div
-                              className={`w-3 h-3 rounded-full ${
-                                transfer.status === "DELIVERED"
-                                  ? "bg-green-500"
-                                  : transfer.status === "IN_TRANSIT"
-                                  ? "bg-blue-500"
-                                  : transfer.status === "PENDING"
-                                  ? "bg-yellow-500"
-                                  : "bg-red-500"
-                              }`}
-                            ></div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <p className="font-medium text-gray-900">
-                                  {transfer.items && transfer.items.length > 0 
-                                    ? transfer.items.slice(0, 2).map((item: any) => item.description).join(', ')
-                                    + (transfer.items.length > 2 ? ` +${transfer.items.length - 2} more` : '')
-                                    : 'No items'
-                                  }
-                                </p>
-                                <Badge variant="outline" className="text-xs">
-                                  {transfer.status}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center space-x-4 mt-1">
-                                <span className="text-sm text-gray-600">
-                                  {transfer.items?.length || 0} item(s)
-                                </span>
-                                <span className="text-sm text-gray-500">
-                                  {transfer.fromLocation} → {transfer.toLocation}
-                                </span>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-1">
-                                <span className="font-medium">Transfer ID:</span> {transfer.transferID}
-                                {transfer.items && transfer.items.length > 0 && (
-                                  <span className="ml-3">
-                                    <span className="font-medium">Quantities:</span> {transfer.items.slice(0, 2).map((item: any) => 
-                                      `${item.quantity} ${item.unit || 'units'}`
-                                    ).join(', ')}
-                                    {transfer.items.length > 2 && ` +${transfer.items.length - 2} more`}
-                                  </span>
-                                )}
+                  <div className="space-y-4">
+                    {transfers.slice(0, 5).map((transfer, index) => (
+                      <div
+                        key={transfer.id || index}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              transfer.status === "DELIVERED"
+                                ? "bg-green-500"
+                                : transfer.status === "IN_TRANSIT"
+                                ? "bg-blue-500"
+                                : transfer.status === "PENDING"
+                                ? "bg-yellow-500"
+                                : "bg-red-500"
+                            }`}
+                          ></div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2">
+                              <p className="font-medium text-gray-900">
+                                {transfer.items && transfer.items.length > 0
+                                  ? transfer.items
+                                      .slice(0, 2)
+                                      .map((item: any) => item.description)
+                                      .join(", ") +
+                                    (transfer.items.length > 2
+                                      ? ` +${transfer.items.length - 2} more`
+                                      : "")
+                                  : "No items"}
                               </p>
-                              {transfer.vehicle && (
-                                <p className="text-xs text-gray-400 mt-1">
-                                  <span className="font-medium">Vehicle:</span> {transfer.vehicle.vehicleName} 
-                                  {transfer.driverName && ` • Driver: ${transfer.driverName}`}
-                                </p>
-                              )}
+                              <Badge variant="outline" className="text-xs">
+                                {transfer.status}
+                              </Badge>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-xs text-gray-500">
-                              {new Date(transfer.createdAt).toLocaleDateString()}
-                            </span>
-                            <p className="text-xs text-gray-400">
-                              {new Date(transfer.createdAt).toLocaleTimeString()}
+                            <div className="flex items-center space-x-4 mt-1">
+                              <span className="text-sm text-gray-600">
+                                {transfer.items?.length || 0} item(s)
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                {transfer.fromLocation} → {transfer.toLocation}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              <span className="font-medium">Transfer ID:</span>{" "}
+                              {transfer.transferID}
+                              {transfer.items && transfer.items.length > 0 && (
+                                <span className="ml-3">
+                                  <span className="font-medium">
+                                    Quantities:
+                                  </span>{" "}
+                                  {transfer.items
+                                    .slice(0, 2)
+                                    .map(
+                                      (item: any) =>
+                                        `${item.quantity} ${
+                                          item.unit || "units"
+                                        }`
+                                    )
+                                    .join(", ")}
+                                  {transfer.items.length > 2 &&
+                                    ` +${transfer.items.length - 2} more`}
+                                </span>
+                              )}
                             </p>
+                            {transfer.vehicle && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                <span className="font-medium">Vehicle:</span>{" "}
+                                {transfer.vehicle.vehicleName}
+                                {transfer.driverName &&
+                                  ` • Driver: ${transfer.driverName}`}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      ))}
-                      {transfers.length === 0 && (
-                        <div className="text-center py-8 text-gray-500">
-                          <Truck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                          <p className="text-lg font-medium">No Recent Transfers</p>
-                          <p className="text-sm">No material transfers found</p>
+                        <div className="text-right">
+                          <span className="text-xs text-gray-500">
+                            {new Date(transfer.createdAt).toLocaleDateString()}
+                          </span>
+                          <p className="text-xs text-gray-400">
+                            {new Date(transfer.createdAt).toLocaleTimeString()}
+                          </p>
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
+                      </div>
+                    ))}
+                    {transfers.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Truck className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p className="text-lg font-medium">
+                          No Recent Transfers
+                        </p>
+                        <p className="text-sm">No material transfers found</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
             </div>
           )}
@@ -1481,42 +1593,65 @@ const StoreDashboard = () => {
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-3">
-                    {inventory.length > 0 ? inventory.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center">
-                          <Package className="h-4 w-4 mr-3 text-blue-500" />
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {item.itemName}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Quantity: {item.quantity} {item.unit} | Location: {item.location}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Category: {item.category} | Reorder Level: {item.reorderLevel} {item.unit}
-                            </p>
+                    {inventory.length > 0 ? (
+                      inventory.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                        >
+                          <div className="flex items-center">
+                            <Package className="h-4 w-4 mr-3 text-blue-500" />
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {item.itemName}
+                              </p>
+                              <p className="text-sm text-gray-600">
+                                Quantity: {item.quantity} {item.unit} |
+                                Location: {item.location}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Category: {item.category} | Reorder Level:{" "}
+                                {item.reorderLevel} {item.unit}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Badge
+                              variant={
+                                item.quantity <= item.reorderLevel
+                                  ? "destructive"
+                                  : "default"
+                              }
+                              className={
+                                item.quantity <= item.reorderLevel
+                                  ? "bg-red-500"
+                                  : "bg-green-500"
+                              }
+                            >
+                              {item.quantity <= item.reorderLevel
+                                ? "Low Stock"
+                                : "In Stock"}
+                            </Badge>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">
+                                ₹
+                                {(
+                                  Number(item.unitCost) * item.quantity
+                                ).toLocaleString()}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Total Value
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <Badge 
-                            variant={item.quantity <= item.reorderLevel ? "destructive" : "default"}
-                            className={item.quantity <= item.reorderLevel ? "bg-red-500" : "bg-green-500"}
-                          >
-                            {item.quantity <= item.reorderLevel ? "Low Stock" : "In Stock"}
-                          </Badge>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">₹{(Number(item.unitCost) * item.quantity).toLocaleString()}</p>
-                            <p className="text-xs text-gray-500">Total Value</p>
-                          </div>
-                        </div>
-                      </div>
-                    )) : (
+                      ))
+                    ) : (
                       <div className="text-center py-8 text-gray-500">
                         <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">No Inventory Items</p>
+                        <p className="text-lg font-medium">
+                          No Inventory Items
+                        </p>
                         <p className="text-sm">No items found in inventory</p>
                       </div>
                     )}
@@ -1999,22 +2134,32 @@ const StoreDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                   title="Active Transfers"
-                  value={transfers.filter((t: any) => t.status === 'IN_TRANSIT').length.toString()}
+                  value={transfers
+                    .filter((t: any) => t.status === "IN_TRANSIT")
+                    .length.toString()}
                   icon={Truck}
                   description="Currently in transit"
                   onClick={() => setTransferSubview("active")}
                 />
                 <StatCard
                   title="Completed Today"
-                  value={transfers.filter((t: any) => t.status === 'DELIVERED' && 
-                    new Date(t.createdAt).toDateString() === new Date().toDateString()).length.toString()}
+                  value={transfers
+                    .filter(
+                      (t: any) =>
+                        t.status === "DELIVERED" &&
+                        new Date(t.createdAt).toDateString() ===
+                          new Date().toDateString()
+                    )
+                    .length.toString()}
                   icon={CheckCircle}
                   description="Successfully delivered"
                   onClick={() => setTransferSubview("completed")}
                 />
                 <StatCard
                   title="Pending Approval"
-                  value={transfers.filter((t: any) => t.status === 'PENDING').length.toString()}
+                  value={transfers
+                    .filter((t: any) => t.status === "PENDING")
+                    .length.toString()}
                   icon={Clock}
                   description="Awaiting authorization"
                   onClick={() => setTransferSubview("pending")}
@@ -2601,25 +2746,31 @@ const StoreDashboard = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Category-wise Analysis</CardTitle>
-                    <CardDescription>Inventory quantities by category</CardDescription>
+                    <CardDescription>
+                      Inventory quantities by category
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {(() => {
                       // Get dynamic category data
                       const categoryData = getCategoryWiseAnalysis();
-                      
+
                       // If no real data, use sample data
                       const defaultData = [
                         { name: "Raw Materials", value: 150, fill: "#3b82f6" },
                         { name: "Consumables", value: 120, fill: "#10b981" },
-                        { name: "Tools & Equipment", value: 80, fill: "#f59e0b" },
+                        {
+                          name: "Tools & Equipment",
+                          value: 80,
+                          fill: "#f59e0b",
+                        },
                         { name: "Safety Items", value: 45, fill: "#ef4444" },
-                        { name: "Electrical", value: 35, fill: "#8b5cf6" }
+                        { name: "Electrical", value: 35, fill: "#8b5cf6" },
                       ];
-                      
-                      const displayData = categoryData.length > 0 ? categoryData : defaultData;
+
+                      const displayData = categoryData;
                       const isRealData = categoryData.length > 0;
-                      
+
                       return (
                         <div className="space-y-4">
                           {/* Data status */}
@@ -2635,24 +2786,42 @@ const StoreDashboard = () => {
                                 dataKey="value"
                               >
                                 {displayData.map((entry: any, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                  <Cell
+                                    key={`cell-${index}`}
+                                    fill={entry.fill}
+                                  />
                                 ))}
                               </Pie>
-                              <Tooltip 
-                                formatter={(value: any) => [`${value} items`, 'Quantity']}
+                              <Tooltip
+                                formatter={(value: any) => [
+                                  `${value} items`,
+                                  "Quantity",
+                                ]}
                               />
                             </PieChart>
                           </ResponsiveContainer>
-                          
+
                           <div className="grid grid-cols-2 gap-4">
                             {displayData.map((item: any) => (
-                              <div key={item.name} className="flex items-center gap-2">
+                              <div
+                                key={item.name}
+                                className="flex items-center gap-2"
+                              >
                                 <div
                                   className="w-4 h-4 rounded-full flex-shrink-0 border border-gray-200"
                                   style={{ backgroundColor: item.fill }}
                                 ></div>
                                 <span className="text-sm font-medium">
-                                  {item.name}: <span className="font-normal">{item.value} items</span>
+                                  {item.name
+                                    .replace(/_/g, " ")
+                                    .toLowerCase()
+                                    .replace(/\b\w/g, (char) =>
+                                      char.toUpperCase()
+                                    )}
+                                  : {" "}
+                                  <span className="font-normal">
+                                    {item.value} items
+                                  </span>
                                 </span>
                               </div>
                             ))}
@@ -3070,7 +3239,7 @@ const StoreDashboard = () => {
                       Total active vendors/suppliers in the system.
                     </div>
                   </div>
-                  
+
                   {vendors.length > 0 ? (
                     <div className="space-y-4">
                       <h3 className="font-semibold mb-2">Vendor Details</h3>
@@ -3088,24 +3257,40 @@ const StoreDashboard = () => {
                           </thead>
                           <tbody>
                             {vendors.map((vendor, idx) => (
-                              <tr key={vendor.id || idx} className="border-b hover:bg-muted/50">
-                                <td className="p-3 font-medium">{vendor.name || 'N/A'}</td>
-                                  <td className="p-3">
+                              <tr
+                                key={vendor.id || idx}
+                                className="border-b hover:bg-muted/50"
+                              >
+                                <td className="p-3 font-medium">
+                                  {vendor.name || "N/A"}
+                                </td>
+                                <td className="p-3">
                                   {vendor.gstin ? (
-                                    <span className="text-xs font-mono">{vendor.gstin}</span>
+                                    <span className="text-xs font-mono">
+                                      {vendor.gstin}
+                                    </span>
                                   ) : (
-                                    <span className="text-muted-foreground">Not provided</span>
+                                    <span className="text-muted-foreground">
+                                      Not provided
+                                    </span>
                                   )}
                                 </td>
                                 <td className="p-3">
-                                  <Badge variant="outline">{vendor.vendorType || 'COMPANY'}</Badge>
+                                  <Badge variant="outline">
+                                    {vendor.vendorType || "COMPANY"}
+                                  </Badge>
                                 </td>
-                                <td className="p-3">{vendor.mobile || 'N/A'}</td>
-                                <td className="p-3">{vendor.email || 'N/A'}</td>
                                 <td className="p-3">
-                                  {vendor.location || 
-                                   (vendor.city && vendor.state ? `${vendor.city}, ${vendor.state}` : 
-                                    vendor.addressLine1 ? vendor.addressLine1 : 'N/A')}
+                                  {vendor.mobile || "N/A"}
+                                </td>
+                                <td className="p-3">{vendor.email || "N/A"}</td>
+                                <td className="p-3">
+                                  {vendor.location ||
+                                    (vendor.city && vendor.state
+                                      ? `${vendor.city}, ${vendor.state}`
+                                      : vendor.addressLine1
+                                      ? vendor.addressLine1
+                                      : "N/A")}
                                 </td>
                               </tr>
                             ))}
@@ -3125,7 +3310,9 @@ const StoreDashboard = () => {
           {analyticsSubview === "requests" && (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Material Transfers & Requests</h2>
+                <h2 className="text-xl font-bold">
+                  Material Transfers & Requests
+                </h2>
                 <Button
                   variant="outline"
                   onClick={() => setAnalyticsSubview("main")}
@@ -3138,23 +3325,33 @@ const StoreDashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Material Requests</CardTitle>
-                  <CardDescription>Material requisition requests from sites</CardDescription>
+                  <CardDescription>
+                    Material requisition requests from sites
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
-                  
                   {materialRequests.length > 0 ? (
                     <div className="space-y-4">
                       <h3 className="font-semibold mb-2">Request Details</h3>
-                      
+
                       {/* Status Summary */}
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         {getMaterialRequestStats().map((item) => (
-                          <div key={item.status} className="p-4 border rounded-lg">
+                          <div
+                            key={item.status}
+                            className="p-4 border rounded-lg"
+                          >
                             <div className="flex items-center gap-2 mb-2">
-                              <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                              <span className="text-sm font-medium">{item.label}</span>
+                              <div
+                                className={`w-3 h-3 rounded-full ${item.color}`}
+                              ></div>
+                              <span className="text-sm font-medium">
+                                {item.label}
+                              </span>
                             </div>
-                            <div className="text-2xl font-bold">{item.count}</div>
+                            <div className="text-2xl font-bold">
+                              {item.count}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -3173,30 +3370,58 @@ const StoreDashboard = () => {
                           </thead>
                           <tbody>
                             {materialRequests.map((request, idx) => (
-                              <tr key={request.id || idx} className="border-b hover:bg-muted/50">
-                                <td className="p-3 font-medium">{request.requestNumber}</td>
-                                <td className="p-3">{request.site?.name || request.targetWarehouse || 'N/A'}</td>
+                              <tr
+                                key={request.id || idx}
+                                className="border-b hover:bg-muted/50"
+                              >
+                                <td className="p-3 font-medium">
+                                  {request.requestNumber}
+                                </td>
                                 <td className="p-3">
-                                  <Badge variant={
-                                    request.priority === 'HIGH' ? 'destructive' :
-                                    request.priority === 'MEDIUM' ? 'default' : 'outline'
-                                  }>
-                                    {request.priority || 'MEDIUM'}
+                                  {request.site?.name ||
+                                    request.targetWarehouse ||
+                                    "N/A"}
+                                </td>
+                                <td className="p-3">
+                                  <Badge
+                                    variant={
+                                      request.priority === "HIGH"
+                                        ? "destructive"
+                                        : request.priority === "MEDIUM"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                  >
+                                    {request.priority || "MEDIUM"}
                                   </Badge>
                                 </td>
                                 <td className="p-3">
-                                  <Badge variant={
-                                    request.status === 'APPROVED' || request.status === 'COMPLETED' ? 'default' :
-                                    request.status === 'PENDING' ? 'outline' : 'destructive'
-                                  }>
-                                    {request.status || 'PENDING'}
+                                  <Badge
+                                    variant={
+                                      request.status === "APPROVED" ||
+                                      request.status === "COMPLETED"
+                                        ? "default"
+                                        : request.status === "PENDING"
+                                        ? "outline"
+                                        : "destructive"
+                                    }
+                                  >
+                                    {request.status || "PENDING"}
                                   </Badge>
                                 </td>
                                 <td className="p-3">
-                                  {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                                  {request.createdAt
+                                    ? new Date(
+                                        request.createdAt
+                                      ).toLocaleDateString()
+                                    : "N/A"}
                                 </td>
                                 <td className="p-3">
-                                  {request.requiredBy ? new Date(request.requiredBy).toLocaleDateString() : 'N/A'}
+                                  {request.requiredBy
+                                    ? new Date(
+                                        request.requiredBy
+                                      ).toLocaleDateString()
+                                    : "N/A"}
                                 </td>
                               </tr>
                             ))}
@@ -3206,7 +3431,8 @@ const StoreDashboard = () => {
                     </div>
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                      No material requests found. Create material requests to see them here.
+                      No material requests found. Create material requests to
+                      see them here.
                     </div>
                   )}
                 </CardContent>
@@ -3293,7 +3519,9 @@ const StoreDashboard = () => {
                 <StatCard
                   title="Idle Vehicles"
                   value={
-                    (vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "IDLE")?._count._all?.toString() || "0"
+                    (vehicleKpis as any)?.vehiclesByStatus
+                      ?.find((status: any) => status.status === "IDLE")
+                      ?._count._all?.toString() || "0"
                   }
                   icon={PauseCircle}
                   description="Currently not in use"
@@ -3415,23 +3643,31 @@ const StoreDashboard = () => {
             </>
           )}
           {vehicleSubview === "active" && (
-          <ActiveVehiclesView 
-          onBack={() => setVehicleSubview("main")}
-          totalActiveCount={(vehicleKpis as any)?.totalVehicles || 0}
-          userId={userID}
-          />
+            <ActiveVehiclesView
+              onBack={() => setVehicleSubview("main")}
+              totalActiveCount={(vehicleKpis as any)?.totalVehicles || 0}
+              userId={userID}
+            />
           )}
           {vehicleSubview === "idle" && (
-            <IdleVehiclesView 
+            <IdleVehiclesView
               onBack={() => setVehicleSubview("main")}
-              totalIdleCount={(vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "IDLE")?._count._all || 0}
+              totalIdleCount={
+                (vehicleKpis as any)?.vehiclesByStatus?.find(
+                  (status: any) => status.status === "IDLE"
+                )?._count._all || 0
+              }
               userId={userID}
             />
           )}
           {vehicleSubview === "maintenance" && (
-            <MaintenanceVehiclesView 
+            <MaintenanceVehiclesView
               onBack={() => setVehicleSubview("main")}
-              totalMaintenanceCount={(vehicleKpis as any)?.vehiclesByStatus?.find((status: any) => status.status === "MAINTENANCE")?._count._all || 0}
+              totalMaintenanceCount={
+                (vehicleKpis as any)?.vehiclesByStatus?.find(
+                  (status: any) => status.status === "MAINTENANCE"
+                )?._count._all || 0
+              }
               userId={userID}
             />
           )}
