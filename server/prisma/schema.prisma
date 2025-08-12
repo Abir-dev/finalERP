@@ -284,6 +284,7 @@ model Bid {
 
 model Employee {
   id              String           @id @default(uuid()) @db.Uuid
+  name            String
   position        String
   department      String
   salary          Float
