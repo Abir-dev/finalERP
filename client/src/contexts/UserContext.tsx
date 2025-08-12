@@ -107,6 +107,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         accounts: "/accounts-manager",
         site: "/site-manager",
         client: "/client-portal",
+        hr: "/hr",
       };
       navigate(roleRoutes[role] || "/");
     },
