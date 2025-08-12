@@ -2,10 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { EmployeeSalaryFormData, UserRole, Employee } from "@/types/dummy-data-types";
+import { useState } from "react";
+import { EmployeeSalaryFormData, Employee } from "@/types/dummy-data-types";
 import axios from "axios";
 
 interface AddEmployeeSalaryModalProps {
@@ -20,12 +18,11 @@ const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender
 export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddEmployeeSalaryModalProps) {
   const [formData, setFormData] = useState<EmployeeSalaryFormData>({
     employeeName: "",
-    role: "",
-    status: "Active",
-    month: new Date().toLocaleString('default', { month: 'long' }),
-    year: new Date().getFullYear(),
+    position: "",
+    department: "",
+    joinedAt: "",
     netSalary: 0,
-    grossSalary: 0,
+    remarks: "",
     earnings: {
       basic: 0,
       da: 0,
@@ -44,45 +41,9 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
       labourWelfare: 0,
       others: 0,
     },
-    remarks: "",
   });
 
-  const [roles, setRoles] = useState<UserRole[]>([]);
-  const [isLoadingRoles, setIsLoadingRoles] = useState(false);
-
-  // Fetch available roles from backend
-  useEffect(() => {
-    const fetchRoles = async () => {
-      setIsLoadingRoles(true);
-      try {
-        const response = await fetch('/api/users/roles');
-        if (!response.ok) {
-          throw new Error('Failed to fetch roles');
-        }
-        const rolesData: UserRole[] = await response.json();
-        setRoles(rolesData);
-      } catch (error) {
-        console.error('Error fetching roles:', error);
-        // Fallback to hardcoded roles if API fails
-        const fallbackRoles: UserRole[] = [
-          { value: 'admin', label: 'Admin' },
-          { value: 'md', label: 'MD' },
-          { value: 'client-manager', label: 'Client Manager' },
-          { value: 'store', label: 'Store' },
-          { value: 'accounts', label: 'Accounts' },
-          { value: 'site', label: 'Site' },
-          { value: 'client', label: 'Client' }
-        ];
-        setRoles(fallbackRoles);
-      } finally {
-        setIsLoadingRoles(false);
-      }
-    };
-
-    if (open) {
-      fetchRoles();
-    }
-  }, [open]);
+  // Remove unused state variables and effects
 
   const handleEarningsChange = (field: string, value: number) => {
     setFormData({
@@ -113,10 +74,10 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
       
       // Create employee first since the form is for "Add Employee" with salary details
       const employeePayload = {
-        position: formData.role,
-        department: "General", // You can make this dynamic
-        salary: formData.grossSalary,
-        joinedAt: new Date(),
+        name: formData.employeeName,
+        position: formData.position,
+        department: formData.department,
+        joinedAt: formData.joinedAt ? new Date(formData.joinedAt) : new Date(),
       };
 
       const employeeResponse = await axios.post(`${API_URL}/hr/employees`, employeePayload, { headers });
@@ -125,7 +86,7 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
       // Then create the salary record
       const salaryPayload = {
         employeeId: employeeId,
-        netSalary: formData.netSalary || formData.grossSalary,
+        netSalary: formData.netSalary,
         paymentDate: null,
         remarks: formData.remarks,
         earnings: formData.earnings,
@@ -142,15 +103,7 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
     }
   };
 
-  const addNewEarning = () => {
-    // This would typically open another modal or form to add custom earning types
-    console.log("Add new earning type");
-  };
 
-  const addNewDeduction = () => {
-    // This would typically open another modal or form to add custom deduction types
-    console.log("Add new deduction type");
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -181,31 +134,41 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
             </div>
 
             <div className="space-y-2">
-            <Label htmlFor="grossSalary">Net Salary</Label>
+              <Label htmlFor="position">Position</Label>
               <Input
-                id="grossSalary"
-                type="number"
-                value={formData.grossSalary}
-                onChange={(e) => setFormData({ ...formData, grossSalary: Number(e.target.value) })}
-                placeholder="0"
+                id="position"
+                value={formData.position}
+                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                placeholder="Enter position"
               />
             </div>
           </div>
 
-          {/* <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="year">Year</Label>
+              <Label htmlFor="department">Department</Label>
               <Input
-                id="year"
-                type="number"
-                value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
-                placeholder="2024"
+                id="department"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                placeholder="Enter department"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="netSalary">Net Salary</Label>
+              <Label htmlFor="joinedAt">Joined At</Label>
+              <Input
+                id="joinedAt"
+                type="date"
+                value={formData.joinedAt}
+                onChange={(e) => setFormData({ ...formData, joinedAt: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+            <Label htmlFor="netSalary">Net Salary</Label>
               <Input
                 id="netSalary"
                 type="number"
@@ -214,56 +177,26 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
                 placeholder="0"
               />
             </div>
-          </div> */}
+            <div className="space-y-2">
+              <Label htmlFor="remarks">Remarks</Label>
+              <Input
+                id="remarks"
+                value={formData.remarks || ""}
+                onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+                placeholder="Enter remarks"
+              />
+            </div>
+          </div>
 
-          {/* <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Employee Role</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={isLoadingRoles ? "Loading roles..." : "Select employee role"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div> */}
+
+
+
+
 
           {/* Earnings Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Earnings</h3>
-              {/* <Button
-                type="button"
-                variant="link"
-                className="text-black p-0 h-auto"
-                onClick={addNewEarning}
-              >
-                + Add New
-              </Button> */}
             </div>
             
             <div className="grid grid-cols-3 gap-4">
@@ -352,14 +285,6 @@ export function AddEmployeeSalaryModal({ open, onClose, onAdd, employees }: AddE
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold">Deductions</h3>
-              {/* <Button
-                type="button"
-                variant="link"
-                className="text-black p-0 h-auto"
-                onClick={addNewDeduction}
-              >
-                + Add New
-              </Button> */}
             </div>
             
             <div className="grid grid-cols-3 gap-4">

@@ -201,15 +201,13 @@ export type EmployeeSalaryDeductions = {
 // Form data type for AddEmployeeSalaryModal
 export type EmployeeSalaryFormData = {
   employeeName: string;
-  role: string;
-  status: string;
-  month: string;
-  year: number;
+  position: string;
+  department: string;
+  joinedAt: string;
   netSalary: number;
-  grossSalary: number;
+  remarks?: string;
   earnings: Omit<EmployeeSalaryEarnings, 'id' | 'total' | 'createdAt' | 'updatedAt'>;
   deductions: Omit<EmployeeSalaryDeductions, 'id' | 'total' | 'createdAt' | 'updatedAt'>;
-  remarks?: string;
 };
 
 // Full database entity type

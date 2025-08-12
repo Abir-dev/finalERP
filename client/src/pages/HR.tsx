@@ -28,26 +28,26 @@ const HR = () => {
     useEffect(() => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        axios.get(`${API_URL}/hr/employees`, { headers })
-            .then(res => setEmployees(res.data))
-            .catch(() => { });
-
-            axios.get(`${API_URL}/hr-salary/employee-salaries`, { headers })
-            .then(res => setEmployeeSalaries(res.data))
-            .catch(() => { });
-            
-            const totalEmployees = employees.length;
         
+        // Fetch employees and salaries
+        Promise.all([
+            axios.get(`${API_URL}/hr/employees`, { headers }),
+            axios.get(`${API_URL}/hr-salary/employee-salaries`, { headers })
+        ]).then(([employeesRes, salariesRes]) => {
+            const employeesData = employeesRes.data;
+            const salariesData = salariesRes.data;
+            
+            setEmployees(employeesData);
+            setEmployeeSalaries(salariesData);
+            
+            // Calculate HR stats
+            const totalEmployees = employeesData.length;
+            
             // Calculate average salary from employee salaries data
             let avgSalary = "₹0";
-            if (employeeSalaries.length > 0) {
-                const totalSalary = employeeSalaries.reduce((sum, salary) => sum + (salary.netSalary || 0), 0);
-                const avgAmount = totalSalary / employeeSalaries.length;
-                avgSalary = `₹${Math.round(avgAmount).toLocaleString()}`;
-            } else if (employees.length > 0) {
-                // Fallback to employee base salary if no salary records
-                const totalSalary = employees.reduce((sum, emp) => sum + (emp.salary || 0), 0);
-                const avgAmount = totalSalary / employees.length;
+            if (salariesData.length > 0) {
+                const totalSalary = salariesData.reduce((sum, salary) => sum + (salary.netSalary || 0), 0);
+                const avgAmount = totalSalary / salariesData.length;
                 avgSalary = `₹${Math.round(avgAmount).toLocaleString()}`;
             }
             
@@ -55,15 +55,9 @@ const HR = () => {
                 totalEmployees,
                 avgSalary
             });
-    }, []);
-
-    // Fetch employee salaries
-    useEffect(() => {
-        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        axios.get(`${API_URL}/hr-salary/employee-salaries`, { headers })
-            .then(res => setEmployeeSalaries(res.data))
-            .catch(() => { });
+        }).catch(() => {
+            // Handle errors silently
+        });
     }, []);
 
     // Calculate HR stats from existing data
@@ -71,7 +65,7 @@ const HR = () => {
     const filteredEmployees = employees.filter(employee => {
         const matchesSearch =
             employee?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            employee?.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            employee?.position?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             employee?.department?.toLowerCase().includes(searchQuery.toLowerCase());
 
         return matchesSearch;
@@ -97,15 +91,30 @@ const HR = () => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
         
-        // Refresh employees list
-        axios.get(`${API_URL}/hr/employees`, { headers })
-            .then(res => setEmployees(res.data))
-            .catch(() => { });
+        // Refresh both employees and salaries data
+        Promise.all([
+            axios.get(`${API_URL}/hr/employees`, { headers }),
+            axios.get(`${API_URL}/hr-salary/employee-salaries`, { headers })
+        ]).then(([employeesRes, salariesRes]) => {
+            setEmployees(employeesRes.data);
+            setEmployeeSalaries(salariesRes.data);
             
-        // Refresh salary data
-        axios.get(`${API_URL}/hr-salary/employee-salaries`, { headers })
-            .then(res => setEmployeeSalaries(res.data))
-            .catch(() => { });
+            // Recalculate HR stats
+            const totalEmployees = employeesRes.data.length;
+            let avgSalary = "₹0";
+            if (salariesRes.data.length > 0) {
+                const totalSalary = salariesRes.data.reduce((sum, salary) => sum + (salary.netSalary || 0), 0);
+                const avgAmount = totalSalary / salariesRes.data.length;
+                avgSalary = `₹${Math.round(avgAmount).toLocaleString()}`;
+            }
+            
+            setHrStats({
+                totalEmployees,
+                avgSalary
+            });
+        }).catch(() => {
+            // Handle errors silently
+        });
     };
 
     return (
@@ -134,11 +143,6 @@ const HR = () => {
                         value: 5,
                         label: "new this month"
                     }}
-                />
-                <StatCard
-                    title="Active Employees"
-                    value={employees.filter(e => e.status === "Active").length}
-                    icon={Users}
                 />
                 <StatCard
                     title="Departments"
@@ -194,50 +198,61 @@ const HR = () => {
                                         <thead>
                                             <tr className="border-b transition-colors hover:bg-muted/50">
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Employee</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Position</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Department</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Role</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Salary</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Joined At</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Net Salary</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredEmployees.map((employee) => (
-                                                <tr
-                                                    key={employee.id}
-                                                    className="border-b transition-colors hover:bg-muted/50"
-                                                >
-                                                    <td className="p-4 align-middle">
-                                                        <div className="flex items-center gap-3">
-                                                            <Avatar>
-                                                                <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${employee.name}`} />
-                                                                <AvatarFallback>{employee.name?.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <div>
-                                                                <p className="font-medium">{employee.name}</p>
-                                                                <p className="text-xs text-muted-foreground">{employee.id}</p>
+                                            {filteredEmployees.map((employee) => {
+                                                // Find the latest salary record for this employee
+                                                const employeeSalary = employeeSalaries.find(salary => 
+                                                    salary.employeeId === employee.id
+                                                );
+                                                
+                                                return (
+                                                    <tr
+                                                        key={employee.id}
+                                                        className="border-b transition-colors hover:bg-muted/50"
+                                                    >
+                                                        <td className="p-4 align-middle">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar>
+                                                                    <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${employee.name}`} />
+                                                                    <AvatarFallback>{employee.name?.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div>
+                                                                    <p className="font-medium">{employee.name}</p>
+                                                                    <p className="text-xs text-muted-foreground">{employee.id}</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 align-middle">{employee.department}</td>
-                                                    <td className="p-4 align-middle">{employee.role}</td>
-                                                    <td className="p-4 align-middle">₹{employee.salary.toLocaleString()}</td>
-                                                    <td className="p-4 align-middle">
-                                                        <Badge
-                                                            variant={employee.status === "Active" ? "default" : "secondary"}
-                                                        >
-                                                            {employee.status}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="p-4 align-middle">
-                                                        <div className="flex gap-2">
-                                                            <Button variant="outline" size="sm" onClick={() => handleViewEmployee(employee)}>
-                                                                View
-                                                            </Button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        </td>
+                                                        <td className="p-4 align-middle">{employee.position}</td>
+                                                        <td className="p-4 align-middle">{employee.department}</td>
+                                                        <td className="p-4 align-middle">
+                                                            {employee.joinedAt ?
+                                                                new Date(employee.joinedAt).toLocaleDateString() :
+                                                                <Badge variant="secondary">N/A</Badge>
+                                                            }
+                                                        </td>
+                                                        <td className="p-4 align-middle">
+                                                            {employeeSalary ? 
+                                                                `₹${employeeSalary.netSalary?.toLocaleString()}` : 
+                                                                <Badge variant="secondary">No Salary Record</Badge>
+                                                            }
+                                                        </td>
+                                                        <td className="p-4 align-middle">
+                                                            <div className="flex gap-2">
+                                                                <Button variant="outline" size="sm" onClick={() => handleViewEmployee(employee)}>
+                                                                    View
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
