@@ -9,10 +9,9 @@ interface ViewEmployeeModalProps {
   employee: {
     id: string;
     name: string;
+    position: string;
     department: string;
-    role: string;
-    salary: number;
-    status: string;
+    joinedAt: string;
   };
   onEdit: () => void;
 }
@@ -32,7 +31,7 @@ export function ViewEmployeeModal({ open, onClose, employee, onEdit }: ViewEmplo
             </Avatar>
             <div>
               <h3 className="font-semibold text-lg">{employee.name}</h3>
-              <p className="text-sm text-muted-foreground">{employee.role}</p>
+              <p className="text-sm text-muted-foreground">{employee.position}</p>
             </div>
           </div>
 
@@ -46,18 +45,12 @@ export function ViewEmployeeModal({ open, onClose, employee, onEdit }: ViewEmplo
               <p>{employee.department}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Role</p>
-              <p>{employee.role}</p>
+              <p className="text-sm font-medium text-muted-foreground">Position</p>
+              <p>{employee.position}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Salary</p>
-              <p>₹{employee.salary.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <Badge variant={employee.status === "Active" ? "default" : "secondary"}>
-                {employee.status}
-              </Badge>
+              <p className="text-sm font-medium text-muted-foreground">Joined At</p>
+              <p>{new Date(employee.joinedAt).toLocaleDateString()}</p>
             </div>
           </div>
 
