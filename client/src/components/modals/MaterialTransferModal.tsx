@@ -108,8 +108,9 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     // Load vehicles and users
+    const vehiclesUrl = user?.id ? `${API_URL}/vehicles?userId=${user.id}` : `${API_URL}/vehicles`;
     Promise.all([
-      fetch(`${API_URL}/vehicles`, { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch(vehiclesUrl, { headers }).then((r) => (r.ok ? r.json() : [])),
       fetch(`${API_URL}/users`, { headers }).then((r) => (r.ok ? r.json() : [])),
     ])
       .then(async ([vehiclesRes, usersRes]) => {
@@ -134,7 +135,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
               setRequestedDate(t.requestedDate ? new Date(t.requestedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
               setStatus((t.status || 'PENDING') as TransferStatus);
               setDriverName(t.driverName || "");
-              setEtaMinutes(typeof t.etaMinutes === 'number' ? String(t.etaMinutes) : "");
+              setEtaMinutes(typeof t.etaMinutes === 'number' ? String((t.etaMinutes / 60).toFixed(1)) : "");
               setVehicleId(t.vehicleId || "");
               setApprovedById(t.approvedById || "");
               setPriority((t.priority || 'NORMAL') as TransferPriority);
@@ -201,6 +202,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     if (!validate()) return;
     setLoading(true);
     try {
+      const etaMinutesValue = etaMinutes ? Math.round(Number(etaMinutes) * 60) : null;
       const payload = {
         transferID: transferID.trim(),
         fromLocation: fromLocation.trim(),
@@ -208,7 +210,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
         requestedDate: new Date(requestedDate).toISOString(),
         status,
         driverName: driverName.trim() || null,
-        etaMinutes: etaMinutes ? Number(etaMinutes) : null,
+        etaMinutes: etaMinutesValue,
         vehicleId: vehicleId || null,
         approvedById: approvedById || null,
         priority,
@@ -368,8 +370,8 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
             <Input value={driverName} onChange={(e) => setDriverName(e.target.value)} placeholder="John Doe" />
           </div>
           <div>
-            <Label className="mb-1 block">ETA (minutes)</Label>
-            <Input type="number" min="0" value={etaMinutes} onChange={(e) => setEtaMinutes(e.target.value)} placeholder="120" />
+            <Label className="mb-1 block">ETA (hours)</Label>
+            <Input type="number" min="0" step="0.1" value={etaMinutes} onChange={(e) => setEtaMinutes(e.target.value)} placeholder="2.0" />
           </div>
           <div>
             <Label className="mb-1 block">Vehicle</Label>

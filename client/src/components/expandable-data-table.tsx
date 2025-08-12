@@ -234,10 +234,12 @@ export function ExpandableDataTable({
                   <SelectValue placeholder={`Select ${column.label.toLowerCase()}...`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="In Transit">In Transit</SelectItem>
-                  <SelectItem value="Delivered">Delivered</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  {(column.options && column.options.length > 0
+                    ? column.options
+                    : ['PENDING', 'IN_TRANSIT', 'DELIVERED', 'CANCELLED']
+                  ).map((opt: string) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

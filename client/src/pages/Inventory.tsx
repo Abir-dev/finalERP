@@ -190,7 +190,10 @@ interface Transfer {
   status: string;
   driver: string;
   eta: string;
+  etaMinutes?: number;
   isFlagged: boolean;
+  requestedDate?: string;
+  requestedAtMs?: number;
 }
 
 // Update category options constant to match backend enums
@@ -239,7 +242,7 @@ const transferColumns = [
   { key: "from", label: "From", type: "text" as const },
   { key: "to", label: "To", type: "text" as const },
   { key: "items", label: "Items", type: "text" as const },
-  { key: "status", label: "Status", type: "badge" as const },
+  { key: "status", label: "Status", type: "badge" as const, options: ["PENDING", "IN_TRANSIT", "DELIVERED", "CANCELLED"] },
   { key: "driver", label: "Driver", type: "text" as const },
   { key: "eta", label: "ETA", type: "text" as const },
   { key: "actions", label: "Actions", type: "actions" as const },
@@ -406,10 +409,21 @@ const Inventory = () => {
           items: Array.isArray(t?.items) ? t.items.length : (t?.items ?? 0),
           status: t?.status || "PENDING",
           driver: t?.driverName || t?.driver || "-",
-          eta: t?.etaMinutes != null ? `${t.etaMinutes} min` : (t?.eta || "-"),
+          eta: t?.etaMinutes != null ? `${(t.etaMinutes / 60).toFixed(1)} hrs` : (t?.eta || "-"),
+          etaMinutes: typeof t?.etaMinutes === 'number' ? t.etaMinutes : undefined,
           isFlagged: false,
-        }));
+          requestedDate: t?.requestedDate ? new Date(t.requestedDate).toLocaleString() : undefined,
+          requestedAtMs: t?.requestedDate ? new Date(t.requestedDate).getTime() : undefined,
+          approvedByName: t?.approvedBy?.name,
+          vehicleName: t?.vehicle?.vehicleName,
+          vehicleReg: t?.vehicle?.registrationNumber || t?.vehicle?.licensePlate,
+          priority: t?.priority,
+          itemsList: Array.isArray(t?.items)
+            ? t.items.map((it: any) => ({ description: it.description, quantity: it.quantity, unit: it.unit }))
+            : [],
+        } as any));
         setTransfers(mappedTransfers);
+        console.log("Mapped transfers:", mappedTransfers);
       } catch (error) {
         console.log("Transfers data not available");
       }
@@ -2570,40 +2584,60 @@ const Inventory = () => {
         </TabsContent>
 
         <TabsContent value="transfers" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <EnhancedStatCard
               title="Active Transfers"
-              value="7"
+              value={(() => {
+                const activeCount = transfers.filter(t => (t.status || '').toUpperCase() === 'IN_TRANSIT').length;
+                return activeCount.toString();
+              })()}
               icon={Truck}
               description="Currently in transit"
               threshold={{
-                status: "good",
-                message: "Normal transfer activity",
+                status: (() => {
+                  const c = transfers.filter(t => (t.status || '').toUpperCase() === 'IN_TRANSIT').length;
+                  return c === 0 ? 'good' : c <= 5 ? 'warning' : 'critical';
+                })(),
+                message: (() => {
+                  const c = transfers.filter(t => (t.status || '').toUpperCase() === 'IN_TRANSIT').length;
+                  return c === 0 ? 'No active transfers' : c <= 5 ? 'Normal transfer activity' : 'High transfer load';
+                })(),
               }}
             />
             <EnhancedStatCard
-              title="Today's Transfers"
-              value="15"
+              title={"Today's Transfers"}
+              value={(() => {
+                const start = new Date();
+                start.setHours(0,0,0,0);
+                const end = new Date();
+                end.setHours(23,59,59,999);
+                const countToday = transfers.filter(t => {
+                  if (typeof t.requestedAtMs === 'number') {
+                    return t.requestedAtMs >= start.getTime() && t.requestedAtMs <= end.getTime();
+                  }
+                  // fallback: try to parse requestedDate if present
+                  if (t.requestedDate) {
+                    const ms = Date.parse(t.requestedDate);
+                    return !isNaN(ms) && ms >= start.getTime() && ms <= end.getTime();
+                  }
+                  return false;
+                }).length;
+                return countToday.toString();
+              })()}
               icon={Package}
-              description="Completed today"
-              trend={{ value: 25, label: "vs yesterday" }}
+              description="Requested today"
             />
             <EnhancedStatCard
-              title="Avg Transit Time"
-              value="3.2 hrs"
+              title="Avg ETA"
+              value={(() => {
+                const active = transfers.filter(t => (t.status || '').toUpperCase() === 'IN_TRANSIT');
+                const etas = active.map(t => t.etaMinutes).filter((v): v is number => typeof v === 'number');
+                if (etas.length === 0) return '-';
+                const avgHours = etas.reduce((a,b) => a + b, 0) / etas.length / 60;
+                return `${avgHours.toFixed(1)} hrs`;
+              })()}
               icon={Clock}
-              description="Site to site transfers"
-              trend={{ value: -10, label: "improvement" }}
-            />
-            <EnhancedStatCard
-              title="Transfer Accuracy"
-              value="98.5%"
-              icon={TrendingUp}
-              description="Items delivered correctly"
-              threshold={{
-                status: "good",
-                message: "Excellent transfer accuracy",
-              }}
+              description="Avg for active transfers"
             />
           </div>
 
@@ -2623,24 +2657,31 @@ const Inventory = () => {
             description="Track material movement between locations"
             data={transfers}
             columns={transferColumns}
-            rowActions={['view', 'edit', 'delete']}
+            rowActions={['edit', 'delete']}
             expandableContent={(row) => (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium mb-2">Transfer Details</h4>
                   <div className="text-sm space-y-1">
-                    <div>Request Date: {row.requestDate || "2024-01-15"}</div>
-                    <div>Approved By: {row.approvedBy || "Site Manager"}</div>
-                    <div>Vehicle: {row.vehicle || "TRK-001"}</div>
-                    <div>Priority: {row.priority || "Normal"}</div>
+                    <div>Request Date: {row.requestedDate || '-'}</div>
+                    <div>Priority: {row.priority || '-'}</div>
+                    <div>Vehicle: {row.vehicleName || '-'}</div>
+                    <div>Vehicle Reg: {row.vehicleReg || '-'}</div>
+                    <div>Approved By: {row.approvedByName || '-'}</div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-medium mb-2">Items List</h4>
+                  <h4 className="font-medium mb-2">Items</h4>
                   <div className="text-sm space-y-1">
-                    <div>• Cement bags: 50 units</div>
-                    <div>• Steel rods: 25 units</div>
-                    <div>• Safety helmets: 10 units</div>
+                    {(row.itemsList && row.itemsList.length > 0
+                      ? row.itemsList
+                      : []
+                    ).map((it: any, idx: number) => (
+                      <div key={idx}>• {it.description}: {it.quantity} {it.unit || ''}</div>
+                    ))}
+                    {(!row.itemsList || row.itemsList.length === 0) && (
+                      <div className="text-muted-foreground">No items</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2650,7 +2691,7 @@ const Inventory = () => {
               {
                 key: "status",
                 label: "Status",
-                options: ["Pending", "In Transit", "Delivered"],
+                options: Array.from(new Set(transfers.map(t => t.status))).filter(Boolean) as string[],
               },
             ]}
             onRowAction={handleTransferAction}
@@ -2670,8 +2711,11 @@ const Inventory = () => {
                 items: Array.isArray(created?.items) ? created.items.length : (created?.items ?? 0),
                 status: created?.status || "PENDING",
                 driver: created?.driverName || created?.driver || "-",
-                eta: created?.etaMinutes != null ? `${created.etaMinutes} min` : (created?.eta || "-"),
+                 eta: created?.etaMinutes != null ? `${(created.etaMinutes / 60).toFixed(1)} hrs` : (created?.eta || "-"),
+                 etaMinutes: typeof created?.etaMinutes === 'number' ? created.etaMinutes : undefined,
                 isFlagged: false,
+                 requestedDate: created?.requestedDate ? new Date(created.requestedDate).toLocaleString() : undefined,
+                 requestedAtMs: created?.requestedDate ? new Date(created.requestedDate).getTime() : Date.now(),
               };
               setTransfers((prev) => [mapped, ...prev]);
             }}
@@ -2691,8 +2735,11 @@ const Inventory = () => {
                   items: Array.isArray(updated?.items) ? updated.items.length : (updated?.items ?? editingTransfer.items),
                   status: updated?.status || editingTransfer.status,
                   driver: updated?.driverName || updated?.driver || editingTransfer.driver,
-                  eta: updated?.etaMinutes != null ? `${updated.etaMinutes} min` : (updated?.eta || editingTransfer.eta),
+                  eta: updated?.etaMinutes != null ? `${(updated.etaMinutes / 60).toFixed(1)} hrs` : (updated?.eta || editingTransfer.eta),
+                  etaMinutes: typeof updated?.etaMinutes === 'number' ? updated.etaMinutes : editingTransfer.etaMinutes,
                   isFlagged: editingTransfer.isFlagged,
+                  requestedDate: updated?.requestedDate ? new Date(updated.requestedDate).toLocaleString() : editingTransfer.requestedDate,
+                  requestedAtMs: updated?.requestedDate ? new Date(updated.requestedDate).getTime() : editingTransfer.requestedAtMs,
                 };
                 setTransfers((prev) => prev.map(t => (t.id === editingTransfer.id ? mapped : t)));
                 setEditingTransfer(null);
