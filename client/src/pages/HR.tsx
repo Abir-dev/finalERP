@@ -3,13 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import { FilterIcon, Plus, Search, Users, DollarSign, Eye, Edit, Trash2 } from "lucide-react";
+import { FilterIcon, Plus, Search, Users, DollarSign, Eye, Edit, Trash2, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ViewEmployeeModal } from "@/components/modals/ViewEmployeeModal";
 import { AddEmployeeSalaryModal } from "@/components/modals/AddEmployeeSalaryModal";
+import { PayslipModal } from "@/components/modals/PayslipModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ExpandableDataTable } from "@/components/expandable-data-table";
 
@@ -32,6 +33,9 @@ const HR = () => {
     const [employeeToDelete, setEmployeeToDelete] = useState<any>(null);
     // Add backend state
     const [hrStats, setHrStats] = useState({ totalEmployees: 0, avgSalary: '' });
+    // Add payslip modal state
+    const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
+    const [selectedSalaryForPayslip, setSelectedSalaryForPayslip] = useState<any>(null);
 
     useEffect(() => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -185,6 +189,11 @@ const HR = () => {
     const handleDeleteEmployee = (employee: any) => {
         setEmployeeToDelete(employee);
         setIsDeleteModalOpen(true);
+    };
+
+    const handleGeneratePayslip = (salaryRecord: any) => {
+        setSelectedSalaryForPayslip(salaryRecord);
+        setIsPayslipModalOpen(true);
     };
 
     // Define columns for employees table
@@ -387,6 +396,14 @@ const HR = () => {
             render: (value: any, row: any) => (
                 <div className="flex gap-2">
                     <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleGeneratePayslip(row)}
+                    >
+                        <FileText className="h-4 w-4 mr-1" />
+                        Payslip
+                    </Button>
+                    <Button 
                         variant="destructive" 
                         size="sm" 
                         onClick={() => handleDeleteEmployee(row.employee)}
@@ -578,7 +595,7 @@ const HR = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <StatCard
                     title="Total Employees"
                     value={hrStats.totalEmployees}
@@ -684,6 +701,16 @@ const HR = () => {
                     />
                 </>
             )}
+
+            {/* Payslip Modal */}
+            <PayslipModal
+                open={isPayslipModalOpen}
+                onClose={() => {
+                    setIsPayslipModalOpen(false);
+                    setSelectedSalaryForPayslip(null);
+                }}
+                salaryData={selectedSalaryForPayslip}
+            />
 
             {/* Delete Confirmation Modal */}
             {employeeToDelete && (
