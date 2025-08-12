@@ -173,7 +173,7 @@ export function MaterialForecast({ projectId, timeframe, inventoryData }: Materi
             <CardDescription>Upcoming material requirements and procurement planning</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Select value={selectedTimeframe} onValueChange={handleTimeframeChange}>
+            {/* <Select value={selectedTimeframe} onValueChange={handleTimeframeChange}>
               <SelectTrigger className="w-40">
                 <SelectValue />
               </SelectTrigger>
@@ -182,11 +182,11 @@ export function MaterialForecast({ projectId, timeframe, inventoryData }: Materi
                 <SelectItem value="1-month">Next Month</SelectItem>
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
-            </Select>
-            <Button variant="outline" size="sm" onClick={handleExportForecast}>
+            </Select> */}
+            {/* <Button variant="outline" size="sm" onClick={handleExportForecast}>
               <Download className="h-4 w-4 mr-1" />
               Export Forecast
-            </Button>
+            </Button> */}
           </div>
         </div>
       </CardHeader>
