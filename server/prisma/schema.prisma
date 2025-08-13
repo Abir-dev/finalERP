@@ -17,6 +17,7 @@ enum UserRole {
   site
   client
   hr
+  project
 }
 
 model User {

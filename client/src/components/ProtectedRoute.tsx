@@ -26,7 +26,8 @@ export const ProtectedRoute = ({ allowedRoles, redirectPath }: ProtectedRoutePro
       "accounts": "/accounts-manager",
       "site": "/site-manager",
       "client": "/client-portal",
-      "hr": "/hr"
+      "hr": "/hr",
+      "project": "/projects"
     };
     
     return <Navigate to={roleDashboardMap[user.role]} replace />;

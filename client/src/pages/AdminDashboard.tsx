@@ -678,6 +678,7 @@ const ITDashboard = () => {
                       <SelectItem value="site">Site Manager</SelectItem>
                       <SelectItem value="client">Client</SelectItem>
                       <SelectItem value="hr">HR</SelectItem>
+                      <SelectItem value="project">Project Manager</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>{" "}

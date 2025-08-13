@@ -115,7 +115,7 @@ export function AppSidebar() {
       title: "Project Management",
       url: "/projects",
       icon: ClipboardList,
-      allowedRoles: ["admin", "md", "site"],
+      allowedRoles: ["admin", "md", "project"],
     },
     {
       title: "Tender Management",
@@ -159,7 +159,8 @@ export function AppSidebar() {
         "accounts",
         "site",
         "client",
-        "hr"
+        "hr",
+        "project"
       ],
     },
     {
@@ -174,7 +175,8 @@ export function AppSidebar() {
         "accounts",
         "site",
         "client",
-        "hr"
+        "hr",
+        "project"
       ],
     },
     {

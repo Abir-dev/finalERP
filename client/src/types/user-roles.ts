@@ -7,7 +7,8 @@ export type UserRole =
   | 'accounts' 
   | 'site'
   | 'client'
-  | 'hr';
+  | 'hr'
+  | 'project';
 
 export interface RolePermissions {
   projectManagement: boolean;
@@ -99,5 +100,6 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     centralStoreAccess: false,
     approvalAuthority: []
   },
-  hr: undefined
+  hr: undefined,
+  project: undefined
 };
