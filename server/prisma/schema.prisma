@@ -98,7 +98,7 @@ model Project {
   // New fields from the form
   squareFootage       Int?
   contingency         Float?
-  projectStartDate    DateTime?
+
   estimatedDuration   Int?
   description         String?
   contractType        ContractType?     // Enum (already updated)
