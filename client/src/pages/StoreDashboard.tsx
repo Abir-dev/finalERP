@@ -2659,12 +2659,12 @@ const StoreDashboard = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
-                  title="Monthly Spend"
+                  title="Total Purchase Orders"
                   value={`₹${(
                     costAnalysis?.avgMonthlySpend || 0
                   ).toLocaleString()}`}
                   icon={BarChart3}
-                  description="Average monthly spending"
+                  description="Total spending"
                   onClick={() => setAnalyticsSubview("spend")}
                 />
                 {/* <StatCard
