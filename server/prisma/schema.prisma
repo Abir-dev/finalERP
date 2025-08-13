@@ -75,28 +75,40 @@ model UserInvitation {
 }
 
 model Project {
-  id               String            @id @default(uuid()) @db.Uuid
-  name             String
-  clientId         String            @db.Uuid
-  client           User              @relation("ProjectClient", fields: [clientId], references: [id])
-  startDate        DateTime
-  endDate          DateTime
-  status           String            @default("active")
-  location         String?
-  budget           Float?
-  projectType      String?
-  managers         User[]            @relation("ProjectManagers")
-  members          User[]            @relation("ProjectMembers")
-  tasks            Task[]
-  invoices         Invoice[]
-  materialRequests MaterialRequest[]
-  nonBillables     NonBillable[]
-  totalSpend       Float?
-  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  Tender           Tender[]
-  Payment          Payment[]
+  id                  String            @id @default(uuid()) @db.Uuid
+  name                String
+  clientId            String            @db.Uuid
+  client              User              @relation("ProjectClient", fields: [clientId], references: [id])
+  startDate           DateTime
+  endDate             DateTime?
+  location            String?
+  budget              Float?
+  projectType         ProjectType?      // Changed to enum
+  managers             User           @relation("ProjectManagers", fields: [managerId], references: [id])
+  managerId        String              @db.Uuid
+  members             User[]            @relation("ProjectMembers")
+  tasks               Task[]
+  invoices            Invoice[]
+  materialRequests    MaterialRequest[]
+  nonBillables        NonBillable[]
+  totalSpend          Float?
+  
+  // New fields from the form
+  squareFootage       Int?
+  contingency         Float?
+  projectStartDate    DateTime?
+  estimatedDuration   Int?
+  description         String?
+  contractType        ContractType?     // Enum (already updated)
+  estimatedCost       Int?
+  defaultCostCenter   String?
+  
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Tender              Tender[]
+  Payment             Payment[]
 }
+
 
 model NonBillable {
   id          String   @id @default(uuid()) @db.Uuid
@@ -895,4 +907,18 @@ enum TransferPriority {
   NORMAL
   HIGH
   URGENT
+}
+// Enums for both fields
+enum ProjectType {
+  RESIDENTIAL
+  COMMERCIAL
+  INDUSTRIAL
+  INFRASTRUCTURE
+}
+
+enum ContractType {
+  FIXED_PRICE
+  COST_PLUS
+  TIME_AND_MATERIALS
+  UNIT_PRICE
 }
