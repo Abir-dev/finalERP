@@ -702,5 +702,62 @@ export const projectController = {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  },
+
+  async updateSpent(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { amount } = req.body;
+
+      if (typeof amount !== 'number' || amount < 0) {
+        return res.status(400).json({ error: 'Amount must be a positive number' });
+      }
+
+      // Get current project to check existing totalSpend
+      const currentProject = await prisma.project.findUnique({
+        where: { id },
+        select: { totalSpend: true }
+      });
+
+      if (!currentProject) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Calculate new total spent
+      const currentTotalSpend = currentProject.totalSpend || 0;
+      const newTotalSpend = currentTotalSpend + amount;
+
+      // Update project with new total spent
+      const updatedProject = await prisma.project.update({
+        where: { id },
+        data: { totalSpend: newTotalSpend },
+        include: {
+          client: true,
+          managers: true,
+          members: true,
+          tasks: true,
+          invoices: true,
+          materialRequests: true,
+          nonBillables: true,
+          Tender: true,
+          Payment: true
+        } as any
+      });
+
+      res.json({
+        message: 'Project spent updated successfully',
+        project: updatedProject,
+        previousTotalSpend: currentTotalSpend,
+        newTotalSpend: newTotalSpend,
+        amountAdded: amount
+      });
+      // logger.success("Project spent updated successfully");
+    } catch (error) {
+      logger.error("Error updating project spent:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 }; 

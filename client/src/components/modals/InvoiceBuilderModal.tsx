@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { updateProjectSpent } from "@/utils/project-utils";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -350,6 +351,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   const taxAmount = applyGst ? baseAfterRetention * taxRate : 0;
   const total = baseAfterRetention + taxAmount;
 
+  // Function to update project spent after invoice creation
   const handleSubmit = async () => {
     if (!formData.projectId || !formData.clientId) {
       toast({
@@ -427,6 +429,10 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
           description: "Invoice created successfully",
         });
         onClose();
+        // Update project spent after successful invoice creation
+        if (formData.projectId) {
+          await updateProjectSpent(formData.projectId, total);
+        }
       } else {
         const errorData = await response.json();
         toast({

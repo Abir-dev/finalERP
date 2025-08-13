@@ -30,4 +30,7 @@ router.put('/:id/non-billables/:nonBillableId', authenticateUser, projectControl
 router.delete('/:id/non-billables/:nonBillableId', authenticateUser, projectController.deleteNonBillable);
 router.post('/:id/recalculate-total', authenticateUser, projectController.recalculateTotalSpend);
 
+// Update project spent
+router.put('/:id/update-spent', authenticateUser, projectController.updateSpent);
+
 export default router; 

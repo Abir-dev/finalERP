@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import axios from "axios";
+import { updateProjectSpent } from "@/utils/project-utils";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -78,6 +79,7 @@ export default function LabourWagesModal({ isOpen, onClose, onSuccess }: LabourW
         ...formData,
         amount: parseFloat(formData.amount)
       }, { headers });
+      await updateProjectSpent(formData.projectId, parseFloat(formData.amount));
 
       toast.success("Labour wage entry created successfully!");
       onSuccess();
