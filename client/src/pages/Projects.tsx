@@ -699,8 +699,6 @@ Add any additional notes here...
                 name: newProject.name,
                 clientId: newProject.client, // This should be the client ID
                 startDate: newProject.projectStartDate ? new Date(newProject.projectStartDate).toISOString() : new Date().toISOString(),
-                endDate: newProject.deadline ? new Date(newProject.deadline).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-                status: newProject.status || 'active',
                 // Optional fields based on your form
                 ...(newProject.location && { location: newProject.location }),
                 ...(newProject.budget && { budget: newProject.budget }),
@@ -713,6 +711,7 @@ Add any additional notes here...
                 ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
                 ...(newProject.defaultCostCenter && { defaultCostCenter: newProject.defaultCostCenter }),
                 ...(projectType && { projectType }),
+
             };
 
             const response = await axios.post(`${API_URL}/projects`, projectData, {
@@ -970,10 +969,10 @@ Add any additional notes here...
                                                     <SelectValue placeholder="Select contract type" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="Fixed Price">Fixed Price</SelectItem>
-                                                    <SelectItem value="Cost Plus">Cost Plus</SelectItem>
-                                                    <SelectItem value="Time and Materials">Time and Materials</SelectItem>
-                                                    <SelectItem value="Unit Price">Unit Price</SelectItem>
+                                                    <SelectItem value="FIXED_PRICE">Fixed Price</SelectItem>
+                                                    <SelectItem value="COST_PLUS">Cost Plus</SelectItem>
+                                                    <SelectItem value="TIME_AND_MATERIALS">Time and Materials</SelectItem>
+                                                    <SelectItem value="UNIT_PRICE">Unit Price</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -1006,9 +1005,9 @@ Add any additional notes here...
                                             {['Residential', 'Commercial', 'Industrial', 'Infrastructure'].map((type) => (
                                                 <Button
                                                     key={type}
-                                                    variant={projectType === type ? 'default' : 'outline'}
+                                                    variant={projectType === type.toUpperCase() ? 'default' : 'outline'}
                                                     size="sm"
-                                                    onClick={() => setProjectType(type)}
+                                                    onClick={() => setProjectType(type.toUpperCase())}
                                                 >
                                                     {type}
                                                 </Button>
