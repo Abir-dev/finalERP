@@ -32,22 +32,42 @@ const recalculateProjectTotalSpend = async (projectId: string) => {
 export const projectController = {
   async createProject(req: Request, res: Response) {
     try {
-      // Use only the most basic fields that definitely exist
-      const { name, clientId, startDate, ...projectData } = req.body;
+      const { userId } = req.params;
+      const { name, clientId, startDate, milestones, ...projectData } = req.body;
       
-      // Try the most minimal create first
       const project = await prisma.project.create({
         data: {
           ...projectData,
           name,
           clientId,
           startDate: startDate ? new Date(startDate) : new Date(),
-         
+          createdById: userId
         }
       });
+
+      // Create milestones if provided
+      if (milestones && Array.isArray(milestones) && milestones.length > 0) {
+        await prisma.$transaction(
+          milestones.map((milestone: any) => 
+            prisma.projectMilestone.create({
+              data: {
+                projectId: project.id,
+                name: milestone.name,
+                startDate: new Date(milestone.startDate),
+                endDate: milestone.endDate ? new Date(milestone.endDate) : null
+              }
+            })
+          )
+        );
+      }
+
+      // Return project with milestones
+      const projectWithMilestones = await prisma.project.findUnique({
+        where: { id: project.id },
+        include: { milestones: true }
+      });
       
-      
-      res.status(201).json(project);
+      res.status(201).json(projectWithMilestones);
     } catch (error) {
       logger.error("Error:", error);
       res.status(500).json({
@@ -372,6 +392,40 @@ export const projectController = {
           tasks: true,
           invoices: true,
           materialRequests: true,
+          Tender: true,
+          Payment: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+      
+      res.json(projects);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  async getProjectsByUser(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      
+      const projects = await prisma.project.findMany({
+        where: {
+          createdById: userId
+        },
+        include: {
+          client: true,
+          managers: true,
+          members: true,
+          tasks: true,
+          invoices: true,
+          materialRequests: true,
+          nonBillables: true,
           Tender: true,
           Payment: true
         },

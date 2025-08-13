@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/components/ui/use-toast";
+import { useUser } from "@/contexts/UserContext";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -42,9 +43,11 @@ interface Project {
     interiorDate?: string;
     finalDate?: string;
     milestones?: Array<{
+        id?: number;
         name: string;
-        date: string;
-        completed: boolean;
+        startDate: string;
+        endDate: string;
+        completed?: boolean;
     }>;
 }
 
@@ -456,6 +459,7 @@ const DPRModal = ({ onClose, projects }) => {
 };
 
 const Projects = () => {
+    const { user } = useUser();
     const [searchQuery, setSearchQuery] = useState("");
     const [view, setView] = useState("overview");
     const [showDPRModal, setShowDPRModal] = useState(false);
@@ -493,7 +497,8 @@ const Projects = () => {
         description: '',
         contractType: '',
         estimatedCost: 0,
-        defaultCostCenter: ''
+        defaultCostCenter: '',
+        milestones: []
         // designDate: '',
         // foundationDate: '',
         // structureDate: '',
@@ -542,6 +547,35 @@ const Projects = () => {
             completed: !updatedMilestones[index].completed
         };
         setEditMilestones(updatedMilestones);
+    };
+
+    const handleDeleteProject = async (projectId: number, projectName: string) => {
+        if (!confirm(`Are you sure you want to delete the project "${projectName}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const response = await axios.delete(`${API_URL}/projects/${projectId}`,{  headers: {
+                'Authorization': `Bearer ${getToken()}`,
+            },});
+            
+            if (response.status === 204) {
+                // Remove project from local state
+                setProjects(prev => prev.filter(project => project.id !== projectId));
+                
+                toast({
+                    title: "Project Deleted",
+                    description: `"${projectName}" has been successfully deleted.`,
+                });
+            }
+        } catch (error) {
+            console.error("Error deleting project:", error);
+            toast({
+                title: "Delete Failed",
+                description: "Failed to delete the project. Please try again.",
+                variant: "destructive",
+            });
+        }
     };
 
     const [selectedProjectForResources, setSelectedProjectForResources] = useState("");
@@ -693,6 +727,15 @@ Add any additional notes here...
             return;
         }
 
+        if (!user?.id) {
+            toast({
+                title: "Authentication Error",
+                description: "User not authenticated. Please log in again.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         setIsCreatingProject(true);
         try {
             const projectData = {
@@ -711,10 +754,13 @@ Add any additional notes here...
                 ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
                 ...(newProject.defaultCostCenter && { defaultCostCenter: newProject.defaultCostCenter }),
                 ...(projectType && { projectType }),
-
+                // Include milestones if they exist
+                ...(newProject.milestones && newProject.milestones.length > 0 && {
+                    milestones: newProject.milestones.filter(m => m.name && m.startDate)
+                })
             };
 
-            const response = await axios.post(`${API_URL}/projects`, projectData, {
+            const response = await axios.post(`${API_URL}/projects/user/${user.id}`, projectData, {
                 headers: {
                     'Authorization': `Bearer ${getToken()}`,
                     'Content-Type': 'application/json',
@@ -743,7 +789,8 @@ Add any additional notes here...
                     description: '',
                     contractType: '',
                     estimatedCost: 0,
-                    defaultCostCenter: ''
+                    defaultCostCenter: '',
+                    milestones: []
                 });
                 setProjectType('');
 
@@ -769,7 +816,13 @@ Add any additional notes here...
         try {
             const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const response = await axios.get(`${API_URL}/projects`, { headers });
+            
+            const endpoint = 
+                user?.role !== "admin" && user?.id
+                    ? `${API_URL}/projects/user/${user.id}`
+                    : `${API_URL}/projects`;
+                    
+            const response = await axios.get(endpoint, { headers });
             setProjects(response.data);
         } catch (error) {
             console.error('Error fetching projects:', error);
@@ -1032,36 +1085,140 @@ Add any additional notes here...
                                     </div> */}
                                 </div>
 
-                                {/* Key Milestones Section - Commented out for now */}
-                                {/* 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold border-b pb-2">Key Milestones</h3>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'Design Approval', dateKey: 'designDate' },
-                      { name: 'Foundation Complete', dateKey: 'foundationDate' },
-                      { name: 'Structure Complete', dateKey: 'structureDate' },
-                      { name: 'Interior Work', dateKey: 'interiorDate' },
-                      { name: 'Final Inspection', dateKey: 'finalDate' }
-                    ].map((milestone, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className="w-32">
-                          <p className="text-sm">{milestone.name}</p>
-                        </div>
-                        <Input 
-                          type="date" 
-                          className="flex-1"
-                          value={newProject[milestone.dateKey] || ''}
-                          onChange={(e) => setNewProject({
-                            ...newProject, 
-                            [milestone.dateKey]: e.target.value
-                          })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                */}
+                                {/* Key Milestones Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold border-b pb-2 flex-1">Key Milestones</h3>
+                                        <div className="flex flex-row gap-2 ml-4">
+                                            <Button 
+                                                onClick={() => {
+                                                    const newMilestone = {
+                                                        id: Date.now(),
+                                                        name: '',
+                                                        startDate: '',
+                                                        endDate: ''
+                                                    };
+                                                    setNewProject(prev => ({
+                                                        ...prev,
+                                                        milestones: [...(prev.milestones || []), newMilestone]
+                                                    }));
+                                                }} 
+                                                size="sm" 
+                                                variant="outline"
+                                                type="button"
+                                            >
+                                                <Plus className="h-4 w-4 mr-1" />
+                                                Add Row
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    <div className="border rounded-lg overflow-x-auto">
+                                        <div className="min-w-full">
+                                            {/* Header */}
+                                            <div className="bg-muted/50 border-b px-4 py-3">
+                                                <div className="grid grid-cols-12 gap-4 items-center">
+                                                    <div className="col-span-1 text-sm font-medium">No.</div>
+                                                    <div className="col-span-4 text-sm font-medium">Milestone Name</div>
+                                                    <div className="col-span-3 text-sm font-medium">Start Date</div>
+                                                    <div className="col-span-3 text-sm font-medium">End Date</div>
+                                                    <div className="col-span-1"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Body */}
+                                            <div className="divide-y">
+                                                {(newProject.milestones && newProject.milestones.length > 0) ? (
+                                                    newProject.milestones.map((milestone, index) => (
+                                                        <div key={milestone.id} className="px-4 py-3">
+                                                            <div className="grid grid-cols-12 gap-4 items-center">
+                                                                <div className="col-span-1 text-sm font-medium">
+                                                                    {index + 1}
+                                                                </div>
+                                                                <div className="col-span-4">
+                                                                    <Input
+                                                                        value={milestone.name}
+                                                                        onChange={(e) => {
+                                                                            const updatedMilestones = [...(newProject.milestones || [])];
+                                                                            updatedMilestones[index] = { ...milestone, name: e.target.value };
+                                                                            setNewProject(prev => ({ ...prev, milestones: updatedMilestones }));
+                                                                        }}
+                                                                        placeholder="Enter milestone name"
+                                                                        className="w-full"
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-3">
+                                                                    <Input
+                                                                        type="date"
+                                                                        value={milestone.startDate}
+                                                                        onChange={(e) => {
+                                                                            const updatedMilestones = [...(newProject.milestones || [])];
+                                                                            updatedMilestones[index] = { ...milestone, startDate: e.target.value };
+                                                                            setNewProject(prev => ({ ...prev, milestones: updatedMilestones }));
+                                                                        }}
+                                                                        className="w-full"
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-3">
+                                                                    <Input
+                                                                        type="date"
+                                                                        value={milestone.endDate}
+                                                                        onChange={(e) => {
+                                                                            const updatedMilestones = [...(newProject.milestones || [])];
+                                                                            updatedMilestones[index] = { ...milestone, endDate: e.target.value };
+                                                                            setNewProject(prev => ({ ...prev, milestones: updatedMilestones }));
+                                                                        }}
+                                                                        className="w-full"
+                                                                    />
+                                                                </div>
+                                                                <div className="col-span-1">
+                                                                    <Button
+                                                                        onClick={() => {
+                                                                            const updatedMilestones = newProject.milestones?.filter((_, i) => i !== index) || [];
+                                                                            setNewProject(prev => ({ ...prev, milestones: updatedMilestones }));
+                                                                        }}
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                        type="button"
+                                                                    >
+                                                                        <X className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-4 py-8 text-center text-muted-foreground">
+                                                        <div className="flex flex-col items-center space-y-2">
+                                                            <p>No milestones added yet</p>
+                                                            <Button
+                                                                onClick={() => {
+                                                                    const newMilestone = {
+                                                                        id: Date.now(),
+                                                                        name: '',
+                                                                        startDate: '',
+                                                                        endDate: ''
+                                                                    };
+                                                                    setNewProject(prev => ({
+                                                                        ...prev,
+                                                                        milestones: [...(prev.milestones || []), newMilestone]
+                                                                    }));
+                                                                }}
+                                                                size="sm"
+                                                                variant="outline"
+                                                                type="button"
+                                                            >
+                                                                <Plus className="h-4 w-4 mr-1" />
+                                                                Add First Milestone
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <DialogFooter className="pt-4 border-t">
@@ -1085,7 +1242,8 @@ Add any additional notes here...
                                             description: '',
                                             contractType: '',
                                             estimatedCost: 0,
-                                            defaultCostCenter: ''
+                                            defaultCostCenter: '',
+                                            milestones: []
                                         });
                                         setProjectType('');
                                     }}
@@ -1257,9 +1415,24 @@ Add any additional notes here...
                                                 {filteredProjects
                                                     .filter(project => project.status === status)
                                                     .map(project => (
-                                                        <div key={project.id} className="rounded-md border p-3 bg-background cursor-pointer hover:shadow transition-all" onClick={() => handleViewDetails(project)}>
-                                                            <div className="font-medium">{project.name}</div>
-                                                            <div className="text-xs text-muted-foreground">{project.client}</div>
+                                                        <div key={project.id} className="rounded-md border p-3 bg-background hover:shadow transition-all">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div className="flex-1 cursor-pointer" onClick={() => handleViewDetails(project)}>
+                                                                    <div className="font-medium">{project.name}</div>
+                                                                    <div className="text-xs text-muted-foreground">{project.client}</div>
+                                                                </div>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteProject(project.id, project.name);
+                                                                    }}
+                                                                >
+                                                                    <X className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
                                                             <div className="flex items-center text-xs text-muted-foreground mt-1">
                                                                 <MapPin className="h-3 w-3 mr-1" />
                                                                 {project.location}
@@ -1319,13 +1492,23 @@ Add any additional notes here...
                                                             {project.status}
                                                         </Badge>
                                                     </div>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleViewDetails(project)}
-                                                    >
-                                                        View Details
-                                                    </Button>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleViewDetails(project)}
+                                                        >
+                                                            View Details
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                                                            onClick={() => handleDeleteProject(project.id, project.name)}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -1335,24 +1518,25 @@ Add any additional notes here...
                                                     </div>
                                                     <div className="flex items-center">
                                                         <Users className="h-4 w-4 text-muted-foreground mr-2" />
-                                                        <span className="text-sm text-muted-foreground">{project.manager}</span>
+                                                        <span className="text-sm text-muted-foreground">{project.managers.name}</span>
                                                     </div>
                                                     <div className="flex items-center">
                                                         <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                                                        <span className="text-sm text-muted-foreground">{project.deadline}</span>
+                                                        <span className="text-sm text-muted-foreground">{project.startDate.split('T')[0].split('-').reverse().join('/')}</span>
                                                     </div>
                                                     <div className="text-sm text-muted-foreground">
-                                                        Budget: ₹{(project.spent || 0).toLocaleString()} / ₹{(project.budget || 0).toLocaleString()}
+                                                        Budget: ₹{(project.budget || 0).toLocaleString()}<br/>
+                                                        Spent: ₹{(project.spent || 0).toLocaleString()}
                                                     </div>
                                                 </div>
 
-                                                <div className="space-y-2">
+                                                {/* <div className="space-y-2">
                                                     <div className="flex justify-between text-sm">
                                                         <span>Progress</span>
                                                         <span>{project.progress}%</span>
                                                     </div>
                                                     <Progress value={project.progress} className="h-2" />
-                                                </div>
+                                                </div> */}
                                             </CardContent>
                                         </Card>
                                     ))}
@@ -1495,7 +1679,12 @@ Add any additional notes here...
                                                             }`} />
                                                         <div className="flex-1">
                                                             <p className="text-sm">{milestone.name}</p>
-                                                            <p className="text-xs text-muted-foreground">{milestone.date}</p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {milestone.startDate && milestone.endDate 
+                                                                    ? `${milestone.startDate} - ${milestone.endDate}`
+                                                                    : milestone.startDate || milestone.endDate || 'No dates set'
+                                                                }
+                                                            </p>
                                                         </div>
                                                         {isEditing ? (
                                                             <Button

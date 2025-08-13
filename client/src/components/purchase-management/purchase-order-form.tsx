@@ -45,6 +45,7 @@ import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Vendor {
+  addressLine1: string;
   id: string;
   name: string;
   email?: string;
@@ -243,7 +244,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
         ...prev,
         vendorId: selectedVendor.id,
         vendorContact: selectedVendor.contact || selectedVendor.mobile || "",
-        vendorAddress: selectedVendor.location || "",
+        vendorAddress: selectedVendor.addressLine1 || "",
       }));
     }
   }, [selectedVendor]);
@@ -450,6 +451,8 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
     // Show confirmation dialog for updates
     if (isEditing) {
       setShowUpdateConfirmation(true);
+      await handleSave();
+      setShowUpdateConfirmation(false);
     } else {
       await handleSave();
     }
@@ -1055,10 +1058,10 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                       <TableHead className="min-w-32">Item Code *</TableHead>
                       <TableHead className="min-w-40">Description</TableHead>
                       <TableHead className="min-w-32">Required By *</TableHead>
-                      <TableHead className="w-24">Quantity *</TableHead>
+                      <TableHead className="w-24.5">Quantity *</TableHead>
                       <TableHead className="w-20">UOM *</TableHead>
-                      <TableHead className="w-28">Rate (INR)</TableHead>
-                      <TableHead className="w-28">Amount (INR)</TableHead>
+                      <TableHead className="w-32">Rate (INR)</TableHead>
+                      <TableHead className="w-28 justify-center items-center">Amount (INR)</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1398,7 +1401,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                                 )
                               }
                               placeholder="0.00"
-                              className="w-24"
+                              className="w-32"
                             />
                           </TableCell>
                           <TableCell>
