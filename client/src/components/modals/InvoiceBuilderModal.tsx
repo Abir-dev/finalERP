@@ -430,9 +430,9 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
         });
         onClose();
         // Update project spent after successful invoice creation
-        if (formData.projectId) {
-          await updateProjectSpent(formData.projectId, total);
-        }
+        // if (formData.projectId) {
+        //   await updateProjectSpent(formData.projectId, total);
+        // }
       } else {
         const errorData = await response.json();
         toast({

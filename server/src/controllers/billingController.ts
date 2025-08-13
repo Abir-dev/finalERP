@@ -2,15 +2,17 @@ import { Request, Response } from 'express';
 import { prismaNotificationService } from '../services/prismaNotificationService';
 import prisma from '../config/prisma';
 import logger from '../logger/logger';
+import { recalculateProjectTotalSpend } from './projectController';
 
 export const billingController = {
   async createInvoice(req: Request, res: Response) {
     try {
-      const { items, ...invoiceData } = req.body;
+      const { projectId,items, ...invoiceData } = req.body;
       
       const invoice = await prisma.invoice.create({
         data: {
           ...invoiceData,
+          projectId,
           items: {
             create: items || []
           }
@@ -23,7 +25,7 @@ export const billingController = {
           Payment: true
         }
       });
-      
+      await recalculateProjectTotalSpend(projectId)
       // Send notification to client
       await prismaNotificationService.createNotification({
         to: invoice.clientId,
@@ -82,6 +84,7 @@ export const billingController = {
         return res.status(404).json({ error: 'Invoice not found' });
       }
       
+      
       res.json(invoice);
     } catch (error) {
       logger.error("Error:", error);
@@ -105,7 +108,7 @@ export const billingController = {
           Payment: true
         }
       });
-      
+      await recalculateProjectTotalSpend(req.body.projectId)
       res.json(invoice);
     } catch (error) {
       logger.error("Error:", error);
@@ -121,7 +124,7 @@ export const billingController = {
       await prisma.invoice.delete({
         where: { id: req.params.id }
       });
-      
+      await recalculateProjectTotalSpend(req.params.id)
       res.status(204).send();
     } catch (error) {
       logger.error("Error:", error);

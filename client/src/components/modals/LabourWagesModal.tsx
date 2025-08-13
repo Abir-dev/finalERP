@@ -79,7 +79,7 @@ export default function LabourWagesModal({ isOpen, onClose, onSuccess }: LabourW
         ...formData,
         amount: parseFloat(formData.amount)
       }, { headers });
-      await updateProjectSpent(formData.projectId, parseFloat(formData.amount));
+      // await updateProjectSpent(formData.projectId, parseFloat(formData.amount));
 
       toast.success("Labour wage entry created successfully!");
       onSuccess();

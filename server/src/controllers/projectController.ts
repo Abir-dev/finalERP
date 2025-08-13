@@ -4,30 +4,7 @@ import prisma from '../config/prisma';
 import logger from '../logger/logger';
 import { randomUUID } from 'crypto';
 
-// Helper function to recalculate project total spend
-const recalculateProjectTotalSpend = async (projectId: string) => {
-  // Get project with non-billables and payments
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
-    include: { 
-      nonBillables: true,
-      Payment: true 
-    } as any
-  }) as any;
 
-  if (!project) return;
-
-  // Calculate totals
-  const nonBillableTotal = project.nonBillables?.reduce((sum: number, nb: any) => sum + parseFloat(nb.amount || 0), 0) || 0;
-  const paymentTotal = project.Payment?.reduce((sum: number, payment: any) => sum + parseFloat(payment.total || 0), 0) || 0;
-  const totalSpend = nonBillableTotal + paymentTotal;
-
-  // Update project
-  await prisma.project.update({
-    where: { id: projectId },
-    data: { totalSpend } as any
-  });
-};
 
 export const projectController = {
   async createProject(req: Request, res: Response) {
@@ -93,7 +70,6 @@ export const projectController = {
           materialRequests: true,
           nonBillables: true,
           Tender: true,
-          Payment: true,
           milestones: true
         },
         orderBy: {
@@ -105,9 +81,9 @@ export const projectController = {
       const projectsWithCalculatedSpend = projects.map(project => {
         const nonBillableTotal = (project.nonBillables as any)?.reduce((sum: number, nb: any) => 
           sum + parseFloat(nb.amount || 0), 0) || 0;
-        const paymentTotal = project.Payment?.reduce((sum: number, payment: any) => 
-          sum + parseFloat(payment.total || 0), 0) || 0;
-        const calculatedTotalSpend = nonBillableTotal + paymentTotal;
+        const invoiceTotal = project.invoices?.reduce((sum: number, invoice: any) => 
+          sum + parseFloat(invoice.total || 0), 0) || 0;
+        const calculatedTotalSpend = nonBillableTotal + invoiceTotal;
         
         return {
           ...project,
@@ -137,7 +113,6 @@ export const projectController = {
           invoices: true,
           materialRequests: true,
           Tender: true,
-          Payment: true,
           milestones: true
         }
       });
@@ -158,9 +133,23 @@ export const projectController = {
 
   async updateProject(req: Request, res: Response) {
     try {
+      const { milestones, ...projectData } = req.body;
+      
       const project = await prisma.project.update({
         where: { id: req.params.id },
-        data: req.body,
+        data: {
+          ...projectData,
+          ...(milestones && {
+            milestones: {
+              deleteMany: {},
+              create: milestones.map((milestone: any) => ({
+                name: milestone.name,
+                startDate: new Date(milestone.startDate).toISOString(),
+                endDate: new Date(milestone.endDate).toISOString()
+              }))
+            }
+          })
+        },
         include: {
           client: true,
           managers: true,
@@ -169,7 +158,8 @@ export const projectController = {
           invoices: true,
           materialRequests: true,
           Tender: true,
-          Payment: true
+          Payment: true,
+          milestones: true
         }
       });
       
@@ -324,8 +314,7 @@ export const projectController = {
           tasks: true,
           invoices: true,
           materialRequests: true,
-          Tender: true,
-          Payment: true
+          Tender: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -346,11 +335,7 @@ export const projectController = {
     try {
       const projects = await prisma.project.findMany({
         where: {
-          managers: {
-            some: {
-              id: req.params.managerId
-            }
-          }
+          managerId: req.params.managerId
         },
         include: {
           client: true,
@@ -359,8 +344,7 @@ export const projectController = {
           tasks: true,
           invoices: true,
           materialRequests: true,
-          Tender: true,
-          Payment: true
+          Tender: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -394,8 +378,7 @@ export const projectController = {
           tasks: true,
           invoices: true,
           materialRequests: true,
-          Tender: true,
-          Payment: true
+          Tender: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -428,8 +411,7 @@ export const projectController = {
           invoices: true,
           materialRequests: true,
           nonBillables: true,
-          Tender: true,
-          Payment: true
+          Tender: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -541,8 +523,7 @@ export const projectController = {
               creator: true
             }
           },
-          Tender: true,
-          Payment: true
+          Tender: true
         } as any
       }) as any;
 
@@ -687,8 +668,7 @@ export const projectController = {
               }
             }
           },
-          Tender: true,
-          Payment: true
+          Tender: true
         } as any
       });
 
@@ -741,8 +721,7 @@ export const projectController = {
           invoices: true,
           materialRequests: true,
           nonBillables: true,
-          Tender: true,
-          Payment: true
+          Tender: true
         } as any
       });
 
@@ -762,4 +741,25 @@ export const projectController = {
       });
     }
   }
+};
+
+export const recalculateProjectTotalSpend = async (projectId: string) => {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    include: { 
+      nonBillables: true,
+      invoices: true 
+    } as any
+  }) as any;
+
+  if (!project) return;
+
+  const nonBillableTotal = project.nonBillables?.reduce((sum: number, nb: any) => sum + parseFloat(nb.amount || 0), 0) || 0;
+  const invoiceTotal = project.invoices?.reduce((sum: number, invoice: any) => sum + parseFloat(invoice.total || 0), 0) || 0;
+  const totalSpend = nonBillableTotal + invoiceTotal;
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { totalSpend } as any
+  });
 }; 
