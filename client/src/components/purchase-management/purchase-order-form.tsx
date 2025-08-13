@@ -1058,10 +1058,10 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                       <TableHead className="min-w-32">Item Code *</TableHead>
                       <TableHead className="min-w-40">Description</TableHead>
                       <TableHead className="min-w-32">Required By *</TableHead>
-                      <TableHead className="w-24">Quantity *</TableHead>
+                      <TableHead className="w-24.5">Quantity *</TableHead>
                       <TableHead className="w-20">UOM *</TableHead>
-                      <TableHead className="w-28">Rate (INR)</TableHead>
-                      <TableHead className="w-28">Amount (INR)</TableHead>
+                      <TableHead className="w-32">Rate (INR)</TableHead>
+                      <TableHead className="w-28 justify-center items-center">Amount (INR)</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1401,7 +1401,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                                 )
                               }
                               placeholder="0.00"
-                              className="w-24"
+                              className="w-32"
                             />
                           </TableCell>
                           <TableCell>
