@@ -151,7 +151,7 @@ export const purchaseOrderController = {
         
         if (items.length > 0) {
           data.items.create = items.map((item: any) => {
-            const { id, ...itemData } = item; // Remove frontend-generated id
+            const { id, purchaseOrderId, ...itemData } = item; // Remove frontend-generated id
             return {
               ...itemData,
               requiredBy: itemData.requiredBy ? new Date(itemData.requiredBy) : new Date(purchaseOrderData.requiredBy),
@@ -171,7 +171,7 @@ export const purchaseOrderController = {
         
         if (taxesAndCharges.length > 0) {
           data.taxesAndCharges.create = taxesAndCharges.map((tax: any, index: number) => {
-            const { id, ...taxData } = tax; // Remove frontend-generated id
+            const { id, purchaseOrderId, ...taxData } = tax; // Remove frontend-generated id
             return {
               ...taxData,
               serialNo: index + 1,
@@ -192,7 +192,7 @@ export const purchaseOrderController = {
         
         if (paymentSchedule.length > 0) {
           data.paymentSchedule.create = paymentSchedule.map((term: any) => {
-            const { id, ...termData } = term; // Remove frontend-generated id
+            const { id, purchaseOrderId, ...termData } = term; // Remove frontend-generated id
             return {
               ...termData,
               dueDate: termData.dueDate ? new Date(termData.dueDate) : new Date(),

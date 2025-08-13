@@ -77,6 +77,7 @@ const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
+  vendorContact: string;
   vendorAddress: any;
   setTargetWarehouse: string;
   id: string;
@@ -1419,73 +1420,305 @@ export function PurchaseDashboard() {
                             className="bg-muted/50"
                           >
                             <TableCell colSpan={7}>
-                              <div className="p-4">
-                                <h4 className="font-medium mb-2 text-sm">
-                                  Purchase Items
-                                </h4>
-                                <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
-                                  {(order.items || []).length > 0 ? (
-                                    (order.items || []).map(
-                                      (item: any, idx: number) => (
+                              <div className="p-6 space-y-6">
+                                {/* Purchase Order Summary */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                  <div className="space-y-3">
+                                    <h4 className="font-semibold text-sm text-primary border-b pb-2">
+                                      Order Information
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">PO Number:</span>
+                                        <span className="font-medium">{order.poNumber}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Order Date:</span>
+                                        <span className="font-medium">
+                                          {new Date(order.date).toLocaleDateString("en-IN")}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Required By:</span>
+                                        <span className="font-medium">
+                                          {new Date(order.requiredBy).toLocaleDateString("en-IN")}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Items:</span>
+                                        <span className="font-medium">{order.items?.length || 0}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Total Quantity:</span>
+                                        <span className="font-medium">{order.totalQuantity || 0}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <h4 className="font-semibold text-sm text-primary border-b pb-2">
+                                      Vendor Details
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Vendor Name:</span>
+                                        <span className="font-medium">{order.Vendor?.name || "N/A"}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Contact:</span>
+                                        <span className="font-medium">{order.vendorContact || "N/A"}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Email:</span>
+                                        <span className="font-medium text-xs">{order.Vendor?.email || "N/A"}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Address:</span>
+                                        <span className="font-medium text-xs text-right max-w-[150px]">
+                                          {order.vendorAddress || "N/A"}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Target Warehouse:</span>
+                                        <span className="font-medium">{order.setTargetWarehouse || "N/A"}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-3">
+                                    <h4 className="font-semibold text-sm text-primary border-b pb-2">
+                                      Financial Summary
+                                    </h4>
+                                    <div className="space-y-2 text-sm">
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Subtotal:</span>
+                                        <span className="font-medium">₹{(order.total || 0).toLocaleString()}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Tax & Charges:</span>
+                                        <span className="font-medium text-orange-600">
+                                          ₹{(order.taxesAndChargesTotal || 0).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between border-t pt-2">
+                                        <span className="text-muted-foreground font-medium">Grand Total:</span>
+                                        <span className="font-bold text-green-600">
+                                          ₹{(order.grandTotal || 0).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Rounded Total:</span>
+                                        <span className="font-medium">₹{(order.roundedTotal || 0).toLocaleString()}</span>
+                                      </div>
+                                      {order.advancePaid > 0 && (
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Advance Paid:</span>
+                                          <span className="font-medium text-blue-600">
+                                            ₹{(order.advancePaid || 0).toLocaleString()}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {order.advancePaid > 0 && (
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Balance Due:</span>
+                                          <span className="font-medium text-red-600">
+                                            ₹{((order.grandTotal || 0) - (order.advancePaid || 0)).toLocaleString()}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Items Details */}
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-sm text-primary border-b pb-2">
+                                    Purchase Order Items ({order.items?.length || 0} items)
+                                  </h4>
+                                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                                    {(order.items || []).length > 0 ? (
+                                      (order.items || []).map((item: any, idx: number) => (
                                         <div
                                           key={idx}
-                                          className="border rounded p-3 bg-background"
+                                          className="border rounded-lg p-4 bg-background shadow-sm hover:shadow-md transition-shadow"
                                         >
-                                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                            <div>
-                                              <div className="font-medium text-xs text-muted-foreground uppercase">
-                                                Item Code
+                                          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                                            <div className="md:col-span-2">
+                                              <div className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                                                Item Details
                                               </div>
-                                              <div className="font-medium">
-                                                {item.itemCode ||
-                                                  item.description ||
-                                                  item.itemName ||
-                                                  "N/A"}
+                                              <div className="space-y-1">
+                                                <div className="font-semibold text-sm">
+                                                  {item.itemCode || item.description || item.itemName || "N/A"}
+                                                </div>
+                                                {item.description && item.itemCode && (
+                                                  <div className="text-xs text-muted-foreground">
+                                                    {item.description}
+                                                  </div>
+                                                )}
+                                                {item.brand && (
+                                                  <div className="text-xs text-muted-foreground">
+                                                    Brand: {item.brand}
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
+                                            
                                             <div>
-                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                              <div className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
                                                 Quantity
                                               </div>
-                                              <div>{item.quantity || 0}</div>
-                                            </div>
-                                            <div>
-                                              <div className="font-medium text-xs text-muted-foreground uppercase">
-                                                UOM
+                                              <div className="font-semibold text-sm">
+                                                {item.quantity || 0}
                                               </div>
-                                              <div>
-                                                {item.unit || item.uom || "N/A"}
+                                              <div className="text-xs text-muted-foreground">
+                                                {item.unit || item.uom || "units"}
                                               </div>
                                             </div>
+
                                             <div>
-                                              <div className="font-medium text-xs text-muted-foreground uppercase">
-                                                Required By
+                                              <div className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                                                Rate
                                               </div>
-                                              <div>
-                                                {new Date(
-                                                  order.requiredBy
-                                                ).toLocaleDateString("en-IN")}
+                                              <div className="font-semibold text-sm">
+                                                ₹{(item.rate || item.unitPrice || 0).toLocaleString()}
+                                              </div>
+                                              <div className="text-xs text-muted-foreground">
+                                                per {item.unit || item.uom || "unit"}
                                               </div>
                                             </div>
+
                                             <div>
-                                              <div className="font-medium text-xs text-muted-foreground uppercase">
-                                                Targeted Warehouse
+                                              <div className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                                                Amount
                                               </div>
-                                              <div>
-                                                {item.warehouse ||
-                                                  item.targetedWarehouse ||
-                                                  "N/A"}
+                                              <div className="font-semibold text-sm text-green-600">
+                                                ₹{((item.quantity || 0) * (item.rate || item.unitPrice || 0)).toLocaleString()}
                                               </div>
+                                              {item.discount && (
+                                                <div className="text-xs text-red-500">
+                                                  Disc: {item.discount}%
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                                                Warehouse
+                                              </div>
+                                              <div className="font-medium text-sm">
+                                                {item.warehouse || item.targetedWarehouse || order.setTargetWarehouse || "N/A"}
+                                              </div>
+                                              {item.stockLevel && (
+                                                <div className="text-xs text-muted-foreground">
+                                                  Stock: {item.stockLevel}
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
+
+                                          {/* Additional item details */}
+                                          {(item.specifications || item.remarks || item.deliveryDate) && (
+                                            <div className="mt-3 pt-3 border-t">
+                                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                                {item.specifications && (
+                                                  <div>
+                                                    <span className="font-medium text-muted-foreground">Specifications:</span>
+                                                    <div className="text-muted-foreground mt-1">{item.specifications}</div>
+                                                  </div>
+                                                )}
+                                                {item.remarks && (
+                                                  <div>
+                                                    <span className="font-medium text-muted-foreground">Remarks:</span>
+                                                    <div className="text-muted-foreground mt-1">{item.remarks}</div>
+                                                  </div>
+                                                )}
+                                                {item.deliveryDate && (
+                                                  <div>
+                                                    <span className="font-medium text-muted-foreground">Delivery Date:</span>
+                                                    <div className="text-muted-foreground mt-1">
+                                                      {new Date(item.deliveryDate).toLocaleDateString("en-IN")}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
-                                      )
-                                    )
-                                  ) : (
-                                    <div className="text-muted-foreground">
-                                      No items listed
+                                      ))
+                                    ) : (
+                                      <div className="text-center py-8 text-muted-foreground">
+                                        <Package className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                                        <p>No items listed in this purchase order</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Tax and Charges Breakdown */}
+                                {order.taxesAndChargesTotal > 0 && (
+                                  <div className="space-y-3">
+                                    <h4 className="font-semibold text-sm text-primary border-b pb-2">
+                                      Tax & Charges Breakdown
+                                    </h4>
+                                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                        <div className="space-y-2">
+                                          <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Subtotal (Before Tax):</span>
+                                            <span className="font-medium">₹{(order.total || 0).toLocaleString()}</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Tax Rate:</span>
+                                            <span className="font-medium">
+                                              {order.total > 0 ? ((order.taxesAndChargesTotal / order.total) * 100).toFixed(2) : 0}%
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                          <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Total Tax & Charges:</span>
+                                            <span className="font-semibold text-orange-600">
+                                              ₹{(order.taxesAndChargesTotal || 0).toLocaleString()}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between border-t pt-2">
+                                            <span className="font-medium">Final Amount:</span>
+                                            <span className="font-bold text-green-600">
+                                              ₹{(order.grandTotal || 0).toLocaleString()}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
                                     </div>
-                                  )}
+                                  </div>
+                                )}
+
+                                {/* Payment Status */}
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-sm text-primary border-b pb-2">
+                                    Payment Status
+                                  </h4>
+                                  <div className={`rounded-lg p-4 ${order.advancePaid > 0 ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        {order.advancePaid > 0 ? (
+                                          <CheckCircle className="h-5 w-5 text-green-600" />
+                                        ) : (
+                                          <Clock className="h-5 w-5 text-yellow-600" />
+                                        )}
+                                        <span className={`font-semibold ${order.advancePaid > 0 ? 'text-green-700' : 'text-yellow-700'}`}>
+                                          {order.advancePaid > 0 ? 'Partially Paid' : 'Payment Pending'}
+                                        </span>
+                                      </div>
+                                      <Badge variant={order.advancePaid > 0 ? "default" : "secondary"}>
+                                        {order.advancePaid > 0 ? 
+                                          `${((order.advancePaid / order.grandTotal) * 100).toFixed(1)}% Paid` : 
+                                          'Unpaid'
+                                        }
+                                      </Badge>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </TableCell>
