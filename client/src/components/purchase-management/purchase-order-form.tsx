@@ -45,6 +45,7 @@ import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Vendor {
+  addressLine1: string;
   id: string;
   name: string;
   email?: string;
@@ -243,7 +244,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
         ...prev,
         vendorId: selectedVendor.id,
         vendorContact: selectedVendor.contact || selectedVendor.mobile || "",
-        vendorAddress: selectedVendor.location || "",
+        vendorAddress: selectedVendor.addressLine1 || "",
       }));
     }
   }, [selectedVendor]);
@@ -450,6 +451,8 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
     // Show confirmation dialog for updates
     if (isEditing) {
       setShowUpdateConfirmation(true);
+      await handleSave();
+      setShowUpdateConfirmation(false);
     } else {
       await handleSave();
     }
