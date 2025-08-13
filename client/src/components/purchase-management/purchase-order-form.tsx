@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,15 +21,25 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { ChevronDown, Plus, Trash2, Save, Send, Eye } from "lucide-react";
+import { ChevronDown, Plus, Trash2, Save, Send, Eye, Download, Printer } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 import { toast } from "sonner";
 import axios from "axios";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import RichTextEditor from "../ui/RichTextEditor";
 import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -112,6 +122,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
   const { user } = useUser();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<PurchaseOrderFormData>({
     id: initialData?.id || undefined,
     poNumber: initialData?.poNumber || "",
@@ -156,6 +167,9 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
   const [isAdditionalDiscountOpen, setIsAdditionalDiscountOpen] =
     useState(false);
   const [terms, setTerms] = useState(initialData?.terms || "");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showUpdateConfirmation, setShowUpdateConfirmation] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   // Fetch vendors on component mount
   useEffect(() => {
@@ -350,6 +364,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
   }, [formData.items, formData.taxesAndCharges]);
 
   const handleSave = async () => {
+    setIsLoading(true);
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
@@ -372,22 +387,187 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
         toast.success("Purchase order saved successfully!");
       }
       onSuccess?.();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error saving purchase order:", err);
-      toast.error(`Failed to ${isEditing ? 'update' : 'save'} purchase order.`);
+      const errorMessage = err.response?.data?.message || err.message || `Failed to ${isEditing ? 'update' : 'save'} purchase order.`;
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const validateForm = () => {
+    const errors = [];
+    
+    if (!formData.vendorId) {
+      errors.push("Vendor is required");
+    }
+    if (!formData.poNumber) {
+      errors.push("PO Number is required");
+    }
+    if (!formData.date) {
+      errors.push("Date is required");
+    }
+    if (formData.items.length === 0) {
+      errors.push("At least one item is required");
+    }
+    
+    // Validate items
+    formData.items.forEach((item, index) => {
+      if (!item.itemCode) {
+        errors.push(`Item ${index + 1}: Item Code is required`);
+      }
+      if (!item.description) {
+        errors.push(`Item ${index + 1}: Description is required`);
+      }
+      if (!item.quantity || item.quantity <= 0) {
+        errors.push(`Item ${index + 1}: Valid quantity is required`);
+      }
+      if (!item.uom) {
+        errors.push(`Item ${index + 1}: Unit of Measure is required`);
+      }
+      if (!item.rate || item.rate <= 0) {
+        errors.push(`Item ${index + 1}: Valid rate is required`);
+      }
+    });
+    
+    return errors;
+  };
+
   const handleSubmit = async () => {
-    if (!formData.vendorId || !formData.poNumber) {
-      toast.error("Please fill in required fields: Vendor and PO Number");
+    const validationErrors = validateForm();
+    
+    if (validationErrors.length > 0) {
+      toast.error(`Please fix the following errors:\n${validationErrors.join('\n')}`);
       return;
     }
+    
     if (!user?.id) {
       toast.error("User not authenticated");
       return;
     }
+    
+    // Show confirmation dialog for updates
+    if (isEditing) {
+      setShowUpdateConfirmation(true);
+    } else {
+      await handleSave();
+    }
+  };
+
+  const confirmUpdate = async () => {
+    setShowUpdateConfirmation(false);
     await handleSave();
+  };
+
+  const generatePDF = async () => {
+    if (!previewRef.current) return;
+
+    try {
+      const canvas = await html2canvas(previewRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `PO_${formData.poNumber || 'Draft'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
+  const handlePrint = () => {
+    if (!previewRef.current) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Please allow popups to print');
+      return;
+    }
+
+    const printContent = previewRef.current.innerHTML;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Purchase Order - ${formData.poNumber || 'Draft'}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              color: #000;
+              background: white;
+            }
+            .print-header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              border-bottom: 2px solid #000;
+              padding-bottom: 20px;
+            }
+            .print-section { 
+              margin-bottom: 20px; 
+            }
+            .print-table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 20px;
+            }
+            .print-table th, .print-table td { 
+              border: 1px solid #000; 
+              padding: 8px; 
+              text-align: left;
+            }
+            .print-table th { 
+              background-color: #f5f5f5; 
+              font-weight: bold;
+            }
+            .print-total { 
+              text-align: right; 
+              font-weight: bold; 
+              margin-top: 20px;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   return (
@@ -417,14 +597,184 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                 <SelectItem value="purchase-order">Purchase Order</SelectItem>
               </SelectContent>
             </Select> */}
-            <Button variant="outline" size="sm">
-              <Eye className="h-4 w-4 mr-1" />
-              Preview
-            </Button>
-            <Button onClick={handleSave} size="sm">
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Eye className="h-4 w-4 mr-1" />
+                  Preview
+                </Button>
+              </DialogTrigger>
+              
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Purchase Order Preview</DialogTitle>
+                </DialogHeader>
+                {formData ? (
+                <div ref={previewRef} className="bg-white p-8 text-black">
+                  {/* Preview Content */}
+                  <div className="print-header">
+                    <h1 className="text-2xl font-bold mb-2">PURCHASE ORDER</h1>
+                    <p className="text-lg">PO Number: {formData.poNumber || 'Draft'}</p>
+                    <p>Date: {formData.date ? (() => {
+                      try {
+                        return new Date(formData.date).toLocaleDateString();
+                      } catch {
+                        return formData.date;
+                      }
+                    })() : 'Not Set'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-8 mb-6">
+                    <div className="print-section">
+                      <h3 className="font-bold mb-2">Vendor Information:</h3>
+                      <p><strong>Name:</strong> {selectedVendor?.name || 'Not Selected'}</p>
+                      <p><strong>Contact:</strong> {formData.vendorContact || 'Not Provided'}</p>
+                      <p><strong>Address:</strong> {formData.vendorAddress || 'Not Provided'}</p>
+                    </div>
+                    <div className="print-section">
+                      <h3 className="font-bold mb-2">Delivery Information:</h3>
+                      <p><strong>Required By:</strong> {formData.requiredBy ? (() => {
+                        try {
+                          return new Date(formData.requiredBy).toLocaleDateString();
+                        } catch {
+                          return formData.requiredBy;
+                        }
+                      })() : 'Not Set'}</p>
+                      <p><strong>Shipping Address:</strong> {formData.shippingAddress || 'Not Provided'}</p>
+                      <p><strong>Place of Supply:</strong> {formData.placeOfSupply || 'Not Provided'}</p>
+                    </div>
+                  </div>
+
+                  {formData.items && formData.items.length > 0 && (
+                    <div className="print-section">
+                      <h3 className="font-bold mb-4">Items:</h3>
+                      <table className="print-table">
+                        <thead>
+                          <tr>
+                            <th>Item Code</th>
+                            <th>Description</th>
+                            <th>Quantity</th>
+                            <th>UOM</th>
+                            <th>Rate</th>
+                            <th>Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formData.items.map((item) => (
+                            <tr key={item.id}>
+                              <td>{item.itemCode || ''}</td>
+                              <td>{item.description || ''}</td>
+                              <td>{Number(item.quantity) || 0}</td>
+                              <td>{item.uom || ''}</td>
+                              <td>₹ {(Number(item.rate) || 0).toFixed(2)}</td>
+                              <td>₹ {(Number(item.amount) || 0).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {formData.taxesAndCharges && formData.taxesAndCharges.length > 0 && (
+                    <div className="print-section">
+                      <h3 className="font-bold mb-4">Taxes and Charges:</h3>
+                      <table className="print-table">
+                        <thead>
+                          <tr>
+                            <th>Type</th>
+                            <th>Account Head</th>
+                            <th>Tax Rate (%)</th>
+                            <th>Amount</th>
+                            <th>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formData.taxesAndCharges.map((tax) => (
+                            <tr key={tax.id}>
+                              <td>{tax.type || ''}</td>
+                              <td>{tax.accountHead || ''}</td>
+                              <td>{Number(tax.taxRate) || 0}%</td>
+                              <td>₹ {(Number(tax.amount) || 0).toFixed(2)}</td>
+                              <td>₹ {(Number(tax.total) || 0).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  <div className="print-total">
+                    <div className="border-t-2 border-black pt-4">
+                      <p><strong>Subtotal: ₹ {(Number(formData.total) || 0).toFixed(2)}</strong></p>
+                      <p><strong>Taxes & Charges: ₹ {(Number(formData.taxesAndChargesTotal) || 0).toFixed(2)}</strong></p>
+                      <p><strong>Grand Total: ₹ {(Number(formData.grandTotal) || 0).toFixed(2)}</strong></p>
+                      <p><strong>Rounded Total: ₹ {(Number(formData.roundedTotal) || 0).toFixed(2)}</strong></p>
+                    </div>
+                  </div>
+
+                  {formData.paymentSchedule && formData.paymentSchedule.length > 0 && (
+                    <div className="print-section mt-6">
+                      <h3 className="font-bold mb-4">Payment Schedule:</h3>
+                      <table className="print-table">
+                        <thead>
+                          <tr>
+                            <th>Payment Term</th>
+                            <th>Description</th>
+                            <th>Due Date</th>
+                            <th>Invoice Portion</th>
+                            <th>Payment Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {formData.paymentSchedule.map((payment) => (
+                            <tr key={payment.id}>
+                              <td>{payment.paymentTerm || ''}</td>
+                              <td>{payment.description || ''}</td>
+                              <td>{payment.dueDate ? (() => {
+                                try {
+                                  return new Date(payment.dueDate).toLocaleDateString();
+                                } catch {
+                                  return payment.dueDate;
+                                }
+                              })() : ''}</td>
+                              <td>{Number(payment.invoicePortion) || 0}%</td>
+                              <td>₹ {(Number(payment.paymentAmount) || 0).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {terms && (
+                    <div className="print-section mt-6">
+                      <h3 className="font-bold mb-4">Terms & Conditions:</h3>
+                      <div className="border p-4" dangerouslySetInnerHTML={{ __html: terms || '' }} />
+                    </div>
+                  )}
+                </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <p>Loading preview...</p>
+                  </div>
+                )}
+                
+                <div className="flex justify-end gap-2 mt-4 no-print">
+                  <Button variant="outline" onClick={generatePDF}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button variant="outline" onClick={handlePrint}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            {/* <Button onClick={handleSave} size="sm">
               <Save className="h-4 w-4 mr-1" />
               Save
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
@@ -1603,13 +1953,22 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
 
         {/* Action Buttons */}
         <div className="flex justify-end gap-3 pt-6 border-t mt-8">
-          <Button variant="outline" onClick={handleSave}>
+          {/* <Button variant="outline" onClick={handleSave} disabled={isLoading}>
             <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
-          <Button onClick={handleSubmit}>
-          <Send className="h-4 w-4 mr-2" />
-          {isEditing ? 'Update' : 'Submit'}
+            {isLoading ? 'Saving...' : 'Save Draft'}
+          </Button> */}
+          <Button onClick={handleSubmit} disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                {isEditing ? 'Updating...' : 'Submitting...'}
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                {isEditing ? 'Update' : 'Submit'}
+              </>
+            )}
           </Button>
         </div>
       </div>
