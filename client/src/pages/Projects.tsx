@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clipboard, Filter, Plus, Search, MapPin, Users, AlertTriangle, TrendingUp, Camera, FileText, Upload, X, Edit, Loader2 } from "lucide-react";
+import { Calendar, Clipboard, Filter, Plus, Search, MapPin, Users, AlertTriangle, TrendingUp, Camera, FileText, Upload, X, Edit, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -463,15 +463,9 @@ const Projects = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [view, setView] = useState("overview");
     const [showDPRModal, setShowDPRModal] = useState(false);
-    const [showProjectDetailsModal, setShowProjectDetailsModal] = useState(false);
-    const [selectedProject, setSelectedProject] = useState(null);
+    const [expandedProjects, setExpandedProjects] = useState<Set<number>>(new Set());
     const [projectType, setProjectType] = useState("");
     const [projects, setProjects] = useState([]);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editProgress, setEditProgress] = useState(0);
-    const [editStatus, setEditStatus] = useState("");
-    const [editMilestones, setEditMilestones] = useState([]);
-    const [editSpent, setEditSpent] = useState(0);
 
     // Data for dropdowns
     const [clients, setClients] = useState<User[]>([]);
@@ -511,43 +505,19 @@ const Projects = () => {
             project.client.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleViewDetails = (project) => {
-        setSelectedProject(project);
-        setEditProgress(project.progress);
-        setEditStatus(project.status);
-        setEditSpent(project.spent);
-
-        // Initialize milestones based on project progress
-        const milestones = [
-            { name: 'Design Approval', date: '2024-01-15', completed: true },
-            { name: 'Foundation Complete', date: '2024-03-20', completed: project.progress > 20 },
-            { name: 'Structure Complete', date: '2024-06-30', completed: project.progress > 50 },
-            { name: 'Interior Work', date: '2024-09-15', completed: project.progress > 80 },
-            { name: 'Final Inspection', date: project.deadline, completed: project.progress === 100 }
-        ];
-        setEditMilestones(milestones);
-        setShowProjectDetailsModal(true);
+    const toggleProjectDetails = (projectId: number) => {
+        setExpandedProjects(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(projectId)) {
+                newSet.delete(projectId);
+            } else {
+                newSet.add(projectId);
+            }
+            return newSet;
+        });
     };
 
-    const handleSaveChanges = () => {
-        const updatedProjects = projects.map(project =>
-            project.id === selectedProject.id
-                ? { ...project, progress: editProgress, status: editStatus, spent: editSpent }
-                : project
-        );
-        setProjects(updatedProjects);
-        setSelectedProject({ ...selectedProject, progress: editProgress, status: editStatus, spent: editSpent });
-        setIsEditing(false);
-    };
 
-    const toggleMilestoneStatus = (index) => {
-        const updatedMilestones = [...editMilestones];
-        updatedMilestones[index] = {
-            ...updatedMilestones[index],
-            completed: !updatedMilestones[index].completed
-        };
-        setEditMilestones(updatedMilestones);
-    };
 
     const handleDeleteProject = async (projectId: number, projectName: string) => {
         if (!confirm(`Are you sure you want to delete the project "${projectName}"? This action cannot be undone.`)) {
@@ -555,14 +525,16 @@ const Projects = () => {
         }
 
         try {
-            const response = await axios.delete(`${API_URL}/projects/${projectId}`,{  headers: {
-                'Authorization': `Bearer ${getToken()}`,
-            },});
-            
+            const response = await axios.delete(`${API_URL}/projects/${projectId}`, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                },
+            });
+
             if (response.status === 204) {
                 // Remove project from local state
                 setProjects(prev => prev.filter(project => project.id !== projectId));
-                
+
                 toast({
                     title: "Project Deleted",
                     description: `"${projectName}" has been successfully deleted.`,
@@ -656,10 +628,10 @@ Add any additional notes here...
 
     const getMilestoneText = (project: any) => {
         const milestones = [
-            { name: 'Design Approval', date: '2024-01-15', completed: true },
-            { name: 'Foundation', date: '2024-03-20', completed: true },
-            { name: 'Structure', date: '2024-06-30', completed: false },
-            { name: 'Interiors', date: '2024-09-15', completed: false },
+            { name: 'Design Approval', date: '2024-12-15', completed: true },
+            { name: 'Foundation', date: '2025-02-20', completed: true },
+            { name: 'Structure', date: '2025-05-30', completed: false },
+            { name: 'Interiors', date: '2025-08-15', completed: false },
             { name: 'Final Inspection', date: project.deadline, completed: false }
         ];
 
@@ -744,6 +716,7 @@ Add any additional notes here...
                 startDate: newProject.projectStartDate ? new Date(newProject.projectStartDate).toISOString() : new Date().toISOString(),
                 // Optional fields based on your form
                 ...(newProject.location && { location: newProject.location }),
+                ...(newProject.deadline && { deadline: new Date(newProject.deadline).toISOString() }),
                 ...(newProject.budget && { budget: newProject.budget }),
                 ...(newProject.manager && { managerId: newProject.manager }),
                 ...(newProject.contingency && { contingency: newProject.contingency }),
@@ -816,12 +789,12 @@ Add any additional notes here...
         try {
             const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            
-            const endpoint = 
+
+            const endpoint =
                 user?.role !== "admin" && user?.id
                     ? `${API_URL}/projects/user/${user.id}`
                     : `${API_URL}/projects`;
-                    
+
             const response = await axios.get(endpoint, { headers });
             setProjects(response.data);
         } catch (error) {
@@ -1090,7 +1063,7 @@ Add any additional notes here...
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-semibold border-b pb-2 flex-1">Key Milestones</h3>
                                         <div className="flex flex-row gap-2 ml-4">
-                                            <Button 
+                                            <Button
                                                 onClick={() => {
                                                     const newMilestone = {
                                                         id: Date.now(),
@@ -1102,8 +1075,8 @@ Add any additional notes here...
                                                         ...prev,
                                                         milestones: [...(prev.milestones || []), newMilestone]
                                                     }));
-                                                }} 
-                                                size="sm" 
+                                                }}
+                                                size="sm"
                                                 variant="outline"
                                                 type="button"
                                             >
@@ -1125,7 +1098,7 @@ Add any additional notes here...
                                                     <div className="col-span-1"></div>
                                                 </div>
                                             </div>
-                                            
+
                                             {/* Body */}
                                             <div className="divide-y">
                                                 {(newProject.milestones && newProject.milestones.length > 0) ? (
@@ -1378,7 +1351,7 @@ Add any additional notes here...
                                                     className="border-b transition-colors hover:bg-muted/50"
                                                 >
                                                     <td className="p-4 align-middle font-medium">{project.name}</td>
-                                                    <td className="p-4 align-middle">{project.client}</td>
+                                                    <td className="p-4 align-middle">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</td>
                                                     <td className="p-4 align-middle">
                                                         <Badge className={getStatusColor(project.status)}>
                                                             {project.status}
@@ -1417,9 +1390,9 @@ Add any additional notes here...
                                                     .map(project => (
                                                         <div key={project.id} className="rounded-md border p-3 bg-background hover:shadow transition-all">
                                                             <div className="flex justify-between items-start mb-2">
-                                                                <div className="flex-1 cursor-pointer" onClick={() => handleViewDetails(project)}>
+                                                                <div className="flex-1 cursor-pointer" onClick={() => toggleProjectDetails(project.id)}>
                                                                     <div className="font-medium">{project.name}</div>
-                                                                    <div className="text-xs text-muted-foreground">{project.client}</div>
+                                                                    <div className="text-xs text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</div>
                                                                 </div>
                                                                 <Button
                                                                     variant="ghost"
@@ -1484,59 +1457,164 @@ Add any additional notes here...
                                 <div className="space-y-6">
                                     {filteredProjects.map((project) => (
                                         <Card key={project.id} className="hover:shadow-md transition-shadow">
-                                            <CardContent className="p-6">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <div className="flex items-center space-x-4">
-                                                        <h3 className="text-lg font-semibold">{project.name}</h3>
-                                                        <Badge className={getStatusColor(project.status)}>
-                                                            {project.status}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleViewDetails(project)}
-                                                        >
-                                                            View Details
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                                                            onClick={() => handleDeleteProject(project.id, project.name)}
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
+                                            <CardContent className="p-0">
+                                                {/* Main project header - always visible */}
+                                                <div className="p-6">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-4">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="p-0 h-8 w-8"
+                                                                onClick={() => toggleProjectDetails(project.id)}
+                                                            >
+                                                                {expandedProjects.has(project.id) ? (
+                                                                    <ChevronDown className="h-4 w-4" />
+                                                                ) : (
+                                                                    <ChevronRight className="h-4 w-4" />
+                                                                )}
+                                                            </Button>
+                                                            <div>
+                                                                <div className="font-semibold">{project.name}</div>
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client} • {project.location}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-right">
+                                                                <div className="font-semibold">
+                                                                    ₹{((project.budget || 0) / 100000).toFixed(1)}L
+                                                                </div>
+                                                                <div className="text-sm text-muted-foreground">
+                                                                    {project.progress}% Complete
+                                                                </div>
+                                                            </div>
+                                                            <Badge className={getStatusColor(project.status)}>
+                                                                {project.status}
+                                                            </Badge>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                                                                onClick={() => handleDeleteProject(project.id, project.name)}
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                                    <div className="flex items-center">
-                                                        <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
-                                                        <span className="text-sm text-muted-foreground">{project.location}</span>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <Users className="h-4 w-4 text-muted-foreground mr-2" />
-                                                        <span className="text-sm text-muted-foreground">{project.managers.name}</span>
-                                                    </div>
-                                                    <div className="flex items-center">
-                                                        <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                                                        <span className="text-sm text-muted-foreground">{project.startDate.split('T')[0].split('-').reverse().join('/')}</span>
-                                                    </div>
-                                                    <div className="text-sm text-muted-foreground">
-                                                        Budget: ₹{(project.budget || 0).toLocaleString()}<br/>
-                                                        Spent: ₹{(project.spent || 0).toLocaleString()}
-                                                    </div>
-                                                </div>
+                                                {/* Expandable project details */}
+                                                {expandedProjects.has(project.id) && (
+                                                    <div className="border-t bg-muted/50 p-6">
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                            {/* Project Information */}
+                                                            <div>
+                                                                <h4 className="font-medium mb-3">Project Details</h4>
+                                                                <div className="space-y-2 text-sm">
+                                                                    <div className="flex items-center">
+                                                                        <Users className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                        <span className="text-muted-foreground">Manager:</span>
+                                                                        <span className="ml-1 font-medium">
+                                                                            {(() => {
+                                                                                if (typeof project.manager === 'object' && project.manager?.name) {
+                                                                                    return project.manager.name;
+                                                                                }
+                                                                                if (typeof project.manager === 'string') {
+                                                                                    return project.manager;
+                                                                                }
+                                                                                if (project.managers?.name) {
+                                                                                    return project.managers.name;
+                                                                                }
+                                                                                return 'Not assigned';
+                                                                            })()}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center">
+                                                                        <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                        <span className="text-muted-foreground">Deadline:</span>
+                                                                        <span className="ml-1 font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString('en-IN') : 'Not set'}</span>
+                                                                    </div>
+                                                                    {project.projectStartDate && (
+                                                                        <div className="flex items-center">
+                                                                            <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                            <span className="text-muted-foreground">Start Date:</span>
+                                                                            <span className="ml-1 font-medium">{new Date(project.projectStartDate).toLocaleDateString('en-IN')}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex items-center">
+                                                                        <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                        <span className="text-muted-foreground">Location:</span>
+                                                                        <span className="ml-1 font-medium">{project.location}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
 
-                                                {/* <div className="space-y-2">
-                                                    <div className="flex justify-between text-sm">
-                                                        <span>Progress</span>
-                                                        <span>{project.progress}%</span>
+                                                            {/* Budget & Progress */}
+                                                            <div>
+                                                                <h4 className="font-medium mb-3">Financial Overview</h4>
+                                                                <div className="space-y-3">
+                                                                    <div>
+                                                                        <div className="flex justify-between text-sm mb-1">
+                                                                            <span>Budget Progress</span>
+                                                                            <span>{(((project.spent || 0) / (project.budget || 1)) * 100).toFixed(1)}%</span>
+                                                                        </div>
+                                                                        <Progress value={((project.spent || 0) / (project.budget || 1)) * 100} className="h-2" />
+                                                                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                                                                            <span>Spent: ₹{((project.spent || 0) / 100000).toFixed(1)}L</span>
+                                                                            <span>Total: ₹{((project.budget || 0) / 100000).toFixed(1)}L</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex justify-between text-sm mb-1">
+                                                                            <span>Project Progress</span>
+                                                                            <span>{project.progress}%</span>
+                                                                        </div>
+                                                                        <Progress value={project.progress} className="h-2" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Key Milestones */}
+                                                            {/* <div>
+                                                                <h4 className="font-medium mb-3">Key Milestones</h4>
+                                                                <div className="space-y-2">
+                                                                    {project.milestones && project.milestones.length > 0 ? (
+                                                                        project.milestones.map((milestone, index) => (
+                                                                            <div key={milestone.id || index} className="flex items-center justify-between text-sm">
+                                                                                <div className="flex items-center">
+                                                                                    <div className={`h-2 w-2 rounded-full mr-3 ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                                    <span className={milestone.completed ? 'text-green-700' : 'text-muted-foreground'}>
+                                                                                        {milestone.name}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="text-xs text-muted-foreground">
+                                                                                    {(() => {
+                                                                                        if (milestone.startDate && milestone.endDate) {
+                                                                                            return `${new Date(milestone.startDate).toLocaleDateString('en-IN')} - ${new Date(milestone.endDate).toLocaleDateString('en-IN')}`;
+                                                                                        }
+                                                                                        if (milestone.startDate) {
+                                                                                            return new Date(milestone.startDate).toLocaleDateString('en-IN');
+                                                                                        }
+                                                                                        if (milestone.endDate) {
+                                                                                            return new Date(milestone.endDate).toLocaleDateString('en-IN');
+                                                                                        }
+                                                                                        return 'No dates';
+                                                                                    })()}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div className="text-sm text-muted-foreground">
+                                                                            No milestones defined
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div> */}
+                                                        </div>
                                                     </div>
-                                                    <Progress value={project.progress} className="h-2" />
-                                                </div> */}
+                                                )}
                                             </CardContent>
                                         </Card>
                                     ))}
@@ -1544,196 +1622,7 @@ Add any additional notes here...
                             </div>
                         )}
 
-                        {/* Project Details Modal */}
-                        {selectedProject && (
-                            <Dialog open={showProjectDetailsModal} onOpenChange={setShowProjectDetailsModal}>
-                                <DialogContent className="sm:max-w-[625px] max-h-[80vh] overflow-y-auto">
-                                    <DialogHeader>
-                                        <DialogTitle className="text-2xl font-bold">{selectedProject.name}</DialogTitle>
-                                        <div className="flex items-center gap-2">
-                                            <Badge className={getStatusColor(selectedProject.status)}>
-                                                {selectedProject.status}
-                                            </Badge>
-                                            <span className="text-sm text-muted-foreground">
-                                                {selectedProject.progress}% complete
-                                            </span>
-                                        </div>
-                                    </DialogHeader>
 
-                                    <div className="grid gap-4 py-4">
-                                        {isEditing ? (
-                                            <>
-                                                <div className="space-y-2">
-                                                    <Label>Project Status</Label>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {['Planning', 'In Progress', 'On Hold', 'Completed'].map((status) => (
-                                                            <Button
-                                                                key={status}
-                                                                variant={editStatus === status ? 'default' : 'outline'}
-                                                                size="sm"
-                                                                onClick={() => setEditStatus(status)}
-                                                            >
-                                                                {status}
-                                                            </Button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Project Progress</Label>
-                                                    <div className="flex items-center gap-4">
-                                                        <Slider
-                                                            value={[editProgress]}
-                                                            onValueChange={([value]) => setEditProgress(value)}
-                                                            max={100}
-                                                            step={1}
-                                                            className="flex-1"
-                                                        />
-                                                        <span className="text-sm w-12 text-right">{editProgress}%</span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Budget Spent</Label>
-                                                    <div className="flex items-center gap-4">
-                                                        <Slider
-                                                            value={[editSpent]}
-                                                            onValueChange={([value]) => setEditSpent(value)}
-                                                            max={selectedProject?.budget || 100}
-                                                            step={1000}
-                                                            className="flex-1"
-                                                        />
-                                                        <span className="text-sm w-20 text-right">₹{(editSpent / 100000).toFixed(1)}L</span>
-                                                    </div>
-                                                    <div className="flex justify-between text-xs text-muted-foreground">
-                                                        <span>Spent: ₹{(editSpent / 100000).toFixed(1)}L</span>
-                                                        <span>Remaining: ₹{((selectedProject?.budget - editSpent) / 100000).toFixed(1)}L</span>
-                                                        <span>Total: ₹{(selectedProject?.budget / 100000).toFixed(1)}L</span>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-1">
-                                                        <Label className="text-muted-foreground">Client</Label>
-                                                        <p>{selectedProject.client}</p>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <Label className="text-muted-foreground">Location</Label>
-                                                        <div className="flex items-center">
-                                                            <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
-                                                            <p>{selectedProject.location}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-1">
-                                                        <Label className="text-muted-foreground">Project Manager</Label>
-                                                        <p>{selectedProject.manager}</p>
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <Label className="text-muted-foreground">Deadline</Label>
-                                                        <div className="flex items-center">
-                                                            <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
-                                                            <p>{selectedProject.deadline}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-muted-foreground">Budget</Label>
-                                                    <div className="space-y-1">
-                                                        <p>₹{selectedProject.budget.toLocaleString()}</p>
-                                                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                            <span>Spent: ₹{selectedProject.spent.toLocaleString()}</span>
-                                                            <span>
-                                                                Remaining: ₹{(selectedProject.budget - selectedProject.spent).toLocaleString()}
-                                                            </span>
-                                                        </div>
-                                                        <Progress
-                                                            value={(selectedProject.spent / selectedProject.budget) * 100}
-                                                            className="h-2 mt-1"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label className="text-muted-foreground">Project Progress</Label>
-                                                    <Progress value={selectedProject.progress} className="h-2" />
-                                                    <div className="flex justify-between text-sm text-muted-foreground">
-                                                        <span>Started: {selectedProject.deadline}</span>
-                                                        <span>Target: {selectedProject.deadline}</span>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        <div className="space-y-2">
-                                            <Label className="text-muted-foreground">Key Milestones</Label>
-                                            <div className="space-y-2">
-                                                {editMilestones.map((milestone, index) => (
-                                                    <div key={index} className="flex items-center">
-                                                        <div className={`h-3 w-3 rounded-full mr-3 ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'
-                                                            }`} />
-                                                        <div className="flex-1">
-                                                            <p className="text-sm">{milestone.name}</p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {milestone.startDate && milestone.endDate 
-                                                                    ? `${milestone.startDate} - ${milestone.endDate}`
-                                                                    : milestone.startDate || milestone.endDate || 'No dates set'
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                        {isEditing ? (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className={`text-xs cursor-pointer transition-colors ${milestone.completed
-                                                                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                                                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                                                                    }`}
-                                                                onClick={() => toggleMilestoneStatus(index)}
-                                                            >
-                                                                {milestone.completed ? 'Completed' : 'Pending'}
-                                                            </Button>
-                                                        ) : (
-                                                            <Badge variant="outline" className="text-xs">
-                                                                {milestone.completed ? 'Completed' : 'Pending'}
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter>
-                                        {isEditing ? (
-                                            <>
-                                                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                                                    Cancel
-                                                </Button>
-                                                <Button onClick={handleSaveChanges}>
-                                                    Save Changes
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Button variant="outline" onClick={() => setShowProjectDetailsModal(false)}>
-                                                    Close
-                                                </Button>
-                                                <Button onClick={() => setIsEditing(true)}>
-                                                    <Edit className="mr-2 h-4 w-4" />
-                                                    Edit Project
-                                                </Button>
-                                            </>
-                                        )}
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        )}
 
                         {view === "resources" && (
                             <div className="mt-4">
@@ -1799,9 +1688,9 @@ Add any additional notes here...
                                         <CardContent>
                                             <div className="space-y-3">
                                                 {[
-                                                    { project: 'Residential Complex A', date: '2024-05-26', status: 'Approved', progress: '65%' },
-                                                    { project: 'Office Tower B', date: '2024-05-25', status: 'Pending', progress: '30%' },
-                                                    { project: 'Shopping Mall C', date: '2024-05-24', status: 'Approved', progress: '85%' }
+                                                    { project: 'Residential Complex A', date: '2025-08-10', status: 'Approved', progress: '65%' },
+                                                    { project: 'Office Tower B', date: '2025-08-09', status: 'Pending', progress: '30%' },
+                                                    { project: 'Shopping Mall C', date: '2025-08-08', status: 'Approved', progress: '85%' }
                                                 ].map((dpr, index) => (
                                                     <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
                                                         <div>
@@ -1889,7 +1778,7 @@ Add any additional notes here...
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <h3 className="font-medium">{project.name}</h3>
-                                            <p className="text-sm text-muted-foreground">{project.client}</p>
+                                            <p className="text-sm text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
                                             <div className="flex items-center gap-4 mt-2">
                                                 <div className="flex items-center gap-2">
                                                     <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -1897,7 +1786,7 @@ Add any additional notes here...
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Users className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-sm">{project.manager}</span>
+                                                    <span className="text-sm">{typeof project.manager === 'object' ? project.manager?.name : project.manager || 'Not assigned'}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1908,7 +1797,7 @@ Add any additional notes here...
                                             </div>
                                             <Progress value={project.progress} className="w-32" />
                                             <p className="text-sm text-muted-foreground mt-1">
-                                                Due: {new Date(project.deadline).toLocaleDateString()}
+                                                Due: {new Date(project.deadline).toLocaleDateString('en-IN')}
                                             </p>
                                         </div>
                                     </div>
@@ -1940,15 +1829,28 @@ Add any additional notes here...
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <h3 className="font-medium text-green-800">{project.name}</h3>
-                                            <p className="text-sm text-green-600">{project.client}</p>
+                                            <p className="text-sm text-green-600">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
                                             <div className="flex items-center gap-4 mt-2">
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="h-4 w-4 text-green-600" />
-                                                    <span className="text-sm text-green-700">Due: {new Date(project.deadline).toLocaleDateString()}</span>
+                                                    <span className="text-sm text-green-700">Due: {new Date(project.deadline).toLocaleDateString('en-IN')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Users className="h-4 w-4 text-green-600" />
-                                                    <span className="text-sm text-green-700">{project.manager}</span>
+                                                    <span className="text-sm text-green-700">
+                                                        {(() => {
+                                                            if (typeof project.manager === 'object' && project.manager?.name) {
+                                                                return project.manager.name;
+                                                            }
+                                                            if (typeof project.manager === 'string') {
+                                                                return project.manager;
+                                                            }
+                                                            if (project.managers?.name) {
+                                                                return project.managers.name;
+                                                            }
+                                                            return 'Not assigned';
+                                                        })()}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2055,7 +1957,7 @@ Add any additional notes here...
                                         <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
                                         <div className="flex-1">
                                             <h3 className="font-medium text-red-800">{project.name}</h3>
-                                            <p className="text-sm text-red-600">{project.client}</p>
+                                            <p className="text-sm text-red-600">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
                                             <p className="text-sm text-red-700 mt-1">
                                                 Project is on hold. Progress: {project.progress}%
                                             </p>
@@ -2066,7 +1968,7 @@ Add any additional notes here...
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Users className="h-4 w-4 text-red-600" />
-                                                    <span className="text-sm text-red-700">{project.manager}</span>
+                                                    <span className="text-sm text-red-700">{typeof project.manager === 'object' ? project.manager?.name : project.manager || 'Not assigned'}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2225,8 +2127,8 @@ Add any additional notes here...
                                     <div
                                         key={resource.id}
                                         className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedResources.some(r => r.id === resource.id)
-                                                ? "bg-blue-50 border-blue-200"
-                                                : "hover:bg-gray-50"
+                                            ? "bg-blue-50 border-blue-200"
+                                            : "hover:bg-gray-50"
                                             }`}
                                         onClick={() => {
                                             setSelectedResources(prev =>
