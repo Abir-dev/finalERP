@@ -208,10 +208,10 @@ export const TenderDashboard: React.FC<TenderDashboardProps> = ({ onNewTender })
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="active-tenders">Active Tenders</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="vendors">Vendors</TabsTrigger>
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="active-tenders">Active Tenders</TabsTrigger>
           {/* <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger> */}
         </TabsList>
 

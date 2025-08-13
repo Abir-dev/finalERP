@@ -71,180 +71,70 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
         </div>
 
         <div className="p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Tender Details */}
-            <div className="lg:col-span-2 space-y-6">
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-purple-500" />
-                    Project Information
-                  </CardTitle>
-                  <CardDescription>Fill in the basic tender details</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-6">
+            {/* Project Information - Top Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column - Project Information */}
+              <div className="lg:col-span-2">
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-purple-500" />
+                      Project Information
+                    </CardTitle>
+                    <CardDescription>Fill in the basic tender details</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Tender Number</label>
+                        <Input value="TND-2024-001" readOnly className="bg-muted font-mono" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Submission Date</label>
+                        <div className="relative">
+                          <Input type="date" className="pl-9" />
+                          <Calendar className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Tender Number</label>
-                      <Input value="TND-2024-001" readOnly className="bg-muted font-mono" />
+                      <label className="text-sm font-medium">Project Name</label>
+                      <Input placeholder="Enter project name" />
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Submission Date</label>
-                      <div className="relative">
-                        <Input type="date" className="pl-9" />
-                        <Calendar className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Project Name</label>
-                    <Input placeholder="Enter project name" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Client</label>
-                      <div className="relative">
-                        <Select>
-                          <SelectTrigger className="pl-9">
-                            <SelectValue placeholder="Select client" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="green-valley">Green Valley Developers</SelectItem>
-                            <SelectItem value="metropolitan">Metropolitan Holdings</SelectItem>
-                            <SelectItem value="city-center">City Center Corp</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <User2 className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Location</label>
-                      <div className="relative">
-                        <Input placeholder="Project location" className="pl-9" />
-                        <MapPin className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Requirements */}
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <CardTitle>Project Requirements</CardTitle>
-                      <CardDescription>Add project requirements and estimated costs</CardDescription>
-                    </div>
-                    <Button onClick={addRequirement} size="sm" variant="outline" className="gap-2">
-                      <Plus className="h-4 w-4" />
-                      Add Requirement
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground px-3">
-                      <div className="col-span-4">Description</div>
-                      <div className="col-span-2">Quantity</div>
-                      <div className="col-span-2">Unit</div>
-                      <div className="col-span-3">Estimated Cost</div>
-                      <div className="col-span-1"></div>
-                    </div>
-                    
-                    {requirements.map((item) => (
-                      <div key={item.id} className="grid grid-cols-12 gap-4 items-center p-3 bg-muted/5 border rounded-lg hover:bg-muted/10 transition-colors">
-                        <div className="col-span-4">
-                          <Input
-                            placeholder="Enter requirement"
-                            value={item.description}
-                            onChange={(e) => updateRequirement(item.id, 'description', e.target.value)}
-                            className="border-muted"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) => updateRequirement(item.id, 'quantity', Number(e.target.value))}
-                            className="border-muted"
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Input
-                            value={item.unit}
-                            onChange={(e) => updateRequirement(item.id, 'unit', e.target.value)}
-                            className="border-muted"
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Input
-                            type="number"
-                            value={item.estimatedCost}
-                            onChange={(e) => updateRequirement(item.id, 'estimatedCost', Number(e.target.value))}
-                            className="border-muted font-mono"
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeRequirement(item.id)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Client</label>
+                        <div className="relative">
+                          <Select>
+                            <SelectTrigger className="pl-9">
+                              <SelectValue placeholder="Select client" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="green-valley">Green Valley Developers</SelectItem>
+                              <SelectItem value="metropolitan">Metropolitan Holdings</SelectItem>
+                              <SelectItem value="city-center">City Center Corp</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <User2 className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
                         </div>
                       </div>
-                    ))}
-
-                    <div className="mt-6 space-y-3 border-t pt-4">
-                      <div className="flex justify-between text-lg font-semibold">
-                        <span>Total Estimated Cost:</span>
-                        <span className="font-mono text-purple-600">₹{totalEstimatedCost.toLocaleString('en-IN')}</span>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Location</label>
+                        <div className="relative">
+                          <Input placeholder="Project location" className="pl-9" />
+                          <MapPin className="h-4 w-4 absolute left-3 top-3 text-muted-foreground" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
 
-              {/* Additional Details */}
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle>Additional Information</CardTitle>
-                  <CardDescription>Add more details to your tender</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Project Duration (months)</label>
-                    <Input type="number" placeholder="24" className="max-w-[200px]" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Scope of Work</label>
-                    <Textarea 
-                      placeholder="Detailed description of work scope..."
-                      rows={3}
-                      className="resize-none"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Special Requirements</label>
-                    <Textarea 
-                      placeholder="Any special requirements or conditions..."
-                      rows={2}
-                      className="resize-none"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Preview & Actions */}
-            <div className="space-y-6">
+              {/* Right Column - Preview & Actions */}
+              <div className="space-y-6">
               <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Tender Summary</CardTitle>
@@ -277,7 +167,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm">
+              {/* <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Actions</CardTitle>
                   <CardDescription>Available actions for this tender</CardDescription>
@@ -297,9 +187,9 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
                     Calculate Estimates
                   </Button>
                 </CardContent>
-              </Card>
+              </Card> */}
 
-              <Card className="shadow-sm">
+              {/* <Card className="shadow-sm">
                 <CardHeader>
                   <CardTitle>Submission Checklist</CardTitle>
                   <CardDescription>Required documents and status</CardDescription>
@@ -325,8 +215,150 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
+              </div>
             </div>
+
+            {/* Full Width Project Requirements */}
+            <Card className="shadow-sm">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Project Requirements</CardTitle>
+                    <CardDescription>Add project requirements and estimated costs</CardDescription>
+                  </div>
+                  <Button onClick={addRequirement} size="sm" variant="outline" className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Requirement
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-12 gap-4 text-sm font-medium text-muted-foreground px-3">
+                    <div className="col-span-4">Description</div>
+                    <div className="col-span-2">Quantity</div>
+                    <div className="col-span-2">Unit</div>
+                    <div className="col-span-3">Estimated Cost</div>
+                    <div className="col-span-1"></div>
+                  </div>
+                  
+                  {requirements.map((item) => (
+                    <div key={item.id} className="grid grid-cols-12 gap-4 items-center p-3 bg-muted/5 border rounded-lg hover:bg-muted/10 transition-colors">
+                      <div className="col-span-4">
+                        <Input
+                          placeholder="Enter requirement"
+                          value={item.description}
+                          onChange={(e) => updateRequirement(item.id, 'description', e.target.value)}
+                          className="border-muted"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={(e) => updateRequirement(item.id, 'quantity', Number(e.target.value))}
+                          className="border-muted"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          value={item.unit}
+                          onChange={(e) => updateRequirement(item.id, 'unit', e.target.value)}
+                          className="border-muted"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <Input
+                          type="number"
+                          value={item.estimatedCost}
+                          onChange={(e) => updateRequirement(item.id, 'estimatedCost', Number(e.target.value))}
+                          className="border-muted font-mono"
+                        />
+                      </div>
+                      <div className="col-span-1 flex justify-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeRequirement(item.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="mt-6 space-y-3 border-t pt-4">
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span>Total Estimated Cost:</span>
+                      <span className="font-mono text-purple-600">₹{totalEstimatedCost.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Full Width Additional Information */}
+            <Card className="shadow-sm">
+              <CardHeader>
+                <CardTitle>Additional Information</CardTitle>
+                <CardDescription>Add more details to your tender</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Project Duration (months)</label>
+                    <Input type="number" placeholder="24" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Project Category</label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="residential">Residential</SelectItem>
+                        <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                        <SelectItem value="industrial">Industrial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Priority Level</label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Scope of Work</label>
+                  <Textarea 
+                    placeholder="Detailed description of work scope..."
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Special Requirements</label>
+                  <Textarea 
+                    placeholder="Any special requirements or conditions..."
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Footer */}
