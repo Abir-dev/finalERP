@@ -463,6 +463,11 @@ const Projects = () => {
     const [clients, setClients] = useState<User[]>([]);
     const [managers, setManagers] = useState<User[]>([]);
     const [isCreatingProject, setIsCreatingProject] = useState(false);
+    
+    // Edit project states
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [isEditingProject, setIsEditingProject] = useState(false);
+    const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
     // Add subview state management
     const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus' | 'dprSubmissions'>('main');
@@ -537,6 +542,136 @@ const Projects = () => {
                 description: "Failed to delete the project. Please try again.",
                 variant: "destructive",
             });
+        }
+    };
+
+    // Function to handle edit project
+    const handleEditProject = (project: any) => {
+        // Set the editing project
+        setEditingProject(project);
+        
+        // Pre-populate the form with existing project data
+        setNewProject({
+            name: project.name,
+            clientId: project.clientId || (typeof project.client === 'object' ? project.client?.id || '' : ''),
+            budget: project.budget,
+            totalSpend: project.totalSpend,
+            deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
+            location: project.location,
+            manager: project.manager ? (typeof project.manager === 'object' ? project.manager?.id || '' : project.manager) : '',
+            contingency: project.contingency,
+            squareFootage: project.squareFootage,
+            startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
+            estimatedDuration: project.estimatedDuration,
+            description: project.description,
+            contractType: project.contractType,
+            estimatedCost: project.estimatedCost,
+            defaultCostCenter: project.defaultCostCenter,
+            milestones: project.milestones || []
+        });
+        
+        // Set project type if available
+        if (project.projectType) {
+            setProjectType(project.projectType);
+        }
+        
+        // Open the project dialog
+        setIsProjectDialogOpen(true);
+    };
+
+    // Function to update project
+    const updateProject = async () => {
+        if (!newProject.name || !newProject.clientId || !editingProject) {
+            toast({
+                title: "Missing Information",
+                description: "Please fill in project name and client",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        if (!user?.id) {
+            toast({
+                title: "Authentication Error",
+                description: "User not authenticated. Please log in again.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsEditingProject(true);
+        try {
+            const projectData = {
+                name: newProject.name,
+                clientId: newProject.clientId,
+                startDate: newProject.startDate ? new Date(newProject.startDate).toISOString() : editingProject.startDate,
+                // Optional fields based on your form
+                ...(newProject.location && { location: newProject.location }),
+                ...(newProject.deadline && { deadline: new Date(newProject.deadline).toISOString() }),
+                ...(newProject.budget && { budget: newProject.budget }),
+                ...(newProject.manager && { managerId: newProject.manager }),
+                ...(newProject.contingency && { contingency: newProject.contingency }),
+                ...(newProject.squareFootage && { squareFootage: newProject.squareFootage }),
+                ...(newProject.estimatedDuration && { estimatedDuration: newProject.estimatedDuration }),
+                ...(newProject.description && { description: newProject.description }),
+                ...(newProject.contractType && { contractType: newProject.contractType }),
+                ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
+                ...(newProject.defaultCostCenter && { defaultCostCenter: newProject.defaultCostCenter }),
+                ...(projectType && { projectType }),
+                // Include milestones if they exist
+                ...(newProject.milestones && newProject.milestones.length > 0 && {
+                    milestones: newProject.milestones.filter(m => m.name && m.startDate)
+                })
+            };
+
+            const response = await axios.put(`${API_URL}/projects/${editingProject.id}`, projectData, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.data) {
+                // Refresh projects list
+                fetchProjects();
+
+                // Reset form and editing state
+                setNewProject({
+                    name: '',
+                    clientId: '',
+                    budget: 0,
+                    totalSpend: 0,
+                    deadline: '',
+                    location: '',
+                    manager: '',
+                    contingency: 0,
+                    squareFootage: 0,
+                    startDate: '',
+                    estimatedDuration: 0,
+                    description: '',
+                    contractType: '',
+                    estimatedCost: 0,
+                    defaultCostCenter: '',
+                    milestones: []
+                });
+                setProjectType('');
+                setEditingProject(null);
+                setIsProjectDialogOpen(false);
+
+                toast({
+                    title: "Project Updated",
+                    description: "The project has been successfully updated.",
+                });
+            }
+        } catch (error) {
+            console.error("Error updating project:", error);
+            toast({
+                title: "Update Failed",
+                description: error.response?.data?.message || "Failed to update the project. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsEditingProject(false);
         }
     };
 
@@ -754,6 +889,7 @@ Add any additional notes here...
                     milestones: []
                 });
                 setProjectType('');
+                setIsProjectDialogOpen(false);
 
                 toast({
                     title: "Project Created",
@@ -816,16 +952,41 @@ Add any additional notes here...
                         <Camera className="mr-2 h-4 w-4" />
                         Submit DPR
                     </Button> */}
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 h-4 w-4" />
-                                New Project
-                            </Button>
-                        </DialogTrigger>
+                    <Button onClick={() => setIsProjectDialogOpen(true)}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Project
+                    </Button>
+                    <Dialog open={isProjectDialogOpen} onOpenChange={(open) => {
+                        setIsProjectDialogOpen(open);
+                        if (!open) {
+                            // Clear editing state when dialog closes
+                            setEditingProject(null);
+                            setProjectType('');
+                            setNewProject({
+                                name: '',
+                                clientId: '',
+                                budget: 0,
+                                totalSpend: 0,
+                                deadline: '',
+                                location: '',
+                                manager: '',
+                                contingency: 0,
+                                squareFootage: 0,
+                                startDate: '',
+                                estimatedDuration: 0,
+                                description: '',
+                                contractType: '',
+                                estimatedCost: 0,
+                                defaultCostCenter: '',
+                                milestones: []
+                            });
+                        }
+                    }}>
                         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
                             <DialogHeader>
-                                <DialogTitle className="text-xl font-bold">Create New Project</DialogTitle>
+                                <DialogTitle className="text-xl font-bold">
+                                {editingProject ? 'Edit Project' : 'Create New Project'}
+                            </DialogTitle>
                                 <DialogDescription>
                                     Fill in the details to create a new construction project with key milestones
                                 </DialogDescription>
@@ -1205,25 +1366,36 @@ Add any additional notes here...
                                             milestones: []
                                         });
                                         setProjectType('');
+                                        setEditingProject(null);
+                                        setIsProjectDialogOpen(false);
                                     }}
-                                    disabled={isCreatingProject}
+                                    disabled={isCreatingProject || isEditingProject}
                                 >
-                                    Clear
+                                    {editingProject ? 'Cancel' : 'Clear'}
                                 </Button>
                                 <Button
-                                    onClick={createProject}
-                                    disabled={!newProject.name || !newProject.clientId || !newProject.location || !newProject.deadline || isCreatingProject}
+                                    onClick={editingProject ? updateProject : createProject}
+                                    disabled={!newProject.name || !newProject.clientId || !newProject.location || !newProject.deadline || isCreatingProject || isEditingProject}
                                     className="flex-1"
                                 >
-                                    {isCreatingProject ? (
+                                    {(isCreatingProject || isEditingProject) ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Creating...
+                                            {editingProject ? 'Updating...' : 'Creating...'}
                                         </>
                                     ) : (
                                         <>
-                                            <Plus className="mr-2 h-4 w-4" />
-                                            Create Project
+                                            {editingProject ? (
+                                                <>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Update Project
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Plus className="mr-2 h-4 w-4" />
+                                                    Create Project
+                                                </>
+                                            )}
                                         </>
                                     )}
                                 </Button>
@@ -1534,14 +1706,24 @@ Add any additional notes here...
                                                                     {project.progress}% Complete
                                                                 </div> */}
                                                             </div>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                                                                onClick={() => handleDeleteProject(project.id, project.name)}
-                                                            >
-                                                                <Trash2 className="h-3 w-3" />
-                                                            </Button>
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-blue-600 hover:bg-blue-50 h-8 w-8 p-0"
+                                                                    onClick={() => handleEditProject(project)}
+                                                                >
+                                                                    <Edit className="h-3 w-3" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                                                                    onClick={() => handleDeleteProject(project.id, project.name)}
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
