@@ -7,15 +7,16 @@ import { checkRole } from '../middleware/rbac';
 const router = Router();
 
 // Project CRUD
-router.post('/', authenticateUser, /* checkRole('site'), validateProject, */ projectController.createProject);
+router.post('/user/:userId', authenticateUser, /* checkRole('site'), validateProject, */ projectController.createProject);
 router.get('/', projectController.listProjects); // Removed authenticateUser
+router.get('/user/:userId', authenticateUser, projectController.getProjectsByUser);
 
 // Specific routes must come before parameterized routes
 router.get('/activity', projectController.getProjectActivity);
 
 router.get('/:id', authenticateUser, projectController.getProject);
-router.put('/:id', authenticateUser, checkRole('site'), validateProject, projectController.updateProject);
-router.delete('/:id', authenticateUser, checkRole('admin'), projectController.deleteProject);
+router.put('/:id', authenticateUser, validateProject, projectController.updateProject);
+router.delete('/:id', authenticateUser, projectController.deleteProject);
 
 // Task management
 // router.post('/:id/tasks', authenticateUser, /* checkRole('site-manager'), */ projectController.addTask);
