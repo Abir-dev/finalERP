@@ -21,43 +21,44 @@ enum UserRole {
 }
 
 model User {
-  id                  String             @id @default(uuid()) @db.Uuid
-  email               String             @unique
-  name                String
-  role                UserRole
-  avatar              String?
-  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  status              String             @default("inactive")
-  lastLogin           DateTime?          @map("last_login") @db.Timestamptz(6)
-  password            String
-  documents           Document[]
-  managedProjects     Project[]          @relation("ProjectManagers")
-  memberProjects      Project[]          @relation("ProjectMembers")
-  clientProjects      Project[]          @relation("ProjectClient")
-  invoices            Invoice[]          @relation("UserInvoices")
+  id                   String                @id @default(uuid()) @db.Uuid
+  email                String                @unique
+  name                 String
+  role                 UserRole
+  avatar               String?
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status               String                @default("inactive")
+  lastLogin            DateTime?             @map("last_login") @db.Timestamptz(6)
+  password             String
+  documents            Document[]
+  managedProjects      Project[]             @relation("ProjectManagers")
+  memberProjects       Project[]             @relation("ProjectMembers")
+  clientProjects       Project[]             @relation("ProjectClient")
+  invoices             Invoice[]             @relation("UserInvoices")
   // bids             Bid[]             @relation("UserBids")
-  notifications       Notification[]     @relation("UserNotifications")
-  messagesSent        Message[]          @relation("MessagesSent")
-  messagesReceived    Message[]          @relation("MessagesReceived")
-  materialRequests    MaterialRequest[]  @relation("UserMaterialRequests")
-  taxes               Tax[]
-  Invoice             Invoice[]
-  Payment             Payment[]
-  MaterialRequest     MaterialRequest[]  @relation("MaterialRequestApprovals")
-  PurchaseOrder       PurchaseOrder[]
-  createdVendors      Vendor[]           @relation("VendorCreator")
-  createdNonBillables NonBillable[]      @relation("NonBillableCreator")
-  Bid                 Bid[]
-  createdIssues       IssueReport[]      @relation("IssueCreator")
-  assignedIssues      IssueReport[]      @relation("IssueAssignments")
-  Vehicle             Vehicle[]          @relation("VehicleCreator")
-  createdEvents       Event[]            @relation("EventCreator")
-  Inventory           Inventory[]        @relation("InventoryCreator")
-  approvedTransfers   MaterialTransfer[] @relation("MaterialTransferApproval")
-  createdTransfers    MaterialTransfer[] @relation("MaterialTransferCreator")
+  notifications        Notification[]        @relation("UserNotifications")
+  messagesSent         Message[]             @relation("MessagesSent")
+  messagesReceived     Message[]             @relation("MessagesReceived")
+  materialRequests     MaterialRequest[]     @relation("UserMaterialRequests")
+  taxes                Tax[]
+  Invoice              Invoice[]
+  Payment              Payment[]
+  MaterialRequest      MaterialRequest[]     @relation("MaterialRequestApprovals")
+  PurchaseOrder        PurchaseOrder[]
+  createdVendors       Vendor[]              @relation("VendorCreator")
+  createdNonBillables  NonBillable[]         @relation("NonBillableCreator")
+  Bid                  Bid[]
+  createdIssues        IssueReport[]         @relation("IssueCreator")
+  assignedIssues       IssueReport[]         @relation("IssueAssignments")
+  Vehicle              Vehicle[]             @relation("VehicleCreator")
+  createdEvents        Event[]               @relation("EventCreator")
+  Inventory            Inventory[]           @relation("InventoryCreator")
+  approvedTransfers    MaterialTransfer[]    @relation("MaterialTransferApproval")
+  createdTransfers     MaterialTransfer[]    @relation("MaterialTransferCreator")
   scheduledMaintenance ScheduleMaintenance[] @relation("MaintenanceScheduler")
-  createdProjects     Project[]            @relation("ProjectCreator")
+  createdProjects      Project[]             @relation("ProjectCreator")
+  StoreStaff           StoreStaff[]          @relation("StoreStaffCreator")
 
   @@map("users")
 }
@@ -77,52 +78,52 @@ model UserInvitation {
 }
 
 model Project {
-  id                  String            @id @default(uuid()) @db.Uuid
-  name                String
-  clientId            String            @db.Uuid
-  client              User              @relation("ProjectClient", fields: [clientId], references: [id])
-  startDate           DateTime
-  endDate             DateTime?
-  location            String?
-  budget              Float?
-  projectType         ProjectType?      // Changed to enum
-  managers             User           @relation("ProjectManagers", fields: [managerId], references: [id])
-  managerId        String              @db.Uuid
-  members             User[]            @relation("ProjectMembers")
-  tasks               Task[]
-  invoices            Invoice[]
-  materialRequests    MaterialRequest[]
-  nonBillables        NonBillable[]
-  totalSpend          Float?
-  
-  // New fields from the form
-  squareFootage       Int?
-  contingency         Float?
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  clientId         String            @db.Uuid
+  client           User              @relation("ProjectClient", fields: [clientId], references: [id])
+  startDate        DateTime
+  endDate          DateTime?
+  location         String?
+  budget           Float?
+  projectType      ProjectType? // Changed to enum
+  managers         User              @relation("ProjectManagers", fields: [managerId], references: [id])
+  managerId        String            @db.Uuid
+  members          User[]            @relation("ProjectMembers")
+  tasks            Task[]
+  invoices         Invoice[]
+  materialRequests MaterialRequest[]
+  nonBillables     NonBillable[]
+  totalSpend       Float?
 
-  estimatedDuration   Int?
-  description         String?
-  contractType        ContractType?     // Enum (already updated)
-  estimatedCost       Int?
-  defaultCostCenter   String?
-  deadline            DateTime?
-  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  Tender              Tender[]
-  Payment             Payment[]
-  milestones          ProjectMilestone[]
-  createdById         String?              @db.Uuid
-  createdBy           User?                @relation("ProjectCreator", fields: [createdById], references: [id])
+  // New fields from the form
+  squareFootage Int?
+  contingency   Float?
+
+  estimatedDuration Int?
+  description       String?
+  contractType      ContractType? // Enum (already updated)
+  estimatedCost     Int?
+  defaultCostCenter String?
+  deadline          DateTime?
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Tender            Tender[]
+  Payment           Payment[]
+  milestones        ProjectMilestone[]
+  createdById       String?            @db.Uuid
+  createdBy         User?              @relation("ProjectCreator", fields: [createdById], references: [id])
 }
 
 model ProjectMilestone {
-  id          String   @id @default(uuid()) @db.Uuid
-  projectId   String   @db.Uuid
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name        String
-  startDate   DateTime
-  endDate     DateTime?
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id        String    @id @default(uuid()) @db.Uuid
+  projectId String    @db.Uuid
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model NonBillable {
@@ -310,30 +311,30 @@ model Bid {
 }
 
 model Employee {
-  id              String           @id @default(uuid()) @db.Uuid
-  name            String
-  position        String
-  department      String
-  joinedAt        DateTime
-  leftAt          DateTime?
-  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  salaryRecords   EmployeeSalary[]
+  id            String           @id @default(uuid()) @db.Uuid
+  name          String
+  position      String
+  department    String
+  joinedAt      DateTime
+  leftAt        DateTime?
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  salaryRecords EmployeeSalary[]
 }
 
 model EmployeeSalary {
-  id          String                   @id @default(uuid()) @db.Uuid
-  employeeId  String                   @db.Uuid
-  employee    Employee                 @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  netSalary   Float
-  paymentDate DateTime?                @db.Timestamptz(6)
-  remarks     String?
-  earningsId  String                   @unique @db.Uuid
-  earnings    EmployeeSalaryEarnings   @relation(fields: [earningsId], references: [id], onDelete: Cascade)
-  deductionsId String                  @unique @db.Uuid
-  deductions  EmployeeSalaryDeductions @relation(fields: [deductionsId], references: [id], onDelete: Cascade)
-  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String                   @id @default(uuid()) @db.Uuid
+  employeeId   String                   @db.Uuid
+  employee     Employee                 @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  netSalary    Float
+  paymentDate  DateTime?                @db.Timestamptz(6)
+  remarks      String?
+  earningsId   String                   @unique @db.Uuid
+  earnings     EmployeeSalaryEarnings   @relation(fields: [earningsId], references: [id], onDelete: Cascade)
+  deductionsId String                   @unique @db.Uuid
+  deductions   EmployeeSalaryDeductions @relation(fields: [deductionsId], references: [id], onDelete: Cascade)
+  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("employee_salaries")
 }
@@ -759,6 +760,7 @@ model MaterialTransferItem {
 
   @@map("material_transfer_items")
 }
+
 model ScheduleMaintenance {
   id              String              @id @default(uuid()) @db.Uuid
   equipmentName   String
@@ -773,6 +775,60 @@ model ScheduleMaintenance {
   createdBy       User                @relation("MaintenanceScheduler", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
+model StoreStaff {
+  id                   String            @id @default(uuid()) @db.Uuid
+  fullName             String
+  email                String
+  contactNumber        String
+  emergencyContact     String?
+  address              String
+  position             StaffPosition
+  experienceYears      Int
+  availabilityStatus   StaffStatus
+  shiftTiming          StaffShift
+  joiningDate          DateTime
+  status               StaffActiveStatus @default(OFF_DUTY)
+  certifications       String?
+  areaOfSpecialization String?
+  notes                String?
+  createdById          String            @db.Uuid
+  createdBy            User              @relation("StoreStaffCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+}
+
+enum StaffPosition {
+  STORE_MANAGER
+  ASSISTANT_MANAGER
+  INVENTORY_CLERK
+  LOGISTICS_COORDINATOR
+  WAREHOUSE_STAFF
+  MATERIAL_SPECIALIST
+  INVENTORY_ANALYST
+  QUALITY_INSPECTOR
+}
+
+enum StaffStatus {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  SEASONAL
+  ON_CALL
+}
+
+enum StaffShift {
+  MORNING
+  DAY
+  EVENING
+  NIGHT
+  FLEXIBLE
+}
+
+enum StaffActiveStatus {
+  OFF_DUTY
+  ON_DUTY
+}
+
 enum MaintenanceType {
   PREVENTIVE
   CORRECTIVE
@@ -785,8 +841,9 @@ enum MaintenancePriority {
   LOW
   MEDIUM
   HIGH
-  CRITICAL
+  CRITICAL
 }
+
 enum VehicleStatus {
   ACTIVE
   IDLE
@@ -923,6 +980,7 @@ enum TransferPriority {
   HIGH
   URGENT
 }
+
 // Enums for both fields
 enum ProjectType {
   RESIDENTIAL

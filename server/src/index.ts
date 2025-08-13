@@ -27,6 +27,7 @@ import scheduleMaintenanceRoutes from './routes/scheduleMaintenance';
 import milestoneRoutes from './routes/milestone';
 import logger from './logger/logger';
 import storeAnalyticsRoutes from './routes/storeAnalytics';
+import storeStaffRoutes from './routes/storeStaff';
 dotenv.config();
 
 const app = express();
@@ -85,6 +86,7 @@ app.use('/api/milestones', milestoneRoutes);
 app.use('/api', eventRoutes);
 app.use('/api', scheduleMaintenanceRoutes);
 app.use('/api/store', storeAnalyticsRoutes);
+app.use('/api/staff', storeStaffRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {

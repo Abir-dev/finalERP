@@ -18,6 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -58,6 +68,8 @@ import {
   Trash2,
   Edit,
   PauseCircle,
+  Users,
+  Eye,
 } from "lucide-react";
 import { inventoryData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
@@ -72,9 +84,11 @@ import MaintenanceVehiclesView from "@/components/MaintenanceVehiclesView";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
+import { Textarea } from "@/components/ui/textarea";
 
+const toast2 = toast;
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+  import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 // Dynamic transfer data will be calculated from actual transfers
 
@@ -277,7 +291,195 @@ const StoreDashboard = () => {
   // Vendors and Material Requests data
   const [vendors, setVendors] = useState<any[]>([]);
   const [materialRequests, setMaterialRequests] = useState<any[]>([]);
-  console.log(materialRequests);
+  //store staff data
+  const [storeStaff, setStoreStaff] = useState<any[]>([]);
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isDeleteStaffAlertOpen, setIsDeleteStaffAlertOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<any>(null);
+  const [isViewStaffModalOpen, setIsViewStaffModalOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<any>(null);
+  const [isEditingStaff, setIsEditingStaff] = useState(false);
+  const [editStaffData, setEditStaffData] = useState<any>({});
+  const [staffFormData, setStaffFormData] = useState({
+    fullName: '',
+    contactNumber: '',
+    email: '',
+    emergencyContact: '',
+    address: '',
+    role: '',
+    experience: '',
+    availability: '',
+    shiftPreference: '',
+    joiningDate: '',
+    certifications: '',
+    specialization: '',
+    notes: ''
+  });
+
+  const handleStaffFormChange = (field: string, value: string) => {
+    setStaffFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const resetStaffForm = () => {
+    setStaffFormData({
+      fullName: '',
+      contactNumber: '',
+      email: '',
+      emergencyContact: '',
+      address: '',
+      role: '',
+      experience: '',
+      availability: '',
+      shiftPreference: '',
+      joiningDate: '',
+      certifications: '',
+      specialization: '',
+      notes: ''
+    });
+  };
+
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
+
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    try {
+      await axios.delete(`${API_URL}/staff/store-staff/${staffToDelete.id}?userId=${userID}`, { headers });
+      
+      toast2.success("Staff member deleted successfully", {
+        description: `${staffToDelete.fullName} has been removed from the staff list`,
+      });
+
+      // Refresh staff data
+      fetchStoreStaffData();
+
+    } catch (error) {
+      console.error("Error deleting staff:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete staff member",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteStaffAlertOpen(false);
+      setStaffToDelete(null);
+    }
+  };
+
+  const handleEditStaff = async () => {
+    if (!selectedStaff) return;
+
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    // Prepare enum mappings
+    const roleEnumMap: Record<string, string> = {
+      "store-manager": "STORE_MANAGER",
+      "assistant-manager": "ASSISTANT_MANAGER", 
+      "inventory-clerk": "INVENTORY_CLERK",
+      "logistics-coordinator": "LOGISTICS_COORDINATOR",
+      "warehouse-staff": "WAREHOUSE_STAFF",
+      "material-specialist": "MATERIAL_SPECIALIST",
+      "inventory-analyst": "INVENTORY_ANALYST",
+      "quality-inspector": "QUALITY_INSPECTOR",
+    };
+
+    const availabilityEnumMap: Record<string, string> = {
+      "full-time": "FULL_TIME",
+      "part-time": "PART_TIME",
+      "contract": "CONTRACT",
+      "seasonal": "SEASONAL",
+      "on-call": "ON_CALL",
+    };
+
+    const shiftEnumMap: Record<string, string> = {
+      "morning": "MORNING",
+      "day": "DAY",
+      "evening": "EVENING", 
+      "night": "NIGHT",
+      "flexible": "FLEXIBLE"
+    };
+
+    try {
+      const updateData = {
+        fullName: editStaffData.fullName,
+        email: editStaffData.email,
+        contactNumber: editStaffData.contactNumber,
+        emergencyContact: editStaffData.emergencyContact || null,
+        address: editStaffData.address,
+        position: roleEnumMap[editStaffData.role] || editStaffData.position,
+        experienceYears: parseInt(editStaffData.experience) || editStaffData.experienceYears,
+        availabilityStatus: availabilityEnumMap[editStaffData.availability] || editStaffData.availabilityStatus,
+        shiftTiming: shiftEnumMap[editStaffData.shiftPreference] || editStaffData.shiftTiming,
+        joiningDate: editStaffData.joiningDate || selectedStaff.joiningDate,
+        certifications: editStaffData.certifications || null,
+        areaOfSpecialization: editStaffData.specialization || null,
+        notes: editStaffData.notes || null
+      };
+
+      await axios.put(`${API_URL}/staff/store-staff/${selectedStaff.id}?userId=${userID}`, updateData, { headers });
+      
+      toast2.success("Staff member updated successfully", {
+        description: `${editStaffData.fullName || selectedStaff.fullName} has been updated`,
+      });
+
+      // Refresh staff data
+      fetchStoreStaffData();
+      
+      // Close modal and reset edit mode
+      setIsEditingStaff(false);
+      setIsViewStaffModalOpen(false);
+      setSelectedStaff(null);
+      setEditStaffData({});
+
+    } catch (error) {
+      console.error("Error updating staff:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update staff member",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditStaffFormChange = (field: string, value: string) => {
+    setEditStaffData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const fetchStoreStaffData = async () => {
+    if (!userID) return;
+
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    try {
+      const response = await axios.get(`${API_URL}/staff/store-staff?userId=${userID}`, {
+        headers,
+      });
+      setStoreStaff(response.data || []);
+    } catch (error) {
+      console.error("Error fetching store staff:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch store staff data",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchVendorsData = async () => {
     if (!userID) return;
 
@@ -894,6 +1096,9 @@ const StoreDashboard = () => {
       // Fetch vendors data
       fetchVendorsData();
 
+      // Fetch store staff data
+      fetchStoreStaffData();
+
       // Fetch material requests data
       axios
         .get(`${API_URL}/material/material-requests/user/${userID}`, {
@@ -937,11 +1142,12 @@ const StoreDashboard = () => {
         defaultValue="overview"
         className="space-y-6 sticky top-0 z-10 bg-background"
       >
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           {/* <TabsTrigger value="warehouse">Warehouse</TabsTrigger> */}
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger>
+          <TabsTrigger value="store-staffs">Store Staff</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -2794,7 +3000,7 @@ const StoreDashboard = () => {
                                     .replace(/\b\w/g, (char) =>
                                       char.toUpperCase()
                                     )}
-                                  : {" "}
+                                  :{" "}
                                   <span className="font-normal">
                                     {item.value} items
                                   </span>
@@ -3821,6 +4027,137 @@ const StoreDashboard = () => {
           )}
         </TabsContent>
       </Tabs>
+      <Tabs defaultValue="store-staffs" className="mt-6">
+        <TabsContent value="store-staffs" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <div>
+                <CardTitle className="text-xl font-bold">
+                  Store Staff Management
+                </CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Manage store personnel and responsibilities
+                </CardDescription>
+              </div>
+              <Button
+                onClick={() => setIsAddStaffModalOpen(true)}
+                className="ml-auto"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Staff
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {storeStaff.map((staff, index) => {
+                  // Format certifications from backend string
+                  const certifications = staff.certifications ? staff.certifications.split(", ").filter(cert => cert.trim()) : [];
+                  
+                  return (
+                    <div
+                      key={staff.id || index}
+                      className="p-4 border rounded-lg hover:bg-gray-50"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium">{staff.fullName}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {staff.position?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {certifications.map((cert, i) => (
+                              <Badge
+                                key={i}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {cert}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              staff.status === "ON_DUTY" ? "default" : "secondary"
+                            }
+                          >
+                            {staff.status === "ON_DUTY" ? "On Duty" : "Off Duty"}
+                          </Badge>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStaff(staff);
+                              setIsViewStaffModalOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setStaffToDelete(staff);
+                              setIsDeleteStaffAlertOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
+                        <div>Availability: {staff.availabilityStatus?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}</div>
+                        <div>Experience: {staff.experienceYears} years</div>
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          variant={staff.status === "ON_DUTY" ? "destructive" : "outline"}
+                          size="sm"
+                          className="w-full"
+                          onClick={async () => {
+                            const token =
+                              sessionStorage.getItem("jwt_token") ||
+                              localStorage.getItem("jwt_token_backup");
+                            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                            try {
+                              await axios.put(`${API_URL}/staff/store-staff/${staff.id}/activity-status`, {}, { headers });
+                              
+                              const newStatus = staff.status === "ON_DUTY" ? "Off Duty" : "On Duty";
+                              toast2.success(`Status Updated`, {
+                                description: `${staff.fullName} is now ${newStatus.toLowerCase()}`,
+                              });
+
+                              // Refresh staff data to get updated status
+                              fetchStoreStaffData();
+
+                            } catch (error) {
+                              console.error("Error updating staff status:", error);
+                              toast({
+                                title: "Error", 
+                                description: "Failed to update staff status",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          {staff.status === "ON_DUTY" ? "Relief" : "Schedule"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* GRN Modal */}
       <Dialog open={isGRNModalOpen} onOpenChange={setIsGRNModalOpen}>
@@ -4205,7 +4542,408 @@ const StoreDashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
+      <Dialog open={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen}>
+        <DialogContent className="max-w-xl sm:max-w-2xl">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Add New Staff Member
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Enter staff details to register a new store team member
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
 
+              const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+              const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+              // Get role value from state (backend expects enum values)
+              const roleEnumMap: Record<string, string> = {
+                "store-manager": "STORE_MANAGER",
+                "assistant-manager": "ASSISTANT_MANAGER",
+                "inventory-clerk": "INVENTORY_CLERK",
+                "logistics-coordinator": "LOGISTICS_COORDINATOR",
+                "warehouse-staff": "WAREHOUSE_STAFF",
+                "material-specialist": "MATERIAL_SPECIALIST",
+                "inventory-analyst": "INVENTORY_ANALYST",
+                "quality-inspector": "QUALITY_INSPECTOR",
+              };
+
+              // Get availability value (backend expects enum values)
+              const availabilityEnumMap: Record<string, string> = {
+                "full-time": "FULL_TIME",
+                "part-time": "PART_TIME",
+                contract: "CONTRACT",
+                seasonal: "SEASONAL",
+                "on-call": "ON_CALL",
+              };
+
+              // Get shift timing enum value
+              const shiftEnumMap: Record<string, string> = {
+                morning: "MORNING",
+                day: "DAY", 
+                evening: "EVENING",
+                night: "NIGHT",
+                flexible: "FLEXIBLE"
+              };
+
+              // Parse certifications
+              const certifications = staffFormData.certifications
+                ? staffFormData.certifications.split(",").map((cert) => cert.trim())
+                : [];
+
+              // Create staff data for backend
+              const staffData = {
+                fullName: staffFormData.fullName,
+                email: staffFormData.email,
+                contactNumber: staffFormData.contactNumber,
+                emergencyContact: staffFormData.emergencyContact || null,
+                address: staffFormData.address || "",
+                position: roleEnumMap[staffFormData.role] || "WAREHOUSE_STAFF",
+                experienceYears: parseInt(staffFormData.experience) || 0,
+                availabilityStatus: availabilityEnumMap[staffFormData.availability] || "FULL_TIME",
+                shiftTiming: shiftEnumMap[staffFormData.shiftPreference] || "DAY",
+                joiningDate: staffFormData.joiningDate || new Date().toISOString().split('T')[0],
+                status: "OFF_DUTY", // Initially off duty
+                certifications: certifications.length > 0 ? certifications.join(", ") : null,
+                areaOfSpecialization: staffFormData.specialization || null,
+                notes: staffFormData.notes || null,
+                createdById: userID
+              };
+
+              try {
+                // Call backend API to create staff
+                await axios.post(`${API_URL}/staff/store-staff`, staffData, { headers });
+
+                // Show success message
+                toast2.success("Staff Member Added Successfully", {
+                  description: `${staffData.fullName} has been added to the staff`,
+                });
+
+                // Refresh staff data
+                fetchStoreStaffData();
+
+                // Reset form and close modal
+                resetStaffForm();
+                setIsAddStaffModalOpen(false);
+
+              } catch (error) {
+                console.error("Error adding staff:", error);
+                toast({
+                  title: "Error",
+                  description: "Failed to add staff member",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2"
+          >
+            {/* Staff Information Tab Panel */}
+            <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="professional">Professional</TabsTrigger>
+                <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
+              </TabsList>
+
+              {/* Personal Information Tab */}
+              <TabsContent value="personal" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="fullName"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Full Name <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      placeholder="John Doe"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.fullName}
+                      onChange={(e) => handleStaffFormChange('fullName', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="contactNumber"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Contact <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="contactNumber"
+                      name="contactNumber"
+                      placeholder="+91 98765 43210"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.contactNumber}
+                      onChange={(e) => handleStaffFormChange('contactNumber', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="email"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Email <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="john.doe@example.com"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.email}
+                      onChange={(e) => handleStaffFormChange('email', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="emergencyContact" className="text-xs">
+                      Emergency Contact
+                    </Label>
+                    <Input
+                      id="emergencyContact"
+                      name="emergencyContact"
+                      placeholder="+91 98765 43210"
+                      className="h-8 text-sm"
+                      value={staffFormData.emergencyContact}
+                      onChange={(e) => handleStaffFormChange('emergencyContact', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="address" className="text-xs">
+                    Address
+                  </Label>
+                  <Textarea
+                    id="address"
+                    name="address"
+                    placeholder="Full address"
+                    className="resize-none text-sm"
+                    rows={2}
+                    value={staffFormData.address}
+                    onChange={(e) => handleStaffFormChange('address', e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Professional Information Tab */}
+              <TabsContent value="professional" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="role"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Position/Role{" "}
+                      <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Select name="role" required value={staffFormData.role} onValueChange={(value) => handleStaffFormChange('role', value)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="store-manager">
+                          Store Manager
+                        </SelectItem>
+                        <SelectItem value="assistant-manager">
+                          Assistant Manager
+                        </SelectItem>
+                        <SelectItem value="inventory-clerk">
+                          Inventory Clerk
+                        </SelectItem>
+                        <SelectItem value="logistics-coordinator">
+                          Logistics Coordinator
+                        </SelectItem>
+                        <SelectItem value="warehouse-staff">
+                          Warehouse Staff
+                        </SelectItem>
+                        <SelectItem value="material-specialist">
+                          Material Specialist
+                        </SelectItem>
+                        <SelectItem value="inventory-analyst">
+                          Inventory Analyst
+                        </SelectItem>
+                        <SelectItem value="quality-inspector">
+                          Quality Inspector
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="experience"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Experience (Years){" "}
+                      <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="experience"
+                      name="experience"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="2"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.experience}
+                      onChange={(e) => handleStaffFormChange('experience', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="availability"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Availability{" "}
+                      <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Select name="availability" required value={staffFormData.availability} onValueChange={(value) => handleStaffFormChange('availability', value)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select availability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="seasonal">Seasonal</SelectItem>
+                        <SelectItem value="on-call">On-Call</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="shiftPreference" className="text-xs">
+                      Shift Preference
+                    </Label>
+                    <Select name="shiftPreference" value={staffFormData.shiftPreference} onValueChange={(value) => handleStaffFormChange('shiftPreference', value)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select shift" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="morning">
+                          Morning (6AM-2PM)
+                        </SelectItem>
+                        <SelectItem value="day">Day (9AM-5PM)</SelectItem>
+                        <SelectItem value="evening">
+                          Evening (2PM-10PM)
+                        </SelectItem>
+                        <SelectItem value="night">Night (10PM-6AM)</SelectItem>
+                        <SelectItem value="flexible">Flexible</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="joiningDate" className="text-xs">
+                    Joining Date
+                  </Label>
+                  <Input
+                    id="joiningDate"
+                    name="joiningDate"
+                    type="date"
+                    className="h-8 text-sm"
+                    value={staffFormData.joiningDate}
+                    onChange={(e) => handleStaffFormChange('joiningDate', e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Qualifications Tab */}
+              <TabsContent value="qualifications" className="space-y-3 mt-0">
+                <div className="space-y-1">
+                  <Label htmlFor="certifications" className="text-xs">
+                    Certifications & Licenses
+                  </Label>
+                  <Input
+                    id="certifications"
+                    name="certifications"
+                    placeholder="Inventory Management, Supply Chain, etc."
+                    className="h-8 text-sm"
+                    value={staffFormData.certifications}
+                    onChange={(e) => handleStaffFormChange('certifications', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Separate multiple certifications with commas
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="specialization" className="text-xs">
+                    Area of Specialization
+                  </Label>
+                  <Input
+                    id="specialization"
+                    name="specialization"
+                    placeholder="Procurement, Inventory Control, etc."
+                    className="h-8 text-sm"
+                    value={staffFormData.specialization}
+                    onChange={(e) => handleStaffFormChange('specialization', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="notes" className="text-xs">
+                    Notes & Special Considerations
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="Additional information, special skills, etc."
+                    rows={3}
+                    className="resize-none text-sm"
+                    value={staffFormData.notes}
+                    onChange={(e) => handleStaffFormChange('notes', e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex items-center pt-2 border-t">
+              <p className="text-xs text-muted-foreground mr-auto">
+                <span className="text-red-500">*</span> Required fields
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    resetStaffForm();
+                    setIsAddStaffModalOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm">
+                  Add Staff
+                </Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
       {/* Add Vehicle Modal */}
       {showAddVehicleModal && (
         <AddVehicleModal
@@ -4286,6 +5024,394 @@ const StoreDashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* View/Edit Staff Modal */}
+      <Dialog open={isViewStaffModalOpen} onOpenChange={setIsViewStaffModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                {isEditingStaff ? "Edit Staff Member" : "Staff Member Details"}
+              </div>
+              <div className="flex gap-2">
+                {!isEditingStaff && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingStaff(true);
+                      setEditStaffData({
+                        fullName: selectedStaff?.fullName || "",
+                        email: selectedStaff?.email || "",
+                        contactNumber: selectedStaff?.contactNumber || "",
+                        emergencyContact: selectedStaff?.emergencyContact || "",
+                        address: selectedStaff?.address || "",
+                        role: selectedStaff?.position?.toLowerCase().replace(/_/g, "-") || "",
+                        experience: selectedStaff?.experienceYears?.toString() || "",
+                        availability: selectedStaff?.availabilityStatus?.toLowerCase().replace(/_/g, "-") || "",
+                        shiftPreference: selectedStaff?.shiftTiming?.toLowerCase() || "",
+                        joiningDate: selectedStaff?.joiningDate ? new Date(selectedStaff.joiningDate).toISOString().split('T')[0] : "",
+                        certifications: selectedStaff?.certifications || "",
+                        specialization: selectedStaff?.areaOfSpecialization || "",
+                        notes: selectedStaff?.notes || ""
+                      });
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </DialogTitle>
+            <DialogDescription>
+              {isEditingStaff ? "Modify staff member information" : "View detailed information about the staff member"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedStaff && (
+            <div className="space-y-6">
+              {!isEditingStaff ? (
+                // View Mode
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Personal Information */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Personal Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+                        <p className="text-sm">{selectedStaff.fullName}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                        <p className="text-sm">{selectedStaff.email}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Contact Number</Label>
+                        <p className="text-sm">{selectedStaff.contactNumber}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Emergency Contact</Label>
+                        <p className="text-sm">{selectedStaff.emergencyContact || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Address</Label>
+                        <p className="text-sm">{selectedStaff.address}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Professional Information */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Professional Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Position</Label>
+                        <p className="text-sm">{selectedStaff.position?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Experience</Label>
+                        <p className="text-sm">{selectedStaff.experienceYears} years</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Availability Status</Label>
+                        <Badge variant="outline">
+                          {selectedStaff.availabilityStatus?.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Shift Timing</Label>
+                        <p className="text-sm">{selectedStaff.shiftTiming?.replace(/\b\w/g, l => l.toUpperCase())}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Joining Date</Label>
+                        <p className="text-sm">{selectedStaff.joiningDate ? new Date(selectedStaff.joiningDate).toLocaleDateString() : "Not provided"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Current Status</Label>
+                        <Badge variant={selectedStaff.status === "ON_DUTY" ? "default" : "secondary"}>
+                          {selectedStaff.status === "ON_DUTY" ? "On Duty" : "Off Duty"}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Qualifications & Additional Info */}
+                  <Card className="md:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Qualifications & Additional Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Certifications</Label>
+                        <p className="text-sm">{selectedStaff.certifications || "No certifications listed"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Area of Specialization</Label>
+                        <p className="text-sm">{selectedStaff.areaOfSpecialization || "Not specified"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                        <p className="text-sm">{selectedStaff.notes || "No additional notes"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Added On</Label>
+                        <p className="text-sm">{new Date(selectedStaff.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                // Edit Mode
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleEditStaff();
+                }} className="space-y-4">
+                  <Tabs defaultValue="personal" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="personal">Personal</TabsTrigger>
+                      <TabsTrigger value="professional">Professional</TabsTrigger>
+                      <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
+                    </TabsList>
+
+                    {/* Personal Information Tab */}
+                    <TabsContent value="personal" className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="editFullName">Full Name *</Label>
+                          <Input
+                            id="editFullName"
+                            value={editStaffData.fullName || ""}
+                            onChange={(e) => handleEditStaffFormChange('fullName', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="editContactNumber">Contact Number *</Label>
+                          <Input
+                            id="editContactNumber"
+                            value={editStaffData.contactNumber || ""}
+                            onChange={(e) => handleEditStaffFormChange('contactNumber', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="editEmail">Email *</Label>
+                          <Input
+                            id="editEmail"
+                            type="email"
+                            value={editStaffData.email || ""}
+                            onChange={(e) => handleEditStaffFormChange('email', e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="editEmergencyContact">Emergency Contact</Label>
+                          <Input
+                            id="editEmergencyContact"
+                            value={editStaffData.emergencyContact || ""}
+                            onChange={(e) => handleEditStaffFormChange('emergencyContact', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="editAddress">Address</Label>
+                        <Textarea
+                          id="editAddress"
+                          value={editStaffData.address || ""}
+                          onChange={(e) => handleEditStaffFormChange('address', e.target.value)}
+                          rows={2}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {/* Professional Information Tab */}
+                    <TabsContent value="professional" className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="editRole">Position/Role *</Label>
+                          <Select
+                            value={editStaffData.role || ""}
+                            onValueChange={(value) => handleEditStaffFormChange('role', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="store-manager">Store Manager</SelectItem>
+                              <SelectItem value="assistant-manager">Assistant Manager</SelectItem>
+                              <SelectItem value="inventory-clerk">Inventory Clerk</SelectItem>
+                              <SelectItem value="logistics-coordinator">Logistics Coordinator</SelectItem>
+                              <SelectItem value="warehouse-staff">Warehouse Staff</SelectItem>
+                              <SelectItem value="material-specialist">Material Specialist</SelectItem>
+                              <SelectItem value="inventory-analyst">Inventory Analyst</SelectItem>
+                              <SelectItem value="quality-inspector">Quality Inspector</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="editExperience">Experience (Years) *</Label>
+                          <Input
+                            id="editExperience"
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={editStaffData.experience || ""}
+                            onChange={(e) => handleEditStaffFormChange('experience', e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="editAvailability">Availability *</Label>
+                          <Select
+                            value={editStaffData.availability || ""}
+                            onValueChange={(value) => handleEditStaffFormChange('availability', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select availability" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="full-time">Full-time</SelectItem>
+                              <SelectItem value="part-time">Part-time</SelectItem>
+                              <SelectItem value="contract">Contract</SelectItem>
+                              <SelectItem value="seasonal">Seasonal</SelectItem>
+                              <SelectItem value="on-call">On-Call</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="editShiftPreference">Shift Preference</Label>
+                          <Select
+                            value={editStaffData.shiftPreference || ""}
+                            onValueChange={(value) => handleEditStaffFormChange('shiftPreference', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select shift" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="morning">Morning (6AM-2PM)</SelectItem>
+                              <SelectItem value="day">Day (9AM-5PM)</SelectItem>
+                              <SelectItem value="evening">Evening (2PM-10PM)</SelectItem>
+                              <SelectItem value="night">Night (10PM-6AM)</SelectItem>
+                              <SelectItem value="flexible">Flexible</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="editJoiningDate">Joining Date</Label>
+                        <Input
+                          id="editJoiningDate"
+                          type="date"
+                          value={editStaffData.joiningDate || ""}
+                          onChange={(e) => handleEditStaffFormChange('joiningDate', e.target.value)}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    {/* Qualifications Tab */}
+                    <TabsContent value="qualifications" className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="editCertifications">Certifications & Licenses</Label>
+                        <Input
+                          id="editCertifications"
+                          value={editStaffData.certifications || ""}
+                          onChange={(e) => handleEditStaffFormChange('certifications', e.target.value)}
+                          placeholder="Separate multiple certifications with commas"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="editSpecialization">Area of Specialization</Label>
+                        <Input
+                          id="editSpecialization"
+                          value={editStaffData.specialization || ""}
+                          onChange={(e) => handleEditStaffFormChange('specialization', e.target.value)}
+                          placeholder="e.g., Procurement, Inventory Control"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="editNotes">Notes & Special Considerations</Label>
+                        <Textarea
+                          id="editNotes"
+                          value={editStaffData.notes || ""}
+                          onChange={(e) => handleEditStaffFormChange('notes', e.target.value)}
+                          rows={3}
+                          placeholder="Additional information, special skills, etc."
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditingStaff(false);
+                        setEditStaffData({});
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      Save Changes
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {!isEditingStaff && (
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsViewStaffModalOpen(false);
+                      setSelectedStaff(null);
+                    }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Staff Confirmation Alert */}
+      <AlertDialog open={isDeleteStaffAlertOpen} onOpenChange={setIsDeleteStaffAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{staffToDelete?.fullName}</strong> from the staff list? 
+              This action cannot be undone and will permanently remove all their information.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsDeleteStaffAlertOpen(false);
+              setStaffToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteStaff}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Staff
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
