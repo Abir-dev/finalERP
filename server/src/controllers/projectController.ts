@@ -33,7 +33,7 @@ export const projectController = {
   async createProject(req: Request, res: Response) {
     try {
       // Use only the most basic fields that definitely exist
-      const { name, clientId, startDate, endDate, status, ...projectData } = req.body;
+      const { name, clientId, startDate, ...projectData } = req.body;
       
       // Try the most minimal create first
       const project = await prisma.project.create({
@@ -42,7 +42,7 @@ export const projectController = {
           name,
           clientId,
           startDate: startDate ? new Date(startDate) : new Date(),
-          endDate: endDate ? new Date(endDate) : new Date()
+         
         }
       });
       
