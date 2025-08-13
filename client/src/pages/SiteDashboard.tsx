@@ -1919,14 +1919,14 @@ const SiteDashboard = () => {
         </div>
       </div>
       <Tabs defaultValue="timeline" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
-          <TabsTrigger value="materials">Material Flow</TabsTrigger>
-          <TabsTrigger value="issues">Issue Tracker</TabsTrigger>
+          {/* <TabsTrigger value="materials">Material Flow</TabsTrigger>
+          <TabsTrigger value="issues">Issue Tracker</TabsTrigger> */}
           {/* <TabsTrigger value="cost">Cost Analysis</TabsTrigger> */}
-          <TabsTrigger value="store-manager">Store Manager</TabsTrigger>
-          <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger>
+          {/* <TabsTrigger value="store-manager">Store Manager</TabsTrigger>
+          <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="timeline" className="space-y-6">
