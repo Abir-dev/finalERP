@@ -104,7 +104,7 @@ model Project {
   contractType        ContractType?     // Enum (already updated)
   estimatedCost       Int?
   defaultCostCenter   String?
-  
+  deadline            DateTime?
   createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   Tender              Tender[]
