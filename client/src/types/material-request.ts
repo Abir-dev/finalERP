@@ -21,7 +21,7 @@ export interface MaterialRequest {
   targetWarehouse?: string;
   terms?: string;
   moreInfo?: string;
-  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING'  | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' ;
   submittedAt?: string;
   approvedAt?: string;
   approvedBy?: string;

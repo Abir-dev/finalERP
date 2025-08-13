@@ -100,4 +100,34 @@ export const vendorController = {
       });
     }
   },
+  async getVendorsCountByUser(req:Request, res: Response){
+   try {
+      const { userId } = req.params;
+      
+      const vendors = await prisma.vendor.count({
+        where: {
+          createdBy: userId
+        }
+      });
+      res.status(200).json(vendors);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+  async getVendorsCount(req:Request, res: Response){
+   try {  
+      const vendors = await prisma.vendor.count();
+      res.status(200).json(vendors);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
 }; 

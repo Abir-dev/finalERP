@@ -128,6 +128,7 @@ export function PurchaseDashboard() {
     pending: { count: 0, amount: "₹0" },
     overdue: { count: 0, amount: "₹0" },
   });
+  const [vendorCount, setVendorCount] = useState(0)
 
   const fetchPurchaseOrders = async () => {
     try {
@@ -135,12 +136,13 @@ export function PurchaseDashboard() {
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
+
       // Use user-specific route if role is not 'accounts'
-      const endpoint = user?.role !== 'accounts' && user?.id 
-        ? `${API_URL}/purchase-orders/user/${user.id}`
-        : `${API_URL}/purchase-orders`;
-       
+      const endpoint =
+        user?.role !== "accounts" && user?.id
+          ? `${API_URL}/purchase-orders/user/${user.id}`
+          : `${API_URL}/purchase-orders`;
+
       const response = await axios.get(endpoint, {
         headers,
       });
@@ -179,22 +181,18 @@ export function PurchaseDashboard() {
 
   useEffect(() => {
     fetchPurchaseOrders();
-    fetchPaymentSummary();
+    // fetchPaymentSummary();
   }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
-      case "approved":
         return "default";
       case "in_progress":
-      case "acknowledged":
         return "secondary";
-      case "submitted":
-      case "draft":
+      case "pending":
         return "outline";
       case "rejected":
-      case "cancelled":
         return "destructive";
       default:
         return "outline";
@@ -246,14 +244,19 @@ export function PurchaseDashboard() {
   const handleEditOrder = async (order: PurchaseOrder) => {
     setIsLoadingEditData(true);
     setShowEditForm(true);
-    
+
     try {
       // Fetch complete purchase order details from API
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/purchase-orders/${order.id}`, { headers });
+      const response = await axios.get(
+        `${API_URL}/purchase-orders/${order.id}`,
+        { headers }
+      );
       const fullOrderData = response.data;
-      
+
       setEditingOrder(fullOrderData);
     } catch (error) {
       console.error("Error fetching purchase order details:", error);
@@ -341,8 +344,6 @@ export function PurchaseDashboard() {
     }
   };
 
-
-
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>(
     []
   );
@@ -353,12 +354,13 @@ export function PurchaseDashboard() {
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
+
       // Use user-specific route if role is not 'accounts'
-      const endpoint = user?.role !== 'accounts' && user?.id 
-        ? `${API_URL}/material/material-requests/user/${user.id}`
-        : `${API_URL}/material/material-requests`;
-      
+      const endpoint =
+        user?.role !== "accounts" && user?.id
+          ? `${API_URL}/material/material-requests/user/${user.id}`
+          : `${API_URL}/material/material-requests`;
+
       const response = await axios.get(endpoint, { headers });
       setMaterialRequests(response.data);
     } catch (error) {
@@ -366,8 +368,28 @@ export function PurchaseDashboard() {
     }
   };
 
+  const fetchVendor = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Use user-specific route if role is not 'accounts'
+      const endpoint =
+        user?.role !== "accounts" && user?.id
+          ? `${API_URL}/vendors/count/${user.id}`
+          : `${API_URL}/vendors/count`;
+
+      const response = await axios.get(endpoint, { headers });
+      setVendorCount(response.data);
+    } catch (error) {
+      console.error("Error fetching material requests:", error);
+    }
+  };
   useEffect(() => {
     fetchMaterialRequests();
+    fetchVendor()
   }, []);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
@@ -438,7 +460,9 @@ export function PurchaseDashboard() {
         .padStart(3, "0")}`,
       date: new Date().toISOString().split("T")[0],
       vendorId: "",
-      requiredBy: request.requiredBy ? new Date(request.requiredBy).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      requiredBy: request.requiredBy
+        ? new Date(request.requiredBy).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
       items: request.items.map((item) => ({
         id: Date.now().toString() + Math.random(),
         itemCode: item.itemCode,
@@ -517,7 +541,7 @@ export function PurchaseDashboard() {
 
         <TabsContent value="overview" className="space-y-4">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
@@ -549,17 +573,17 @@ export function PurchaseDashboard() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-green-600" />
+                   <DollarSign className="h-4 w-4 text-green-600" />
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Payments Received
+                      Total Vendors
                     </p>
                     <p className="text-2xl font-bold">
-                      {paymentSummary.received.amount}
+                      {vendorCount}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {paymentSummary.received.count} invoices
-                    </p>
+                    {/* <p className="text-xs text-muted-foreground">
+                      {vendorCount} vendors
+                    </p> */}
                   </div>
                 </div>
               </CardContent>
@@ -571,32 +595,12 @@ export function PurchaseDashboard() {
                   <Clock className="h-4 w-4 text-orange-600" />
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      Pending Payments
+                      Pending Requests
                     </p>
                     <p className="text-2xl font-bold">
-                      {paymentSummary.pending.amount}
+                      {materialRequests.filter((req) => req.status === "PENDING").length}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {paymentSummary.pending.count} invoices
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Overdue Payments
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {paymentSummary.overdue.amount}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {paymentSummary.overdue.count} invoices
                     </p>
                   </div>
                 </div>
@@ -609,7 +613,9 @@ export function PurchaseDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Purchase Orders</CardTitle>
-                <CardDescription>Track and manage purchase orders with detailed information</CardDescription>
+                <CardDescription>
+                  Track and manage purchase orders with detailed information
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -621,9 +627,14 @@ export function PurchaseDashboard() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const expanded = document.getElementById(`po-${po.id}`);
+                              const expanded = document.getElementById(
+                                `po-${po.id}`
+                              );
                               if (expanded) {
-                                expanded.style.display = expanded.style.display === 'none' ? 'block' : 'none';
+                                expanded.style.display =
+                                  expanded.style.display === "none"
+                                    ? "block"
+                                    : "none";
                               }
                             }}
                           >
@@ -632,60 +643,110 @@ export function PurchaseDashboard() {
                           <div>
                             <div className="font-medium">{po.poNumber}</div>
                             <div className="text-sm text-muted-foreground">
-                              {po.Vendor?.name || "N/A"} • {po.items?.length || 0} item(s)
+                              {po.Vendor?.name || "N/A"} •{" "}
+                              {po.items?.length || 0} item(s)
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <div className="font-semibold">₹{((po.grandTotal || 0) / 100000).toFixed(1)}L</div>
+                            <div className="font-semibold">
+                              ₹{((po.grandTotal || 0) / 100000).toFixed(1)}L
+                            </div>
                             <div className="text-sm text-muted-foreground">
-                              Due: {new Date(po.requiredBy).toLocaleDateString('en-IN')}
+                              Due:{" "}
+                              {new Date(po.requiredBy).toLocaleDateString(
+                                "en-IN"
+                              )}
                             </div>
                           </div>
-                          <Badge variant={po.advancePaid > 0 ? 'default' : 'secondary'}>
-                            {po.advancePaid > 0 ? 'PAID' : 'PENDING'}
+                          <Badge
+                            variant={
+                              po.advancePaid > 0 ? "default" : "secondary"
+                            }
+                          >
+                            {po.advancePaid > 0 ? "PAID" : "PENDING"}
                           </Badge>
                         </div>
                       </div>
 
-                      <div id={`po-${po.id}`} style={{ display: 'none' }} className="border-t bg-muted/50 p-4">
+                      <div
+                        id={`po-${po.id}`}
+                        style={{ display: "none" }}
+                        className="border-t bg-muted/50 p-4"
+                      >
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div>
-                            <h4 className="font-medium mb-2 text-sm">Purchase Order Details</h4>
+                            <h4 className="font-medium mb-2 text-sm">
+                              Purchase Order Details
+                            </h4>
                             <div className="space-y-1 text-sm">
-                              <div>Order Date: {new Date(po.date).toLocaleDateString('en-IN')}</div>
-                              <div>Vendor: {po.Vendor?.name || 'N/A'}</div>
-                              <div>Contact: {po.Vendor?.contact || 'N/A'}</div>
-                              <div>Email: {po.Vendor?.email || 'N/A'}</div>
+                              <div>
+                                Order Date:{" "}
+                                {new Date(po.date).toLocaleDateString("en-IN")}
+                              </div>
+                              <div>Vendor: {po.Vendor?.name || "N/A"}</div>
+                              <div>Contact: {po.Vendor?.contact || "N/A"}</div>
+                              <div>Email: {po.Vendor?.email || "N/A"}</div>
                               <div>Total Quantity: {po.totalQuantity || 0}</div>
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-medium mb-2 text-sm">Amount Breakdown</h4>
+                            <h4 className="font-medium mb-2 text-sm">
+                              Amount Breakdown
+                            </h4>
                             <div className="space-y-1 text-sm">
-                              <div>Subtotal: ₹{((po.total || 0) / 100000).toFixed(1)}L</div>
-                              <div>Tax Amount: ₹{((po.taxesAndChargesTotal || 0) / 1000).toFixed(0)}K</div>
+                              <div>
+                                Subtotal: ₹
+                                {((po.total || 0) / 100000).toFixed(1)}L
+                              </div>
+                              <div>
+                                Tax Amount: ₹
+                                {(
+                                  (po.taxesAndChargesTotal || 0) / 1000
+                                ).toFixed(0)}
+                                K
+                              </div>
                               {po.advancePaid > 0 && (
-                                <div>Advance Paid: ₹{((po.advancePaid || 0) / 1000).toFixed(0)}K</div>
+                                <div>
+                                  Advance Paid: ₹
+                                  {((po.advancePaid || 0) / 1000).toFixed(0)}K
+                                </div>
                               )}
                               <div className="font-medium border-t pt-1">
-                                Total: ₹{((po.grandTotal || 0) / 100000).toFixed(1)}L
+                                Total: ₹
+                                {((po.grandTotal || 0) / 100000).toFixed(1)}L
                               </div>
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-medium mb-2 text-sm">Purchase Order Items</h4>
+                            <h4 className="font-medium mb-2 text-sm">
+                              Purchase Order Items
+                            </h4>
                             <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
                               {(po.items || []).length > 0 ? (
-                                (po.items || []).map((item: any, idx: number) => (
-                                  <div key={idx} className="flex justify-between">
-                                    <span>• {item.itemCode || item.description || item.itemName}</span>
-                                    <span>{item.quantity} {item.unit || 'units'}</span>
-                                  </div>
-                                ))
+                                (po.items || []).map(
+                                  (item: any, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className="flex justify-between"
+                                    >
+                                      <span>
+                                        •{" "}
+                                        {item.itemCode ||
+                                          item.description ||
+                                          item.itemName}
+                                      </span>
+                                      <span>
+                                        {item.quantity} {item.unit || "units"}
+                                      </span>
+                                    </div>
+                                  )
+                                )
                               ) : (
-                                <div className="text-muted-foreground">No items listed</div>
+                                <div className="text-muted-foreground">
+                                  No items listed
+                                </div>
                               )}
                             </div>
                           </div>
@@ -697,7 +758,9 @@ export function PurchaseDashboard() {
                     <div className="text-center py-8 text-muted-foreground">
                       <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
                       <p>No purchase orders found</p>
-                      <p className="text-sm">Generated purchase orders will appear here</p>
+                      <p className="text-sm">
+                        Generated purchase orders will appear here
+                      </p>
                     </div>
                   )}
                   {purchaseOrders.length > 10 && (
@@ -712,7 +775,9 @@ export function PurchaseDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Pending Material Requests</CardTitle>
-                <CardDescription>Review and approve material requests with detailed information</CardDescription>
+                <CardDescription>
+                  Review and approve material requests with detailed information
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -724,86 +789,184 @@ export function PurchaseDashboard() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const expanded = document.getElementById(`mr-${mr.id}`);
+                              const expanded = document.getElementById(
+                                `mr-${mr.id}`
+                              );
                               if (expanded) {
-                                expanded.style.display = expanded.style.display === 'none' ? 'block' : 'none';
+                                expanded.style.display =
+                                  expanded.style.display === "none"
+                                    ? "block"
+                                    : "none";
                               }
                             }}
                           >
                             <ChevronDown className="h-4 w-4" />
                           </Button>
                           <div>
-                            <div className="font-medium">{mr.requestNumber || `REQ-${mr.id?.slice(0, 8)}`}</div>
+                            <div className="font-medium">
+                              {mr.requestNumber || `REQ-${mr.id?.slice(0, 8)}`}
+                            </div>
                             <div className="text-sm text-muted-foreground">
-                              {mr.requester?.name || "Unknown"} • {mr.purpose || 'N/A'}
+                              {mr.requester?.name || "Unknown"} •{" "}
+                              {mr.purpose || "N/A"}
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <div className="font-semibold">₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 100000).toFixed(1)}L</div>
+                            <div className="font-semibold">
+                              ₹
+                              {(
+                                (Array.isArray(mr.items)
+                                  ? mr.items.reduce(
+                                      (sum, item) =>
+                                        sum + (item.estimatedCost || 0),
+                                      0
+                                    )
+                                  : 0) / 100000
+                              ).toFixed(1)}
+                              L
+                            </div>
                             <div className="text-sm text-muted-foreground">
-                              Need: {mr.requiredBy ? new Date(mr.requiredBy).toLocaleDateString('en-IN') : "Not specified"}
+                              Need:{" "}
+                              {mr.requiredBy
+                                ? new Date(mr.requiredBy).toLocaleDateString(
+                                    "en-IN"
+                                  )
+                                : "Not specified"}
                             </div>
                           </div>
-                          <Badge variant={
-                            mr.status === 'APPROVED' ? 'default' :
-                              mr.status === 'REJECTED' ? 'destructive' :
-                                'secondary'
-                          }>
+                          <Badge
+                            variant={
+                              mr.status === "APPROVED"
+                                ? "default"
+                                : mr.status === "REJECTED"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                          >
                             {mr.status}
                           </Badge>
                         </div>
                       </div>
 
-                      <div id={`mr-${mr.id}`} style={{ display: 'none' }} className="border-t bg-muted/50 p-4">
+                      <div
+                        id={`mr-${mr.id}`}
+                        style={{ display: "none" }}
+                        className="border-t bg-muted/50 p-4"
+                      >
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div>
-                            <h4 className="font-medium mb-2 text-sm">Material Request Details</h4>
+                            <h4 className="font-medium mb-2 text-sm">
+                              Material Request Details
+                            </h4>
                             <div className="space-y-1 text-sm">
-                              <div>Request Date: {new Date(mr.transactionDate).toLocaleDateString('en-IN')}</div>
-                              <div>Purpose: {mr.purpose || 'N/A'}</div>
-                              <div>Priority: {mr.priority || 'Normal'}</div>
-                              <div>Department: {mr.department || 'N/A'}</div>
-                              <div>Items Count: {Array.isArray(mr.items) ? mr.items.length : 0}</div>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-medium mb-2 text-sm">Cost Breakdown</h4>
-                            <div className="space-y-1 text-sm">
-                              <div>Total Items: {Array.isArray(mr.items) ? mr.items.length : 0}</div>
-                              <div>Est. Amount: ₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 1000).toFixed(0)}K</div>
-                              {Array.isArray(mr.items) && mr.items.length > 0 && (
-                                <div>Avg. Cost/Item: ₹{(mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) / mr.items.length).toFixed(0)}</div>
-                              )}
-                              <div className="font-medium border-t pt-1">
-                                Total: ₹{((Array.isArray(mr.items) ? mr.items.reduce((sum, item) => sum + (item.estimatedCost || 0), 0) : 0) / 100000).toFixed(1)}L
+                              <div>
+                                Request Date:{" "}
+                                {new Date(
+                                  mr.transactionDate
+                                ).toLocaleDateString("en-IN")}
+                              </div>
+                              <div>Purpose: {mr.purpose || "N/A"}</div>
+                              <div>Priority: {mr.priority || "Normal"}</div>
+                              <div>Department: {mr.department || "N/A"}</div>
+                              <div>
+                                Items Count:{" "}
+                                {Array.isArray(mr.items) ? mr.items.length : 0}
                               </div>
                             </div>
                           </div>
                           <div>
-                            <h4 className="font-medium mb-2 text-sm">Material Request Items</h4>
-                            <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
-                              {Array.isArray(mr.items) && mr.items.length > 0 ? (
-                                mr.items.map((item: MaterialRequestItem, idx: number) => (
-                                  <div key={idx} className="flex justify-between">
-                                    <span>• {item.itemName || item.description}</span>
-                                    <span>{item.quantity} {item.unit || 'units'}</span>
+                            <h4 className="font-medium mb-2 text-sm">
+                              Cost Breakdown
+                            </h4>
+                            <div className="space-y-1 text-sm">
+                              <div>
+                                Total Items:{" "}
+                                {Array.isArray(mr.items) ? mr.items.length : 0}
+                              </div>
+                              <div>
+                                Est. Amount: ₹
+                                {(
+                                  (Array.isArray(mr.items)
+                                    ? mr.items.reduce(
+                                        (sum, item) =>
+                                          sum + (item.estimatedCost || 0),
+                                        0
+                                      )
+                                    : 0) / 1000
+                                ).toFixed(0)}
+                                K
+                              </div>
+                              {Array.isArray(mr.items) &&
+                                mr.items.length > 0 && (
+                                  <div>
+                                    Avg. Cost/Item: ₹
+                                    {(
+                                      mr.items.reduce(
+                                        (sum, item) =>
+                                          sum + (item.estimatedCost || 0),
+                                        0
+                                      ) / mr.items.length
+                                    ).toFixed(0)}
                                   </div>
-                                ))
+                                )}
+                              <div className="font-medium border-t pt-1">
+                                Total: ₹
+                                {(
+                                  (Array.isArray(mr.items)
+                                    ? mr.items.reduce(
+                                        (sum, item) =>
+                                          sum + (item.estimatedCost || 0),
+                                        0
+                                      )
+                                    : 0) / 100000
+                                ).toFixed(1)}
+                                L
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-medium mb-2 text-sm">
+                              Material Request Items
+                            </h4>
+                            <div className="space-y-1 text-sm max-h-32 overflow-y-auto">
+                              {Array.isArray(mr.items) &&
+                              mr.items.length > 0 ? (
+                                mr.items.map(
+                                  (item: MaterialRequestItem, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className="flex justify-between"
+                                    >
+                                      <span>
+                                        • {item.itemName || item.description}
+                                      </span>
+                                      <span>
+                                        {item.quantity} {item.unit || "units"}
+                                      </span>
+                                    </div>
+                                  )
+                                )
                               ) : (
-                                <div className="text-muted-foreground">No items listed</div>
+                                <div className="text-muted-foreground">
+                                  No items listed
+                                </div>
                               )}
                             </div>
-                            {mr.status === "SUBMITTED" && (
+                            {mr.status === "PENDING" && (
                               <div className="mt-3">
-                                <h5 className="font-medium text-xs mb-1">Actions Available</h5>
+                                <h5 className="font-medium text-xs mb-1">
+                                  Actions Available
+                                </h5>
                                 <div className="space-y-1 text-xs">
                                   <div className="flex justify-between">
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      onClick={() => handleApproveRequest(mr.id)}
+                                      onClick={() =>
+                                        handleApproveRequest(mr.id)
+                                      }
                                     >
                                       Approve
                                     </Button>
@@ -827,7 +990,9 @@ export function PurchaseDashboard() {
                     <div className="text-center py-8 text-muted-foreground">
                       <AlertTriangle className="mx-auto h-12 w-12 mb-4 opacity-50" />
                       <p>No material requests found</p>
-                      <p className="text-sm">Submitted requests will appear here</p>
+                      <p className="text-sm">
+                        Submitted requests will appear here
+                      </p>
                     </div>
                   )}
                   {materialRequests.length > 10 && (
@@ -882,29 +1047,37 @@ export function PurchaseDashboard() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    const expanded = document.getElementById(`request-${request.id}`);
+                                    const expanded = document.getElementById(
+                                      `request-${request.id}`
+                                    );
                                     if (expanded) {
-                                      expanded.style.display = expanded.style.display === 'none' ? 'table-row' : 'none';
+                                      expanded.style.display =
+                                        expanded.style.display === "none"
+                                          ? "table-row"
+                                          : "none";
                                     }
                                   }}
                                 >
                                   <ChevronDown className="h-4 w-4" />
                                 </Button>
-                                <span className="font-medium">{request.requestNumber}</span>
+                                <span className="font-medium">
+                                  {request.requestNumber}
+                                </span>
                               </div>
                             </TableCell>
                             <TableCell>
                               {request.requester?.name || "Unknown"}
                             </TableCell>
                             <TableCell>
-                              <Badge variant="secondary">{request.purpose}</Badge>
+                              <Badge variant="secondary">
+                                {request.purpose}
+                              </Badge>
                             </TableCell>
                             <TableCell className="max-w-[200px]">
-                              {Array.isArray(request.items) && request.items.length > 0 ? (
-                                `${request.items.length} items`
-                              ) : (
-                                "No items"
-                              )}
+                              {Array.isArray(request.items) &&
+                              request.items.length > 0
+                                ? `${request.items.length} items`
+                                : "No items"}
                             </TableCell>
                             <TableCell>
                               {new Date(
@@ -929,7 +1102,7 @@ export function PurchaseDashboard() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
-                                {request.status === "SUBMITTED" && (
+                                {request.status === "PENDING" && (
                                   <>
                                     <Button
                                       variant="outline"
@@ -981,40 +1154,80 @@ export function PurchaseDashboard() {
                               </div>
                             </TableCell>
                           </TableRow>
-                          <TableRow id={`request-${request.id}`} style={{ display: 'none' }} className="bg-muted/50">
+                          <TableRow
+                            id={`request-${request.id}`}
+                            style={{ display: "none" }}
+                            className="bg-muted/50"
+                          >
                             <TableCell colSpan={8}>
                               <div className="p-4">
-                                <h4 className="font-medium mb-2 text-sm">Material Items</h4>
+                                <h4 className="font-medium mb-2 text-sm">
+                                  Material Items
+                                </h4>
                                 <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
                                   {(request.items || []).length > 0 ? (
-                                    (request.items || []).map((item: MaterialRequestItem, idx: number) => (
-                                      <div key={idx} className="border rounded p-3 bg-background">
-                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Item Code</div>
-                                            <div className="font-medium">{item.itemCode || 'N/A'}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Quantity</div>
-                                            <div>{item.quantity || 0}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">UOM</div>
-                                            <div>{item.uom || 'N/A'}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Required By</div>
-                                            <div>{request.requiredBy ? new Date(request.requiredBy).toLocaleDateString('en-IN') : 'N/A'}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Targeted Warehouse</div>
-                                            <div>{item.targetedWarehouse || item.warehouse || 'N/A'}</div>
+                                    (request.items || []).map(
+                                      (
+                                        item: MaterialRequestItem,
+                                        idx: number
+                                      ) => (
+                                        <div
+                                          key={idx}
+                                          className="border rounded p-3 bg-background"
+                                        >
+                                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Item Code
+                                              </div>
+                                              <div className="font-medium">
+                                                {item.itemCode || "N/A"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Quantity
+                                              </div>
+                                              <div>{item.quantity || 0}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                UOM
+                                              </div>
+                                              <div>{item.uom || "N/A"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Required By
+                                              </div>
+                                              <div>
+                                                {request.requiredBy
+                                                  ? new Date(
+                                                      request.requiredBy
+                                                    ).toLocaleDateString(
+                                                      "en-IN"
+                                                    )
+                                                  : "N/A"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Targeted Warehouse
+                                              </div>
+                                              <div>
+                                                {item.targetedWarehouse ||
+                                                  item.warehouse ||
+                                                  "N/A"}
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))
+                                      )
+                                    )
                                   ) : (
-                                    <div className="text-muted-foreground">No items listed</div>
+                                    <div className="text-muted-foreground">
+                                      No items listed
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -1148,24 +1361,29 @@ export function PurchaseDashboard() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    const expanded = document.getElementById(`order-${order.id}`);
+                                    const expanded = document.getElementById(
+                                      `order-${order.id}`
+                                    );
                                     if (expanded) {
-                                      expanded.style.display = expanded.style.display === 'none' ? 'table-row' : 'none';
+                                      expanded.style.display =
+                                        expanded.style.display === "none"
+                                          ? "table-row"
+                                          : "none";
                                     }
                                   }}
                                 >
                                   <ChevronDown className="h-4 w-4" />
                                 </Button>
-                                <span className="font-medium">{order.poNumber}</span>
+                                <span className="font-medium">
+                                  {order.poNumber}
+                                </span>
                               </div>
                             </TableCell>
                             <TableCell>{order.Vendor?.name || "N/A"}</TableCell>
                             <TableCell className="max-w-[200px]">
-                              {order.items && order.items.length > 0 ? (
-                                `${order.items.length} items`
-                              ) : (
-                                "No items"
-                              )}
+                              {order.items && order.items.length > 0
+                                ? `${order.items.length} items`
+                                : "No items"}
                             </TableCell>
                             <TableCell>
                               ₹{order.grandTotal?.toLocaleString() || "0"}
@@ -1195,40 +1413,78 @@ export function PurchaseDashboard() {
                               </div>
                             </TableCell>
                           </TableRow>
-                          <TableRow id={`order-${order.id}`} style={{ display: 'none' }} className="bg-muted/50">
+                          <TableRow
+                            id={`order-${order.id}`}
+                            style={{ display: "none" }}
+                            className="bg-muted/50"
+                          >
                             <TableCell colSpan={7}>
                               <div className="p-4">
-                                <h4 className="font-medium mb-2 text-sm">Purchase Items</h4>
+                                <h4 className="font-medium mb-2 text-sm">
+                                  Purchase Items
+                                </h4>
                                 <div className="space-y-3 text-sm max-h-64 overflow-y-auto">
                                   {(order.items || []).length > 0 ? (
-                                    (order.items || []).map((item: any, idx: number) => (
-                                      <div key={idx} className="border rounded p-3 bg-background">
-                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Item Code</div>
-                                            <div className="font-medium">{item.itemCode || item.description || item.itemName || 'N/A'}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Quantity</div>
-                                            <div>{item.quantity || 0}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">UOM</div>
-                                            <div>{item.unit || item.uom || 'N/A'}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Required By</div>
-                                            <div>{new Date(order.requiredBy).toLocaleDateString('en-IN')}</div>
-                                          </div>
-                                          <div>
-                                            <div className="font-medium text-xs text-muted-foreground uppercase">Targeted Warehouse</div>
-                                            <div>{item.warehouse || item.targetedWarehouse || 'N/A'}</div>
+                                    (order.items || []).map(
+                                      (item: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className="border rounded p-3 bg-background"
+                                        >
+                                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Item Code
+                                              </div>
+                                              <div className="font-medium">
+                                                {item.itemCode ||
+                                                  item.description ||
+                                                  item.itemName ||
+                                                  "N/A"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Quantity
+                                              </div>
+                                              <div>{item.quantity || 0}</div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                UOM
+                                              </div>
+                                              <div>
+                                                {item.unit || item.uom || "N/A"}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Required By
+                                              </div>
+                                              <div>
+                                                {new Date(
+                                                  order.requiredBy
+                                                ).toLocaleDateString("en-IN")}
+                                              </div>
+                                            </div>
+                                            <div>
+                                              <div className="font-medium text-xs text-muted-foreground uppercase">
+                                                Targeted Warehouse
+                                              </div>
+                                              <div>
+                                                {item.warehouse ||
+                                                  item.targetedWarehouse ||
+                                                  "N/A"}
+                                              </div>
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))
+                                      )
+                                    )
                                   ) : (
-                                    <div className="text-muted-foreground">No items listed</div>
+                                    <div className="text-muted-foreground">
+                                      No items listed
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -1255,7 +1511,6 @@ export function PurchaseDashboard() {
         </TabsContent>
       </Tabs>
       {/* </CardContent> */}
-
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -1330,15 +1585,29 @@ export function PurchaseDashboard() {
                 initialData={{
                   id: editingOrder.id,
                   poNumber: editingOrder.poNumber,
-                  date: editingOrder.date ? new Date(editingOrder.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                  date: editingOrder.date
+                    ? new Date(editingOrder.date).toISOString().split("T")[0]
+                    : new Date().toISOString().split("T")[0],
                   vendorId: editingOrder.vendorId,
-                  requiredBy: editingOrder.requiredBy ? new Date(editingOrder.requiredBy).toISOString().split('T')[0] : "",
+                  requiredBy: editingOrder.requiredBy
+                    ? new Date(editingOrder.requiredBy)
+                        .toISOString()
+                        .split("T")[0]
+                    : "",
                   setTargetWarehouse: editingOrder.setTargetWarehouse || "",
-                  vendorAddress: editingOrder.vendorAddress || editingOrder.Vendor?.location || "",
-                  vendorContact: editingOrder.vendorContact || editingOrder.Vendor?.contact || editingOrder.Vendor?.email || "",
+                  vendorAddress:
+                    editingOrder.vendorAddress ||
+                    editingOrder.Vendor?.location ||
+                    "",
+                  vendorContact:
+                    editingOrder.vendorContact ||
+                    editingOrder.Vendor?.contact ||
+                    editingOrder.Vendor?.email ||
+                    "",
                   shippingAddress: editingOrder.shippingAddress || "",
                   dispatchAddress: editingOrder.dispatchAddress || "",
-                  companyBillingAddress: editingOrder.companyBillingAddress || "",
+                  companyBillingAddress:
+                    editingOrder.companyBillingAddress || "",
                   placeOfSupply: editingOrder.placeOfSupply || "",
                   paymentTermsTemplate: editingOrder.paymentTermsTemplate || "",
                   terms: editingOrder.terms || "",
@@ -1392,3 +1661,4 @@ export function PurchaseDashboard() {
     </div>
   );
 }
+

@@ -54,7 +54,7 @@ export function EditMaterialRequestModal({
     terms: "",
     moreInfo: "",
     projectId: "",
-    status: "SUBMITTED",
+    status: "PENDING",
   });
 
   const [items, setItems] = useState<
@@ -101,7 +101,7 @@ export function EditMaterialRequestModal({
         terms: materialRequest.terms || "",
         moreInfo: materialRequest.moreInfo || "",
         projectId: materialRequest.projectId || "",
-        status: materialRequest.status || "SUBMITTED",
+        status: materialRequest.status || "PENDING",
       });
 
       // Initialize items
@@ -508,13 +508,10 @@ export function EditMaterialRequestModal({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
                 <SelectItem value="REJECTED">Rejected</SelectItem>
                 <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
             {materialRequest.requester && (

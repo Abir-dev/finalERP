@@ -180,7 +180,7 @@ export const materialController = {
       const materialRequest = await prisma.materialRequest.update({
         where: { id: req.params.id },
         data: {
-          status: 'APPROVED',
+          status: 'IN_PROGRESS',
           approvedBy: req.user.id
         },
         include: {
