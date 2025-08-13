@@ -93,7 +93,8 @@ export const projectController = {
           materialRequests: true,
           nonBillables: true,
           Tender: true,
-          Payment: true
+          Payment: true,
+          milestones: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -136,7 +137,8 @@ export const projectController = {
           invoices: true,
           materialRequests: true,
           Tender: true,
-          Payment: true
+          Payment: true,
+          milestones: true
         }
       });
       

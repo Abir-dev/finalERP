@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clipboard, Filter, Plus, Search, MapPin, Users, AlertTriangle, TrendingUp, Camera, FileText, Upload, X, Edit, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { Calendar, Clipboard, Filter, Plus, Search, MapPin, Users, AlertTriangle, TrendingUp, Camera, FileText, Upload, X, Edit, Loader2, ChevronDown, ChevronRight, AreaChart, LandPlot, Building, Building2, DeleteIcon, Delete, LucideDelete, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -21,33 +21,25 @@ const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender
 interface Project {
     id: number;
     name: string;
-    client: string;
-    status: string;
-    progress: number;
+    clientId: string;
     budget: number;
-    spent: number;
+    totalSpend: number;
     deadline: string;
     location: string;
     manager: string;
     contingency?: number;
     squareFootage?: number;
-    projectStartDate?: string;
+    startDate: string;
     estimatedDuration?: number;
     description?: string;
     contractType?: string;
     estimatedCost?: number;
     defaultCostCenter?: string;
-    designDate?: string;
-    foundationDate?: string;
-    structureDate?: string;
-    interiorDate?: string;
-    finalDate?: string;
     milestones?: Array<{
         id?: number;
         name: string;
         startDate: string;
-        endDate: string;
-        completed?: boolean;
+        endDate?: string;
     }>;
 }
 
@@ -476,17 +468,15 @@ const Projects = () => {
     const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus' | 'dprSubmissions'>('main');
     const [newProject, setNewProject] = useState<Partial<Project>>({
         name: '',
-        client: '',
-        status: 'Planning',
-        progress: 0,
+        clientId: '',
         budget: 0,
-        spent: 0,
+        totalSpend: 0,
         deadline: '',
         location: '',
         manager: '',
         contingency: 0,
         squareFootage: 0,
-        projectStartDate: '',
+        startDate: '',
         estimatedDuration: 0,
         description: '',
         contractType: '',
@@ -690,7 +680,7 @@ Add any additional notes here...
 
     // Function to create project
     const createProject = async () => {
-        if (!newProject.name || !newProject.client) {
+        if (!newProject.name || !newProject.clientId) {
             toast({
                 title: "Missing Information",
                 description: "Please fill in project name and client",
@@ -712,8 +702,8 @@ Add any additional notes here...
         try {
             const projectData = {
                 name: newProject.name,
-                clientId: newProject.client, // This should be the client ID
-                startDate: newProject.projectStartDate ? new Date(newProject.projectStartDate).toISOString() : new Date().toISOString(),
+                clientId: newProject.clientId, // This should be the client ID
+                startDate: newProject.startDate ? new Date(newProject.startDate).toISOString() : new Date().toISOString(),
                 // Optional fields based on your form
                 ...(newProject.location && { location: newProject.location }),
                 ...(newProject.deadline && { deadline: new Date(newProject.deadline).toISOString() }),
@@ -747,17 +737,15 @@ Add any additional notes here...
                 // Reset form
                 setNewProject({
                     name: '',
-                    client: '',
-                    status: 'Planning',
-                    progress: 0,
+                    clientId: '',
                     budget: 0,
-                    spent: 0,
+                    totalSpend: 0,
                     deadline: '',
                     location: '',
                     manager: '',
                     contingency: 0,
                     squareFootage: 0,
-                    projectStartDate: '',
+                    startDate: '',
                     estimatedDuration: 0,
                     description: '',
                     contractType: '',
@@ -862,8 +850,8 @@ Add any additional notes here...
                                         <div className="space-y-2">
                                             <Label htmlFor="client">Client *</Label>
                                             <Select
-                                                value={newProject.client || ''}
-                                                onValueChange={(value) => setNewProject({ ...newProject, client: value })}
+                                                value={newProject.clientId || ''}
+                                                onValueChange={(value) => setNewProject({ ...newProject, clientId: value })}
                                             >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select a client" />
@@ -935,8 +923,8 @@ Add any additional notes here...
                                             <Input
                                                 id="projectStartDate"
                                                 type="date"
-                                                value={newProject.projectStartDate || ''}
-                                                onChange={(e) => setNewProject({ ...newProject, projectStartDate: e.target.value })}
+                                                value={newProject.startDate || ''}
+                                                onChange={(e) => setNewProject({ ...newProject, startDate: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-2">
@@ -1155,7 +1143,7 @@ Add any additional notes here...
                                                                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                                         type="button"
                                                                     >
-                                                                        <X className="h-4 w-4" />
+                                                                        <Trash2 className="h-4 w-4" />
                                                                     </Button>
                                                                 </div>
                                                             </div>
@@ -1200,17 +1188,15 @@ Add any additional notes here...
                                     onClick={() => {
                                         setNewProject({
                                             name: '',
-                                            client: '',
-                                            status: 'Planning',
-                                            progress: 0,
+                                            clientId: '',
                                             budget: 0,
-                                            spent: 0,
+                                            totalSpend: 0,
                                             deadline: '',
                                             location: '',
                                             manager: '',
                                             contingency: 0,
                                             squareFootage: 0,
-                                            projectStartDate: '',
+                                            startDate: '',
                                             estimatedDuration: 0,
                                             description: '',
                                             contractType: '',
@@ -1226,7 +1212,7 @@ Add any additional notes here...
                                 </Button>
                                 <Button
                                     onClick={createProject}
-                                    disabled={!newProject.name || !newProject.client || !newProject.location || !newProject.deadline || isCreatingProject}
+                                    disabled={!newProject.name || !newProject.clientId || !newProject.location || !newProject.deadline || isCreatingProject}
                                     className="flex-1"
                                 >
                                     {isCreatingProject ? (
@@ -1320,10 +1306,7 @@ Add any additional notes here...
                                     <TabsList>
                                         <TabsTrigger value="overview">Overview</TabsTrigger>
                                         <TabsTrigger value="list">List</TabsTrigger>
-                                        <TabsTrigger value="kanban">Kanban</TabsTrigger>
-                                        <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                                        <TabsTrigger value="resources">Resources</TabsTrigger>
-                                        <TabsTrigger value="reports">Reports</TabsTrigger>
+                                        <TabsTrigger value="milestone">Milestone</TabsTrigger>
                                     </TabsList>
                                 </Tabs>
                             </div>
@@ -1338,8 +1321,8 @@ Add any additional notes here...
                                             <tr className="border-b transition-colors hover:bg-muted/50">
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Client</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Progress</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Start Date</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Deadline</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Budget</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Location</th>
                                             </tr>
@@ -1352,22 +1335,8 @@ Add any additional notes here...
                                                 >
                                                     <td className="p-4 align-middle font-medium">{project.name}</td>
                                                     <td className="p-4 align-middle">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</td>
-                                                    <td className="p-4 align-middle">
-                                                        <Badge className={getStatusColor(project.status)}>
-                                                            {project.status}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="p-4 align-middle">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="h-2 w-full bg-secondary rounded-full">
-                                                                <div
-                                                                    className="h-full bg-primary rounded-full"
-                                                                    style={{ width: `${project.progress}%` }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-xs w-9 text-right">{project.progress}%</span>
-                                                        </div>
-                                                    </td>
+                                                    <td className="p-4 align-middle">{new Date(project.startDate).toLocaleDateString('en-IN')}</td>
+                                                    <td className="p-4 align-middle">{new Date(project.deadline).toLocaleDateString('en-IN')}</td>
                                                     <td className="p-4 align-middle">₹{(project.budget || 0).toLocaleString()}</td>
                                                     <td className="p-4 align-middle">{project.location}</td>
                                                 </tr>
@@ -1375,6 +1344,81 @@ Add any additional notes here...
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        )}
+
+                        {view === "milestone" && (
+                            <div className="mt-6 space-y-6">
+                                {filteredProjects.map((project) => (
+                                    <Card key={project.id} className="hover:shadow-md transition-shadow overflow-hidden">
+                                        <CardHeader className="border-b">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
+                                                    <CardDescription className="mt-1">
+                                                        {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client} • {project.location}
+                                                    </CardDescription>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="p-0">
+                                            {project.milestones && project.milestones.length > 0 ? (
+                                                <div className="divide-y">
+                                                    {project.milestones.map((milestone, index) => (
+                                                        <div 
+                                                            key={milestone.id || index} 
+                                                            className="p-4 hover:bg-gray-50 transition-colors"
+                                                        >
+                                                            <div className="flex items-start gap-4">
+                                                                <div className={`mt-1 flex-shrink-0 w-3 h-3 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                <div className="flex-1 space-y-3">
+                                                                    <h4 className="font-medium text-base">{milestone.name}</h4>
+                                                                    
+                                                                    <div className="grid grid-cols-2 gap-4 justify-centre">
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-sm text-muted-foreground">Start Date</p>
+                                                                            <p className="font-medium">
+                                                                                {new Date(milestone.startDate).toLocaleDateString('en-IN', {
+                                                                                    day: 'numeric',
+                                                                                    month: 'short',
+                                                                                    year: 'numeric'
+                                                                                })}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-sm text-muted-foreground">End Date</p>
+                                                                            <p className="font-medium">
+                                                                                {milestone.endDate ? 
+                                                                                    new Date(milestone.endDate).toLocaleDateString('en-IN', {
+                                                                                        day: 'numeric',
+                                                                                        month: 'short',
+                                                                                        year: 'numeric'
+                                                                                    }) : 
+                                                                                    <span className="text-muted-foreground">Pending</span>
+                                                                                }
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-muted-foreground">
+                                                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                                    <p className="text-gray-500">No milestones defined for this project</p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                                {filteredProjects.length === 0 && (
+                                    <div className="text-center py-12">
+                                        <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
+                                        <p className="text-gray-500">No projects found matching your search criteria</p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -1486,20 +1530,17 @@ Add any additional notes here...
                                                                 <div className="font-semibold">
                                                                     ₹{((project.budget || 0) / 100000).toFixed(1)}L
                                                                 </div>
-                                                                <div className="text-sm text-muted-foreground">
+                                                                {/* <div className="text-sm text-muted-foreground">
                                                                     {project.progress}% Complete
-                                                                </div>
+                                                                </div> */}
                                                             </div>
-                                                            <Badge className={getStatusColor(project.status)}>
-                                                                {project.status}
-                                                            </Badge>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
                                                                 onClick={() => handleDeleteProject(project.id, project.name)}
                                                             >
-                                                                <X className="h-3 w-3" />
+                                                                <Trash2 className="h-3 w-3" />
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -1536,17 +1577,27 @@ Add any additional notes here...
                                                                         <span className="text-muted-foreground">Deadline:</span>
                                                                         <span className="ml-1 font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString('en-IN') : 'Not set'}</span>
                                                                     </div>
-                                                                    {project.projectStartDate && (
+                                                                    {project.startDate && (
                                                                         <div className="flex items-center">
                                                                             <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
                                                                             <span className="text-muted-foreground">Start Date:</span>
-                                                                            <span className="ml-1 font-medium">{new Date(project.projectStartDate).toLocaleDateString('en-IN')}</span>
+                                                                            <span className="ml-1 font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</span>
                                                                         </div>
                                                                     )}
                                                                     <div className="flex items-center">
                                                                         <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
                                                                         <span className="text-muted-foreground">Location:</span>
                                                                         <span className="ml-1 font-medium">{project.location}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center">
+                                                                        <LandPlot className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                        <span className="text-muted-foreground">Square Footage:</span>
+                                                                        <span className="ml-1 font-medium">{project.squareFootage} sq ft</span>
+                                                                    </div>
+                                                                    <div className="flex items-center">
+                                                                        <Building2 className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                        <span className="text-muted-foreground">Project Type:</span>
+                                                                        <span className="ml-1 font-medium">{project.projectType}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1557,61 +1608,36 @@ Add any additional notes here...
                                                                 <div className="space-y-3">
                                                                     <div>
                                                                         <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Budget Progress</span>
-                                                                            <span>{(((project.spent || 0) / (project.budget || 1)) * 100).toFixed(1)}%</span>
-                                                                        </div>
-                                                                        <Progress value={((project.spent || 0) / (project.budget || 1)) * 100} className="h-2" />
-                                                                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                                                                            <span>Spent: ₹{((project.spent || 0) / 100000).toFixed(1)}L</span>
-                                                                            <span>Total: ₹{((project.budget || 0) / 100000).toFixed(1)}L</span>
+                                                                            <span>Budget</span>
+                                                                            <span className="ml-1 font-medium">{project.budget}</span>
                                                                         </div>
                                                                     </div>
                                                                     <div>
                                                                         <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Project Progress</span>
-                                                                            <span>{project.progress}%</span>
+                                                                            <span>Spent</span>
+                                                                            <span className="ml-1 font-medium">{project.totalSpend}</span>
                                                                         </div>
-                                                                        <Progress value={project.progress} className="h-2" />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex justify-between text-sm mb-1">
+                                                                            <span>Estimated Cost</span>
+                                                                            <span className="ml-1 font-medium">{project.estimatedCost}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex justify-between text-sm mb-1">
+                                                                            <span>Contigency</span>
+                                                                            <span className="ml-1 font-medium">{project.contingency}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="flex justify-between text-sm mb-1">
+                                                                            <span>Default Cost Center</span>
+                                                                            <span className="ml-1 font-medium">{project.defaultCostCenter}</span>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-
-                                                            {/* Key Milestones */}
-                                                            {/* <div>
-                                                                <h4 className="font-medium mb-3">Key Milestones</h4>
-                                                                <div className="space-y-2">
-                                                                    {project.milestones && project.milestones.length > 0 ? (
-                                                                        project.milestones.map((milestone, index) => (
-                                                                            <div key={milestone.id || index} className="flex items-center justify-between text-sm">
-                                                                                <div className="flex items-center">
-                                                                                    <div className={`h-2 w-2 rounded-full mr-3 ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                                                    <span className={milestone.completed ? 'text-green-700' : 'text-muted-foreground'}>
-                                                                                        {milestone.name}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="text-xs text-muted-foreground">
-                                                                                    {(() => {
-                                                                                        if (milestone.startDate && milestone.endDate) {
-                                                                                            return `${new Date(milestone.startDate).toLocaleDateString('en-IN')} - ${new Date(milestone.endDate).toLocaleDateString('en-IN')}`;
-                                                                                        }
-                                                                                        if (milestone.startDate) {
-                                                                                            return new Date(milestone.startDate).toLocaleDateString('en-IN');
-                                                                                        }
-                                                                                        if (milestone.endDate) {
-                                                                                            return new Date(milestone.endDate).toLocaleDateString('en-IN');
-                                                                                        }
-                                                                                        return 'No dates';
-                                                                                    })()}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))
-                                                                    ) : (
-                                                                        <div className="text-sm text-muted-foreground">
-                                                                            No milestones defined
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div> */}
                                                         </div>
                                                     </div>
                                                 )}
