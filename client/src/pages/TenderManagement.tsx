@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Download, Plus, FileText, Calendar, DollarSign, Users, Edit, Eye } from "lucide-react";
+import { Download, Plus, FileText, Calendar, DollarSign, Users, Edit, Eye, ChevronDown, ChevronRight, MapPin } from "lucide-react";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { TenderDashboard } from "@/components/tender-management/tender-dashboard";
 import BidPreparationModal from "@/components/modals/BidPreparationModal";
@@ -40,6 +40,7 @@ const TenderManagement = () => {
     submissionStatus: ''
   })
   const [tenders, setTenders] = useState([]);
+  const [expandedTenders, setExpandedTenders] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -152,6 +153,18 @@ const TenderManagement = () => {
     setIsSubmissionModalOpen(false)
   }
 
+  const toggleTenderDetails = (tenderId: number) => {
+    setExpandedTenders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tenderId)) {
+        newSet.delete(tenderId);
+      } else {
+        newSet.add(tenderId);
+      }
+      return newSet;
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
@@ -261,107 +274,173 @@ const TenderManagement = () => {
                   </div>
                 </div>
 
-                {/* Tenders Table */}
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Project Name</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Estimated Value</TableHead>
-                        <TableHead>Submission Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tenders.length > 0 ? (
-                        tenders.map((tender) => (
-                          <TableRow key={tender.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">
-                              {tender.Project?.name || 'N/A'}
-                            </TableCell>
-                            <TableCell>{tender.client?.name || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{tender.projectCategory}</Badge>
-                            </TableCell>
-                            <TableCell>{tender.location}</TableCell>
-                            <TableCell className="font-semibold">
-                              ₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L
-                            </TableCell>
-                            <TableCell>
-                              {new Date(tender.submissionDate).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                tender.status === 'awarded' ? 'default' :
-                                tender.status === 'submitted' ? 'secondary' :
-                                tender.status === 'under-evaluation' ? 'outline' :
-                                tender.status === 'rejected' ? 'destructive' :
-                                'outline'
-                              }>
-                                {tender.status.replace('-', ' ').toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button 
-                                  variant="ghost" 
+                {/* Tenders Cards with Expandable Details */}
+                <div className="space-y-4">
+                  {tenders.length > 0 ? (
+                    tenders.map((tender) => (
+                      <Card key={tender.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-0">
+                          {/* Main tender header - always visible */}
+                          <div className="p-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <Button
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => handleViewSubmission({
-                                    id: tender.id,
-                                    tender: tender.Project?.name || 'N/A',
-                                    client: tender.client?.name || 'N/A',
-                                    submissionDate: tender.submissionDate,
-                                    status: tender.status,
-                                    notes: `Tender details for ${tender.Project?.name || 'N/A'}`,
-                                    followUpDate: '',
-                                    contactPerson: 'Project Manager',
-                                    submissionStatus: tender.status
-                                  })}
+                                  className="p-0 h-8 w-8"
+                                  onClick={() => toggleTenderDetails(tender.id)}
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  {expandedTenders.has(tender.id) ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => handleEditSubmission({
-                                    id: tender.id,
-                                    tender: tender.projectName,
-                                    client: tender.client,
-                                    submissionDate: tender.submissionDate,
-                                    status: tender.status,
-                                    notes: `Tender details for ${tender.projectName}`,
-                                    followUpDate: '',
-                                    contactPerson: 'Project Manager',
-                                    submissionStatus: tender.status
-                                  })}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
+                                <div>
+                                  <div className="font-semibold">{tender.Project?.name || 'N/A'}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {tender.client?.name || 'N/A'} • {tender.location}
+                                  </div>
+                                </div>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8">
-                            <div className="flex flex-col items-center gap-2">
-                              <FileText className="h-12 w-12 text-muted-foreground" />
-                              <h3 className="text-lg font-medium text-muted-foreground">No Tenders Found</h3>
-                              <p className="text-muted-foreground">Start by creating your first tender.</p>
-                              <Button onClick={() => setShowBidModal(true)} className="mt-2">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create New Tender
-                              </Button>
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className="font-semibold">
+                                    ₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(tender.submissionDate).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={
+                                    tender.status === 'awarded' ? 'default' :
+                                    tender.status === 'submitted' ? 'secondary' :
+                                    tender.status === 'under-evaluation' ? 'outline' :
+                                    tender.status === 'rejected' ? 'destructive' :
+                                    'outline'
+                                  }>
+                                    {tender.status.replace('-', ' ').toUpperCase()}
+                                  </Badge>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleEditSubmission({
+                                      id: tender.id,
+                                      tender: tender.Project?.name || 'N/A',
+                                      client: tender.client?.name || 'N/A',
+                                      submissionDate: tender.submissionDate,
+                                      status: tender.status,
+                                      notes: `Tender details for ${tender.Project?.name || 'N/A'}`,
+                                      followUpDate: '',
+                                      contactPerson: 'Project Manager',
+                                      submissionStatus: tender.status
+                                    })}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                          </div>
+
+                          {/* Expanded tender details - only visible when expanded */}
+                          {expandedTenders.has(tender.id) && (
+                            <div className="border-t bg-gray-50/50 p-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* Basic Details */}
+                                <div>
+                                  <h4 className="font-medium mb-3">Tender Details</h4>
+                                  <div className="space-y-3">
+                                    <div className="flex items-center">
+                                      <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Category:</span>
+                                      <span className="ml-1 font-medium">{tender.projectCategory}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Location:</span>
+                                      <span className="ml-1 font-medium">{tender.location}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Submission:</span>
+                                      <span className="ml-1 font-medium">{new Date(tender.submissionDate).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <DollarSign className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Value:</span>
+                                      <span className="ml-1 font-medium">₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                      <Users className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Client:</span>
+                                      <span className="ml-1 font-medium">{tender.client?.name || 'N/A'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Requirements */}
+                                <div>
+                                  <h4 className="font-medium mb-3">Requirements</h4>
+                                  <div className="space-y-2">
+                                    {tender.requirements?.slice(0, 3).map((req, index) => (
+                                      <div key={index} className="text-sm">
+                                        <div className="font-medium">{req.description}</div>
+                                        <div className="text-muted-foreground">
+                                          Qty: {req.quantity} <br /> Unit: {req.unit} <br /> Cost: ₹{(req.estimatedCost / 100000).toFixed(1)}L
+                                        </div>
+                                      </div>
+                                    )) || (
+                                      <div className="text-sm text-muted-foreground">No requirements available</div>
+                                    )}
+                                    {tender.requirements?.length > 3 && (
+                                      <div className="text-sm text-muted-foreground">
+                                        +{tender.requirements.length - 3} more requirements
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Additional Info */}
+                                <div>
+                                  <h4 className="font-medium mb-3">Additional Information</h4>
+                                  <div className="space-y-3">
+                                    <div>
+                                      <span className="text-muted-foreground">Scope Of Work:</span>
+                                      <p className="text-sm mt-1">{tender.scopeOfWork || 'No description available'}</p>
+                                    </div>
+                                    {/* <div>
+                                      <span className="text-muted-foreground">Timeline:</span>
+                                      <p className="text-sm mt-1">{tender.timeline || 'Not specified'}</p>
+                                    </div> */}
+                                    {/* <div>
+                                      <span className="text-muted-foreground">Contact:</span>
+                                      <p className="text-sm mt-1">{tender.contactPerson || 'Project Manager'}</p>
+                                    </div> */}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="text-center py-8">
+                        <div className="flex flex-col items-center gap-2">
+                          <FileText className="h-12 w-12 text-muted-foreground" />
+                          <h3 className="text-lg font-medium text-muted-foreground">No Tenders Found</h3>
+                          <p className="text-muted-foreground">Start by creating your first tender.</p>
+                          <Button onClick={() => setShowBidModal(true)} className="mt-2">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create New Tender
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
                 {/* Summary Statistics */}
