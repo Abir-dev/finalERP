@@ -2114,7 +2114,7 @@ Add any additional notes here...
                             <div className="space-y-4">
                                 <h3 className="font-medium">Budget Utilization</h3>
                                 {projects.map((project) => {
-                                    const utilization = (project.spent / project.budget) * 100;
+                                    const utilization = (project.totalSpend / project.budget) * 100;
                                     return (
                                         <div key={project.id} className="p-4 border rounded-lg">
                                             <div className="flex justify-between items-start mb-2">
@@ -2123,10 +2123,10 @@ Add any additional notes here...
                                                     {utilization.toFixed(1)}%
                                                 </span>
                                             </div>
-                                            <Progress value={utilization} className="mb-2" />
+                                            {/* <Progress value={utilization} className="mb-2" /> */}
                                             <div className="flex justify-between text-sm">
-                                                <span>Spent: ₹{(project.spent / 1000000).toFixed(1)}M</span>
-                                                <span>Budget: ₹{(project.budget / 1000000).toFixed(1)}M</span>
+                                                <span>Spent: ₹{(project.totalSpend / 1000000).toFixed(2)}M</span>
+                                                <span>Budget: ₹{(project.budget / 1000000).toFixed(2)}M</span>
                                             </div>
                                         </div>
                                     );
@@ -2137,19 +2137,19 @@ Add any additional notes here...
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-4 border rounded-lg">
                                         <p className="text-sm text-muted-foreground">Total Budget</p>
-                                        <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(1)}Cr</p>
+                                        <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(2)}Cr</p>
                                     </div>
                                     <div className="p-4 border rounded-lg">
                                         <p className="text-sm text-muted-foreground">Total Spent</p>
-                                        <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.spent, 0) / 10000000).toFixed(1)}Cr</p>
+                                        <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.totalSpend, 0) / 10000000).toFixed(2)}Cr</p>
                                     </div>
                                     <div className="p-4 border rounded-lg">
                                         <p className="text-sm text-muted-foreground">Remaining</p>
-                                        <p className="text-2xl font-bold">₹{((projects.reduce((sum, p) => sum + p.budget, 0) - projects.reduce((sum, p) => sum + p.spent, 0)) / 10000000).toFixed(1)}Cr</p>
+                                        <p className="text-2xl font-bold">₹{((projects.reduce((sum, p) => sum + p.budget, 0) - projects.reduce((sum, p) => sum + p.totalSpend, 0)) / 10000000).toFixed(2)}Cr</p>
                                     </div>
                                     <div className="p-4 border rounded-lg">
                                         <p className="text-sm text-muted-foreground">Avg Utilization</p>
-                                        <p className="text-2xl font-bold">{((projects.reduce((sum, p) => sum + p.spent, 0) / projects.reduce((sum, p) => sum + p.budget, 0)) * 100).toFixed(1)}%</p>
+                                        <p className="text-2xl font-bold">{((projects.reduce((sum, p) => sum + p.totalSpend, 0) / projects.reduce((sum, p) => sum + p.budget, 0)) * 100).toFixed(2)}%</p>
                                     </div>
                                 </div>
                             </div>
@@ -2293,11 +2293,11 @@ Add any additional notes here...
                                                     {project.estimatedDuration || 0} days total
                                                 </span>
                                             </div>
-                                            <Progress value={project.progress || 0} className="mb-2" />
+                                            {/* <Progress value={project.progress || 0} className="mb-2" />
                                             <div className="flex justify-between text-sm">
                                                 <span>Completed: {progressDays} days</span>
                                                 <span>Remaining: {remainingDays} days</span>
-                                            </div>
+                                            </div> */}
                                         </div>
                                     );
                                 })}
@@ -2335,7 +2335,7 @@ Add any additional notes here...
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
-                                <CardTitle>Contingency & Financial Safety</CardTitle>
+                                <CardTitle>Contingency</CardTitle>
                                 <CardDescription>Contingency reserves and cost center analysis</CardDescription>
                             </div>
                             <Button variant="outline" onClick={() => setSubview('main')}>
