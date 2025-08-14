@@ -19,9 +19,11 @@ router.put('/:id', authenticateUser, validateProject, projectController.updatePr
 router.delete('/:id', authenticateUser, projectController.deleteProject);
 
 // Task management
-// router.post('/:id/tasks', authenticateUser, /* checkRole('site-manager'), */ projectController.addTask);
+router.post('/:id/tasks', authenticateUser, /* checkRole('site-manager'), */ projectController.createTask);
 router.get('/:id/tasks', authenticateUser, projectController.listTasks);
+router.get('/:id/tasks/:taskId', authenticateUser, projectController.getTask);
 router.put('/:id/tasks/:taskId', authenticateUser, /* checkRole('site-manager'), */ projectController.updateTask);
+router.delete('/:id/tasks/:taskId', authenticateUser, projectController.deleteTask);
 
 // Non-billable management
 router.post('/:id/non-billables', authenticateUser, projectController.addNonBillable);

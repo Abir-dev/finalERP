@@ -311,7 +311,7 @@ model Tender {
   requirements TenderRequirement[]
   
   // System fields
-  status    String   @default("open")
+  status    TenderStatus   @default(SUBMITTED)
   bids      Bid[]
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -331,6 +331,12 @@ model Bid {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   User      User     @relation(fields: [userId], references: [id])
   userId    String   @db.Uuid
+}
+
+enum TenderStatus {
+  SUBMITTED
+  ACTIVE
+  REJECTED
 }
 
 model Employee {

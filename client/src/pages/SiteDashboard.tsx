@@ -71,6 +71,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import axios from "axios";
+import { useUser } from "@/contexts/UserContext";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -322,10 +323,12 @@ type Task = {
   name: string;
   projectId: string;
   assignedToId?: string;
+  assignedTo?: string;
   description?: string;
   startdate?: string;
   dueDate?: string;
   status: string;
+  projectName?: string;
 };
 
 type Issue = (typeof issuesData)[0] & {
@@ -417,6 +420,7 @@ const issueColumns: ColumnDef<Issue>[] = [
 // Add subview state and selected task state
 const SiteDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useUser();
   // Modal states
   const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
   const [isWPRModalOpen, setIsWPRModalOpen] = useState(false);
@@ -459,11 +463,30 @@ const SiteDashboard = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   
+  // Progress Reports Data
+  const [dprs, setDprs] = useState<any[]>([]);
+  const [wprs, setWprs] = useState<any[]>([]);
+  const [reportsStats, setReportsStats] = useState({
+    dprsSubmitted: 0,
+    wprsCompleted: 0,
+    averageScore: "0/5"
+  });
+  
   // Fetch users and projects on component mount
   useEffect(() => {
     fetchUsers();
     fetchProjects();
-  }, []);
+    if (user?.id) {
+      fetchProgressReports();
+      fetchTasks();
+      // Set up periodic refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchProgressReports();
+        fetchTasks();
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const fetchUsers = async () => {
     try {
@@ -676,48 +699,7 @@ const SiteDashboard = () => {
   const [laborHours, setLaborHours] = useState([]);
   const [budget, setBudget] = useState([]);
   const [costData, setCostData] = useState([]); // <-- Add this line
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "TASK-1",
-      name: "Foundation Work",
-      projectId: "project-1",
-      assignedToId: "user-1",
-      description: "Complete foundation work for main building",
-      startdate: "2024-01-01",
-      dueDate: "2024-01-15",
-      status: "completed",
-    },
-    {
-      id: "TASK-2",
-      name: "Steel Structure",
-      projectId: "project-1",
-      assignedToId: "user-2",
-      description: "Install steel structure framework",
-      startdate: "2024-01-16",
-      dueDate: "2024-02-15",
-      status: "in-progress",
-    },
-    {
-      id: "TASK-3",
-      name: "Roofing Installation",
-      projectId: "project-1",
-      assignedToId: "user-3",
-      description: "Install roofing materials",
-      startdate: "2024-02-01",
-      dueDate: "2024-02-28",
-      status: "in-progress",
-    },
-    {
-      id: "TASK-4",
-      name: "Interior Finishing",
-      projectId: "project-1",
-      assignedToId: "user-4",
-      description: "Complete interior finishing work",
-      startdate: "2024-02-20",
-      dueDate: "2024-03-20",
-      status: "pending",
-    },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [progressStats, setProgressStats] = useState({
     activeTasks: 24,
     completedThisWeek: 18,
@@ -973,6 +955,246 @@ const SiteDashboard = () => {
     setIsLaborModalOpen(false);
   };
 
+  // Fetch Progress Reports
+  const fetchProgressReports = async () => {
+    try {
+      if (!user?.id) return;
+      
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      // Fetch DPRs
+      const dprResponse = await axios.get(
+        `${API_URL}/progress-reports/dpr/${user.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setDprs(dprResponse.data);
+      
+      // Fetch WPRs
+      const wprResponse = await axios.get(
+        `${API_URL}/progress-reports/wpr/${user.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setWprs(wprResponse.data);
+      
+      // Calculate stats
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const monthlyDprs = dprResponse.data.filter((dpr: any) => {
+        const dprDate = new Date(dpr.createdAt);
+        return dprDate.getMonth() === currentMonth && dprDate.getFullYear() === currentYear;
+      });
+      
+      const monthlyWprs = wprResponse.data.filter((wpr: any) => {
+        const wprDate = new Date(wpr.createdAt);
+        return wprDate.getMonth() === currentMonth && wprDate.getFullYear() === currentYear;
+      });
+      
+      setReportsStats({
+        dprsSubmitted: monthlyDprs.length,
+        wprsCompleted: monthlyWprs.length,
+        averageScore: "4.2/5" // You can implement actual scoring logic here
+      });
+      
+      // Update progress stats based on actual data
+      const activeTasks = tasks.filter(t => 
+        t.status === "In Progress" || 
+        t.status === "in-progress" ||
+        t.status === "In progress"
+      ).length;
+      const completedThisWeek = getCompletedTasksThisWeek();
+      
+      setProgressStats(prev => ({
+        ...prev,
+        activeTasks: activeTasks,
+        completedThisWeek: completedThisWeek,
+        onSchedule: calculateOnSchedulePercentage(),
+        resourceUtilization: Math.min(95, Math.max(60, 75 + monthlyDprs.length * 2))
+      }));
+
+      // Generate weekly progress data from WPRs
+      const weeklyProgressData = generateWeeklyProgressData(wprResponse.data);
+      setWeeklyProgress(weeklyProgressData);
+      
+    } catch (error) {
+      console.error("Error fetching progress reports:", error);
+    }
+  };
+
+  // Helper function to get completed tasks this week
+  const getCompletedTasksThisWeek = () => {
+    // For now, return a calculated value based on completed tasks
+    return tasks.filter(task => 
+      task.status === "Completed" || 
+      task.status === "completed"
+    ).length;
+  };
+
+  // Helper function to calculate on schedule percentage
+  const calculateOnSchedulePercentage = () => {
+    const totalTasks = tasks.length;
+    if (totalTasks === 0) return 100;
+    
+    const onScheduleTasks = tasks.filter(task => {
+      const dueDate = new Date(task.dueDate);
+      const now = new Date();
+      
+      if (task.status === "Completed" || task.status === "completed") {
+        return true; // Completed tasks are considered on schedule
+      }
+      
+      if ((task.status === "In Progress" || 
+           task.status === "in-progress" ||
+           task.status === "In progress") && dueDate > now) {
+        return true; // In progress tasks not yet overdue
+      }
+      
+      return false;
+    }).length;
+    
+    return Math.round((onScheduleTasks / totalTasks) * 100);
+  };
+
+  // Generate weekly progress data for chart
+  const generateWeeklyProgressData = (wprs: any[]) => {
+    if (!wprs || wprs.length === 0) {
+      return [
+        { week: "Week 1", planned: 20, actual: 15 },
+        { week: "Week 2", planned: 40, actual: 35 },
+        { week: "Week 3", planned: 60, actual: 55 },
+        { week: "Week 4", planned: 80, actual: 75 }
+      ];
+    }
+
+    return wprs.slice(-4).map((wpr, index) => ({
+      week: `Week ${index + 1}`,
+      planned: parseInt(wpr.plannedProgress) || 0,
+      actual: parseInt(wpr.actualProgress) || 0
+    }));
+  };
+
+  // Task Management Functions
+  const fetchTasks = async () => {
+    try {
+      if (!user?.id || projects.length === 0) return;
+      
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      // Fetch tasks for all projects the user has access to
+      const allTasks: Task[] = [];
+      
+      for (const project of projects) {
+        try {
+          const response = await axios.get(
+            `${API_URL}/projects/${project.id}/tasks`,
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+          
+          // Add project name to each task for display
+          const projectTasks = response.data.map((task: any) => ({
+            ...task,
+            projectName: project.name
+          }));
+          
+          allTasks.push(...projectTasks);
+        } catch (error) {
+          console.error(`Error fetching tasks for project ${project.id}:`, error);
+        }
+      }
+      
+      setTasks(allTasks);
+      
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
+  };
+
+
+
+  const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      if (!user?.id) {
+        toast.error("User not authenticated");
+        return;
+      }
+
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        toast.error("Task not found");
+        return;
+      }
+
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      const response = await axios.put(
+        `${API_URL}/projects/${task.projectId}/tasks/${taskId}`,
+        updates,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("Task updated successfully!");
+        fetchTasks(); // Refresh task list
+      }
+    } catch (error: any) {
+      console.error("Error updating task:", error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to update task. Please try again."
+      );
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      if (!user?.id) {
+        toast.error("User not authenticated");
+        return;
+      }
+
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        toast.error("Task not found");
+        return;
+      }
+
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      const response = await axios.delete(
+        `${API_URL}/projects/${task.projectId}/tasks/${taskId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 204 || response.status === 200) {
+        toast.success("Task deleted successfully!");
+        fetchTasks(); // Refresh task list
+      }
+    } catch (error: any) {
+      console.error("Error deleting task:", error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to delete task. Please try again."
+      );
+    }
+  };
+
   const handleBudgetAdjustment = (formData: {
     category: string;
     adjustmentType: "increase" | "decrease";
@@ -1001,7 +1223,7 @@ const SiteDashboard = () => {
     setIsBudgetAdjustModalOpen(false);
   };
 
-  const handleUploadDPR = (formData: {
+  const handleUploadDPR = async (formData: {
     workDone: string;
     weather: string;
     photos: FileList;
@@ -1015,12 +1237,63 @@ const SiteDashboard = () => {
     delayIssue: string;
     materials: { material: string; qty: string; remarks: string }[];
     subcontractor: string;
+    projectId: string;
   }) => {
-    toast.success("DPR uploaded successfully!");
-    setIsDPRModalOpen(false);
+    try {
+      if (!user?.id) {
+        toast.error("User not authenticated");
+        return;
+      }
+
+      if (!formData.projectId) {
+        toast.error("Please select a project");
+        return;
+      }
+
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      const response = await axios.post(
+        `${API_URL}/progress-reports/dpr/${user.id}`,
+        {
+          projectId: formData.projectId,
+          workDone: formData.workDone,
+          weather: formData.weather,
+          notes: formData.notes || "",
+          workSections: formData.workSections,
+          manpower: formData.manpower,
+          manpowerRoles: formData.manpowerRoles,
+          equipmentUsed: formData.equipmentUsed,
+          safetyIncident: formData.safetyIncident || "",
+          qualityCheck: formData.qualityCheck || "",
+          delayIssue: formData.delayIssue || "",
+          materials: formData.materials,
+          subcontractor: formData.subcontractor || "",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        toast.success("DPR uploaded successfully!");
+        setIsDPRModalOpen(false);
+        // Refresh data
+        fetchProgressReports();
+      }
+    } catch (error: any) {
+      console.error("Error uploading DPR:", error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to upload DPR. Please try again."
+      );
+    }
   };
 
-  const handleUploadWPR = (formData: {
+  const handleUploadWPR = async (formData: {
     weekStart: string;
     weekEnding: string;
     milestones: string;
@@ -1046,9 +1319,62 @@ const SiteDashboard = () => {
     }[];
     teamPerformance: string;
     attachments: FileList;
+    projectId: string;
   }) => {
-    toast.success("WPR uploaded successfully!");
-    setIsWPRModalOpen(false);
+    try {
+      if (!user?.id) {
+        toast.error("User not authenticated");
+        return;
+      }
+
+      if (!formData.projectId) {
+        toast.error("Please select a project");
+        return;
+      }
+
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      const response = await axios.post(
+        `${API_URL}/progress-reports/wpr/${user.id}`,
+        {
+          projectId: formData.projectId,
+          weekStart: formData.weekStart,
+          weekEnding: formData.weekEnding,
+          milestones: formData.milestones,
+          plannedProgress: formData.plannedProgress,
+          actualProgress: formData.actualProgress,
+          progressRemarks: formData.progressRemarks || "",
+          issues: formData.issues || "",
+          risks: formData.risks || "",
+          safetySummary: formData.safetySummary || "",
+          qualitySummary: formData.qualitySummary || "",
+          manpower: formData.manpower,
+          equipment: formData.equipment,
+          materials: formData.materials,
+          teamPerformance: formData.teamPerformance || "",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        toast.success("WPR uploaded successfully!");
+        setIsWPRModalOpen(false);
+        // Refresh data
+        fetchProgressReports();
+      }
+    } catch (error: any) {
+      console.error("Error uploading WPR:", error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to upload WPR. Please try again."
+      );
+    }
   };
 
   const handleRaiseMaterialRequest = (formData: {
@@ -1088,7 +1414,7 @@ const SiteDashboard = () => {
     setIsIssueModalOpen(false);
   };
 
-  const handleAddTask = (formData: {
+  const handleAddTask = async (formData: {
     name: string;
     projectId: string;
     assignedToId: string;
@@ -1096,22 +1422,44 @@ const SiteDashboard = () => {
     startdate: string;
     dueDate: string;
   }) => {
-    const newTask: Task = {
-      id: `TASK-${tasks.length + 1}`,
-      ...formData,
-      status: "pending",
-    };
+    try {
+      if (!user?.id) {
+        toast.error("User not authenticated");
+        return;
+      }
 
-    setTasks((prev) => [...prev, newTask]);
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      
+      const response = await axios.post(
+        `${API_URL}/projects/${formData.projectId}/tasks`,
+        {
+          name: formData.name,
+          description: formData.description,
+          assignedTo: formData.assignedToId,
+          dueDate: formData.dueDate,
+          status: "pending"
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    // Update progress stats
-    setProgressStats((prev) => ({
-      ...prev,
-      activeTasks: prev.activeTasks + 1,
-    }));
-
-    toast.success("New task added successfully!");
-    setIsAddTaskModalOpen(false);
+      if (response.status === 201) {
+        toast.success("Task created successfully!");
+        setIsAddTaskModalOpen(false);
+        fetchTasks(); // Refresh task list
+      }
+    } catch (error: any) {
+      console.error("Error creating task:", error);
+      toast.error(
+        error.response?.data?.message || 
+        error.message || 
+        "Failed to create task. Please try again."
+      );
+    }
   };
 
   // Add new functions for material request actions
@@ -1181,7 +1529,11 @@ const SiteDashboard = () => {
 
   // Active Tasks List component
   const ActiveTasksList = () => {
-    const activeTasks = tasks.filter((t) => t.status === "in-progress");
+    const activeTasks = tasks.filter((t) => 
+      t.status === "in-progress" || 
+      t.status === "In Progress" || 
+      t.status === "In progress"
+    );
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -1201,10 +1553,10 @@ const SiteDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {activeTasks.map((task) => (
+              {activeTasks.length > 0 ? activeTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedToId}</td>
+                  <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">
                     <Button
@@ -1219,7 +1571,13 @@ const SiteDashboard = () => {
                     </Button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                    No active tasks found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -1231,39 +1589,111 @@ const SiteDashboard = () => {
   const TaskDetailView = () => {
     const task = selectedTimelineTask;
     if (!task) return <div>Task not found</div>;
+    
+    const handleStatusUpdate = async (newStatus: string) => {
+      await handleUpdateTask(task.id, { status: newStatus });
+    };
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Task Details</h2>
-          <Button
-            variant="outline"
-            onClick={() => setTimelineSubview("activeTasks")}
-          >
-            Back to Active Tasks
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setTimelineSubview("activeTasks")}
+            >
+              Back to Active Tasks
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirm("Are you sure you want to delete this task?")) {
+                  handleDeleteTask(task.id);
+                  setTimelineSubview("activeTasks");
+                }
+              }}
+            >
+              Delete Task
+            </Button>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <strong>Task Name:</strong> {task.name}
-          </div>
-          <div>
-            <strong>Assigned To:</strong> {task.assignedToId}
-          </div>
-          <div>
-            <strong>Project:</strong> {task.projectId}
-          </div>
-          <div>
-            <strong>Description:</strong> {task.description}
-          </div>
-          <div>
-            <strong>Start Date:</strong> {task.startdate}
-          </div>
-          <div>
-            <strong>Due Date:</strong> {task.dueDate}
-          </div>
-          <div>
-            <strong>Status:</strong> {task.status}
-          </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Task Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Task Name</Label>
+                <p className="font-medium">{task.name}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Project</Label>
+                <p className="font-medium">{task.projectName || task.projectId}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Assigned To</Label>
+                <p className="font-medium">{task.assignedTo || task.assignedToId || "Unassigned"}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Description</Label>
+                <p className="font-medium">{task.description || "No description provided"}</p>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Timeline & Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-muted-foreground">Start Date</Label>
+                <p className="font-medium">{task.startdate ? new Date(task.startdate).toLocaleDateString() : "Not set"}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Due Date</Label>
+                <p className="font-medium">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}</p>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Current Status</Label>
+                <div className="flex items-center gap-2">
+                  <Badge variant={
+                    task.status === "completed" || task.status === "Completed" 
+                      ? "default" 
+                      : task.status === "in-progress" || task.status === "In Progress"
+                      ? "secondary" 
+                      : "outline"
+                  }>
+                    {task.status}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground">Update Status</Label>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleStatusUpdate("In Progress")}
+                    disabled={task.status === "In Progress"}
+                  >
+                    Start
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => handleStatusUpdate("Completed")}
+                    disabled={task.status === "Completed"}
+                  >
+                    Complete
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -1271,7 +1701,10 @@ const SiteDashboard = () => {
 
   // Completed Tasks List component
   const CompletedTasksList = () => {
-    const completedTasks = tasks.filter((t) => t.status === "completed");
+    const completedTasks = tasks.filter((t) => 
+      t.status === "completed" || 
+      t.status === "Completed"
+    );
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -1291,10 +1724,10 @@ const SiteDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {completedTasks.map((task) => (
+              {completedTasks.length > 0 ? completedTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedToId}</td>
+                  <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">
                     <Button
@@ -1309,7 +1742,13 @@ const SiteDashboard = () => {
                     </Button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                    No completed tasks found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -1320,7 +1759,9 @@ const SiteDashboard = () => {
   // On Schedule Tasks List component
   const OnScheduleTasksList = () => {
     const onScheduleTasks = tasks.filter(
-      (t) => new Date(t.dueDate || '') >= new Date() || t.status === "completed"
+      (t) => new Date(t.dueDate || '') >= new Date() || 
+      t.status === "completed" || 
+      t.status === "Completed"
     );
     return (
       <div className="space-y-6">
@@ -1342,12 +1783,12 @@ const SiteDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {onScheduleTasks.map((task) => (
+              {onScheduleTasks.length > 0 ? onScheduleTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedToId}</td>
+                  <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
                   <td className="p-2">{task.status}</td>
-                  <td className="p-2">{task.dueDate}</td>
+                  <td className="p-2">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}</td>
                   <td className="p-2">
                     <Button
                       size="sm"
@@ -1361,7 +1802,13 @@ const SiteDashboard = () => {
                     </Button>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                    No on-schedule tasks found
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -1421,36 +1868,20 @@ const SiteDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {[
-              {
-                type: "DPR",
-                date: "2024-01-20",
-                weather: "Clear",
-                photos: 8,
-                escalated: false,
-              },
-              {
-                type: "DPR",
-                date: "2024-01-18",
-                weather: "Clear",
-                photos: 6,
-                escalated: true,
-              },
-              {
-                type: "DPR",
-                date: "2024-01-17",
-                weather: "Wind",
-                photos: 10,
-                escalated: false,
-              },
-            ].map((report, idx) => (
-              <tr key={idx} className="border-t">
-                <td className="p-2">{report.date}</td>
-                <td className="p-2">{report.weather}</td>
-                <td className="p-2">{report.photos}</td>
-                <td className="p-2">{report.escalated ? "Yes" : "No"}</td>
+            {dprs.length > 0 ? dprs.map((dpr, idx) => (
+              <tr key={dpr.id || idx} className="border-t">
+                <td className="p-2">{new Date(dpr.createdAt).toLocaleDateString()}</td>
+                <td className="p-2">{dpr.weather}</td>
+                <td className="p-2">N/A</td>
+                <td className="p-2">{dpr.safetyIncident && dpr.safetyIncident.toLowerCase() !== 'n/a' ? "Yes" : "No"}</td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                  No DPRs submitted yet
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1473,29 +1904,27 @@ const SiteDashboard = () => {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="bg-muted">
-              <th className="p-2 text-left">Date</th>
-              <th className="p-2 text-left">Weather</th>
-              <th className="p-2 text-left">Photos</th>
-              <th className="p-2 text-left">Escalated</th>
+              <th className="p-2 text-left">Week Start</th>
+              <th className="p-2 text-left">Week End</th>
+              <th className="p-2 text-left">Progress</th>
+              <th className="p-2 text-left">Issues</th>
             </tr>
           </thead>
           <tbody>
-            {[
-              {
-                type: "WPR",
-                date: "2024-01-19",
-                weather: "Rain",
-                photos: 12,
-                escalated: false,
-              },
-            ].map((report, idx) => (
-              <tr key={idx} className="border-t">
-                <td className="p-2">{report.date}</td>
-                <td className="p-2">{report.weather}</td>
-                <td className="p-2">{report.photos}</td>
-                <td className="p-2">{report.escalated ? "Yes" : "No"}</td>
+            {wprs.length > 0 ? wprs.map((wpr, idx) => (
+              <tr key={wpr.id || idx} className="border-t">
+                <td className="p-2">{new Date(wpr.weekStart).toLocaleDateString()}</td>
+                <td className="p-2">{new Date(wpr.weekEnding).toLocaleDateString()}</td>
+                <td className="p-2">{wpr.actualProgress}% actual</td>
+                <td className="p-2">{wpr.issues && wpr.issues.toLowerCase() !== 'n/a' ? "Yes" : "No"}</td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                  No WPRs submitted yet
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -2036,21 +2465,21 @@ const SiteDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                   title="DPRs Submitted"
-                  value="28"
+                  value={reportsStats.dprsSubmitted.toString()}
                   icon={FileText}
                   description="This month"
                   onClick={() => setReportsSubview("dprList")}
                 />
                 <StatCard
                   title="WPRs Completed"
-                  value="7"
+                  value={reportsStats.wprsCompleted.toString()}
                   icon={Calendar}
                   description="This month"
                   onClick={() => setReportsSubview("wprList")}
                 />
                 <StatCard
                   title="Average Score"
-                  value="4.2/5"
+                  value={reportsStats.averageScore}
                   icon={HardHat}
                   description="Report quality"
                   onClick={() => setReportsSubview("reportQuality")}
@@ -4827,6 +5256,7 @@ const SiteDashboard = () => {
             <DPRManualForm
               onSubmit={handleUploadDPR}
               onCancel={() => setIsDPRModalOpen(false)}
+              projects={projects}
             />
           </div>
         </DialogContent>
@@ -4841,7 +5271,7 @@ const SiteDashboard = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[70vh] bg-muted/40 rounded-md p-4">
-            <WPRManualForm onSubmit={handleUploadWPR} onCancel={() => setIsWPRModalOpen(false)} />
+            <WPRManualForm onSubmit={handleUploadWPR} onCancel={() => setIsWPRModalOpen(false)} projects={projects} />
           </div>
         </DialogContent>
       </Dialog>
@@ -7271,9 +7701,11 @@ export default SiteDashboard;
 function DPRManualForm({
   onSubmit,
   onCancel,
+  projects,
 }: {
   onSubmit: (formData: any) => void;
   onCancel: () => void;
+  projects: Project[];
 }) {
   const [materials, setMaterials] = useState([
     { material: "", qty: "", remarks: "" },
@@ -7295,6 +7727,7 @@ function DPRManualForm({
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         onSubmit({
+          projectId: formData.get("projectId") as string,
           workSections: formData.get("workSections") as string,
           manpower: formData.get("manpower") as string,
           manpowerRoles: formData.get("manpowerRoles") as string,
@@ -7312,6 +7745,21 @@ function DPRManualForm({
       }}
       className="space-y-4"
     >
+      <div>
+        <Label htmlFor="projectId">Project *</Label>
+        <Select name="projectId" required>
+          <SelectTrigger>
+            <SelectValue placeholder="Select project" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div>
         <Label htmlFor="workSections">Work Sections/Areas Covered</Label>
         <Input
@@ -7499,7 +7947,15 @@ function DPRManualForm({
 }
 
 // Add this component above the SiteDashboard export
-function WPRManualForm({ onSubmit, onCancel }: { onSubmit: (formData: any) => void; onCancel: () => void }) {
+function WPRManualForm({ 
+  onSubmit, 
+  onCancel, 
+  projects 
+}: { 
+  onSubmit: (formData: any) => void; 
+  onCancel: () => void; 
+  projects: Project[];
+}) {
   const [manpower, setManpower] = useState([{ role: '', planned: '', actual: '' }]);
   const [equipment, setEquipment] = useState([{ equipment: '', uptime: '', downtime: '', remarks: '' }]);
   const [materials, setMaterials] = useState([{ material: '', planned: '', actual: '', remarks: '' }]);
@@ -7529,6 +7985,7 @@ function WPRManualForm({ onSubmit, onCancel }: { onSubmit: (formData: any) => vo
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         onSubmit({
+          projectId: formData.get('projectId') as string,
           weekStart: formData.get('weekStart') as string,
           weekEnding: formData.get('weekEnding') as string,
           milestones: formData.get('milestones') as string,
@@ -7548,6 +8005,21 @@ function WPRManualForm({ onSubmit, onCancel }: { onSubmit: (formData: any) => vo
       }}
       className="space-y-4"
     >
+      <div>
+        <Label htmlFor="projectId">Project *</Label>
+        <Select name="projectId" required>
+          <SelectTrigger>
+            <SelectValue placeholder="Select project" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="weekStart">Week Start</Label>
