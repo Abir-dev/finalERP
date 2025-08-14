@@ -10,14 +10,14 @@ import { Calendar, Clock, Users, AlertTriangle, CheckCircle } from "lucide-react
 interface Task {
   id: string;
   name: string;
+  description?: string;
   startDate: string;
   endDate: string;
   duration: number;
   progress: number;
   dependencies: string[];
   assignedTo: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'not-started' | 'in-progress' | 'completed' | 'delayed';
+  status: 'pending' | 'in-progress' | 'completed' | 'delayed';
 }
 
 interface GanttChartProps {
