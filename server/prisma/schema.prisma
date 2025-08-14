@@ -59,10 +59,12 @@ model User {
   scheduledMaintenance ScheduleMaintenance[] @relation("MaintenanceScheduler")
   createdProjects      Project[]             @relation("ProjectCreator")
   StoreStaff           StoreStaff[]          @relation("StoreStaffCreator")
+  clientTenders        Tender[]              @relation("TenderClient")
 
   @@map("users")
   WeeklyProgressReport WeeklyProgressReport[] @relation("WeeklyProgressReportsCreated")
   DailyProgressReport DailyProgressReport[] @relation("DailyProgressReportsCreated")
+  Tender Tender[] @relation("TenderCreator")
 }
 
 model UserInvitation {
@@ -110,7 +112,7 @@ model Project {
   deadline          DateTime?
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  Tender            Tender[]
+  Tender Tender[] @relation("TenderCreated")
   Payment           Payment[]
   milestones        ProjectMilestone[]
   createdById       String?            @db.Uuid
@@ -286,17 +288,30 @@ model MaterialRequest {
 }
 
 model Tender {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String
-  description String
-  deadline    DateTime
-  budget      Float
-  status      String   @default("open")
-  projectId   String   @db.Uuid
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  bids        Bid[]
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String                @id @default(uuid()) @db.Uuid
+  tenderNumber        String                @unique
+  submissionDate      DateTime
+  projectId           String                @db.Uuid
+  clientId            String                @db.Uuid
+  client              User                  @relation("TenderClient", fields: [clientId], references: [id])
+  location            String
+  projectDuration     Int                   // in months
+  projectCategory     ProjectCategory
+  priorityLevel       PriorityLevel
+  scopeOfWork         String
+  specialRequirements String
+  
+  // Requirements/Items from the dynamic table
+  requirements TenderRequirement[]
+  
+  // System fields
+  status    String   @default("open")
+  bids      Bid[]
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Project   Project @relation("TenderCreated", fields: [projectId], references: [id], onDelete: Cascade)
+  createdById       String?            @db.Uuid
+  createdBy         User?              @relation("TenderCreator", fields: [createdById], references: [id])
 }
 
 model Bid {
@@ -995,4 +1010,30 @@ enum ContractType {
   COST_PLUS
   TIME_AND_MATERIALS
   UNIT_PRICE
+}
+model TenderRequirement {
+  id            String @id @default(uuid()) @db.Uuid
+  tenderId      String @db.Uuid
+  tender        Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  description   String
+  quantity      Float
+  unit          String
+  estimatedCost Float
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("tender_requirements")
+}
+
+enum ProjectCategory {
+  COMMERCIAL
+  RESIDENTIAL
+  INFRASTRUCTURE
+  INDUSTRIAL
+}
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
 }
