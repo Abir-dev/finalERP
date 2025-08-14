@@ -1037,16 +1037,13 @@ const SiteDashboard = () => {
     weather: string;
     photos: FileList;
     notes: string;
-    workSections: string[];
+    workSections: string;
     manpower: string;
     manpowerRoles: string;
-    equipmentUsed: string[];
+    equipmentUsed: string;
     safetyIncident: string;
-    safetyDetails: string;
     qualityCheck: string;
-    qualityDetails: string;
     delayIssue: string;
-    delayDetails: string;
     materials: { material: string; qty: string; remarks: string }[];
     subcontractor: string;
   }) => {
@@ -7383,11 +7380,8 @@ function DPRManualForm({
           manpowerRoles: formData.get("manpowerRoles") as string,
           equipmentUsed: formData.get("equipmentUsed") as string,
           safetyIncident: formData.get("safetyIncident") as string,
-          safetyDetails: formData.get("safetyDetails") as string,
           qualityCheck: formData.get("qualityCheck") as string,
-          qualityDetails: formData.get("qualityDetails") as string,
           delayIssue: formData.get("delayIssue") as string,
-          delayDetails: formData.get("delayDetails") as string,
           materials,
           subcontractor: formData.get("subcontractor") as string,
           workDone: formData.get("workDone") as string,
@@ -7438,71 +7432,35 @@ function DPRManualForm({
           required
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
-          <Select name="safetyIncident" required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="no">No</SelectItem>
-              <SelectItem value="yes">Yes</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="safetyDetails">If Yes, Details</Label>
-          <Input
-            id="safetyDetails"
-            name="safetyDetails"
-            placeholder="Describe incident (if any)"
-          />
-        </div>
+      <div>
+        <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
+        <Textarea
+          id="safetyIncident"
+          name="safetyIncident"
+          placeholder="Describe any safety incidents or write 'N/A' if none"
+          rows={3}
+          required
+        />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
-          <Select name="qualityCheck" required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="yes">Yes</SelectItem>
-              <SelectItem value="no">No</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="qualityDetails">If Yes, Details</Label>
-          <Input
-            id="qualityDetails"
-            name="qualityDetails"
-            placeholder="Describe checks (if any)"
-          />
-        </div>
+      <div>
+        <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
+        <Textarea
+          id="qualityCheck"
+          name="qualityCheck"
+          placeholder="Describe quality checks performed or write 'N/A' if none"
+          rows={3}
+          required
+        />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
-          <Select name="delayIssue" required>
-            <SelectTrigger>
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="no">No</SelectItem>
-              <SelectItem value="yes">Yes</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="delayDetails">If Yes, Details</Label>
-          <Input
-            id="delayDetails"
-            name="delayDetails"
-            placeholder="Describe delay/issue (if any)"
-          />
-        </div>
+      <div>
+        <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
+        <Textarea
+          id="delayIssue"
+          name="delayIssue"
+          placeholder="Describe any delays or issues or write 'N/A' if none"
+          rows={3}
+          required
+        />
       </div>
       <div>
         <Label>Materials Consumed</Label>
@@ -7589,7 +7547,7 @@ function DPRManualForm({
           </SelectContent>
         </Select>
       </div>
-      <div>
+      {/* <div>
         <Label htmlFor="photos">Upload Photos</Label>
         <Input
           id="photos"
@@ -7599,7 +7557,7 @@ function DPRManualForm({
           accept="image/*"
           required
         />
-      </div>
+      </div> */}
       <div>
         <Label htmlFor="notes">Site Engineer Notes</Label>
         <Textarea
@@ -7859,10 +7817,10 @@ function WPRManualForm({ onSubmit, onCancel }: { onSubmit: (formData: any) => vo
         <Label htmlFor="teamPerformance">Team Performance</Label>
         <Textarea id="teamPerformance" name="teamPerformance" placeholder="Team performance comments..." rows={3} required />
       </div>
-      <div>
+      {/* <div>
         <Label htmlFor="attachments">Attachments (Photos, Documents)</Label>
         <Input id="attachments" name="attachments" type="file" multiple accept="image/*,application/pdf" />
-      </div>
+      </div> */}
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" type="button" onClick={onCancel}>
           Cancel
