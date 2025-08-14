@@ -130,6 +130,18 @@ interface StorageSection {
 // const [purchaseOrders, setPurchaseOrders] = useState([]);
 // const [equipment, setEquipment] = useState([]);
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
+
 // Cost Data
 // const costData = [
 //   { category: "Productive Labor", planned: 175000, actual: 190000 },
@@ -308,19 +320,12 @@ const equipmentColumns: ColumnDef<Equipment>[] = [
 type Task = {
   id: string;
   name: string;
-  project: string;
-  assignedTo: string;
-  startDate: string;
-  dueDate: string;
+  projectId: string;
+  assignedToId?: string;
+  description?: string;
+  startdate?: string;
+  dueDate?: string;
   status: string;
-  progress: number;
-  phase: string;
-  // New: Progress history
-  progressHistory: {
-    progress: number;
-    remarks: string;
-    timestamp: string;
-  }[];
 };
 
 type Issue = (typeof issuesData)[0] & {
@@ -335,11 +340,11 @@ const taskColumns: ColumnDef<Task>[] = [
     header: "Task Name",
   },
   {
-    accessorKey: "assignedTo",
+    accessorKey: "assignedToId",
     header: "Assigned To",
   },
   {
-    accessorKey: "startDate",
+    accessorKey: "startdate",
     header: "Start Date",
   },
   {
@@ -352,38 +357,12 @@ const taskColumns: ColumnDef<Task>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       const variant =
-        status === "Completed"
+        status === "completed"
           ? "default"
-          : status === "In Progress"
+          : status === "in-progress"
           ? "secondary"
           : "outline";
       return <Badge variant={variant}>{status}</Badge>;
-    },
-  },
-  {
-    accessorKey: "progress",
-    header: "Progress",
-    cell: ({ row }) => {
-      const progress = row.getValue("progress") as number;
-      return (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-          <span className="text-xs">{progress}%</span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "phase",
-    header: "Phase",
-    cell: ({ row }) => {
-      const phase = row.getValue("phase") as string;
-      return <Badge variant="outline">{phase}</Badge>;
     },
   },
 ];
@@ -477,6 +456,61 @@ const SiteDashboard = () => {
   const [isViewIssueModalOpen, setIsViewIssueModalOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  
+  // Fetch users and projects on component mount
+  useEffect(() => {
+    fetchUsers();
+    fetchProjects();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await fetch(`${API_URL}/users`, { headers });
+      if (response.ok) {
+        const allUsers = await response.json();
+        // Filter users except ones whose roles are "user"
+        const filteredUsers = allUsers.filter(
+          (user: User) => user.role !== "user"
+        );
+        setUsers(filteredUsers);
+      } else {
+        console.error("Failed to fetch users:", response.status);
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      setUsers([]);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await fetch(`${API_URL}/projects`, { headers });
+      if (response.ok) {
+        const projectsData = await response.json();
+        setProjects(projectsData);
+      } else {
+        console.error("Failed to fetch projects:", response.status);
+        setProjects([]);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      setProjects([]);
+    }
+  };
+
   const [storeStaff, setStoreStaff] = useState([
     {
       name: "John Doe",
@@ -646,67 +680,42 @@ const SiteDashboard = () => {
     {
       id: "TASK-1",
       name: "Foundation Work",
-      project: "Main Building",
-      assignedTo: "John Doe",
-      startDate: "2024-01-01",
+      projectId: "project-1",
+      assignedToId: "user-1",
+      description: "Complete foundation work for main building",
+      startdate: "2024-01-01",
       dueDate: "2024-01-15",
-      status: "Completed",
-      progress: 100,
-      phase: "Foundation",
-      progressHistory: [
-        { progress: 0, remarks: "Task created", timestamp: "2024-01-01" },
-        { progress: 50, remarks: "Halfway done", timestamp: "2024-01-08" },
-        { progress: 100, remarks: "Completed", timestamp: "2024-01-15" },
-      ],
+      status: "completed",
     },
     {
       id: "TASK-2",
       name: "Steel Structure",
-      project: "Main Building",
-      assignedTo: "Jane Smith",
-      startDate: "2024-01-16",
+      projectId: "project-1",
+      assignedToId: "user-2",
+      description: "Install steel structure framework",
+      startdate: "2024-01-16",
       dueDate: "2024-02-15",
-      status: "In Progress",
-      progress: 75,
-      phase: "Structure",
-      progressHistory: [
-        { progress: 0, remarks: "Task created", timestamp: "2024-01-16" },
-        { progress: 40, remarks: "Initial assembly", timestamp: "2024-01-25" },
-        { progress: 75, remarks: "Main frame done", timestamp: "2024-02-10" },
-      ],
+      status: "in-progress",
     },
     {
       id: "TASK-3",
       name: "Roofing Installation",
-      project: "Main Building",
-      assignedTo: "Mike Johnson",
-      startDate: "2024-02-01",
+      projectId: "project-1",
+      assignedToId: "user-3",
+      description: "Install roofing materials",
+      startdate: "2024-02-01",
       dueDate: "2024-02-28",
-      status: "In Progress",
-      progress: 45,
-      phase: "Roofing",
-      progressHistory: [
-        { progress: 0, remarks: "Task created", timestamp: "2024-02-01" },
-        {
-          progress: 45,
-          remarks: "Started installation",
-          timestamp: "2024-02-15",
-        },
-      ],
+      status: "in-progress",
     },
     {
       id: "TASK-4",
       name: "Interior Finishing",
-      project: "Main Building",
-      assignedTo: "Sarah Wilson",
-      startDate: "2024-02-20",
+      projectId: "project-1",
+      assignedToId: "user-4",
+      description: "Complete interior finishing work",
+      startdate: "2024-02-20",
       dueDate: "2024-03-20",
-      status: "Not Started",
-      progress: 0,
-      phase: "Finishing",
-      progressHistory: [
-        { progress: 0, remarks: "Task created", timestamp: "2024-02-20" },
-      ],
+      status: "pending",
     },
   ]);
   const [progressStats, setProgressStats] = useState({
@@ -735,7 +744,6 @@ const SiteDashboard = () => {
 
   // Progress Update Modal state
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [currentProgress, setCurrentProgress] = useState(0);
 
   // Add these new state variables after the other useState declarations
   const [materialRequests, setMaterialRequests] = useState([
@@ -802,7 +810,7 @@ const SiteDashboard = () => {
     const task = tasks.find((t) => t.id === taskId);
     if (task) {
       toast.info(`Viewing Gantt chart for: ${task.name}`, {
-        description: `Start: ${task.startDate} - End: ${task.dueDate}`,
+        description: `Start: ${task.startdate} - End: ${task.dueDate}`,
         duration: 3000,
       });
     }
@@ -813,31 +821,17 @@ const SiteDashboard = () => {
     setIsTaskViewModalOpen(true);
   };
 
-  const handleUpdateProgress = (formData: {
+  const handleUpdateTaskStatus = (formData: {
     taskId: string;
-    progress: number;
+    status: string;
     notes: string;
   }) => {
-    // Update task progress and append to progressHistory
+    // Update task status
     const updatedTasks = tasks.map((task) => {
       if (task.id === formData.taskId) {
         return {
           ...task,
-          progress: formData.progress,
-          status:
-            formData.progress === 100
-              ? "Completed"
-              : formData.progress > 0
-              ? "In Progress"
-              : "Not Started",
-          progressHistory: [
-            ...task.progressHistory,
-            {
-              progress: formData.progress,
-              remarks: formData.notes,
-              timestamp: new Date().toISOString(),
-            },
-          ],
+          status: formData.status,
         };
       }
       return task;
@@ -846,10 +840,10 @@ const SiteDashboard = () => {
 
     // Update progress stats
     const completedTasks = updatedTasks.filter(
-      (t) => t.status === "Completed"
+      (t) => t.status === "completed"
     ).length;
     const activeTasks = updatedTasks.filter(
-      (t) => t.status === "In Progress"
+      (t) => t.status === "in-progress"
     ).length;
     setProgressStats((prev) => ({
       ...prev,
@@ -858,38 +852,13 @@ const SiteDashboard = () => {
       onSchedule: Math.round((completedTasks / updatedTasks.length) * 100),
     }));
 
-    // Update weekly progress
-    const currentWeek = weeklyProgress[weeklyProgress.length - 1];
-    setWeeklyProgress((prev) => [
-      ...prev.slice(0, -1),
-      {
-        ...currentWeek,
-        actual: Math.round((completedTasks / updatedTasks.length) * 100),
-      },
-    ]);
-
-    // Update project phases
-    const updatedPhases = projectPhases.map((phase) => {
-      const phaseTasks = updatedTasks.filter((t) => t.phase === phase.phase);
-      if (phaseTasks.length > 0) {
-        const phaseProgress = Math.round(
-          phaseTasks.reduce((acc, task) => acc + task.progress, 0) /
-            phaseTasks.length
-        );
-        return { ...phase, progress: phaseProgress };
-      }
-      return phase;
-    });
-    setProjectPhases(updatedPhases);
-
-    toast.success("Progress updated successfully!");
+    toast.success("Task status updated successfully!");
     setIsProgressModalOpen(false);
   };
 
-  // Progress Update Modal
-  const openProgressModal = (task: Task) => {
+  // Status Update Modal
+  const openStatusModal = (task: Task) => {
     setSelectedTask(task);
-    setCurrentProgress(task.progress);
     setIsProgressModalOpen(true);
   };
 
@@ -1121,19 +1090,16 @@ const SiteDashboard = () => {
 
   const handleAddTask = (formData: {
     name: string;
-    project: string;
-    assignedTo: string;
-    startDate: string;
+    projectId: string;
+    assignedToId: string;
+    description: string;
+    startdate: string;
     dueDate: string;
-    phase: string;
-    // dependencies: string[];
   }) => {
     const newTask: Task = {
       id: `TASK-${tasks.length + 1}`,
       ...formData,
-      status: "Not Started",
-      progress: 0,
-      progressHistory: [],
+      status: "pending",
     };
 
     setTasks((prev) => [...prev, newTask]);
@@ -1143,22 +1109,6 @@ const SiteDashboard = () => {
       ...prev,
       activeTasks: prev.activeTasks + 1,
     }));
-
-    // Update project phases
-    const updatedPhases = projectPhases.map((phase) => {
-      if (phase.phase === formData.phase) {
-        const phaseTasks = [...tasks, newTask].filter(
-          (t) => t.phase === phase.phase
-        );
-        const phaseProgress = Math.round(
-          phaseTasks.reduce((acc, task) => acc + task.progress, 0) /
-            phaseTasks.length
-        );
-        return { ...phase, progress: phaseProgress };
-      }
-      return phase;
-    });
-    setProjectPhases(updatedPhases);
 
     toast.success("New task added successfully!");
     setIsAddTaskModalOpen(false);
@@ -1231,7 +1181,7 @@ const SiteDashboard = () => {
 
   // Active Tasks List component
   const ActiveTasksList = () => {
-    const activeTasks = tasks.filter((t) => t.status === "In Progress");
+    const activeTasks = tasks.filter((t) => t.status === "in-progress");
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -1246,7 +1196,7 @@ const SiteDashboard = () => {
               <tr className="bg-muted">
                 <th className="p-2 text-left">Task Name</th>
                 <th className="p-2 text-left">Assigned To</th>
-                <th className="p-2 text-left">Progress</th>
+                <th className="p-2 text-left">Status</th>
                 <th className="p-2 text-left">Actions</th>
               </tr>
             </thead>
@@ -1254,8 +1204,8 @@ const SiteDashboard = () => {
               {activeTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo}</td>
-                  <td className="p-2">{task.progress}%</td>
+                  <td className="p-2">{task.assignedToId}</td>
+                  <td className="p-2">{task.status}</td>
                   <td className="p-2">
                     <Button
                       size="sm"
@@ -1297,25 +1247,22 @@ const SiteDashboard = () => {
             <strong>Task Name:</strong> {task.name}
           </div>
           <div>
-            <strong>Assigned To:</strong> {task.assignedTo}
+            <strong>Assigned To:</strong> {task.assignedToId}
           </div>
           <div>
-            <strong>Project:</strong> {task.project}
+            <strong>Project:</strong> {task.projectId}
           </div>
           <div>
-            <strong>Phase:</strong> {task.phase}
+            <strong>Description:</strong> {task.description}
           </div>
           <div>
-            <strong>Start Date:</strong> {task.startDate}
+            <strong>Start Date:</strong> {task.startdate}
           </div>
           <div>
             <strong>Due Date:</strong> {task.dueDate}
           </div>
           <div>
             <strong>Status:</strong> {task.status}
-          </div>
-          <div>
-            <strong>Progress:</strong> {task.progress}%
           </div>
         </div>
       </div>
@@ -1324,7 +1271,7 @@ const SiteDashboard = () => {
 
   // Completed Tasks List component
   const CompletedTasksList = () => {
-    const completedTasks = tasks.filter((t) => t.status === "Completed");
+    const completedTasks = tasks.filter((t) => t.status === "completed");
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -1339,7 +1286,7 @@ const SiteDashboard = () => {
               <tr className="bg-muted">
                 <th className="p-2 text-left">Task Name</th>
                 <th className="p-2 text-left">Assigned To</th>
-                <th className="p-2 text-left">Progress</th>
+                <th className="p-2 text-left">Status</th>
                 <th className="p-2 text-left">Actions</th>
               </tr>
             </thead>
@@ -1347,8 +1294,8 @@ const SiteDashboard = () => {
               {completedTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo}</td>
-                  <td className="p-2">{task.progress}%</td>
+                  <td className="p-2">{task.assignedToId}</td>
+                  <td className="p-2">{task.status}</td>
                   <td className="p-2">
                     <Button
                       size="sm"
@@ -1373,7 +1320,7 @@ const SiteDashboard = () => {
   // On Schedule Tasks List component
   const OnScheduleTasksList = () => {
     const onScheduleTasks = tasks.filter(
-      (t) => new Date(t.dueDate) >= new Date() || t.progress === 100
+      (t) => new Date(t.dueDate || '') >= new Date() || t.status === "completed"
     );
     return (
       <div className="space-y-6">
@@ -1389,7 +1336,7 @@ const SiteDashboard = () => {
               <tr className="bg-muted">
                 <th className="p-2 text-left">Task Name</th>
                 <th className="p-2 text-left">Assigned To</th>
-                <th className="p-2 text-left">Progress</th>
+                <th className="p-2 text-left">Status</th>
                 <th className="p-2 text-left">Due Date</th>
                 <th className="p-2 text-left">Actions</th>
               </tr>
@@ -1398,8 +1345,8 @@ const SiteDashboard = () => {
               {onScheduleTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo}</td>
-                  <td className="p-2">{task.progress}%</td>
+                  <td className="p-2">{task.assignedToId}</td>
+                  <td className="p-2">{task.status}</td>
                   <td className="p-2">{task.dueDate}</td>
                   <td className="p-2">
                     <Button
@@ -2056,7 +2003,7 @@ const SiteDashboard = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() =>
-                                    openProgressModal(row.original)
+                                    openStatusModal(row.original)
                                   }
                                 >
                                   Update
@@ -5081,37 +5028,33 @@ const SiteDashboard = () => {
               e.preventDefault();
               if (!selectedTask) return;
               const formData = new FormData(e.currentTarget);
-              handleUpdateProgress({
+              handleUpdateTaskStatus({
                 taskId: selectedTask.id,
-                progress: Number(formData.get("progressSlider")),
-                notes: formData.get("progressNotes") as string,
+                status: formData.get("taskStatus") as string,
+                notes: formData.get("statusNotes") as string,
               });
             }}
             className="space-y-4"
           >
             <div>
-              <Label htmlFor="progressSlider">Progress Percentage</Label>
-              <Input
-                id="progressSlider"
-                name="progressSlider"
-                type="range"
-                min="0"
-                max="100"
-                defaultValue={selectedTask?.progress || 0}
-                className="mt-2"
-                onChange={(e) => setCurrentProgress(Number(e.target.value))}
-                required
-              />
-              <div className="text-sm text-muted-foreground mt-1">
-                Current: {currentProgress}%
-              </div>
+              <Label htmlFor="taskStatus">Task Status</Label>
+              <Select name="taskStatus" required>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
-              <Label htmlFor="progressNotes">Progress Notes</Label>
+              <Label htmlFor="statusNotes">Status Notes</Label>
               <Textarea
-                id="progressNotes"
-                name="progressNotes"
-                placeholder="Add notes about progress..."
+                id="statusNotes"
+                name="statusNotes"
+                placeholder="Add notes about status change..."
                 rows={3}
                 required
               />
@@ -5124,7 +5067,7 @@ const SiteDashboard = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit">Update Progress</Button>
+              <Button type="submit">Update Status</Button>
             </div>
           </form>
         </DialogContent>
@@ -5728,12 +5671,11 @@ const SiteDashboard = () => {
                 const formData = new FormData(e.currentTarget);
                 handleAddTask({
                   name: formData.get("name") as string,
-                  project: formData.get("project") as string,
-                  assignedTo: formData.get("assignedTo") as string,
-                  startDate: formData.get("startDate") as string,
+                  projectId: formData.get("projectId") as string,
+                  assignedToId: formData.get("assignedToId") as string,
+                  description: formData.get("description") as string,
+                  startdate: formData.get("startdate") as string,
                   dueDate: formData.get("dueDate") as string,
-                  phase: formData.get("phase") as string,
-                  // dependencies: formData.getAll("dependencies") as string[],
                 });
               }}
               className="space-y-4"
@@ -5749,29 +5691,51 @@ const SiteDashboard = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="project">Project</Label>
-                <Input
-                  id="project"
-                  name="project"
-                  defaultValue="Main Building"
-                  required
-                />
+                <Label htmlFor="projectId">Project</Label>
+                <Select name="projectId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="assignedTo">Assigned To</Label>
-                <Input
-                  id="assignedTo"
-                  name="assignedTo"
-                  placeholder="Enter assignee name"
-                  required
+                <Label htmlFor="assignedToId">Assigned To</Label>
+                <Select name="assignedToId" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="Enter task description"
+                  rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input id="startDate" name="startDate" type="date" required />
+                  <Label htmlFor="startdate">Start Date</Label>
+                  <Input id="startdate" name="startdate" type="date" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dueDate">Due Date</Label>
@@ -5779,21 +5743,7 @@ const SiteDashboard = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phase">Phase</Label>
-                <Select name="phase" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select phase" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectPhases.map((phase) => (
-                      <SelectItem key={phase.phase} value={phase.phase}>
-                        {phase.phase}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
 
               <div className="space-y-2">
                 {/* <Label htmlFor="dependencies">Dependencies</Label>
@@ -7206,19 +7156,19 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Project</Label>
-                  <p className="font-medium">{selectedTaskView.project}</p>
+                  <p className="font-medium">{selectedTaskView.projectId}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Assigned To</Label>
-                  <p className="font-medium">{selectedTaskView.assignedTo}</p>
+                  <p className="font-medium">{selectedTaskView.assignedToId}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Phase</Label>
-                  <p className="font-medium">{selectedTaskView.phase}</p>
+                  <Label className="text-muted-foreground">Description</Label>
+                  <p className="font-medium">{selectedTaskView.description}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Start Date</Label>
-                  <p className="font-medium">{selectedTaskView.startDate}</p>
+                  <p className="font-medium">{selectedTaskView.startdate}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Due Date</Label>
@@ -7228,9 +7178,9 @@ const SiteDashboard = () => {
                   <Label className="text-muted-foreground">Status</Label>
                   <Badge
                     variant={
-                      selectedTaskView.status === "Completed"
+                      selectedTaskView.status === "completed"
                         ? "default"
-                        : selectedTaskView.status === "In Progress"
+                        : selectedTaskView.status === "in-progress"
                         ? "secondary"
                         : "outline"
                     }
@@ -7238,38 +7188,8 @@ const SiteDashboard = () => {
                     {selectedTaskView.status}
                   </Badge>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">Progress</Label>
-                  <p className="font-medium">{selectedTaskView.progress}%</p>
-                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-medium mb-2">
-                  Progress Update History
-                </h4>
-                <div className="border rounded-md overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted">
-                        <th className="p-2 text-left">Date/Time</th>
-                        <th className="p-2 text-left">Progress (%)</th>
-                        <th className="p-2 text-left">Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedTaskView.progressHistory.map((entry, idx) => (
-                        <tr key={idx} className="border-t">
-                          <td className="p-2">
-                            {new Date(entry.timestamp).toLocaleString()}
-                          </td>
-                          <td className="p-2">{entry.progress}</td>
-                          <td className="p-2">{entry.remarks}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+
               <div className="pt-4 flex justify-end border-t mt-6 px-2">
                 <Button
                   variant="outline"

@@ -61,7 +61,7 @@ export const projectController = {
           client: true,
           managers: true,
           members: true,
-          tasks: true,
+          // tasks: true,
           invoices: {
             include: {
               items: true
@@ -109,7 +109,7 @@ export const projectController = {
           client: true,
           managers: true,
           members: true,
-          tasks: true,
+          // tasks: true,
           invoices: true,
           materialRequests: true,
           Tender: true,
@@ -203,13 +203,13 @@ export const projectController = {
       });
       
       // Notify assigned user if present
-      if (task.assignedTo) {
-        await prismaNotificationService.createNotification({
-          to: task.assignedTo,
-          type: 'task',
-          message: `A new task has been assigned to you.`
-        });
-      }
+      // if (task.assignedTo) {
+      //   await prismaNotificationService.createNotification({
+      //     to: task.assignedTo,
+      //     type: 'task',
+      //     message: `A new task has been assigned to you.`
+      //   });
+      // }
       
       res.status(201).json(task);
     } catch (error) {
@@ -311,7 +311,7 @@ export const projectController = {
           client: true,
           managers: true,
           members: true,
-          tasks: true,
+          // tasks: true,
           invoices: true,
           materialRequests: true,
           Tender: true
@@ -341,7 +341,7 @@ export const projectController = {
           client: true,
           managers: true,
           members: true,
-          tasks: true,
+          // tasks: true,
           invoices: true,
           materialRequests: true,
           Tender: true
@@ -431,7 +431,7 @@ export const projectController = {
   async getTasksByAssignee(req: Request, res: Response) {
     try {
       const tasks = await prisma.task.findMany({
-        where: { assignedTo: req.params.assigneeId },
+        where: { assignedToId: req.params.assigneeId },
         include: {
           project: true
         },

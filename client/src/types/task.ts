@@ -8,7 +8,7 @@ export interface Task {
   dueDate: string;
   status: string;
   progress: number;
-  phase?: string;
+  description?: string;
   progressHistory?: {
     progress: number;
     remarks: string;
