@@ -3340,7 +3340,7 @@ const SiteDashboard = () => {
               {/* Store Manager Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Staff Management */}
-                <Card>
+                {/* <Card>
                   <CardHeader>
                     <CardTitle>Store Staff Management</CardTitle>
                     <CardDescription>
@@ -3476,7 +3476,7 @@ const SiteDashboard = () => {
                       Add New Staff
                     </Button>
                   </CardContent>
-                </Card>
+                </Card> */}
 
                 {/* Advanced Analytics */}
                 <Card>
