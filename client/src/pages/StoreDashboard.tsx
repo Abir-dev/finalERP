@@ -457,6 +457,39 @@ const StoreDashboard = () => {
     }));
   };
 
+  // Calculate Staff KPIs
+  const getStaffKPIs = () => {
+    const totalStaff = storeStaff.length;
+    const onDutyStaff = storeStaff.filter(staff => staff.status === 'ON_DUTY').length;
+    const offDutyStaff = storeStaff.filter(staff => staff.status === 'OFF_DUTY').length;
+    
+    // Group by availability status
+    const availabilityStats = storeStaff.reduce((acc, staff) => {
+      const availability = staff.availabilityStatus || 'UNKNOWN';
+      acc[availability] = (acc[availability] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Group by position
+    const positionStats = storeStaff.reduce((acc, staff) => {
+      const position = staff.position || 'UNKNOWN';
+      acc[position] = (acc[position] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      totalStaff,
+      onDutyStaff,
+      offDutyStaff,
+      availabilityStats,
+      positionStats,
+      fullTimeStaff: availabilityStats['FULL_TIME'] || 0,
+      partTimeStaff: availabilityStats['PART_TIME'] || 0,
+      contractStaff: availabilityStats['CONTRACT'] || 0,
+      onCallStaff: availabilityStats['ON_CALL'] || 0
+    };
+  };
+
   const fetchStoreStaffData = async () => {
     if (!userID) return;
 
@@ -4049,6 +4082,38 @@ const StoreDashboard = () => {
               </Button>
             </CardHeader>
             <CardContent>
+              {/* Staff KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <StatCard
+                  title="Total Staff"
+                  value={getStaffKPIs().totalStaff}
+                  icon={Users}
+                  trend={null}
+                  description={`${getStaffKPIs().onDutyStaff} on duty`}
+                />
+                <StatCard
+                  title="On Duty"
+                  value={getStaffKPIs().onDutyStaff}
+                  icon={CheckCircle}
+                  trend={null}
+                  description={`${getStaffKPIs().offDutyStaff} off duty`}
+                />
+                <StatCard
+                  title="Full-Time Staff"
+                  value={getStaffKPIs().fullTimeStaff}
+                  icon={Clock}
+                  trend={null}
+                  description={`${getStaffKPIs().partTimeStaff} part-time`}
+                />
+                <StatCard
+                  title="Contract Staff"
+                  value={getStaffKPIs().contractStaff}
+                  icon={Users}
+                  trend={null}
+                  description={`${getStaffKPIs().onCallStaff} on-call`}
+                />
+              </div>
+              
               <div className="space-y-4">
                 {storeStaff.map((staff, index) => {
                   // Format certifications from backend string
@@ -5027,7 +5092,7 @@ const StoreDashboard = () => {
 
       {/* View/Edit Staff Modal */}
       <Dialog open={isViewStaffModalOpen} onOpenChange={setIsViewStaffModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" hideCloseButton>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
