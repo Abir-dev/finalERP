@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, MapPin } from "lucide-react";
+import { Calendar1, ChevronDown, ChevronRight, MapPin } from "lucide-react";
 import {
   Download,
   Plus,
@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
+  Trash2,
 } from "lucide-react";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { TenderDashboard } from "@/components/tender-management/tender-dashboard";
@@ -63,6 +64,7 @@ const TenderManagement = () => {
   const [isGRNModalOpen, setIsGRNModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
+  const [editingTender, setEditingTender] = useState(null);
   const [isBoqModalOpen, setIsBoqModalOpen] = useState(false);
 
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
@@ -83,7 +85,7 @@ const TenderManagement = () => {
   const [tenders, setTenders] = useState([]);
   const [expandedTenders, setExpandedTenders] = useState<Set<number>>(new Set());
 
-  useEffect(() => {
+  const fetchTenders = () => {
     const token =
       sessionStorage.getItem("jwt_token") ||
       localStorage.getItem("jwt_token_backup");
@@ -91,6 +93,38 @@ const TenderManagement = () => {
     axios.get(`${API_URL}/tenders`, { headers })
       .then(res => setTenders(res.data))
       .catch(() => {});
+  };
+
+  const handleDeleteTender = async (tenderId: number) => {
+    if (!window.confirm("Are you sure you want to delete this tender? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      await axios.delete(`${API_URL}/tenders/${tenderId}`, { headers });
+      
+      toast({
+        title: "Tender Deleted",
+        description: "The tender has been successfully deleted.",
+      });
+      
+      fetchTenders(); // Refresh the list
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete tender. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchTenders();
   }, []);
 
   function handleExport() {
@@ -228,7 +262,10 @@ const TenderManagement = () => {
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </Button>
-          <Button onClick={() => setShowBidModal(true)}>
+          <Button onClick={() => {
+            setEditingTender(null);
+            setShowBidModal(true);
+          }}>
             <Plus className="h-4 w-4 mr-2" />
             New Tender
           </Button>
@@ -327,7 +364,10 @@ const TenderManagement = () => {
                       <Download className="h-4 w-4 mr-2" />
                       Export All
                     </Button>
-                    <Button onClick={() => setShowBidModal(true)}>
+                    <Button onClick={() => {
+                      setEditingTender(null);
+                      setShowBidModal(true);
+                    }}>
                       <Plus className="h-4 w-4 mr-2" />
                       New Tender
                     </Button>
@@ -366,7 +406,7 @@ const TenderManagement = () => {
                               <div className="flex items-center gap-4">
                                 <div className="text-right">
                                   <div className="font-semibold">
-                                    ₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L
+                                    ₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(3)}L
                                   </div>
                                   <div className="text-sm text-muted-foreground">
                                     {new Date(tender.submissionDate).toLocaleDateString()}
@@ -383,21 +423,22 @@ const TenderManagement = () => {
                                     {tender.status.replace('-', ' ').toUpperCase()}
                                   </Badge>
                                   <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    onClick={() => handleEditSubmission({
-                                      id: tender.id,
-                                      tender: tender.Project?.name || 'N/A',
-                                      client: tender.client?.name || 'N/A',
-                                      submissionDate: tender.submissionDate,
-                                      status: tender.status,
-                                      notes: `Tender details for ${tender.Project?.name || 'N/A'}`,
-                                      followUpDate: '',
-                                      contactPerson: 'Project Manager',
-                                      submissionStatus: tender.status
-                                    })}
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => {
+                                  setEditingTender(tender);
+                                  setShowBidModal(true);
+                                  }}
                                   >
-                                    <Edit className="h-4 w-4" />
+                                  <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleDeleteTender(tender.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                  <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </div>
@@ -412,6 +453,11 @@ const TenderManagement = () => {
                                 <div>
                                   <h4 className="font-medium mb-3">Tender Details</h4>
                                   <div className="space-y-3">
+                                  <div className="flex items-center">
+                                      <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Tender Number:</span>
+                                      <span className="ml-1 font-medium">{tender.tenderNumber}</span>
+                                    </div>
                                     <div className="flex items-center">
                                       <FileText className="h-4 w-4 text-muted-foreground mr-2" />
                                       <span className="text-muted-foreground">Category:</span>
@@ -427,15 +473,15 @@ const TenderManagement = () => {
                                       <span className="text-muted-foreground">Submission:</span>
                                       <span className="ml-1 font-medium">{new Date(tender.submissionDate).toLocaleDateString()}</span>
                                     </div>
-                                    <div className="flex items-center">
+                                    {/* <div className="flex items-center">
                                       <DollarSign className="h-4 w-4 text-muted-foreground mr-2" />
                                       <span className="text-muted-foreground">Value:</span>
-                                      <span className="ml-1 font-medium">₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L</span>
-                                    </div>
+                                      <span className="ml-1 font-medium">₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(3)}L</span>
+                                    </div> */}
                                     <div className="flex items-center">
-                                      <Users className="h-4 w-4 text-muted-foreground mr-2" />
-                                      <span className="text-muted-foreground">Client:</span>
-                                      <span className="ml-1 font-medium">{tender.client?.name || 'N/A'}</span>
+                                      <Calendar1 className="h-4 w-4 text-muted-foreground mr-2" />
+                                      <span className="text-muted-foreground">Project Duration:</span>
+                                      <span className="ml-1 font-medium">{tender.projectDuration || 'N/A'}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -448,7 +494,7 @@ const TenderManagement = () => {
                                       <div key={index} className="text-sm">
                                         <div className="font-medium">{req.description}</div>
                                         <div className="text-muted-foreground">
-                                          Qty: {req.quantity} <br /> Unit: {req.unit} <br /> Cost: ₹{(req.estimatedCost / 100000).toFixed(1)}L
+                                          Qty: {req.quantity} <br /> Unit: {req.unit} <br /> Cost: ₹{(req.estimatedCost / 100000).toFixed(3)}L
                                         </div>
                                       </div>
                                     )) || (
@@ -470,10 +516,10 @@ const TenderManagement = () => {
                                       <span className="text-muted-foreground">Scope Of Work:</span>
                                       <p className="text-sm mt-1">{tender.scopeOfWork || 'No description available'}</p>
                                     </div>
-                                    {/* <div>
-                                      <span className="text-muted-foreground">Timeline:</span>
-                                      <p className="text-sm mt-1">{tender.timeline || 'Not specified'}</p>
-                                    </div> */}
+                                    <div>
+                                      <span className="text-muted-foreground">Special Requirements:</span>
+                                      <p className="text-sm mt-1">{tender.specialRequirements || 'Not specified'}</p>
+                                    </div>
                                     {/* <div>
                                       <span className="text-muted-foreground">Contact:</span>
                                       <p className="text-sm mt-1">{tender.contactPerson || 'Project Manager'}</p>
@@ -504,7 +550,7 @@ const TenderManagement = () => {
                 </div>
 
                 {/* Summary Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                   <Card>
                     <CardContent className="p-4">
                       <div className="text-center">
@@ -567,7 +613,7 @@ const TenderManagement = () => {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
+                </div> */}
               </div>
             </CardContent>
           </Card>
@@ -1098,7 +1144,10 @@ const TenderManagement = () => {
                     <p className="text-muted-foreground mb-4">
                       You don't have any active tenders at the moment.
                     </p>
-                    <Button onClick={() => setShowBidModal(true)}>
+                    <Button onClick={() => {
+                      setEditingTender(null);
+                      setShowBidModal(true);
+                    }}>
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Tender
                     </Button>
@@ -1111,7 +1160,14 @@ const TenderManagement = () => {
       </Tabs>
       {showBidModal && (
         <div className="top-0 ">
-          <BidPreparationModal onClose={() => setShowBidModal(false)} />
+          <BidPreparationModal 
+            onClose={() => {
+              setShowBidModal(false);
+              setEditingTender(null);
+              fetchTenders(); // Refresh tenders list
+            }} 
+            editTender={editingTender}
+          />
         </div>
       )}
 

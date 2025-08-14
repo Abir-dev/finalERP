@@ -11,6 +11,7 @@ import { useUser } from '@/contexts/UserContext';
 
 interface BidPreparationModalProps {
   onClose: () => void;
+  editTender?: any;
 }
 
 interface RequirementItem {
@@ -47,29 +48,40 @@ interface TenderFormData {
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) => {
+const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, editTender }) => {
   const { user } = useUser();
   const [requirements, setRequirements] = useState<RequirementItem[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<TenderFormData>({
-    tenderNumber: `TND-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
-    submissionDate: new Date().toISOString().split('T')[0],
-    projectId: '',
-    clientId: '',
-    location: '',
-    projectDuration: 0,
-    projectCategory: 'COMMERCIAL',
-    priorityLevel: 'MEDIUM',
-    scopeOfWork: '',
-    specialRequirements: ''
+    tenderNumber: editTender?.tenderNumber || `TND-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`,
+    submissionDate: editTender?.submissionDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+    projectId: editTender?.projectId || '',
+    clientId: editTender?.clientId || '',
+    location: editTender?.location || '',
+    projectDuration: editTender?.projectDuration || 0,
+    projectCategory: editTender?.projectCategory || 'COMMERCIAL',
+    priorityLevel: editTender?.priorityLevel || 'MEDIUM',
+    scopeOfWork: editTender?.scopeOfWork || '',
+    specialRequirements: editTender?.specialRequirements || ''
   });
 
   useEffect(() => {
     fetchClients();
     fetchProjects();
-  }, []);
+    
+    // Load existing requirements if editing
+    if (editTender?.requirements) {
+      setRequirements(editTender.requirements.map((req: any, index: number) => ({
+        id: index + 1,
+        description: req.description,
+        quantity: req.quantity,
+        unit: req.unit,
+        estimatedCost: req.estimatedCost
+      })));
+    }
+  }, [editTender]);
 
   const fetchClients = async () => {
     try {
@@ -140,45 +152,94 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const userID: string = user?.id || "";  
       
-      // Create tender
-      const tenderResponse = await fetch(`${API_URL}/tenders?userId=${userID}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers
-        },
-        body: JSON.stringify(formData)
-      });
+      if (editTender) {
+        // Update existing tender
+        const tenderResponse = await fetch(`${API_URL}/tenders/${editTender.id}?userId=${userID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          },
+          body: JSON.stringify(formData)
+        });
 
-      if (!tenderResponse.ok) {
-        throw new Error('Failed to create tender');
-      }
+        if (!tenderResponse.ok) {
+          throw new Error('Failed to update tender');
+        }
 
-      const tender = await tenderResponse.json();
+        // Delete existing requirements individually
+        if (editTender.requirements) {
+          await Promise.all(
+            editTender.requirements.map((req: any) =>
+              fetch(`${API_URL}/tenders/${editTender.id}/requirements/${req.id}?userId=${userID}`, {
+                method: 'DELETE',
+                headers
+              })
+            )
+          );
+        }
 
-      // Create requirements for the tender
-      await Promise.all(
-        requirements.map(requirement =>
-          fetch(`${API_URL}/tenders/${tender.id}/requirements?userId=${userID}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...headers
-            },
-            body: JSON.stringify({
-              description: requirement.description,
-              quantity: requirement.quantity,
-              unit: requirement.unit,
-              estimatedCost: requirement.estimatedCost
+        // Create new requirements
+        await Promise.all(
+          requirements.map(requirement =>
+            fetch(`${API_URL}/tenders/${editTender.id}/requirements?userId=${userID}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...headers
+              },
+              body: JSON.stringify({
+                description: requirement.description,
+                quantity: requirement.quantity,
+                unit: requirement.unit,
+                estimatedCost: requirement.estimatedCost
+              })
             })
-          })
-        )
-      );
+          )
+        );
 
-      toast.success('Tender created successfully');
+        toast.success('Tender updated successfully');
+      } else {
+        // Create new tender
+        const tenderResponse = await fetch(`${API_URL}/tenders?userId=${userID}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!tenderResponse.ok) {
+          throw new Error('Failed to create tender');
+        }
+
+        const tender = await tenderResponse.json();
+
+        // Create requirements for the tender
+        await Promise.all(
+          requirements.map(requirement =>
+            fetch(`${API_URL}/tenders/${tender.id}/requirements?userId=${userID}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...headers
+              },
+              body: JSON.stringify({
+                description: requirement.description,
+                quantity: requirement.quantity,
+                unit: requirement.unit,
+                estimatedCost: requirement.estimatedCost
+              })
+            })
+          )
+        );
+
+        toast.success('Tender created successfully');
+      }
       onClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create tender');
+      toast.error(error instanceof Error ? error.message : (editTender ? 'Failed to update tender' : 'Failed to create tender'));
     } finally {
       setLoading(false);
     }
@@ -194,8 +255,8 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
               <FileText className="h-6 w-6 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Create New Tender</h2>
-              <p className="text-sm text-muted-foreground">Prepare and submit a new tender proposal</p>
+              <h2 className="text-xl font-semibold">{editTender ? 'Edit Tender' : 'Create New Tender'}</h2>
+              <p className="text-sm text-muted-foreground">{editTender ? 'Update tender details and requirements' : 'Prepare and submit a new tender proposal'}</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-muted">
@@ -546,7 +607,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
                 disabled={loading}
               >
                 <Plus className="h-4 w-4" />
-                {loading ? 'Creating...' : 'Create Tender'}
+{loading ? (editTender ? 'Updating...' : 'Creating...') : (editTender ? 'Update Tender' : 'Create Tender')}
               </Button>
             </div>
           </div>
