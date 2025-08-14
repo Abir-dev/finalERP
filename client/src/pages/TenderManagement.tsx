@@ -8,9 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-<<<<<<< HEAD
-import { Download, Plus, FileText, Calendar, DollarSign, Users, Edit, Eye, ChevronDown, ChevronRight, MapPin } from "lucide-react";
-=======
+import { ChevronDown, ChevronRight, MapPin } from "lucide-react";
 import {
   Download,
   Plus,
@@ -25,7 +23,6 @@ import {
   Clock,
   CheckCircle,
 } from "lucide-react";
->>>>>>> 8d39a6da7f39eed7656aabf91b00cebbd241ffbd
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { TenderDashboard } from "@/components/tender-management/tender-dashboard";
 import BidPreparationModal from "@/components/modals/BidPreparationModal";
@@ -337,7 +334,6 @@ const TenderManagement = () => {
                   </div>
                 </div>
 
-<<<<<<< HEAD
                 {/* Tenders Cards with Expandable Details */}
                 <div className="space-y-4">
                   {tenders.length > 0 ? (
@@ -348,99 +344,17 @@ const TenderManagement = () => {
                           <div className="p-6">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4">
-=======
-                {/* Tenders Table */}
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Project Name</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Estimated Value</TableHead>
-                        <TableHead>Submission Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tenders.length > 0 ? (
-                        tenders.map((tender) => (
-                          <TableRow
-                            key={tender.id}
-                            className="hover:bg-muted/50"
-                          >
-                            <TableCell className="font-medium">
-                              {tender.Project?.name || 'N/A'}
-                            </TableCell>
-                            <TableCell>{tender.client?.name || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{tender.projectCategory}</Badge>
-                            </TableCell>
-                            <TableCell>{tender.location}</TableCell>
-                            <TableCell className="font-semibold">
-                              ₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L
-                            </TableCell>
-                            <TableCell>
-                              {new Date(
-                                tender.submissionDate
-                              ).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  tender.status === "awarded"
-                                    ? "default"
-                                    : tender.status === "submitted"
-                                    ? "secondary"
-                                    : tender.status === "under-evaluation"
-                                    ? "outline"
-                                    : tender.status === "rejected"
-                                    ? "destructive"
-                                    : "outline"
-                                }
-                              >
-                                {tender.status.replace("-", " ").toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
->>>>>>> 8d39a6da7f39eed7656aabf91b00cebbd241ffbd
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="p-0 h-8 w-8"
                                   onClick={() => toggleTenderDetails(tender.id)}
                                 >
-<<<<<<< HEAD
                                   {expandedTenders.has(tender.id) ? (
                                     <ChevronDown className="h-4 w-4" />
                                   ) : (
                                     <ChevronRight className="h-4 w-4" />
                                   )}
-=======
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleEditSubmission({
-                                      id: tender.id,
-                                      tender: tender.projectName,
-                                      client: tender.client,
-                                      submissionDate: tender.submissionDate,
-                                      status: tender.status,
-                                      notes: `Tender details for ${tender.projectName}`,
-                                      followUpDate: "",
-                                      contactPerson: "Project Manager",
-                                      submissionStatus: tender.status,
-                                    })
-                                  }
-                                >
-                                  <Edit className="h-4 w-4" />
->>>>>>> 8d39a6da7f39eed7656aabf91b00cebbd241ffbd
                                 </Button>
                                 <div>
                                   <div className="font-semibold">{tender.Project?.name || 'N/A'}</div>
@@ -487,30 +401,6 @@ const TenderManagement = () => {
                                   </Button>
                                 </div>
                               </div>
-<<<<<<< HEAD
-=======
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8">
-                            <div className="flex flex-col items-center gap-2">
-                              <FileText className="h-12 w-12 text-muted-foreground" />
-                              <h3 className="text-lg font-medium text-muted-foreground">
-                                No Tenders Found
-                              </h3>
-                              <p className="text-muted-foreground">
-                                Start by creating your first tender.
-                              </p>
-                              <Button
-                                onClick={() => setShowBidModal(true)}
-                                className="mt-2"
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Create New Tender
-                              </Button>
->>>>>>> 8d39a6da7f39eed7656aabf91b00cebbd241ffbd
                             </div>
                           </div>
 
