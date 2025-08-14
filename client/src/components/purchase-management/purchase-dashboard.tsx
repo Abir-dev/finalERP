@@ -140,7 +140,7 @@ export function PurchaseDashboard() {
 
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-        user?.role !== "accounts" && user?.id
+        user?.role !== "accounts" && user?.role !== "admin" && user?.id
           ? `${API_URL}/purchase-orders/user/${user.id}`
           : `${API_URL}/purchase-orders`;
 
@@ -358,7 +358,7 @@ export function PurchaseDashboard() {
 
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-        user?.role !== "accounts" && user?.id
+      user?.role !== "accounts" && user?.role !== "admin" && user?.id
           ? `${API_URL}/material/material-requests/user/${user.id}`
           : `${API_URL}/material/material-requests`;
 
@@ -378,7 +378,7 @@ export function PurchaseDashboard() {
 
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-        user?.role !== "accounts" && user?.id
+      user?.role !== "accounts" && user?.role !== "admin" && user?.id
           ? `${API_URL}/vendors/count/${user.id}`
           : `${API_URL}/vendors/count`;
 
