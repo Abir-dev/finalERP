@@ -14,6 +14,13 @@ router.get('/:id', authenticateUser, tenderController.getTender);
 router.put('/:id', authenticateUser, checkRole('md'), validateTender, tenderController.updateTender);
 router.delete('/:id', authenticateUser, checkRole('admin'), tenderController.deleteTender);
 
+// Tender Requirements CRUD
+router.post('/:tenderId/requirements', authenticateUser, tenderController.createTenderRequirement);
+router.get('/:tenderId/requirements', authenticateUser, tenderController.listTenderRequirements);
+router.get('/:tenderId/requirements/:requirementId', authenticateUser, tenderController.getTenderRequirement);
+router.put('/:tenderId/requirements/:requirementId', authenticateUser, tenderController.updateTenderRequirement);
+router.delete('/:tenderId/requirements/:requirementId', authenticateUser, tenderController.deleteTenderRequirement);
+
 // Bid management
 router.post('/:id/bids', authenticateUser, checkRole('client-manager'), validateBid, tenderController.createBid);
 router.get('/:id/bids', authenticateUser, tenderController.listBids);

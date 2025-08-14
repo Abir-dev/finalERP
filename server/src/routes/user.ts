@@ -1,5 +1,7 @@
 import express from 'express';
 import { prismaUserService } from '../services/prismaUserService';
+import prisma from '../config/prisma';
+import logger from '../logger/logger';
 
 const router = express.Router();
 
@@ -10,6 +12,30 @@ router.get('/', async (req, res) => {
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Get users with role 'client' for select options
+router.get('/clients', async (req, res) => {
+  try {
+    const clients = await prisma.user.findMany({
+      where: { role: 'client' },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+    res.json(clients);
+  } catch (error) {
+    logger.error("Error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
   }
 });
 
