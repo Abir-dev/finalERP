@@ -192,31 +192,69 @@ export const projectController = {
   // Task CRUD Operations
   async createTask(req: Request, res: Response) {
     try {
+       const { userId } = req.params;
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      // Log the request data for debugging
+      logger.info("Creating task with data:", {
+        body: req.body,
+        projectId: req.body.projectId,
+        userId: userId
+      });
+
+      // Prepare the data object explicitly
+      const taskData = {
+        name: req.body.name,
+        description: req.body.description || null,
+        assignedToId: req.body.assignedToId || null,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : null,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+        status: req.body.status || "pending",
+        projectId: req.body.projectId,
+        createdById: userId
+      };
+
+      // Log the prepared task data
+      logger.info("Prepared task data:", taskData);
+
       const task = await prisma.task.create({
-        data: {
-          ...req.body,
-          projectId: req.params.projectId
-        },
+        data: taskData,
         include: {
-          project: true
+          project: true,
+          assignedTo: true
         }
       });
       
-      // Notify assigned user if present
-      // if (task.assignedTo) {
-      //   await prismaNotificationService.createNotification({
-      //     to: task.assignedTo,
-      //     type: 'task',
-      //     message: `A new task has been assigned to you.`
-      //   });
-      // }
+      // If task was assigned to someone, send them a notification
+      if (task.assignedToId) {
+        try {
+          await prismaNotificationService.createNotification({
+            to: task.assignedToId,
+            type: 'task',
+            message: `A new task has been assigned to you: ${task.name}`
+          });
+        } catch (notifError) {
+          // Log notification error but don't fail the request
+          logger.error("Error sending notification:", notifError);
+        }
+      }
       
       res.status(201).json(task);
     } catch (error) {
-      logger.error("Error:", error);
-      res.status(500).json({
+      // Log the full error for debugging
+      logger.error("Error creating task:", {
+        error,
+        stack: error instanceof Error ? error.stack : undefined,
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+
+      // Send a more detailed error response
+      return res.status(500).json({
         message: "Internal server error",
         error: error instanceof Error ? error.message : "Unknown error",
+        details: error instanceof Error ? error.stack : undefined
       });
     }
   },
@@ -224,7 +262,7 @@ export const projectController = {
   async listTasks(req: Request, res: Response) {
     try {
       const tasks = await prisma.task.findMany({
-        where: { projectId: req.params.projectId },
+        where: { createdById: req.params.userId },
         include: {
           project: true
         },

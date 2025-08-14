@@ -476,16 +476,16 @@ const SiteDashboard = () => {
   useEffect(() => {
     fetchUsers();
     fetchProjects();
-    if (user?.id) {
+    // if (user?.id) {
       fetchProgressReports();
       fetchTasks();
       // Set up periodic refresh every 30 seconds
-      const interval = setInterval(() => {
-        fetchProgressReports();
-        fetchTasks();
-      }, 30000);
-      return () => clearInterval(interval);
-    }
+      // const interval = setInterval(() => {
+      //   fetchProgressReports();
+      //   fetchTasks();
+      // }, 30000);
+      // return () => clearInterval(interval);
+    // }
   }, [user]);
 
   const fetchUsers = async () => {
@@ -1080,40 +1080,39 @@ const SiteDashboard = () => {
   // Task Management Functions
   const fetchTasks = async () => {
     try {
-      if (!user?.id || projects.length === 0) return;
+      if (!user?.id ) return;
       
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
       
       // Fetch tasks for all projects the user has access to
-      const allTasks: Task[] = [];
+      // const allTasks: Task[] = [];
       
-      for (const project of projects) {
-        try {
+      
           const response = await axios.get(
-            `${API_URL}/projects/${project.id}/tasks`,
+            `${API_URL}/projects/${user?.id}/tasks`,
             {
               headers: { Authorization: `Bearer ${token}` }
             }
           );
           
           // Add project name to each task for display
-          const projectTasks = response.data.map((task: any) => ({
+          const tasksWithProjectName = response.data.map((task: Task) => ({
             ...task,
-            projectName: project.name
+            projectName: projects.find(p => p.id === task.projectId)?.name || "Unknown Project",
           }));
+          setTasks(tasksWithProjectName);
+        
           
-          allTasks.push(...projectTasks);
         } catch (error) {
-          console.error(`Error fetching tasks for project ${project.id}:`, error);
+          console.error(`Error fetching tasks for user ${user?.id}:`, error);
         }
       }
+    
       
-      setTasks(allTasks);
-      
-    } catch (error) {
-      console.error("Error fetching tasks:", error);
-    }
-  };
+    // } catch (error) {
+    //   console.error("Error fetching tasks:", error);
+    // }
+
 
 
 
@@ -1133,7 +1132,7 @@ const SiteDashboard = () => {
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
       
       const response = await axios.put(
-        `${API_URL}/projects/${task.projectId}/tasks/${taskId}`,
+        `${API_URL}/projects/${user?.id}/tasks/${taskId}`,
         updates,
         {
           headers: {
@@ -1430,15 +1429,25 @@ const SiteDashboard = () => {
 
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
       
+      // Format dates as ISO strings
+      const formattedDueDate = formData.dueDate ? new Date(formData.dueDate).toISOString() : null;
+      const formattedStartDate = formData.startdate ? new Date(formData.startdate).toISOString() : null;
+      
+      const taskData = {
+        name: formData.name,
+        description: formData.description || null,
+        assignedToId: formData.assignedToId || null,
+        startdate: formattedStartDate,
+        dueDate: formattedDueDate,
+        status: "pending",
+        projectId: formData.projectId,
+      };
+
+      console.log('Sending task data:', taskData); // For debugging
+
       const response = await axios.post(
-        `${API_URL}/projects/${formData.projectId}/tasks`,
-        {
-          name: formData.name,
-          description: formData.description,
-          assignedTo: formData.assignedToId,
-          dueDate: formData.dueDate,
-          status: "pending"
-        },
+        `${API_URL}/projects/${user?.id}/tasks`,
+        taskData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -2227,7 +2236,7 @@ const SiteDashboard = () => {
       .catch(() => {});
     // Fetch tasks
     axios
-      .get(`${API_URL}/project/tasks`, { headers })
+      .get(`${API_URL}/project/${user.id}/tasks`, { headers })
       .then((res) => setTasks(res.data))
       .catch(() => {});
     // Fetch material requests
