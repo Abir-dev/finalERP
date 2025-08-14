@@ -28,6 +28,8 @@ import milestoneRoutes from './routes/milestone';
 import logger from './logger/logger';
 import storeAnalyticsRoutes from './routes/storeAnalytics';
 import storeStaffRoutes from './routes/storeStaff';
+import progressReportRoutes from './routes/progressReport';
+
 dotenv.config();
 
 const app = express();
@@ -87,6 +89,7 @@ app.use('/api', eventRoutes);
 app.use('/api', scheduleMaintenanceRoutes);
 app.use('/api/store', storeAnalyticsRoutes);
 app.use('/api/staff', storeStaffRoutes);
+app.use('/api/progress-reports', progressReportRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {
