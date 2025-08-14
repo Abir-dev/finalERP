@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clipboard, Filter, Plus, Search, MapPin, Users, AlertTriangle, TrendingUp, Camera, FileText, Upload, X, Edit, Loader2, ChevronDown, ChevronRight, AreaChart, LandPlot, Building, Building2, DeleteIcon, Delete, LucideDelete, Trash2 } from "lucide-react";
+import { Calendar, Clipboard, Filter, Plus, Search, MapPin, Users, AlertTriangle, TrendingUp, Camera, FileText, Upload, X, Edit, Loader2, ChevronDown, ChevronRight, AreaChart, LandPlot, Building, Building2, DeleteIcon, Delete, LucideDelete, Trash2, CalendarDays, Calendar1Icon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -1408,47 +1408,49 @@ Add any additional notes here...
             {subview === 'main' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard
-                        title="Active Projects"
-                        value={projects.filter(p => p.status === "In Progress").length}
-                        icon={Clipboard}
+                        title="Total Square Footage"
+                        value={`${(projects.reduce((sum, p) => sum + (p.squareFootage || 0), 0) / 1000).toFixed(3)}K sq ft`}
+                        icon={LandPlot}
                         trend={{
-                            value: 12,
+                            value: 15,
                             label: "vs last month"
                         }}
-                        onClick={() => setSubview('activeProjects')}
+                        onClick={() => setSubview('resourceAllocation')}
                     />
                     <StatCard
-                        title="Projects On Schedule"
-                        value={projects.filter(p => p.status === "In Progress" && p.progress >= 50).length}
+                        title="Avg Project Duration"
+                        value={`${Math.round(projects.reduce((sum, p) => sum + (p.estimatedDuration || 0), 0) / projects.length || 0)} days`}
                         icon={Calendar}
                         trend={{
-                            value: 5,
-                            label: "vs last month"
+                            value: -5,
+                            label: "improvement"
                         }}
-                        onClick={() => setSubview('onSchedule')}
+                        onClick={() => setSubview('materialStatus')}
                     />
-                    <StatCard
-                        title="Total Budget"
-                        value={`₹${(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(1)}Cr`}
-                        icon={FileText}
+                   <StatCard
+                        title="Budget Utilization"
+                        value={
+                            <>₹{(projects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000000).toFixed(2)}Cr total</>
+                        }
+                        icon={TrendingUp}
                         trend={{
-                            value: 8,
-                            label: "vs last month"
+                            value: 3,
+                            label: "efficiency gain"
                         }}
                         onClick={() => setSubview('budgetAnalysis')}
                     />
                     <StatCard
-                        title="Alerts"
-                        value={projects.filter(p => p.status === "On Hold").length}
-                        icon={AlertTriangle}
+                        title="Avg Contingency"
+                        value={`${(projects.reduce((sum, p) => sum + (p.contingency || 0), 0) / projects.length).toFixed(2)}%`}
+                        icon={Building}
                         trend={{
-                            value: -2,
-                            label: "decrease"
+                            value: 2,
+                            label: "safety buffer"
                         }}
-                        onClick={() => setSubview('alerts')}
+                        onClick={() => setSubview('dprSubmissions')}
                     />
-                </div>
-            )}
+                                    </div>
+                                )}
 
             {subview === 'main' && (
                 <Card>
@@ -1493,9 +1495,11 @@ Add any additional notes here...
                                             <tr className="border-b transition-colors hover:bg-muted/50">
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Client</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Manager</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Start Date</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Deadline</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Budget</th>
+                                                <th className="h-12 px-4 text-left align-middle font-medium">Spent</th>
                                                 <th className="h-12 px-4 text-left align-middle font-medium">Location</th>
                                             </tr>
                                         </thead>
@@ -1507,9 +1511,11 @@ Add any additional notes here...
                                                 >
                                                     <td className="p-4 align-middle font-medium">{project.name}</td>
                                                     <td className="p-4 align-middle">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</td>
+                                                    <td className="p-4 align-middle">{typeof project.managers === 'object' ? project.managers?.name || 'Unknown managers' : project.managers}</td>
                                                     <td className="p-4 align-middle">{new Date(project.startDate).toLocaleDateString('en-IN')}</td>
                                                     <td className="p-4 align-middle">{new Date(project.deadline).toLocaleDateString('en-IN')}</td>
                                                     <td className="p-4 align-middle">₹{(project.budget || 0).toLocaleString()}</td>
+                                                    <td className="p-4 align-middle">₹{(project.totalSpend || 0).toLocaleString()}</td>
                                                     <td className="p-4 align-middle">{project.location}</td>
                                                 </tr>
                                             ))}
@@ -1765,6 +1771,15 @@ Add any additional notes here...
                                                                             <span className="text-muted-foreground">Start Date:</span>
                                                                             <span className="ml-1 font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</span>
                                                                         </div>
+                                                                        
+                                                                    )}
+                                                                      {project.estimatedDuration && (
+                                                                        <div className="flex items-center">
+                                                                            <Calendar1Icon className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                            <span className="text-muted-foreground">Estimated Duration:</span>
+                                                                            <span className="ml-1 font-medium">{project.estimatedDuration}</span>
+                                                                        </div>
+                                                                        
                                                                     )}
                                                                     <div className="flex items-center">
                                                                         <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
@@ -2195,6 +2210,194 @@ Add any additional notes here...
                                     <p>No active alerts. All projects are running smoothly!</p>
                                 </div>
                             )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Resource Allocation Subview */}
+            {subview === 'resourceAllocation' && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Resource Allocation Overview</CardTitle>
+                                <CardDescription>Project square footage and space utilization</CardDescription>
+                            </div>
+                            <Button variant="outline" onClick={() => setSubview('main')}>
+                                Back to Projects
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {projects.map((project) => (
+                                <div key={project.id} className="p-4 border rounded-lg">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <h3 className="font-medium">{project.name}</h3>
+                                            <p className="text-sm text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
+                                            <div className="flex items-center gap-4 mt-2">
+                                                <div className="flex items-center gap-2">
+                                                    <LandPlot className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="text-sm">{project.squareFootage?.toLocaleString() || 0} sq ft</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                    <span className="text-sm">{project.contractType || 'Standard'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <Badge variant={project.squareFootage && project.squareFootage > 10000 ? "default" : "secondary"}>
+                                                {project.squareFootage && project.squareFootage > 10000 ? "Large Scale" : "Standard"}
+                                            </Badge>
+                                            <p className="text-sm text-muted-foreground mt-1">
+                                                Duration: {project.estimatedDuration || 'TBD'} days
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Material Status Subview */}
+            {subview === 'materialStatus' && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Material Status & Duration Tracking</CardTitle>
+                                <CardDescription>Project timelines and estimated durations</CardDescription>
+                            </div>
+                            <Button variant="outline" onClick={() => setSubview('main')}>
+                                Back to Projects
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                                <h3 className="font-medium">Project Durations</h3>
+                                {projects.map((project) => {
+                                    const progressDays = Math.round((project.estimatedDuration || 0) * (project.progress || 0) / 100);
+                                    const remainingDays = (project.estimatedDuration || 0) - progressDays;
+                                    return (
+                                        <div key={project.id} className="p-4 border rounded-lg">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-medium">{project.name}</h4>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {project.estimatedDuration || 0} days total
+                                                </span>
+                                            </div>
+                                            <Progress value={project.progress || 0} className="mb-2" />
+                                            <div className="flex justify-between text-sm">
+                                                <span>Completed: {progressDays} days</span>
+                                                <span>Remaining: {remainingDays} days</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="space-y-4">
+                                <h3 className="font-medium">Contract Types</h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {['FIXED_PRICE', 'COST_PLUS', 'TIME_AND_MATERIALS', 'UNIT_PRICE'].map((type) => {
+                                        const count = projects.filter(p => p.contractType === type).length;
+                                        const totalValue = projects.filter(p => p.contractType === type).reduce((sum, p) => sum + (p.budget || 0), 0);
+                                        return (
+                                            <div key={type} className="p-4 border rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-medium">{type.replace('_', ' ')}</p>
+                                                        <p className="text-sm text-muted-foreground">{count} projects</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold">₹{(totalValue / 1000000).toFixed(1)}M</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* DPR Submissions Subview */}
+            {subview === 'dprSubmissions' && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Contingency & Financial Safety</CardTitle>
+                                <CardDescription>Contingency reserves and cost center analysis</CardDescription>
+                            </div>
+                            <Button variant="outline" onClick={() => setSubview('main')}>
+                                Back to Projects
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <h3 className="font-medium">Contingency Analysis</h3>
+                                    {projects.map((project) => {
+                                        const contingencyAmount = (project.budget || 0) * (project.contingency || 0) / 100;
+                                        return (
+                                            <div key={project.id} className="p-4 border rounded-lg">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-medium">{project.name}</h4>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {project.contingency || 0}%
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <span>Reserve: ₹{(contingencyAmount / 100000).toFixed(1)}L</span>
+                                                    <span>Budget: ₹{((project.budget || 0) / 100000).toFixed(1)}L</span>
+                                                </div>
+                                                <div className="mt-2">
+                                                    <div className="text-xs text-muted-foreground">Cost Center: {project.defaultCostCenter || 'Default'}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="space-y-4">
+                                    <h3 className="font-medium">Cost Center Distribution</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {Object.entries(projects.reduce((centers: Record<string, { count: number, totalBudget: number, totalContingency: number }>, project) => {
+                                            const center = project.defaultCostCenter || 'Default';
+                                            if (!centers[center]) {
+                                                centers[center] = { count: 0, totalBudget: 0, totalContingency: 0 };
+                                            }
+                                            centers[center].count++;
+                                            centers[center].totalBudget += project.budget || 0;
+                                            centers[center].totalContingency += (project.budget || 0) * (project.contingency || 0) / 100;
+                                            return centers;
+                                        }, {})).map(([center, data]: [string, { count: number, totalBudget: number, totalContingency: number }]) => (
+                                            <div key={center} className="p-4 border rounded-lg">
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <p className="font-medium">{center}</p>
+                                                        <p className="text-sm text-muted-foreground">{data.count} projects</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold">₹{(data.totalBudget / 1000000).toFixed(1)}M</p>
+                                                        <p className="text-xs text-muted-foreground">Reserve: ₹{(data.totalContingency / 100000).toFixed(1)}L</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
