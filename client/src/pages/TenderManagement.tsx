@@ -86,9 +86,8 @@ const TenderManagement = () => {
       sessionStorage.getItem("jwt_token") ||
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios
-      .get(`${API_URL}/tender`, { headers })
-      .then((res) => setTenders(res.data))
+    axios.get(`${API_URL}/tenders`, { headers })
+      .then(res => setTenders(res.data))
       .catch(() => {});
   }, []);
 
@@ -333,7 +332,6 @@ const TenderManagement = () => {
                         <TableHead>Estimated Value</TableHead>
                         <TableHead>Submission Date</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Progress</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -345,15 +343,15 @@ const TenderManagement = () => {
                             className="hover:bg-muted/50"
                           >
                             <TableCell className="font-medium">
-                              {tender.projectName}
+                              {tender.Project?.name || 'N/A'}
                             </TableCell>
-                            <TableCell>{tender.client}</TableCell>
+                            <TableCell>{tender.client?.name || 'N/A'}</TableCell>
                             <TableCell>
-                              <Badge variant="outline">{tender.category}</Badge>
+                              <Badge variant="outline">{tender.projectCategory}</Badge>
                             </TableCell>
                             <TableCell>{tender.location}</TableCell>
                             <TableCell className="font-semibold">
-                              ₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr
+                              ₹{(tender.requirements?.reduce((sum, req) => sum + (req.estimatedCost || 0), 0) / 100000).toFixed(1)}L
                             </TableCell>
                             <TableCell>
                               {new Date(
@@ -378,38 +376,21 @@ const TenderManagement = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                    style={{
-                                      width: `${tender.completionPercentage}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                                <span className="text-xs text-muted-foreground">
-                                  {tender.completionPercentage}%
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
                               <div className="flex gap-1">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() =>
-                                    handleViewSubmission({
-                                      id: tender.id,
-                                      tender: tender.projectName,
-                                      client: tender.client,
-                                      submissionDate: tender.submissionDate,
-                                      status: tender.status,
-                                      notes: `Tender details for ${tender.projectName}`,
-                                      followUpDate: "",
-                                      contactPerson: "Project Manager",
-                                      submissionStatus: tender.status,
-                                    })
-                                  }
+                                  onClick={() => handleViewSubmission({
+                                    id: tender.id,
+                                    tender: tender.Project?.name || 'N/A',
+                                    client: tender.client?.name || 'N/A',
+                                    submissionDate: tender.submissionDate,
+                                    status: tender.status,
+                                    notes: `Tender details for ${tender.Project?.name || 'N/A'}`,
+                                    followUpDate: '',
+                                    contactPerson: 'Project Manager',
+                                    submissionStatus: tender.status
+                                  })}
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>

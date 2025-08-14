@@ -159,10 +159,11 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose }) =>
       // Create requirements for the tender
       await Promise.all(
         requirements.map(requirement =>
-          fetch(`/api/tenders/${tender.id}/requirements?userId=${userID}`, {
+          fetch(`${API_URL}/tenders/${tender.id}/requirements?userId=${userID}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              ...headers
             },
             body: JSON.stringify({
               description: requirement.description,
