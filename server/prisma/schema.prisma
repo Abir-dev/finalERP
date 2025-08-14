@@ -61,6 +61,8 @@ model User {
   StoreStaff           StoreStaff[]          @relation("StoreStaffCreator")
 
   @@map("users")
+  WeeklyProgressReport WeeklyProgressReport[] @relation("WeeklyProgressReportsCreated")
+  DailyProgressReport DailyProgressReport[] @relation("DailyProgressReportsCreated")
 }
 
 model UserInvitation {
@@ -536,21 +538,19 @@ model DailyProgressReport {
   projectId      String   @db.Uuid
   workDone       String
   weather        String
-  photos         String? // file links, JSON
   notes          String?
   workSections   String // JSON or comma separated
   manpower       String
   manpowerRoles  String
   equipmentUsed  String // JSON or comma separated
   safetyIncident String?
-  safetyDetails  String?
   qualityCheck   String?
-  qualityDetails String?
   delayIssue     String?
-  delayDetails   String?
   materials      String // JSON
   subcontractor  String?
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdById String   @map("created_by_id") @db.Uuid
+  createdBy     User          @relation("DailyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model WeeklyProgressReport {
@@ -570,8 +570,9 @@ model WeeklyProgressReport {
   equipment       String // JSON
   materials       String // JSON
   teamPerformance String?
-  attachments     String? // file links, JSON
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+   createdById String   @map("created_by_id") @db.Uuid
+  createdBy     User          @relation("WeeklyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model Event {
