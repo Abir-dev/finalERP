@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Clock,
   CheckCircle,
+  CheckCircle2,
+  X,
   Trash2,
 } from "lucide-react";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
@@ -125,6 +127,34 @@ const TenderManagement = () => {
       toast({
         title: "Error",
         description: "Failed to delete tender. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTenderStatus = async (tenderId: number, newStatus: string) => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await axios.put(
+        `${API_URL}/tenders/${tenderId}`,
+        { status: newStatus },
+        { headers }
+      );
+
+      toast({
+        title: "Tender Updated",
+        description: `Tender status has been updated to ${newStatus}.`,
+      });
+
+      fetchTenders(); // Refresh the list
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update tender status. Please try again.",
         variant: "destructive",
       });
     }
@@ -418,21 +448,48 @@ const TenderManagement = () => {
                                 <div className="flex items-center gap-2">
                                   <Badge
                                     variant={
-                                      tender.status === "awarded"
-                                        ? "default"
-                                        : tender.status === "submitted"
-                                        ? "secondary"
-                                        : tender.status === "under-evaluation"
-                                        ? "outline"
-                                        : tender.status === "rejected"
-                                        ? "destructive"
-                                        : "outline"
+                                    tender.status === "awarded"
+                                    ? "default"
+                                    : tender.status === "SUBMITTED"
+                                    ? "secondary"
+                                    : tender.status === "under-evaluation"
+                                    ? "outline"
+                                    : tender.status === "REJECTED"
+                                    ? "destructive"
+                                    : tender.status === "ACTIVE"
+                                    ? "default"
+                                    : "outline"
                                     }
                                   >
                                     {tender.status
                                       .replace("-", " ")
                                       .toUpperCase()}
                                   </Badge>
+                                  
+                                  {/* Approve/Reject buttons for submitted tenders */}
+                                  {tender.status === "SUBMITTED" && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      >
+                                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <X className="h-4 w-4 mr-1" />
+                                        Reject
+                                      </Button>
+                                    </>
+                                  )}
+                                  
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -942,292 +999,665 @@ const TenderManagement = () => {
         </TabsContent>
 
         <TabsContent value="tracking" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Submission Tracking</CardTitle>
-              <CardDescription>
-                Monitor tender submissions and client responses
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  {
-                    tender: "Commercial Complex - Phase 1",
-                    client: "ABC Developers",
-                    submissionDate: "2024-01-15",
-                    status: "Under Evaluation",
-                    value: "₹25Cr",
-                    daysElapsed: 15,
-                    submissionStatus: "submitted",
-                    notes:
-                      "Initial submission completed. Awaiting client response.",
-                    followUpDate: "2024-02-01",
-                    contactPerson: "John Smith",
-                  },
-                  {
-                    tender: "Residential Towers",
-                    client: "XYZ Properties",
-                    submissionDate: "2024-01-20",
-                    status: "Technical Evaluation",
-                    value: "₹45Cr",
-                    daysElapsed: 10,
-                    submissionStatus: "submitted",
-                    notes:
-                      "Technical evaluation in progress. Client may require clarifications.",
-                    followUpDate: "2024-01-30",
-                    contactPerson: "Sarah Johnson",
-                  },
-                  {
-                    tender: "Infrastructure Development",
-                    client: "Government Agency",
-                    submissionDate: "2024-01-25",
-                    status: "Financial Evaluation",
-                    value: "₹80Cr",
-                    daysElapsed: 5,
-                    submissionStatus: "submitted",
-                    notes:
-                      "Financial evaluation phase. All documents submitted.",
-                    followUpDate: "2024-02-05",
-                    contactPerson: "Michael Brown",
-                  },
-                ].map((submission, index) => (
-                  <div key={index} className="p-4 border rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                      <div className="md:col-span-2">
-                        <h4 className="font-medium">{submission.tender}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {submission.client}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Submitted
-                        </p>
-                        <p className="font-medium">
-                          {submission.submissionDate}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              submission.submissionStatus === "submitted"
-                                ? "default"
-                                : "secondary"
-                            }
+          {/* Filter and Search Controls - Same as Dashboard */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex gap-2">
+              <Select defaultValue="all">
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="SUBMITTED">Submitted</SelectItem>
+                  <SelectItem value="under-evaluation">
+                    Under Evaluation
+                  </SelectItem>
+                  <SelectItem value="awarded">Awarded</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select defaultValue="all-categories">
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-categories">
+                    All Categories
+                  </SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="residential">Residential</SelectItem>
+                  <SelectItem value="infrastructure">
+                    Infrastructure
+                  </SelectItem>
+                  <SelectItem value="industrial">Industrial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export All
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditingTender(null);
+                  setShowBidModal(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Tender
+              </Button>
+            </div>
+          </div>
+
+          {/* Tenders Cards with Expandable Details - Only show SUBMITTED status */}
+          <div className="space-y-4">
+            {tenders.filter((tender) => tender.status === "SUBMITTED").length > 0 ? (
+              tenders
+                .filter((tender) => tender.status === "SUBMITTED")
+                .map((tender) => (
+                <Card
+                  key={tender.id}
+                  className="hover:shadow-md transition-shadow"
+                >
+                  <CardContent className="p-0">
+                    {/* Main tender header - always visible */}
+                    <div className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-0 h-8 w-8"
+                            onClick={() => toggleTenderDetails(tender.id)}
                           >
-                            {submission.submissionStatus}
-                          </Badge>
-                          <p className="font-medium">{submission.status}</p>
+                            {expandedTenders.has(tender.id) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <div>
+                            <div className="font-semibold">
+                              {tender.Project?.name || tender.projectName || "N/A"}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {tender.client?.name || tender.client || "N/A"} •{" "}
+                              {tender.location}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Value</p>
-                        <p className="font-medium">{submission.value}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {submission.daysElapsed} days ago
-                        </p>
-                      </div>
-                      <div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewSubmission(submission)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditSubmission(submission)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="font-semibold">
+                              ₹
+                              {(
+                                tender.requirements?.reduce(
+                                  (sum, req) =>
+                                    sum + (req.estimatedCost || 0),
+                                  0
+                                ) / 100000 || tender.estimatedValue / 100000
+                              ).toFixed(3)}
+                              L
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(
+                                tender.submissionDate
+                              ).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={
+                                tender.status === "awarded"
+                                  ? "default"
+                                  : tender.status === "SUBMITTED"
+                                  ? "secondary"
+                                  : tender.status === "under-evaluation"
+                                  ? "outline"
+                                  : tender.status === "REJECTED"
+                                  ? "destructive"
+                                  : tender.status === "ACTIVE"
+                                  ? "default"
+                                  : "outline"
+                              }
+                            >
+                              {tender.status
+                                .replace("-", " ")
+                                .toUpperCase()}
+                            </Badge>
+                            
+                            {/* Approve/Reject buttons for submitted tenders */}
+                            {tender.status === "SUBMITTED" && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingTender(tender);
+                                setShowBidModal(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleDeleteTender(tender.id)
+                              }
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
+                    {/* Expanded tender details - only visible when expanded */}
+                    {expandedTenders.has(tender.id) && (
+                      <div className="border-t bg-gray-50/50 p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {/* Basic Details */}
+                          <div>
+                            <h4 className="font-medium mb-3">
+                              Tender Details
+                            </h4>
+                            <div className="space-y-3">
+                              <div className="flex items-center">
+                                <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                <span className="text-muted-foreground">
+                                  Tender Number:
+                                </span>
+                                <span className="ml-1 font-medium">
+                                  {tender.tenderNumber || `TN-${tender.id}`}
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                <span className="text-muted-foreground">
+                                  Category:
+                                </span>
+                                <span className="ml-1 font-medium">
+                                  {tender.projectCategory || tender.category || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
+                                <span className="text-muted-foreground">
+                                  Location:
+                                </span>
+                                <span className="ml-1 font-medium">
+                                  {tender.location}
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                <span className="text-muted-foreground">
+                                  Submission Date:
+                                </span>
+                                <span className="ml-1 font-medium">
+                                  {new Date(
+                                    tender.submissionDate
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Requirements */}
+                          <div>
+                            <h4 className="font-medium mb-3">Requirements</h4>
+                            <div className="space-y-2">
+                              {tender.requirements
+                                ?.slice(0, 3)
+                                .map((req, index) => (
+                                  <div key={index} className="text-sm">
+                                    <div className="font-medium">
+                                      {req.description || req.item}
+                                    </div>
+                                    <div className="text-muted-foreground">
+                                      Qty: {req.quantity} <br /> Unit:{" "}
+                                      {req.unit} <br /> Cost: ₹
+                                      {(
+                                        req.estimatedCost / 100000
+                                      ).toFixed(3)}
+                                      L
+                                    </div>
+                                  </div>
+                                )) || (
+                                <div className="text-sm text-muted-foreground">
+                                  No requirements available
+                                </div>
+                              )}
+                              {tender.requirements?.length > 3 && (
+                                <div className="text-sm text-muted-foreground">
+                                  +{tender.requirements.length - 3} more
+                                  requirements
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Submission Tracking Info */}
+                          <div>
+                            <h4 className="font-medium mb-3">
+                              Submission Tracking
+                            </h4>
+                            <div className="space-y-3">
+                              <div>
+                                <span className="text-muted-foreground text-sm">
+                                  Days Since Submission:
+                                </span>
+                                <p className="font-medium">
+                                  {Math.floor(
+                                    (new Date().getTime() - new Date(tender.submissionDate).getTime()) /
+                                      (1000 * 60 * 60 * 24)
+                                  )}{" "}
+                                  days
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground text-sm">
+                                  Current Phase:
+                                </span>
+                                <p className="font-medium">
+                                  {tender.status === "SUBMITTED"
+                                    ? "Under Review"
+                                    : tender.status === "ACTIVE"
+                                    ? "Approved & Active"
+                                    : tender.status === "REJECTED"
+                                    ? "Rejected"
+                                    : "In Progress"}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground text-sm">
+                                  Est. Value:
+                                </span>
+                                <p className="font-semibold">
+                                  ₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">
+                    No submitted tenders found
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Tenders will appear here once they are submitted for review
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setEditingTender(null);
+                      setShowBidModal(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Tender
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="active-tenders" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Tenders</CardTitle>
-              <CardDescription>
-                Monitor and manage all active tender submissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {tenders
-                  .filter((tender) => tender.status !== "rejected")
-                  .map((tender) => (
-                    <div
-                      key={tender.id}
-                      className="border rounded-lg p-6 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {tender.projectName}
-                          </h3>
-                          <p className="text-muted-foreground">
-                            {tender.client}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <Badge
-                            variant={
-                              tender.status === "awarded"
-                                ? "default"
-                                : tender.status === "submitted"
-                                ? "secondary"
-                                : tender.status === "under-evaluation"
-                                ? "outline"
-                                : "destructive"
-                            }
-                          >
-                            {tender.status.replace("-", " ").toUpperCase()}
-                          </Badge>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Submitted:{" "}
-                            {new Date(
-                              tender.submissionDate
-                            ).toLocaleDateString()}
-                          </p>
+          {/* Filter and Search Controls - Same as Dashboard */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex gap-2">
+              <Select defaultValue="active">
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="submitted">Submitted</SelectItem>
+                  <SelectItem value="under-evaluation">
+                    Under Evaluation
+                  </SelectItem>
+                  <SelectItem value="awarded">Awarded</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select defaultValue="all-categories">
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all-categories">
+                    All Categories
+                  </SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="residential">Residential</SelectItem>
+                  <SelectItem value="infrastructure">
+                    Infrastructure
+                  </SelectItem>
+                  <SelectItem value="industrial">Industrial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export All
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditingTender(null);
+                  setShowBidModal(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New Tender
+              </Button>
+            </div>
+          </div>
+
+          {/* Tenders Cards with Expandable Details - Same as Dashboard but filtered for active status */}
+          <div className="space-y-4">
+            {tenders.length > 0 ? (
+              tenders
+                .filter((tender) => tender.status === "ACTIVE")
+                .map((tender) => (
+                  <Card
+                    key={tender.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="p-0">
+                      {/* Main tender header - always visible */}
+                      <div className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-0 h-8 w-8"
+                              onClick={() => toggleTenderDetails(tender.id)}
+                            >
+                              {expandedTenders.has(tender.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <div>
+                              <div className="font-semibold">
+                                {tender.Project?.name || tender.projectName || "N/A"}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {tender.client?.name || tender.client || "N/A"} •{" "}
+                                {tender.location}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="font-semibold">
+                                ₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {new Date(
+                                  tender.submissionDate
+                                ).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={
+                                  tender.status === "awarded"
+                                    ? "default"
+                                    : tender.status === "SUBMITTED"
+                                    ? "secondary"
+                                    : tender.status === "under-evaluation"
+                                    ? "outline"
+                                    : tender.status === "REJECTED"
+                                    ? "destructive"
+                                    : tender.status === "ACTIVE"
+                                    ? "default"
+                                    : "outline"
+                                }
+                              >
+                                {tender.status
+                                  .replace("-", " ")
+                                  .toUpperCase()}
+                              </Badge>
+                              
+                              {/* Approve/Reject buttons for submitted tenders */}
+                              {tender.status === "SUBMITTED" && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </>
+                              )}
+                              
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingTender(tender);
+                                  setShowBidModal(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteTender(tender.id)
+                                }
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                          <span className="text-sm text-muted-foreground">
-                            Estimated Value
-                          </span>
-                          <p className="font-semibold">
-                            ₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">
-                            Category
-                          </span>
-                          <p className="font-semibold">{tender.category}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">
-                            Location
-                          </span>
-                          <p className="font-semibold">{tender.location}</p>
-                        </div>
-                      </div>
+                      {/* Expanded tender details - only visible when expanded */}
+                      {expandedTenders.has(tender.id) && (
+                        <div className="border-t bg-gray-50/50 p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* Basic Details */}
+                            <div>
+                              <h4 className="font-medium mb-3">
+                                Tender Details
+                              </h4>
+                              <div className="space-y-3">
+                                <div className="flex items-center">
+                                  <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Tender Number:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {tender.tenderNumber || `TN-${tender.id}`}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Category:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {tender.category || tender.projectCategory || "N/A"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Location:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {tender.location}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Submission Date:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {new Date(
+                                      tender.submissionDate
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
 
-                      <div className="mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-muted-foreground">
-                            Completion Progress
-                          </span>
-                          <span className="text-sm font-medium">
-                            {tender.completionPercentage}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${tender.completionPercentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
+                            {/* Progress and Value */}
+                            <div>
+                              <h4 className="font-medium mb-3">Progress & Value</h4>
+                              <div className="space-y-3">
+                                <div>
+                                  <div className="flex justify-between text-sm mb-1">
+                                    <span className="text-muted-foreground">Completion</span>
+                                    <span className="font-medium">{tender.completionPercentage || 0}%</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div
+                                      className="bg-blue-600 h-2 rounded-full"
+                                      style={{ width: `${tender.completionPercentage || 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-sm">Estimated Value</span>
+                                  <p className="font-semibold">₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr</p>
+                                </div>
+                              </div>
+                            </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleViewSubmission({
-                              id: tender.id,
-                              tender: tender.projectName,
-                              client: tender.client,
-                              submissionDate: tender.submissionDate,
-                              status: tender.status,
-                              notes: `Active tender for ${tender.projectName}`,
-                              followUpDate: "",
-                              contactPerson: "Project Manager",
-                              submissionStatus: tender.status,
-                            })
-                          }
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleEditSubmission({
-                              id: tender.id,
-                              tender: tender.projectName,
-                              client: tender.client,
-                              submissionDate: tender.submissionDate,
-                              status: tender.status,
-                              notes: `Active tender for ${tender.projectName}`,
-                              followUpDate: "",
-                              contactPerson: "Project Manager",
-                              submissionStatus: tender.status,
-                            })
-                          }
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                        {tender.status === "draft" && (
-                          <Button size="sm" variant="default">
-                            <FileText className="h-4 w-4 mr-1" />
-                            Submit Tender
-                          </Button>
-                        )}
-                        {tender.status === "under-evaluation" && (
-                          <Button size="sm" variant="secondary">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Follow Up
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                {tenders.filter((tender) => tender.status !== "rejected")
-                  .length === 0 && (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                      No Active Tenders
-                    </h3>
-                    <p className="text-muted-foreground mb-4">
-                      You don't have any active tenders at the moment.
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setEditingTender(null);
-                        setShowBidModal(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create New Tender
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                            {/* Actions */}
+                            <div>
+                              <h4 className="font-medium mb-3">Actions</h4>
+                              <div className="space-y-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    setEditingTender(tender);
+                                    setShowBidModal(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Tender
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full justify-start"
+                                  onClick={() =>
+                                    handleViewSubmission({
+                                      id: tender.id,
+                                      tender: tender.projectName,
+                                      client: tender.client,
+                                      submissionDate: tender.submissionDate,
+                                      status: tender.status,
+                                      notes: `Active tender for ${tender.projectName}`,
+                                      followUpDate: "",
+                                      contactPerson: "Project Manager",
+                                      submissionStatus: tender.status,
+                                    })
+                                  }
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full justify-start"
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download BOQ
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">
+                    No active tenders found
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Start by creating a new tender or check your filters
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setEditingTender(null);
+                      setShowBidModal(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Tender
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
       {showBidModal && (
@@ -1365,7 +1795,7 @@ const TenderManagement = () => {
             </Card>
 
             {/* Data Import Section */}
-            <Card>
+            {/* <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Download className="h-5 w-5" />
@@ -1401,7 +1831,7 @@ const TenderManagement = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Configuration Section */}
             <Card>

@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { FileText, Calendar, DollarSign, Users, TrendingUp, AlertTriangle, Download, Plus, CheckCircle, Clock, Truck, Edit } from "lucide-react";
+import { FileText, Calendar, DollarSign, Users, TrendingUp, AlertTriangle, Download, Plus, CheckCircle, CheckCircle2, X, Clock, Truck, Edit } from "lucide-react";
 import VendorComparisonTable from '@/components/tables/VendorComparisonTable';
 import BidPreparationModal from '@/components/modals/BidPreparationModal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, PieChart, Pie, Cell } from 'recharts';
@@ -28,7 +28,7 @@ interface Tender {
   client: string;
   estimatedValue: number;
   submissionDate: string;
-  status: 'draft' | 'submitted' | 'under-evaluation' | 'awarded' | 'rejected';
+  status:  'submitted' | 'active' | 'rejected';
   completionPercentage: number;
   category: string;
   location: string;
@@ -50,16 +50,16 @@ export const TenderDashboard: React.FC<TenderDashboardProps> = ({ onNewTender })
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/tender`, { headers })
+    axios.get(`${API_URL}/tenders`, { headers })
       .then(res => setTenders(res.data))
       .catch(() => {});
   }, []);
 
   const getStatusColor = (status: Tender['status']) => {
     switch (status) {
-      case 'awarded': return 'default';
+      // case 'awarded': return 'default';
       case 'submitted': return 'secondary';
-      case 'under-evaluation': return 'outline';
+      // case 'under-evaluation': return 'outline';
       case 'rejected': return 'destructive';
       default: return 'outline';
     }
@@ -169,6 +169,29 @@ export const TenderDashboard: React.FC<TenderDashboardProps> = ({ onNewTender })
     toast.success("Tender updated successfully!");
   };
 
+  const handleUpdateTenderStatus = async (tenderId: string, newStatus: string) => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await axios.put(
+        `${API_URL}/tenders/${tenderId}`,
+        { status: newStatus },
+        { headers }
+      );
+
+      toast.success(`Tender status updated to ${newStatus}`);
+      
+      // Refresh tenders
+      const response = await axios.get(`${API_URL}/tenders`, { headers });
+      setTenders(response.data);
+    } catch (error) {
+      toast.error("Failed to update tender status. Please try again.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Actions */}
@@ -207,11 +230,11 @@ export const TenderDashboard: React.FC<TenderDashboardProps> = ({ onNewTender })
       {/* Main Content */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          {/* <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="vendors">Vendors</TabsTrigger>
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
-          <TabsTrigger value="active-tenders">Active Tenders</TabsTrigger>
+          <TabsTrigger value="active-tenders">Active Tenders</TabsTrigger> */}
           {/* <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger> */}
         </TabsList>
 
@@ -364,6 +387,30 @@ export const TenderDashboard: React.FC<TenderDashboardProps> = ({ onNewTender })
                       </Badge>
                     </div>
                     <div className="flex space-x-2">
+                      {/* Approve/Reject buttons for submitted tenders */}
+                      {tender.status === "SUBMITTED" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      
                       <Button 
                         variant="outline" 
                         size="sm"

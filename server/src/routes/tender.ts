@@ -11,8 +11,8 @@ const router = Router();
 router.post('/', authenticateUser, checkRole('md'), validateTender, tenderController.createTender);
 router.get('/', authenticateUser, tenderController.listTenders);
 router.get('/:id', authenticateUser, tenderController.getTender);
-router.put('/:id', authenticateUser, checkRole('md'), validateTender, tenderController.updateTender);
-router.delete('/:id', authenticateUser, checkRole('admin'), tenderController.deleteTender);
+router.put('/:id', authenticateUser,  validateTender, tenderController.updateTender);
+router.delete('/:id', authenticateUser,  tenderController.deleteTender);
 
 // Tender Requirements CRUD
 router.post('/:tenderId/requirements', authenticateUser, tenderController.createTenderRequirement);

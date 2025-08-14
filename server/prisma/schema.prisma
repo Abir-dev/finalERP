@@ -155,13 +155,19 @@ model Task {
   description String?
   assignedToId String?  @db.Uuid
   assignedTo   User?    @relation("TaskAssignments", fields: [assignedToId], references: [id])
-  startdate   DateTime?
-  status      String    @default("pending")
-  dueDate     DateTime?
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  createdById           String                 @map("created_by_id") @db.Uuid
+  startDate    DateTime?
+  status       TaskStatus @default(pending)
+  dueDate      DateTime?
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById  String    @map("created_by_id") @db.Uuid
   createdBy             User                   @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+enum TaskStatus {
+  pending
+  completed
+  in_progress
 }
 
 model Invoice {
