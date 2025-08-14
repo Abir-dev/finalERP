@@ -460,6 +460,8 @@ const SiteDashboard = () => {
   const [isViewIssueModalOpen, setIsViewIssueModalOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+  const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
+  const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   
@@ -1568,16 +1570,28 @@ const SiteDashboard = () => {
                   <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedTimelineTask(task);
-                        setTimelineSubview("taskDetail");
-                      }}
-                    >
-                      View
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedTimelineTask(task);
+                          setTimelineSubview("taskDetail");
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedEditTask(task);
+                          setIsEditTaskModalOpen(true);
+                        }}
+                      >
+                        Update
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )) : (
@@ -1739,16 +1753,28 @@ const SiteDashboard = () => {
                   <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedTimelineTask(task);
-                        setTimelineSubview("taskDetail");
-                      }}
-                    >
-                      View
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedTimelineTask(task);
+                          setTimelineSubview("taskDetail");
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedEditTask(task);
+                          setIsEditTaskModalOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )) : (
@@ -1799,16 +1825,28 @@ const SiteDashboard = () => {
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}</td>
                   <td className="p-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedTimelineTask(task);
-                        setTimelineSubview("taskDetail");
-                      }}
-                    >
-                      View
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedTimelineTask(task);
+                          setTimelineSubview("taskDetail");
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedEditTask(task);
+                          setIsEditTaskModalOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )) : (
@@ -2440,12 +2478,22 @@ const SiteDashboard = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
+                                  onClick={() => {
+                                    setSelectedEditTask(row.original);
+                                    setIsEditTaskModalOpen(true);
+                                  }}
+                                >
+                                  Update
+                                </Button>
+                                {/* <Button
+                                  variant="outline"
+                                  size="sm"
                                   onClick={() =>
                                     openStatusModal(row.original)
                                   }
                                 >
                                   Update
-                                </Button>
+                                </Button> */}
                               </div>
                             ),
                           },
@@ -7577,6 +7625,117 @@ const SiteDashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
+      {/* Task View Modal */}
+      {/* Edit Task Modal */}
+      <Dialog open={isEditTaskModalOpen} onOpenChange={setIsEditTaskModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>
+              Update task details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-2">
+            {selectedEditTask && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  
+                  try {
+                    await handleUpdateTask(selectedEditTask.id, {
+                      name: formData.get("name") as string,
+                      description: formData.get("description") as string,
+                      assignedToId: formData.get("assignedToId") as string,
+                      dueDate: formData.get("dueDate") as string,
+                      status: formData.get("status") as string,
+                    });
+                    
+                    setIsEditTaskModalOpen(false);
+                    toast.success("Task updated successfully!");
+                  } catch (error) {
+                    toast.error("Failed to update task. Please try again.");
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="name">Task Name</Label>
+                  <Input
+                    id="name"
+                    name="name"
+                    defaultValue={selectedEditTask.name}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    defaultValue={selectedEditTask.description || ""}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="assignedToId">Assign To</Label>
+                  <Select name="assignedToId" defaultValue={selectedEditTask.assignedToId || ""}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select assignee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      name="dueDate"
+                      type="date"
+                      defaultValue={selectedEditTask.dueDate ? new Date(selectedEditTask.dueDate).toISOString().split('T')[0] : ""}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select name="status" defaultValue={selectedEditTask.status}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditTaskModalOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Update Task</Button>
+                </div>
+              </form>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Task View Modal */}
       <Dialog open={isTaskViewModalOpen} onOpenChange={setIsTaskViewModalOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
