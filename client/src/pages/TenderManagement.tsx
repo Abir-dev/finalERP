@@ -299,32 +299,55 @@ const TenderManagement = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard
               title="Active Tenders"
-              value="18"
+              value={tenders.filter(t => t.status === "ACTIVE").length.toString()}
               icon={FileText}
-              trend={{ value: 3, label: "new this month" }}
-              threshold={{ status: "good", message: "Strong pipeline" }}
+              trend={{ 
+                value: tenders.length > 0 ? Math.round((tenders.filter(t => t.status === "SUBMITTED").length / tenders.length) * 100) : 0, 
+                label: "pending approval" 
+              }}
+              threshold={{ 
+                status: tenders.length > 10 ? "good" : tenders.length > 5 ? "warning" : "critical", 
+                message: tenders.length > 10 ? "Strong pipeline" : tenders.length > 5 ? "Moderate pipeline" : "Build pipeline" 
+              }}
             />
             <EnhancedStatCard
               title="Pipeline Value"
-              value="₹124Cr"
+              value={`₹${(tenders.reduce((sum, t) => 
+                sum + (t.requirements?.reduce((reqSum, req) => reqSum + (req.estimatedCost || 0), 0) || 0), 0
+              ) / 10000000).toFixed(3)}Cr`}
               icon={DollarSign}
-              trend={{ value: 15, label: "increase from last quarter" }}
-              threshold={{ status: "good", message: "Excellent growth" }}
+              trend={{ 
+                value: Math.round((tenders.filter(t => t.status === "ACTIVE").length / Math.max(tenders.length, 1)) * 100), 
+                label: "of total value active" 
+              }}
+              threshold={{ 
+                status: tenders.length > 15 ? "good" : tenders.length > 8 ? "warning" : "critical", 
+                message: tenders.length > 15 ? "Excellent growth" : "Focus on pipeline" 
+              }}
             />
             <EnhancedStatCard
-              title="Win Rate"
-              value="68%"
-              description="Success rate in last 12 months"
-              icon={Calendar}
-              trend={{ value: 8, label: "improvement" }}
-              threshold={{ status: "good", message: "Above industry average" }}
+              title="Success Rate"
+              value={`${tenders.length > 0 ? Math.round((tenders.filter(t => t.status === "ACTIVE").length / tenders.length) * 100) : 0}%`}
+              description="Active vs total tenders"
+              icon={TrendingUp}
+              trend={{ 
+                value: tenders.length > 0 ? Math.round((tenders.filter(t => t.status === "REJECTED").length / tenders.length) * 100) : 0, 
+                label: "rejection rate" 
+              }}
+              threshold={{ 
+                status: tenders.length > 0 && (tenders.filter(t => t.status === "ACTIVE").length / tenders.length) > 0.5 ? "good" : "warning", 
+                message: tenders.length > 0 && (tenders.filter(t => t.status === "ACTIVE").length / tenders.length) > 0.5 ? "Above average" : "Improve conversion" 
+              }}
             />
             <EnhancedStatCard
               title="Under Evaluation"
-              value="5"
+              value={tenders.filter(t => t.status === "SUBMITTED").length.toString()}
               description="Awaiting client decisions"
-              icon={Users}
-              threshold={{ status: "warning", message: "Follow up required" }}
+              icon={Clock}
+              threshold={{ 
+                status: tenders.filter(t => t.status === "SUBMITTED").length > 5 ? "warning" : "good", 
+                message: tenders.filter(t => t.status === "SUBMITTED").length > 5 ? "Follow up required" : "Good response time" 
+              }}
             />
           </div>
 
