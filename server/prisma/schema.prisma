@@ -21,52 +21,53 @@ enum UserRole {
 }
 
 model User {
-  id                   String                @id @default(uuid()) @db.Uuid
-  email                String                @unique
+  id                   String                 @id @default(uuid()) @db.Uuid
+  email                String                 @unique
   name                 String
   role                 UserRole
   avatar               String?
-  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  status               String                @default("inactive")
-  lastLogin            DateTime?             @map("last_login") @db.Timestamptz(6)
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status               String                 @default("inactive")
+  lastLogin            DateTime?              @map("last_login") @db.Timestamptz(6)
   password             String
   documents            Document[]
-  managedProjects      Project[]             @relation("ProjectManagers")
-  memberProjects       Project[]             @relation("ProjectMembers")
-  clientProjects       Project[]             @relation("ProjectClient")
-  invoices             Invoice[]             @relation("UserInvoices")
+  managedProjects      Project[]              @relation("ProjectManagers")
+  memberProjects       Project[]              @relation("ProjectMembers")
+  clientProjects       Project[]              @relation("ProjectClient")
+  invoices             Invoice[]              @relation("UserInvoices")
   // bids             Bid[]             @relation("UserBids")
-  notifications        Notification[]        @relation("UserNotifications")
-  messagesSent         Message[]             @relation("MessagesSent")
-  messagesReceived     Message[]             @relation("MessagesReceived")
-  materialRequests     MaterialRequest[]     @relation("UserMaterialRequests")
+  notifications        Notification[]         @relation("UserNotifications")
+  messagesSent         Message[]              @relation("MessagesSent")
+  messagesReceived     Message[]              @relation("MessagesReceived")
+  materialRequests     MaterialRequest[]      @relation("UserMaterialRequests")
   taxes                Tax[]
   Invoice              Invoice[]
   Payment              Payment[]
-  MaterialRequest      MaterialRequest[]     @relation("MaterialRequestApprovals")
+  MaterialRequest      MaterialRequest[]      @relation("MaterialRequestApprovals")
   PurchaseOrder        PurchaseOrder[]
-  createdVendors       Vendor[]              @relation("VendorCreator")
-  createdNonBillables  NonBillable[]         @relation("NonBillableCreator")
+  createdVendors       Vendor[]               @relation("VendorCreator")
+  createdNonBillables  NonBillable[]          @relation("NonBillableCreator")
   Bid                  Bid[]
-  createdIssues        IssueReport[]         @relation("IssueCreator")
-  assignedIssues       IssueReport[]         @relation("IssueAssignments")
-  assignedTasks        Task[]                @relation("TaskAssignments")
-  Vehicle              Vehicle[]             @relation("VehicleCreator")
-  createdEvents        Event[]               @relation("EventCreator")
-  Inventory            Inventory[]           @relation("InventoryCreator")
-  approvedTransfers    MaterialTransfer[]    @relation("MaterialTransferApproval")
-  createdTransfers     MaterialTransfer[]    @relation("MaterialTransferCreator")
-  scheduledMaintenance ScheduleMaintenance[] @relation("MaintenanceScheduler")
-  createdProjects      Project[]             @relation("ProjectCreator")
-  StoreStaff           StoreStaff[]          @relation("StoreStaffCreator")
-  clientTenders        Tender[]              @relation("TenderClient")
+  createdIssues        IssueReport[]          @relation("IssueCreator")
+  assignedIssues       IssueReport[]          @relation("IssueAssignments")
+  assignedTasks        Task[]                 @relation("TaskAssignments")
+  Vehicle              Vehicle[]              @relation("VehicleCreator")
+  createdEvents        Event[]                @relation("EventCreator")
+  Inventory            Inventory[]            @relation("InventoryCreator")
+  approvedTransfers    MaterialTransfer[]     @relation("MaterialTransferApproval")
+  createdTransfers     MaterialTransfer[]     @relation("MaterialTransferCreator")
+  scheduledMaintenance ScheduleMaintenance[]  @relation("MaintenanceScheduler")
+  createdProjects      Project[]              @relation("ProjectCreator")
+  StoreStaff           StoreStaff[]           @relation("StoreStaffCreator")
+  clientTenders        Tender[]               @relation("TenderClient")
+  WeeklyProgressReport WeeklyProgressReport[] @relation("WeeklyProgressReportsCreated")
+  DailyProgressReport  DailyProgressReport[]  @relation("DailyProgressReportsCreated")
+  Tender               Tender[]               @relation("TenderCreator")
+  Task                 Task[]                 @relation("TaskCreator")
+  BOQ                  BOQ[]                  @relation("BOQCreator")
 
   @@map("users")
-  WeeklyProgressReport WeeklyProgressReport[] @relation("WeeklyProgressReportsCreated")
-  DailyProgressReport DailyProgressReport[] @relation("DailyProgressReportsCreated")
-  Tender Tender[] @relation("TenderCreator")
-  Task Task[] @relation("TaskCreator")
 }
 
 model UserInvitation {
@@ -114,11 +115,12 @@ model Project {
   deadline          DateTime?
   createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  Tender Tender[] @relation("TenderCreated")
+  Tender            Tender[]           @relation("TenderCreated")
   Payment           Payment[]
   milestones        ProjectMilestone[]
   createdById       String?            @db.Uuid
   createdBy         User?              @relation("ProjectCreator", fields: [createdById], references: [id])
+  billOfQuantities  BOQ[]              @relation("projectBOQ")
 }
 
 model ProjectMilestone {
@@ -148,20 +150,20 @@ model NonBillable {
 }
 
 model Task {
-  id          String    @id @default(uuid()) @db.Uuid
-  projectId   String    @db.Uuid
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name        String
-  description String?
-  assignedToId String?  @db.Uuid
-  assignedTo   User?    @relation("TaskAssignments", fields: [assignedToId], references: [id])
+  id           String     @id @default(uuid()) @db.Uuid
+  projectId    String     @db.Uuid
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  assignedToId String?    @db.Uuid
+  assignedTo   User?      @relation("TaskAssignments", fields: [assignedToId], references: [id])
   startDate    DateTime?
   status       TaskStatus @default(pending)
   dueDate      DateTime?
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  createdById  String    @map("created_by_id") @db.Uuid
-  createdBy             User                   @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById  String     @map("created_by_id") @db.Uuid
+  createdBy    User       @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 enum TaskStatus {
@@ -300,30 +302,30 @@ model MaterialRequest {
 }
 
 model Tender {
-  id                  String                @id @default(uuid()) @db.Uuid
-  tenderNumber        String                @unique
+  id                  String          @id @default(uuid()) @db.Uuid
+  tenderNumber        String          @unique
   submissionDate      DateTime
-  projectId           String                @db.Uuid
-  clientId            String                @db.Uuid
-  client              User                  @relation("TenderClient", fields: [clientId], references: [id])
+  projectId           String          @db.Uuid
+  clientId            String          @db.Uuid
+  client              User            @relation("TenderClient", fields: [clientId], references: [id])
   location            String
-  projectDuration     Int                   // in months
+  projectDuration     Int // in months
   projectCategory     ProjectCategory
   priorityLevel       PriorityLevel
   scopeOfWork         String
   specialRequirements String
-  
+
   // Requirements/Items from the dynamic table
   requirements TenderRequirement[]
-  
+
   // System fields
-  status    TenderStatus   @default(SUBMITTED)
-  bids      Bid[]
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  Project   Project @relation("TenderCreated", fields: [projectId], references: [id], onDelete: Cascade)
-  createdById       String?            @db.Uuid
-  createdBy         User?              @relation("TenderCreator", fields: [createdById], references: [id])
+  status      TenderStatus @default(SUBMITTED)
+  bids        Bid[]
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  Project     Project      @relation("TenderCreated", fields: [projectId], references: [id], onDelete: Cascade)
+  createdById String?      @db.Uuid
+  createdBy   User?        @relation("TenderCreator", fields: [createdById], references: [id])
 }
 
 model Bid {
@@ -582,8 +584,8 @@ model DailyProgressReport {
   materials      String // JSON
   subcontractor  String?
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  createdById String   @map("created_by_id") @db.Uuid
-  createdBy     User          @relation("DailyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById    String   @map("created_by_id") @db.Uuid
+  createdBy      User     @relation("DailyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model WeeklyProgressReport {
@@ -604,8 +606,8 @@ model WeeklyProgressReport {
   materials       String // JSON
   teamPerformance String?
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-   createdById String   @map("created_by_id") @db.Uuid
-  createdBy     User          @relation("WeeklyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById     String   @map("created_by_id") @db.Uuid
+  createdBy       User     @relation("WeeklyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
 }
 
 model Event {
@@ -831,6 +833,55 @@ model StoreStaff {
   updatedAt            DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
+model BOQ {
+  id             String      @id @default(uuid()) @db.Uuid
+  projectId      String      @db.Uuid
+  project        Project     @relation("projectBOQ", fields: [projectId], references: [id], onDelete: Cascade)
+  template       BOQTemplate
+  workPackage    WorkPackage
+  names          String
+  description    String
+  unitSystem     UnitSystem
+  currency       Currency
+  rateDatabase   String
+  analysisMethod String
+  contingency    Float
+  overhead       Float
+  profitMargin   Float
+  createdById    String      @db.Uuid
+  createdBy      User        @relation("BOQCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+}
+
+enum BOQTemplate {
+  CIVIL_WORKS
+  MEP_WORKS
+  FINISHING_WORKS
+  INFRASTRUCTURE_WORKS
+  LANDSCAPING_WORKS
+}
+
+enum WorkPackage {
+  FOUNDATION_WORKS
+  STRUCTURAL_WORKS
+  FINISHING_WORKS
+  EXTERNAL_WORKS
+  MEP_INSTALLATIONS
+}
+
+enum UnitSystem {
+  METRIC
+  IMPERIAL
+}
+
+enum Currency {
+  INR
+  USD
+  EUR
+  GBP
+}
+
 enum StaffPosition {
   STORE_MANAGER
   ASSISTANT_MANAGER
@@ -1029,13 +1080,14 @@ enum ContractType {
   TIME_AND_MATERIALS
   UNIT_PRICE
 }
+
 model TenderRequirement {
-  id            String @id @default(uuid()) @db.Uuid
-  tenderId      String @db.Uuid
-  tender        Tender @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid()) @db.Uuid
+  tenderId      String   @db.Uuid
+  tender        Tender   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
   description   String
   quantity      Float
-  unit          String
+  unit          Unit
   estimatedCost Float
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
