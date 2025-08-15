@@ -340,7 +340,7 @@ const TenderManagement = () => {
             <CardContent>
               <div className="space-y-4">
                 {/* Filter and Search Controls */}
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                {/* <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                   <div className="flex gap-2">
                     <Select defaultValue="all">
                       <SelectTrigger className="w-48">
@@ -389,7 +389,7 @@ const TenderManagement = () => {
                       New Tender
                     </Button>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Tenders Cards with Expandable Details */}
                 <div className="space-y-4">
@@ -999,69 +999,46 @@ const TenderManagement = () => {
         </TabsContent>
 
         <TabsContent value="tracking" className="space-y-6">
-          {/* Filter and Search Controls - Same as Dashboard */}
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex gap-2">
-              <Select defaultValue="all">
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                  <SelectItem value="under-evaluation">
-                    Under Evaluation
-                  </SelectItem>
-                  <SelectItem value="awarded">Awarded</SelectItem>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select defaultValue="all-categories">
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-categories">
-                    All Categories
-                  </SelectItem>
-                  <SelectItem value="commercial">Commercial</SelectItem>
-                  <SelectItem value="residential">Residential</SelectItem>
-                  <SelectItem value="infrastructure">
-                    Infrastructure
-                  </SelectItem>
-                  <SelectItem value="industrial">Industrial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Export All
-              </Button>
-              <Button
-                onClick={() => {
-                  setEditingTender(null);
-                  setShowBidModal(true);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Tender
-              </Button>
-            </div>
+        {/* Filter and Search Controls - Same as Dashboard */}
+        {/* <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex gap-2">
+            <Select defaultValue="submitted">
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="under-evaluation">Under Evaluation</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select defaultValue="all-categories">
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-categories">All Categories</SelectItem>
+                <SelectItem value="commercial">Commercial</SelectItem>
+                <SelectItem value="residential">Residential</SelectItem>
+                <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                <SelectItem value="industrial">Industrial</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Export All
+            </Button>
+          </div>
+        </div> */}
 
-          {/* Tenders Cards with Expandable Details - Only show SUBMITTED status */}
-          <div className="space-y-4">
-            {tenders.filter((tender) => tender.status === "SUBMITTED").length > 0 ? (
-              tenders
-                .filter((tender) => tender.status === "SUBMITTED")
-                .map((tender) => (
-                <Card
-                  key={tender.id}
-                  className="hover:shadow-md transition-shadow"
-                >
+        {/* Tenders Cards with Expandable Details - Only show SUBMITTED status */}
+        <div className="space-y-4">
+          {tenders.filter(tender => tender.status === "SUBMITTED").length > 0 ? (
+            tenders
+              .filter(tender => tender.status === "SUBMITTED")
+              .map((tender) => (
+                <Card key={tender.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-0">
                     {/* Main tender header - always visible */}
                     <div className="p-6">
@@ -1095,63 +1072,39 @@ const TenderManagement = () => {
                               ₹
                               {(
                                 tender.requirements?.reduce(
-                                  (sum, req) =>
-                                    sum + (req.estimatedCost || 0),
+                                  (sum, req) => sum + (req.estimatedCost || 0),
                                   0
                                 ) / 100000 || tender.estimatedValue / 100000
                               ).toFixed(3)}
                               L
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {new Date(
-                                tender.submissionDate
-                              ).toLocaleDateString()}
+                              {new Date(tender.submissionDate).toLocaleDateString()}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge
-                              variant={
-                                tender.status === "awarded"
-                                  ? "default"
-                                  : tender.status === "SUBMITTED"
-                                  ? "secondary"
-                                  : tender.status === "under-evaluation"
-                                  ? "outline"
-                                  : tender.status === "REJECTED"
-                                  ? "destructive"
-                                  : tender.status === "ACTIVE"
-                                  ? "default"
-                                  : "outline"
-                              }
-                            >
-                              {tender.status
-                                .replace("-", " ")
-                                .toUpperCase()}
+                            <Badge variant="secondary">
+                              {tender.status.toUpperCase()}
                             </Badge>
                             
-                            {/* Approve/Reject buttons for submitted tenders */}
-                            {tender.status === "SUBMITTED" && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
-                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                >
-                                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                                  Approve
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Reject
-                                </Button>
-                              </>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
                             
                             <Button
                               variant="ghost"
@@ -1162,16 +1115,6 @@ const TenderManagement = () => {
                               }}
                             >
                               <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteTender(tender.id)
-                              }
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -1184,46 +1127,34 @@ const TenderManagement = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {/* Basic Details */}
                           <div>
-                            <h4 className="font-medium mb-3">
-                              Tender Details
-                            </h4>
+                            <h4 className="font-medium mb-3">Tender Details</h4>
                             <div className="space-y-3">
                               <div className="flex items-center">
                                 <FileText className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">
-                                  Tender Number:
-                                </span>
+                                <span className="text-muted-foreground">Tender Number:</span>
                                 <span className="ml-1 font-medium">
                                   {tender.tenderNumber || `TN-${tender.id}`}
                                 </span>
                               </div>
                               <div className="flex items-center">
                                 <FileText className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">
-                                  Category:
-                                </span>
+                                <span className="text-muted-foreground">Category:</span>
                                 <span className="ml-1 font-medium">
                                   {tender.projectCategory || tender.category || "N/A"}
                                 </span>
                               </div>
                               <div className="flex items-center">
                                 <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">
-                                  Location:
-                                </span>
+                                <span className="text-muted-foreground">Location:</span>
                                 <span className="ml-1 font-medium">
                                   {tender.location}
                                 </span>
                               </div>
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">
-                                  Submission Date:
-                                </span>
+                                <span className="text-muted-foreground">Submission Date:</span>
                                 <span className="ml-1 font-medium">
-                                  {new Date(
-                                    tender.submissionDate
-                                  ).toLocaleDateString()}
+                                  {new Date(tender.submissionDate).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>
@@ -1233,31 +1164,24 @@ const TenderManagement = () => {
                           <div>
                             <h4 className="font-medium mb-3">Requirements</h4>
                             <div className="space-y-2">
-                              {tender.requirements
-                                ?.slice(0, 3)
-                                .map((req, index) => (
-                                  <div key={index} className="text-sm">
-                                    <div className="font-medium">
-                                      {req.description || req.item}
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                      Qty: {req.quantity} <br /> Unit:{" "}
-                                      {req.unit} <br /> Cost: ₹
-                                      {(
-                                        req.estimatedCost / 100000
-                                      ).toFixed(3)}
-                                      L
-                                    </div>
+                              {tender.requirements?.slice(0, 3).map((req, index) => (
+                                <div key={index} className="text-sm">
+                                  <div className="font-medium">
+                                    {req.description || req.item}
                                   </div>
-                                )) || (
+                                  <div className="text-muted-foreground">
+                                    Qty: {req.quantity} <br /> Unit: {req.unit} <br /> Cost: ₹
+                                    {(req.estimatedCost / 100000).toFixed(3)}L
+                                  </div>
+                                </div>
+                              )) || (
                                 <div className="text-sm text-muted-foreground">
                                   No requirements available
                                 </div>
                               )}
                               {tender.requirements?.length > 3 && (
                                 <div className="text-sm text-muted-foreground">
-                                  +{tender.requirements.length - 3} more
-                                  requirements
+                                  +{tender.requirements.length - 3} more requirements
                                 </div>
                               )}
                             </div>
@@ -1265,9 +1189,7 @@ const TenderManagement = () => {
 
                           {/* Submission Tracking Info */}
                           <div>
-                            <h4 className="font-medium mb-3">
-                              Submission Tracking
-                            </h4>
+                            <h4 className="font-medium mb-3">Submission Tracking</h4>
                             <div className="space-y-3">
                               <div>
                                 <span className="text-muted-foreground text-sm">
@@ -1276,9 +1198,8 @@ const TenderManagement = () => {
                                 <p className="font-medium">
                                   {Math.floor(
                                     (new Date().getTime() - new Date(tender.submissionDate).getTime()) /
-                                      (1000 * 60 * 60 * 24)
-                                  )}{" "}
-                                  days
+                                    (1000 * 60 * 60 * 24)
+                                  )} days
                                 </p>
                               </div>
                               <div>
@@ -1299,9 +1220,17 @@ const TenderManagement = () => {
                                 <span className="text-muted-foreground text-sm">
                                   Est. Value:
                                 </span>
-                                <p className="font-semibold">
-                                  ₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr
-                                </p>
+                                <div className="font-semibold">
+                                    ₹
+                                    {(
+                                      tender.requirements?.reduce(
+                                        (sum, req) =>
+                                          sum + (req.estimatedCost || 0),
+                                        0
+                                      ) / 100000
+                                    ).toFixed(3)}
+                                    L
+                                  </div>
                               </div>
                             </div>
                           </div>
@@ -1311,29 +1240,20 @@ const TenderManagement = () => {
                   </CardContent>
                 </Card>
               ))
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-medium text-muted-foreground mb-2">
-                    No submitted tenders found
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Tenders will appear here once they are submitted for review
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setEditingTender(null);
-                      setShowBidModal(true);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Tender
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-lg font-medium text-muted-foreground mb-2">
+                  No submitted tenders found
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Tenders will appear here once they are submitted for review
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
         </TabsContent>
 
         <TabsContent value="active-tenders" className="space-y-6">
@@ -1428,16 +1348,24 @@ const TenderManagement = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                            <div className="text-right">
-                              <div className="font-semibold">
-                                ₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(
-                                  tender.submissionDate
-                                ).toLocaleDateString()}
-                              </div>
-                            </div>
+                          <div className="text-right">
+                                  <div className="font-semibold">
+                                    ₹
+                                    {(
+                                      tender.requirements?.reduce(
+                                        (sum, req) =>
+                                          sum + (req.estimatedCost || 0),
+                                        0
+                                      ) / 100000
+                                    ).toFixed(3)}
+                                    L
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {new Date(
+                                      tender.submissionDate
+                                    ).toLocaleDateString()}
+                                  </div>
+                                </div>
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant={
@@ -1561,9 +1489,9 @@ const TenderManagement = () => {
 
                             {/* Progress and Value */}
                             <div>
-                              <h4 className="font-medium mb-3">Progress & Value</h4>
+                              <h4 className="font-medium mb-3">Requirements</h4>
                               <div className="space-y-3">
-                                <div>
+                                {/* <div>
                                   <div className="flex justify-between text-sm mb-1">
                                     <span className="text-muted-foreground">Completion</span>
                                     <span className="font-medium">{tender.completionPercentage || 0}%</span>
@@ -1574,16 +1502,43 @@ const TenderManagement = () => {
                                       style={{ width: `${tender.completionPercentage || 0}%` }}
                                     ></div>
                                   </div>
-                                </div>
+                                </div> */}
                                 <div>
-                                  <span className="text-muted-foreground text-sm">Estimated Value</span>
-                                  <p className="font-semibold">₹{(tender.estimatedValue / 10000000).toFixed(1)}Cr</p>
+                                <div className="space-y-2">
+                                  {tender.requirements
+                                    ?.slice(0, 3)
+                                    .map((req, index) => (
+                                      <div key={index} className="text-sm">
+                                        <div className="font-medium">
+                                          {req.description || req.item}
+                                        </div>
+                                        <div className="text-muted-foreground">
+                                          Qty: {req.quantity} <br /> Unit:{" "}
+                                          {req.unit} <br /> Cost: ₹
+                                          {(
+                                            req.estimatedCost / 100000
+                                          ).toFixed(3)}
+                                          L
+                                        </div>
+                                      </div>
+                                    )) || (
+                                    <div className="text-sm text-muted-foreground">
+                                      No requirements available
+                                    </div>
+                                  )}
+                                  {tender.requirements?.length > 3 && (
+                                    <div className="text-sm text-muted-foreground">
+                                      +{tender.requirements.length - 3} more
+                                      requirements
+                                    </div>
+                                  )}
                                 </div>
-                              </div>
-                            </div>
+                                </div>
+                                    </div>
+                                  </div>
 
                             {/* Actions */}
-                            <div>
+                            {/* <div>
                               <h4 className="font-medium mb-3">Actions</h4>
                               <div className="space-y-2">
                                 <Button
@@ -1628,7 +1583,7 @@ const TenderManagement = () => {
                                   Download BOQ
                                 </Button>
                               </div>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       )}
