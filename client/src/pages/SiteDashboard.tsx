@@ -472,6 +472,8 @@ const SiteDashboard = () => {
   const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   
   // Progress Reports Data
   const [dprs, setDprs] = useState<any[]>([]);
@@ -486,16 +488,24 @@ const SiteDashboard = () => {
   useEffect(() => {
     fetchUsers();
     fetchProjects();
-    // if (user?.id) {
+    if (user?.role === 'admin') {
+      fetchAllUsers();
+    }
+  }, [user]);
+
+  // Fetch data when user or selectedUserId changes
+  useEffect(() => {
+    if (user?.id) {
       fetchProgressReports();
       fetchTasks();
-      // Set up periodic refresh every 30 seconds
-      // const interval = setInterval(() => {
-      //   fetchProgressReports();
-      //   fetchTasks();
-      // }, 30000);
-      // return () => clearInterval(interval);
-    // }
+    }
+  }, [user, selectedUserId]);
+
+  // Reset selectedUserId when user is not admin
+  useEffect(() => {
+    if (user?.role !== 'admin') {
+      setSelectedUserId("");
+    }
   }, [user]);
 
   const fetchUsers = async () => {
@@ -520,6 +530,29 @@ const SiteDashboard = () => {
     } catch (error) {
       console.error("Error fetching users:", error);
       setUsers([]);
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    if (!user) return;
+    
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await fetch(`${API_URL}/users`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setAllUsers(data);
+      } else {
+        console.error("Failed to fetch all users:", response.status);
+        setAllUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching all users:', error);
+      setAllUsers([]);
     }
   };
 
@@ -970,11 +1003,14 @@ const SiteDashboard = () => {
     try {
       if (!user?.id) return;
       
+      // Use selectedUserId if admin has selected a user, otherwise use current user's ID
+      const targetUserId = selectedUserId || user.id;
+      
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
       
       // Fetch DPRs
       const dprResponse = await axios.get(
-        `${API_URL}/progress-reports/dpr/${user.id}`,
+        `${API_URL}/progress-reports/dpr/${targetUserId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -983,7 +1019,7 @@ const SiteDashboard = () => {
       
       // Fetch WPRs
       const wprResponse = await axios.get(
-        `${API_URL}/progress-reports/wpr/${user.id}`,
+        `${API_URL}/progress-reports/wpr/${targetUserId}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -1092,6 +1128,9 @@ const SiteDashboard = () => {
     try {
       if (!user?.id ) return;
       
+      // Use selectedUserId if admin has selected a user, otherwise use current user's ID
+      const targetUserId = selectedUserId || user.id;
+      
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
       
       // Fetch tasks for all projects the user has access to
@@ -1099,7 +1138,7 @@ const SiteDashboard = () => {
       
       
           const response = await axios.get(
-            `${API_URL}/projects/${user?.id}/tasks`,
+            `${API_URL}/projects/${targetUserId}/tasks`,
             {
               headers: { Authorization: `Bearer ${token}` }
             }
@@ -2354,6 +2393,37 @@ const SiteDashboard = () => {
           </Button>
         </div>
       </div>
+      
+      {/* Admin User Selection */}
+      {user?.role === 'admin' && (
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              <Label className="text-sm font-medium">View data for:</Label>
+            </div>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Select user to view data for" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={user?.id}>Current User ({user?.name})</SelectItem>
+                {allUsers.filter(user => user.role === 'site').map((userItem) => (
+                  <SelectItem key={userItem.id} value={userItem.id}>
+                    {userItem.name} - {userItem.role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedUserId && (
+            <div className="text-sm text-muted-foreground">
+              Currently viewing: {allUsers.find(u => u.id === selectedUserId)?.name || 'Unknown User'}
+            </div>
+          )}
+        </div>
+      )}
+      
       <Tabs defaultValue="timeline" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
