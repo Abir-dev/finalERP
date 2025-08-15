@@ -48,6 +48,21 @@ interface TenderFormData {
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
+const UNITS = [
+  { value: "PIECE", label: "Pieces" },
+  { value: "KILOGRAM", label: "Kilograms" },
+  { value: "TONNE", label: "Tonnes" },
+  { value: "CUBIC_METRE", label: "Cubic Metres" },
+  { value: "SQUARE_METRE", label: "Square Metres" },
+  { value: "LITRE", label: "Litres" },
+  { value: "BOX", label: "Boxes" },
+  { value: "ROLL", label: "Rolls" },
+  { value: "SHEET", label: "Sheets" },
+  { value: "HOURS", label: "Hours" },
+  { value: "DAYS", label: "Days" },
+  { value: "LUMPSUM", label: "Lump Sum" },
+];
+
 const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, editTender }) => {
   const { user } = useUser();
   const [requirements, setRequirements] = useState<RequirementItem[]>([]);
@@ -251,8 +266,8 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b bg-muted/40">
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-              <FileText className="h-6 w-6 text-purple-600" />
+            <div className="h-10 w-10 rounded-lg flex items-center justify-center">
+              <FileText className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-xl font-semibold">{editTender ? 'Edit Tender' : 'Create New Tender'}</h2>
@@ -273,7 +288,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
                 <Card className="shadow-sm">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-purple-500" />
+                      <Building2 className="h-5 w-5" />
                       Project Information
                     </CardTitle>
                     <CardDescription>Fill in the basic tender details</CardDescription>
@@ -483,11 +498,21 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
                         />
                       </div>
                       <div className="col-span-2">
-                        <Input
+                        <Select
                           value={item.unit}
-                          onChange={(e) => updateRequirement(item.id, 'unit', e.target.value)}
-                          className="border-muted"
-                        />
+                          onValueChange={(value) => updateRequirement(item.id, 'unit', value)}
+                        >
+                          <SelectTrigger className="border-muted">
+                            <SelectValue placeholder="Select unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {UNITS.map((unit) => (
+                              <SelectItem key={unit.value} value={unit.value}>
+                                {unit.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="col-span-3">
                         <Input
@@ -513,7 +538,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
                   <div className="mt-6 space-y-3 border-t pt-4">
                     <div className="flex justify-between text-lg font-semibold">
                       <span>Total Estimated Cost:</span>
-                      <span className="font-mono text-purple-600">₹{totalEstimatedCost.toLocaleString('en-IN')}</span>
+                      <span className="font-mono">₹{totalEstimatedCost.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
                 </div>
