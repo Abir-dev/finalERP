@@ -343,8 +343,16 @@ const taskColumns: ColumnDef<Task>[] = [
     header: "Task Name",
   },
   {
-    accessorKey: "assignedToId",
+    accessorKey: "projectName",
+    header: "Project",
+  },
+  {
+    accessorKey: "assignedTo",
     header: "Assigned To",
+    cell: ({ row }) => {
+      const assignedTo = row.getValue("assignedTo") as string;
+      return assignedTo || "Unassigned";
+    },
   },
   {
     accessorKey: "startdate",
@@ -1096,13 +1104,14 @@ const SiteDashboard = () => {
               headers: { Authorization: `Bearer ${token}` }
             }
           );
-          
-          // Add project name to each task for display
-          const tasksWithProjectName = response.data.map((task: Task) => ({
+          console.log(response.data);
+          // Add project name and assigned user name to each task for display
+          const tasksWithNames = response.data.map((task: Task) => ({
             ...task,
             projectName: projects.find(p => p.id === task.projectId)?.name || "Unknown Project",
+            assignedTo: task.assignedToId ? users.find(u => u.id === task.assignedToId)?.name || "Unknown User" : undefined,
           }));
-          setTasks(tasksWithProjectName);
+          setTasks(tasksWithNames);
         
           
         } catch (error) {
@@ -1150,6 +1159,13 @@ const SiteDashboard = () => {
       }
     } catch (error: any) {
       console.error("Error updating task:", error);
+      console.error("Error details:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        url: `${API_URL}/projects/${user?.id}/tasks/${taskId}`,
+        userId: user?.id
+      });
       toast.error(
         error.response?.data?.message || 
         error.message || 
@@ -6161,8 +6177,8 @@ const SiteDashboard = () => {
                   projectId: formData.get("projectId") as string,
                   assignedToId: formData.get("assignedToId") as string,
                   description: formData.get("description") as string,
-                  startdate: formData.get("startdate") as string,
-                  dueDate: formData.get("dueDate") as string,
+                  startdate: formData.get("startDate") ? new Date(formData.get("startDate") as string).toISOString() : null,
+                  dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string).toISOString() : null,
                 });
               }}
               className="space-y-4"
@@ -7754,11 +7770,11 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Project</Label>
-                  <p className="font-medium">{selectedTaskView.projectId}</p>
+                  <p className="font-medium">{selectedTaskView.projectName || "Unknown Project"}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Assigned To</Label>
-                  <p className="font-medium">{selectedTaskView.assignedToId}</p>
+                  <p className="font-medium">{selectedTaskView.assignedTo || "Unassigned"}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Description</Label>

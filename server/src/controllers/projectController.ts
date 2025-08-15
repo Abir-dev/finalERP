@@ -305,12 +305,28 @@ export const projectController = {
   },
 
   async updateTask(req: Request, res: Response) {
+    const { userId } =req.params
     try {
+      // Format dates properly for Prisma
+      const updateData = { ...req.body };
+      if (updateData.dueDate && typeof updateData.dueDate === 'string') {
+        updateData.dueDate = new Date(updateData.dueDate);
+      }
+      if (updateData.startDate && typeof updateData.startDate === 'string') {
+        updateData.startDate = new Date(updateData.startDate);
+      }
+      // Convert status from frontend format to enum format
+      if (updateData.status === 'in-progress') {
+        updateData.status = 'in_progress';
+      }
+
       const task = await prisma.task.update({
-        where: { id: req.params.taskId },
-        data: req.body,
+        where: { id: req.params.taskId ,
+          createdById : userId 
+        },
+        data: updateData,
         include: {
-          project: true
+          project: true,
         }
       });
       
