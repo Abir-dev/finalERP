@@ -29,6 +29,7 @@ import {
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { TenderDashboard } from "@/components/tender-management/tender-dashboard";
 import BidPreparationModal from "@/components/modals/BidPreparationModal";
+import BOQManagement from "@/components/boq/BOQManagement";
 import { read, utils, write } from "xlsx";
 import { saveAs } from "file-saver";
 import {
@@ -67,7 +68,6 @@ const TenderManagement = () => {
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
   const [editingTender, setEditingTender] = useState(null);
-  const [isBoqModalOpen, setIsBoqModalOpen] = useState(false);
 
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -132,7 +132,10 @@ const TenderManagement = () => {
     }
   };
 
-  const handleUpdateTenderStatus = async (tenderId: number, newStatus: string) => {
+  const handleUpdateTenderStatus = async (
+    tenderId: number,
+    newStatus: string
+  ) => {
     try {
       const token =
         sessionStorage.getItem("jwt_token") ||
@@ -186,10 +189,6 @@ const TenderManagement = () => {
       "tenders-report.xlsx"
     );
   }
-
-  const handleOpenBoqTool = () => {
-    setIsBoqModalOpen(true);
-  };
 
   const handleStartAnalysis = () => {
     setIsAnalysisModalOpen(true);
@@ -299,54 +298,129 @@ const TenderManagement = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard
               title="Active Tenders"
-              value={tenders.filter(t => t.status === "ACTIVE").length.toString()}
+              value={tenders
+                .filter((t) => t.status === "ACTIVE")
+                .length.toString()}
               icon={FileText}
-              trend={{ 
-                value: tenders.length > 0 ? Math.round((tenders.filter(t => t.status === "SUBMITTED").length / tenders.length) * 100) : 0, 
-                label: "pending approval" 
+              trend={{
+                value:
+                  tenders.length > 0
+                    ? Math.round(
+                        (tenders.filter((t) => t.status === "SUBMITTED")
+                          .length /
+                          tenders.length) *
+                          100
+                      )
+                    : 0,
+                label: "pending approval",
               }}
-              threshold={{ 
-                status: tenders.length > 10 ? "good" : tenders.length > 5 ? "warning" : "critical", 
-                message: tenders.length > 10 ? "Strong pipeline" : tenders.length > 5 ? "Moderate pipeline" : "Build pipeline" 
+              threshold={{
+                status:
+                  tenders.length > 10
+                    ? "good"
+                    : tenders.length > 5
+                    ? "warning"
+                    : "critical",
+                message:
+                  tenders.length > 10
+                    ? "Strong pipeline"
+                    : tenders.length > 5
+                    ? "Moderate pipeline"
+                    : "Build pipeline",
               }}
             />
             <EnhancedStatCard
               title="Pipeline Value"
-              value={`₹${(tenders.reduce((sum, t) => 
-                sum + (t.requirements?.reduce((reqSum, req) => reqSum + (req.estimatedCost || 0), 0) || 0), 0
-              ) / 10000000).toFixed(3)}Cr`}
+              value={`₹${(
+                tenders.reduce(
+                  (sum, t) =>
+                    sum +
+                    (t.requirements?.reduce(
+                      (reqSum, req) => reqSum + (req.estimatedCost || 0),
+                      0
+                    ) || 0),
+                  0
+                ) / 10000000
+              ).toFixed(3)}Cr`}
               icon={DollarSign}
-              trend={{ 
-                value: Math.round((tenders.filter(t => t.status === "ACTIVE").length / Math.max(tenders.length, 1)) * 100), 
-                label: "of total value active" 
+              trend={{
+                value: Math.round(
+                  (tenders.filter((t) => t.status === "ACTIVE").length /
+                    Math.max(tenders.length, 1)) *
+                    100
+                ),
+                label: "of total value active",
               }}
-              threshold={{ 
-                status: tenders.length > 15 ? "good" : tenders.length > 8 ? "warning" : "critical", 
-                message: tenders.length > 15 ? "Excellent growth" : "Focus on pipeline" 
+              threshold={{
+                status:
+                  tenders.length > 15
+                    ? "good"
+                    : tenders.length > 8
+                    ? "warning"
+                    : "critical",
+                message:
+                  tenders.length > 15
+                    ? "Excellent growth"
+                    : "Focus on pipeline",
               }}
             />
             <EnhancedStatCard
               title="Success Rate"
-              value={`${tenders.length > 0 ? Math.round((tenders.filter(t => t.status === "ACTIVE").length / tenders.length) * 100) : 0}%`}
+              value={`${
+                tenders.length > 0
+                  ? Math.round(
+                      (tenders.filter((t) => t.status === "ACTIVE").length /
+                        tenders.length) *
+                        100
+                    )
+                  : 0
+              }%`}
               description="Active vs total tenders"
               icon={TrendingUp}
-              trend={{ 
-                value: tenders.length > 0 ? Math.round((tenders.filter(t => t.status === "REJECTED").length / tenders.length) * 100) : 0, 
-                label: "rejection rate" 
+              trend={{
+                value:
+                  tenders.length > 0
+                    ? Math.round(
+                        (tenders.filter((t) => t.status === "REJECTED").length /
+                          tenders.length) *
+                          100
+                      )
+                    : 0,
+                label: "rejection rate",
               }}
-              threshold={{ 
-                status: tenders.length > 0 && (tenders.filter(t => t.status === "ACTIVE").length / tenders.length) > 0.5 ? "good" : "warning", 
-                message: tenders.length > 0 && (tenders.filter(t => t.status === "ACTIVE").length / tenders.length) > 0.5 ? "Above average" : "Improve conversion" 
+              threshold={{
+                status:
+                  tenders.length > 0 &&
+                  tenders.filter((t) => t.status === "ACTIVE").length /
+                    tenders.length >
+                    0.5
+                    ? "good"
+                    : "warning",
+                message:
+                  tenders.length > 0 &&
+                  tenders.filter((t) => t.status === "ACTIVE").length /
+                    tenders.length >
+                    0.5
+                    ? "Above average"
+                    : "Improve conversion",
               }}
             />
             <EnhancedStatCard
               title="Under Evaluation"
-              value={tenders.filter(t => t.status === "SUBMITTED").length.toString()}
+              value={tenders
+                .filter((t) => t.status === "SUBMITTED")
+                .length.toString()}
               description="Awaiting client decisions"
               icon={Clock}
-              threshold={{ 
-                status: tenders.filter(t => t.status === "SUBMITTED").length > 5 ? "warning" : "good", 
-                message: tenders.filter(t => t.status === "SUBMITTED").length > 5 ? "Follow up required" : "Good response time" 
+              threshold={{
+                status:
+                  tenders.filter((t) => t.status === "SUBMITTED").length > 5
+                    ? "warning"
+                    : "good",
+                message:
+                  tenders.filter((t) => t.status === "SUBMITTED").length > 5
+                    ? "Follow up required"
+                    : "Good response time",
               }}
             />
           </div>
@@ -471,31 +545,36 @@ const TenderManagement = () => {
                                 <div className="flex items-center gap-2">
                                   <Badge
                                     variant={
-                                    tender.status === "awarded"
-                                    ? "default"
-                                    : tender.status === "SUBMITTED"
-                                    ? "secondary"
-                                    : tender.status === "under-evaluation"
-                                    ? "outline"
-                                    : tender.status === "REJECTED"
-                                    ? "destructive"
-                                    : tender.status === "ACTIVE"
-                                    ? "default"
-                                    : "outline"
+                                      tender.status === "awarded"
+                                        ? "default"
+                                        : tender.status === "SUBMITTED"
+                                        ? "secondary"
+                                        : tender.status === "under-evaluation"
+                                        ? "outline"
+                                        : tender.status === "REJECTED"
+                                        ? "destructive"
+                                        : tender.status === "ACTIVE"
+                                        ? "default"
+                                        : "outline"
                                     }
                                   >
                                     {tender.status
                                       .replace("-", " ")
                                       .toUpperCase()}
                                   </Badge>
-                                  
+
                                   {/* Approve/Reject buttons for submitted tenders */}
                                   {tender.status === "SUBMITTED" && (
                                     <>
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                                        onClick={() =>
+                                          handleUpdateTenderStatus(
+                                            tender.id,
+                                            "ACTIVE"
+                                          )
+                                        }
                                         className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                       >
                                         <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -504,7 +583,12 @@ const TenderManagement = () => {
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                                        onClick={() =>
+                                          handleUpdateTenderStatus(
+                                            tender.id,
+                                            "REJECTED"
+                                          )
+                                        }
                                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                       >
                                         <X className="h-4 w-4 mr-1" />
@@ -512,7 +596,7 @@ const TenderManagement = () => {
                                       </Button>
                                     </>
                                   )}
-                                  
+
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -770,6 +854,18 @@ const TenderManagement = () => {
         </TabsContent>
 
         <TabsContent value="preparation" className="space-y-6">
+          {/* BOQ Header with Action Button */}
+          <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">
+                BOQ Generation & Management
+              </h2>
+              <p className="text-muted-foreground">
+                Create, manage and track your Bills of Quantities for tender preparation
+              </p>
+            </div>
+          </div>
+
           {/* BOQ KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard
@@ -807,223 +903,12 @@ const TenderManagement = () => {
           </div>
 
           {/* BOQ Management Section */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Bill of Quantities Management</CardTitle>
-                  <CardDescription>
-                    Create, manage and track your BOQs for tender preparation
-                  </CardDescription>
-                </div>
-                <Button onClick={handleOpenBoqTool}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create New BOQ
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Filter Controls */}
-                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                  <div className="flex gap-2">
-                    <Select defaultValue="all">
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="under-review">
-                          Under Review
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select defaultValue="all-projects">
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Filter by project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all-projects">
-                          All Projects
-                        </SelectItem>
-                        <SelectItem value="commercial">
-                          Commercial Complex
-                        </SelectItem>
-                        <SelectItem value="residential">
-                          Residential Towers
-                        </SelectItem>
-                        <SelectItem value="infrastructure">
-                          Infrastructure
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleExport}>
-                      <Download className="h-4 w-4 mr-2" />
-                      Export BOQs
-                    </Button>
-                  </div>
-                </div>
-
-                {/* BOQ List */}
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>BOQ Name</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Work Package</TableHead>
-                        <TableHead>Total Value</TableHead>
-                        <TableHead>Items Count</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[
-                        {
-                          id: 1,
-                          name: "Civil Works BOQ - Phase 1",
-                          project: "Commercial Complex",
-                          workPackage: "Structural Works",
-                          totalValue: 25000000,
-                          itemsCount: 145,
-                          status: "completed",
-                          lastUpdated: "2024-01-15",
-                        },
-                        {
-                          id: 2,
-                          name: "MEP Works BOQ",
-                          project: "Residential Towers",
-                          workPackage: "MEP Works",
-                          totalValue: 18500000,
-                          itemsCount: 89,
-                          status: "under-review",
-                          lastUpdated: "2024-01-20",
-                        },
-                        {
-                          id: 3,
-                          name: "Finishing Works BOQ",
-                          project: "Commercial Complex",
-                          workPackage: "Finishing Works",
-                          totalValue: 12000000,
-                          itemsCount: 67,
-                          status: "draft",
-                          lastUpdated: "2024-01-22",
-                        },
-                        {
-                          id: 4,
-                          name: "Foundation Works BOQ",
-                          project: "Infrastructure Project",
-                          workPackage: "Foundation Works",
-                          totalValue: 35000000,
-                          itemsCount: 203,
-                          status: "approved",
-                          lastUpdated: "2024-01-10",
-                        },
-                      ].map((boq) => (
-                        <TableRow key={boq.id} className="hover:bg-muted/50">
-                          <TableCell className="font-medium">
-                            {boq.name}
-                          </TableCell>
-                          <TableCell>{boq.project}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{boq.workPackage}</Badge>
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            ₹{(boq.totalValue / 10000000).toFixed(1)}Cr
-                          </TableCell>
-                          <TableCell>{boq.itemsCount} items</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                boq.status === "approved"
-                                  ? "default"
-                                  : boq.status === "completed"
-                                  ? "secondary"
-                                  : boq.status === "under-review"
-                                  ? "outline"
-                                  : "destructive"
-                              }
-                            >
-                              {boq.status === "under-review"
-                                ? "Under Review"
-                                : boq.status.charAt(0).toUpperCase() +
-                                  boq.status.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(boq.lastUpdated).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Summary Statistics */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">
-                          ₹90.5Cr
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Total BOQ Value
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">504</p>
-                        <p className="text-sm text-muted-foreground">
-                          Total Items
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600">
-                          94%
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Avg. Accuracy
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <BOQManagement />
         </TabsContent>
 
         <TabsContent value="tracking" className="space-y-6">
-        {/* Filter and Search Controls - Same as Dashboard */}
-        {/* <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          {/* Filter and Search Controls - Same as Dashboard */}
+          {/* <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex gap-2">
             <Select defaultValue="submitted">
               <SelectTrigger className="w-48">
@@ -1055,195 +940,238 @@ const TenderManagement = () => {
           </div>
         </div> */}
 
-        {/* Tenders Cards with Expandable Details - Only show SUBMITTED status */}
-        <div className="space-y-4">
-          {tenders.filter(tender => tender.status === "SUBMITTED").length > 0 ? (
-            tenders
-              .filter(tender => tender.status === "SUBMITTED")
-              .map((tender) => (
-                <Card key={tender.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-0">
-                    {/* Main tender header - always visible */}
-                    <div className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-0 h-8 w-8"
-                            onClick={() => toggleTenderDetails(tender.id)}
-                          >
-                            {expandedTenders.has(tender.id) ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <div>
-                            <div className="font-semibold">
-                              {tender.Project?.name || tender.projectName || "N/A"}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {tender.client?.name || tender.client || "N/A"} •{" "}
-                              {tender.location}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="font-semibold">
-                              ₹
-                              {(
-                                tender.requirements?.reduce(
-                                  (sum, req) => sum + (req.estimatedCost || 0),
-                                  0
-                                ) / 100000 || tender.estimatedValue / 100000
-                              ).toFixed(3)}
-                              L
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {new Date(tender.submissionDate).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">
-                              {tender.status.toUpperCase()}
-                            </Badge>
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
-                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                            
+          {/* Tenders Cards with Expandable Details - Only show SUBMITTED status */}
+          <div className="space-y-4">
+            {tenders.filter((tender) => tender.status === "SUBMITTED").length >
+            0 ? (
+              tenders
+                .filter((tender) => tender.status === "SUBMITTED")
+                .map((tender) => (
+                  <Card
+                    key={tender.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
+                    <CardContent className="p-0">
+                      {/* Main tender header - always visible */}
+                      <div className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {
-                                setEditingTender(tender);
-                                setShowBidModal(true);
-                              }}
+                              className="p-0 h-8 w-8"
+                              onClick={() => toggleTenderDetails(tender.id)}
                             >
-                              <Edit className="h-4 w-4" />
+                              {expandedTenders.has(tender.id) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
                             </Button>
+                            <div>
+                              <div className="font-semibold">
+                                {tender.Project?.name ||
+                                  tender.projectName ||
+                                  "N/A"}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {tender.client?.name || tender.client || "N/A"}{" "}
+                                • {tender.location}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="font-semibold">
+                                ₹
+                                {(
+                                  tender.requirements?.reduce(
+                                    (sum, req) =>
+                                      sum + (req.estimatedCost || 0),
+                                    0
+                                  ) / 100000 || tender.estimatedValue / 100000
+                                ).toFixed(3)}
+                                L
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {new Date(
+                                  tender.submissionDate
+                                ).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">
+                                {tender.status.toUpperCase()}
+                              </Badge>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleUpdateTenderStatus(tender.id, "ACTIVE")
+                                }
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleUpdateTenderStatus(
+                                    tender.id,
+                                    "REJECTED"
+                                  )
+                                }
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingTender(tender);
+                                  setShowBidModal(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Expanded tender details - only visible when expanded */}
-                    {expandedTenders.has(tender.id) && (
-                      <div className="border-t bg-gray-50/50 p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {/* Basic Details */}
-                          <div>
-                            <h4 className="font-medium mb-3">Tender Details</h4>
-                            <div className="space-y-3">
-                              <div className="flex items-center">
-                                <FileText className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">Tender Number:</span>
-                                <span className="ml-1 font-medium">
-                                  {tender.tenderNumber || `TN-${tender.id}`}
-                                </span>
-                              </div>
-                              <div className="flex items-center">
-                                <FileText className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">Category:</span>
-                                <span className="ml-1 font-medium">
-                                  {tender.projectCategory || tender.category || "N/A"}
-                                </span>
-                              </div>
-                              <div className="flex items-center">
-                                <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">Location:</span>
-                                <span className="ml-1 font-medium">
-                                  {tender.location}
-                                </span>
-                              </div>
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                                <span className="text-muted-foreground">Submission Date:</span>
-                                <span className="ml-1 font-medium">
-                                  {new Date(tender.submissionDate).toLocaleDateString()}
-                                </span>
+                      {/* Expanded tender details - only visible when expanded */}
+                      {expandedTenders.has(tender.id) && (
+                        <div className="border-t bg-gray-50/50 p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* Basic Details */}
+                            <div>
+                              <h4 className="font-medium mb-3">
+                                Tender Details
+                              </h4>
+                              <div className="space-y-3">
+                                <div className="flex items-center">
+                                  <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Tender Number:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {tender.tenderNumber || `TN-${tender.id}`}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <FileText className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Category:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {tender.projectCategory ||
+                                      tender.category ||
+                                      "N/A"}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Location:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {tender.location}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                  <span className="text-muted-foreground">
+                                    Submission Date:
+                                  </span>
+                                  <span className="ml-1 font-medium">
+                                    {new Date(
+                                      tender.submissionDate
+                                    ).toLocaleDateString()}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Requirements */}
-                          <div>
-                            <h4 className="font-medium mb-3">Requirements</h4>
-                            <div className="space-y-2">
-                              {tender.requirements?.slice(0, 3).map((req, index) => (
-                                <div key={index} className="text-sm">
-                                  <div className="font-medium">
-                                    {req.description || req.item}
+                            {/* Requirements */}
+                            <div>
+                              <h4 className="font-medium mb-3">Requirements</h4>
+                              <div className="space-y-2">
+                                {tender.requirements
+                                  ?.slice(0, 3)
+                                  .map((req, index) => (
+                                    <div key={index} className="text-sm">
+                                      <div className="font-medium">
+                                        {req.description || req.item}
+                                      </div>
+                                      <div className="text-muted-foreground">
+                                        Qty: {req.quantity} <br /> Unit:{" "}
+                                        {req.unit} <br /> Cost: ₹
+                                        {(req.estimatedCost / 100000).toFixed(
+                                          3
+                                        )}
+                                        L
+                                      </div>
+                                    </div>
+                                  )) || (
+                                  <div className="text-sm text-muted-foreground">
+                                    No requirements available
                                   </div>
-                                  <div className="text-muted-foreground">
-                                    Qty: {req.quantity} <br /> Unit: {req.unit} <br /> Cost: ₹
-                                    {(req.estimatedCost / 100000).toFixed(3)}L
+                                )}
+                                {tender.requirements?.length > 3 && (
+                                  <div className="text-sm text-muted-foreground">
+                                    +{tender.requirements.length - 3} more
+                                    requirements
                                   </div>
-                                </div>
-                              )) || (
-                                <div className="text-sm text-muted-foreground">
-                                  No requirements available
-                                </div>
-                              )}
-                              {tender.requirements?.length > 3 && (
-                                <div className="text-sm text-muted-foreground">
-                                  +{tender.requirements.length - 3} more requirements
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Submission Tracking Info */}
-                          <div>
-                            <h4 className="font-medium mb-3">Submission Tracking</h4>
-                            <div className="space-y-3">
-                              <div>
-                                <span className="text-muted-foreground text-sm">
-                                  Days Since Submission:
-                                </span>
-                                <p className="font-medium">
-                                  {Math.floor(
-                                    (new Date().getTime() - new Date(tender.submissionDate).getTime()) /
-                                    (1000 * 60 * 60 * 24)
-                                  )} days
-                                </p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground text-sm">
-                                  Current Phase:
-                                </span>
-                                <p className="font-medium">
-                                  {tender.status === "SUBMITTED"
-                                    ? "Under Review"
-                                    : tender.status === "ACTIVE"
-                                    ? "Approved & Active"
-                                    : tender.status === "REJECTED"
-                                    ? "Rejected"
-                                    : "In Progress"}
-                                </p>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground text-sm">
-                                  Est. Value:
-                                </span>
-                                <div className="font-semibold">
+                            {/* Submission Tracking Info */}
+                            <div>
+                              <h4 className="font-medium mb-3">
+                                Submission Tracking
+                              </h4>
+                              <div className="space-y-3">
+                                <div>
+                                  <span className="text-muted-foreground text-sm">
+                                    Days Since Submission:
+                                  </span>
+                                  <p className="font-medium">
+                                    {Math.floor(
+                                      (new Date().getTime() -
+                                        new Date(
+                                          tender.submissionDate
+                                        ).getTime()) /
+                                        (1000 * 60 * 60 * 24)
+                                    )}{" "}
+                                    days
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-sm">
+                                    Current Phase:
+                                  </span>
+                                  <p className="font-medium">
+                                    {tender.status === "SUBMITTED"
+                                      ? "Under Review"
+                                      : tender.status === "ACTIVE"
+                                      ? "Approved & Active"
+                                      : tender.status === "REJECTED"
+                                      ? "Rejected"
+                                      : "In Progress"}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground text-sm">
+                                    Est. Value:
+                                  </span>
+                                  <div className="font-semibold">
                                     ₹
                                     {(
                                       tender.requirements?.reduce(
@@ -1254,29 +1182,29 @@ const TenderManagement = () => {
                                     ).toFixed(3)}
                                     L
                                   </div>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-          ) : (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-lg font-medium text-muted-foreground mb-2">
-                  No submitted tenders found
-                </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Tenders will appear here once they are submitted for review
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+            ) : (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-medium text-muted-foreground mb-2">
+                    No submitted tenders found
+                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Tenders will appear here once they are submitted for review
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         <TabsContent value="active-tenders" className="space-y-6">
@@ -1304,14 +1232,10 @@ const TenderManagement = () => {
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-categories">
-                    All Categories
-                  </SelectItem>
+                  <SelectItem value="all-categories">All Categories</SelectItem>
                   <SelectItem value="commercial">Commercial</SelectItem>
                   <SelectItem value="residential">Residential</SelectItem>
-                  <SelectItem value="infrastructure">
-                    Infrastructure
-                  </SelectItem>
+                  <SelectItem value="infrastructure">Infrastructure</SelectItem>
                   <SelectItem value="industrial">Industrial</SelectItem>
                 </SelectContent>
               </Select>
@@ -1362,33 +1286,35 @@ const TenderManagement = () => {
                             </Button>
                             <div>
                               <div className="font-semibold">
-                                {tender.Project?.name || tender.projectName || "N/A"}
+                                {tender.Project?.name ||
+                                  tender.projectName ||
+                                  "N/A"}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {tender.client?.name || tender.client || "N/A"} •{" "}
-                                {tender.location}
+                                {tender.client?.name || tender.client || "N/A"}{" "}
+                                • {tender.location}
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
-                          <div className="text-right">
-                                  <div className="font-semibold">
-                                    ₹
-                                    {(
-                                      tender.requirements?.reduce(
-                                        (sum, req) =>
-                                          sum + (req.estimatedCost || 0),
-                                        0
-                                      ) / 100000
-                                    ).toFixed(3)}
-                                    L
-                                  </div>
-                                  <div className="text-sm text-muted-foreground">
-                                    {new Date(
-                                      tender.submissionDate
-                                    ).toLocaleDateString()}
-                                  </div>
-                                </div>
+                            <div className="text-right">
+                              <div className="font-semibold">
+                                ₹
+                                {(
+                                  tender.requirements?.reduce(
+                                    (sum, req) =>
+                                      sum + (req.estimatedCost || 0),
+                                    0
+                                  ) / 100000
+                                ).toFixed(3)}
+                                L
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {new Date(
+                                  tender.submissionDate
+                                ).toLocaleDateString()}
+                              </div>
+                            </div>
                             <div className="flex items-center gap-2">
                               <Badge
                                 variant={
@@ -1405,18 +1331,21 @@ const TenderManagement = () => {
                                     : "outline"
                                 }
                               >
-                                {tender.status
-                                  .replace("-", " ")
-                                  .toUpperCase()}
+                                {tender.status.replace("-", " ").toUpperCase()}
                               </Badge>
-                              
+
                               {/* Approve/Reject buttons for submitted tenders */}
                               {tender.status === "SUBMITTED" && (
                                 <>
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleUpdateTenderStatus(tender.id, "ACTIVE")}
+                                    onClick={() =>
+                                      handleUpdateTenderStatus(
+                                        tender.id,
+                                        "ACTIVE"
+                                      )
+                                    }
                                     className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                   >
                                     <CheckCircle2 className="h-4 w-4 mr-1" />
@@ -1425,7 +1354,12 @@ const TenderManagement = () => {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleUpdateTenderStatus(tender.id, "REJECTED")}
+                                    onClick={() =>
+                                      handleUpdateTenderStatus(
+                                        tender.id,
+                                        "REJECTED"
+                                      )
+                                    }
                                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                   >
                                     <X className="h-4 w-4 mr-1" />
@@ -1433,7 +1367,7 @@ const TenderManagement = () => {
                                   </Button>
                                 </>
                               )}
-                              
+
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1447,9 +1381,7 @@ const TenderManagement = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() =>
-                                  handleDeleteTender(tender.id)
-                                }
+                                onClick={() => handleDeleteTender(tender.id)}
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1484,7 +1416,9 @@ const TenderManagement = () => {
                                     Category:
                                   </span>
                                   <span className="ml-1 font-medium">
-                                    {tender.category || tender.projectCategory || "N/A"}
+                                    {tender.category ||
+                                      tender.projectCategory ||
+                                      "N/A"}
                                   </span>
                                 </div>
                                 <div className="flex items-center">
@@ -1527,38 +1461,38 @@ const TenderManagement = () => {
                                   </div>
                                 </div> */}
                                 <div>
-                                <div className="space-y-2">
-                                  {tender.requirements
-                                    ?.slice(0, 3)
-                                    .map((req, index) => (
-                                      <div key={index} className="text-sm">
-                                        <div className="font-medium">
-                                          {req.description || req.item}
+                                  <div className="space-y-2">
+                                    {tender.requirements
+                                      ?.slice(0, 3)
+                                      .map((req, index) => (
+                                        <div key={index} className="text-sm">
+                                          <div className="font-medium">
+                                            {req.description || req.item}
+                                          </div>
+                                          <div className="text-muted-foreground">
+                                            Qty: {req.quantity} <br /> Unit:{" "}
+                                            {req.unit} <br /> Cost: ₹
+                                            {(
+                                              req.estimatedCost / 100000
+                                            ).toFixed(3)}
+                                            L
+                                          </div>
                                         </div>
-                                        <div className="text-muted-foreground">
-                                          Qty: {req.quantity} <br /> Unit:{" "}
-                                          {req.unit} <br /> Cost: ₹
-                                          {(
-                                            req.estimatedCost / 100000
-                                          ).toFixed(3)}
-                                          L
-                                        </div>
+                                      )) || (
+                                      <div className="text-sm text-muted-foreground">
+                                        No requirements available
                                       </div>
-                                    )) || (
-                                    <div className="text-sm text-muted-foreground">
-                                      No requirements available
-                                    </div>
-                                  )}
-                                  {tender.requirements?.length > 3 && (
-                                    <div className="text-sm text-muted-foreground">
-                                      +{tender.requirements.length - 3} more
-                                      requirements
-                                    </div>
-                                  )}
-                                </div>
-                                </div>
-                                    </div>
+                                    )}
+                                    {tender.requirements?.length > 3 && (
+                                      <div className="text-sm text-muted-foreground">
+                                        +{tender.requirements.length - 3} more
+                                        requirements
+                                      </div>
+                                    )}
                                   </div>
+                                </div>
+                              </div>
+                            </div>
 
                             {/* Actions */}
                             {/* <div>
@@ -1650,370 +1584,6 @@ const TenderManagement = () => {
           />
         </div>
       )}
-
-      {/* BOQ Tool Modal */}
-      <Dialog open={isBoqModalOpen} onOpenChange={setIsBoqModalOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pb-4 border-b">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Calculator className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl">
-                  Bill of Quantities Generator
-                </DialogTitle>
-                <DialogDescription className="text-base">
-                  Create comprehensive BOQs with automated calculations and rate
-                  analysis
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-8 py-6">
-            {/* Project Information Section */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Project Information
-                </CardTitle>
-                <CardDescription>
-                  Select project details and BOQ configuration
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Project *</Label>
-                    <Select>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="project1">
-                          Commercial Complex - Phase 1
-                        </SelectItem>
-                        <SelectItem value="project2">
-                          Residential Towers - Block A
-                        </SelectItem>
-                        <SelectItem value="project3">
-                          Infrastructure Development
-                        </SelectItem>
-                        <SelectItem value="project4">
-                          Industrial Complex
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      BOQ Template *
-                    </Label>
-                    <Select>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select template" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="civil">Civil Works</SelectItem>
-                        <SelectItem value="mep">MEP Works</SelectItem>
-                        <SelectItem value="finishing">
-                          Finishing Works
-                        </SelectItem>
-                        <SelectItem value="infrastructure">
-                          Infrastructure Works
-                        </SelectItem>
-                        <SelectItem value="landscape">
-                          Landscape Works
-                        </SelectItem>
-                        <SelectItem value="custom">Custom Template</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Work Package *
-                    </Label>
-                    <Select>
-                      <SelectTrigger className="h-11">
-                        <SelectValue placeholder="Select package" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="foundation">
-                          Foundation Works
-                        </SelectItem>
-                        <SelectItem value="structure">
-                          Structural Works
-                        </SelectItem>
-                        <SelectItem value="finishing">
-                          Finishing Works
-                        </SelectItem>
-                        <SelectItem value="external">External Works</SelectItem>
-                        <SelectItem value="mep">MEP Installation</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">BOQ Name</Label>
-                    <Input placeholder="Enter BOQ name" className="h-11" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Description</Label>
-                    <Input
-                      placeholder="Brief description of the BOQ"
-                      className="h-11"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Data Import Section */}
-            {/* <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Download className="h-5 w-5" />
-                  Data Import & Templates
-                </CardTitle>
-                <CardDescription>
-                  Import existing data or download templates to get started
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="max-w-md">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Import Data Source
-                      </Label>
-                      <Input
-                        type="file"
-                        accept=".xlsx,.csv,.xls"
-                        className="h-11 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="h-11">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Import Excel
-                      </Button>
-                      <Button variant="outline" className="h-11">
-                        <Download className="h-4 w-4 mr-2" />
-                        Sample Data
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card> */}
-
-            {/* Configuration Section */}
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  BOQ Configuration
-                </CardTitle>
-                <CardDescription>
-                  Configure units, currency, and calculation parameters
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm">Basic Settings</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Unit System
-                        </Label>
-                        <Select>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select system" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="metric">
-                              Metric System
-                            </SelectItem>
-                            <SelectItem value="imperial">
-                              Imperial System
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Currency</Label>
-                        <Select>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select currency" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="inr">INR (₹)</SelectItem>
-                            <SelectItem value="usd">USD ($)</SelectItem>
-                            <SelectItem value="eur">EUR (€)</SelectItem>
-                            <SelectItem value="gbp">GBP (£)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="font-medium text-sm">Rate Analysis</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Rate Database
-                        </Label>
-                        <Select>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select database" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="current">
-                              Current Market Rates
-                            </SelectItem>
-                            <SelectItem value="historical">
-                              Historical Rates
-                            </SelectItem>
-                            <SelectItem value="custom">
-                              Custom Database
-                            </SelectItem>
-                            <SelectItem value="regional">
-                              Regional Rates
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Analysis Method
-                        </Label>
-                        <Select>
-                          <SelectTrigger className="h-11">
-                            <SelectValue placeholder="Select method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="detailed">
-                              Detailed Analysis
-                            </SelectItem>
-                            <SelectItem value="comparative">
-                              Comparative Analysis
-                            </SelectItem>
-                            <SelectItem value="historical">
-                              Historical Data Based
-                            </SelectItem>
-                            <SelectItem value="market">
-                              Market Survey Based
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-6">
-                  <h4 className="font-medium text-sm mb-4">Cost Factors (%)</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Contingency</Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          placeholder="10"
-                          min="0"
-                          max="100"
-                          className="h-11 pr-8"
-                        />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                          %
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Overhead</Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          placeholder="15"
-                          min="0"
-                          max="100"
-                          className="h-11 pr-8"
-                        />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                          %
-                        </span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Profit Margin
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          placeholder="10"
-                          min="0"
-                          max="100"
-                          className="h-11 pr-8"
-                        />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                          %
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t">
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="h-11">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Save as Draft
-                </Button>
-                <Button variant="outline" className="h-11">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Configuration
-                </Button>
-                <Button variant="outline" className="h-11">
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview BOQ
-                </Button>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsBoqModalOpen(false)}
-                  className="h-11 px-6"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    toast({
-                      title: "BOQ Generated Successfully",
-                      description:
-                        "Your Bill of Quantities has been created and is ready for use.",
-                    });
-                    setIsBoqModalOpen(false);
-                  }}
-                  className="h-11 px-8"
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Generate BOQ
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Rate Analysis Modal */}
       <Dialog open={isAnalysisModalOpen} onOpenChange={setIsAnalysisModalOpen}>
