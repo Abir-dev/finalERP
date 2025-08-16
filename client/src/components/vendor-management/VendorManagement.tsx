@@ -133,7 +133,7 @@ export function VendorManagement({ selectedUserId }: { selectedUserId?: string }
       const targetUserId = selectedUserId || user.id;
       
       // Use user-specific route if role is not 'accounts'
-      const endpoint = user?.role !== 'accounts' && targetUserId && targetUserId !== user.id
+      const endpoint = user?.role !== 'accounts' && (user?.role==='admin' || user?.role==='md' ? targetUserId !== user?.id : targetUserId)
         ? `${API_URL}/vendors/user/${targetUserId}`
         : `${API_URL}/vendors`;
       

@@ -143,7 +143,7 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
       
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-        user?.role !== "accounts" && targetUserId && targetUserId !== user.id
+        user?.role !== "accounts" && (user?.role==='admin' || user?.role==='md' ? targetUserId !== user?.id : targetUserId)
           ? `${API_URL}/purchase-orders/user/${targetUserId}`
           : `${API_URL}/purchase-orders`;
 
@@ -361,7 +361,7 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
 
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-      user?.role !== "accounts" && targetUserId && targetUserId !== user.id
+      user?.role !== "accounts" && (user?.role==='admin' || user?.role==='md' ? targetUserId !== user?.id : targetUserId)
           ? `${API_URL}/material/material-requests/user/${targetUserId}`
           : `${API_URL}/material/material-requests`;
 
@@ -384,7 +384,7 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
 
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-      user?.role !== "accounts" && targetUserId && targetUserId !== user.id
+      user?.role !== "accounts" && (user?.role==='admin' || user?.role==='md' ? targetUserId !== user?.id : targetUserId)
           ? `${API_URL}/vendors/count/${targetUserId}`
           : `${API_URL}/vendors/count`;
 

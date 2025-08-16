@@ -271,17 +271,17 @@ const PurchaseManagement = () => {
       setAllUsers([]);
     }
   };
-
++
   // Fetch all users when component mounts (if admin)
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || 'md') {
       fetchAllUsers();
     }
   }, [user,selectedUserId]);
 
   // Reset selectedUserId when user is not admin
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin'  || 'md') {
       setSelectedUserId("");
     }
   }, [user]);
@@ -873,7 +873,7 @@ const handleNewContractSubmit = async () => {
     </div>
 
       {/* Admin User Selection */}
-      {user?.role === 'admin' && (
+      {user?.role === 'admin' || user?.role === 'md' && (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
