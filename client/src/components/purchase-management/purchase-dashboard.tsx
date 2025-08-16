@@ -102,7 +102,7 @@ interface PurchaseOrder {
   updatedAt: string;
 }
 
-export function PurchaseDashboard() {
+export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string }) {
   const { user } = useUser();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -138,10 +138,13 @@ export function PurchaseDashboard() {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      // Use selectedUserId if admin has selected a user, otherwise use current user's ID
+      const targetUserId = selectedUserId || user?.id;
+      
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-        user?.role !== "accounts" && user?.role !== "admin" && user?.id
-          ? `${API_URL}/purchase-orders/user/${user.id}`
+        user?.role !== "accounts" && targetUserId && targetUserId !== user.id
+          ? `${API_URL}/purchase-orders/user/${targetUserId}`
           : `${API_URL}/purchase-orders`;
 
       const response = await axios.get(endpoint, {
@@ -180,10 +183,7 @@ export function PurchaseDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchPurchaseOrders();
-    // fetchPaymentSummary();
-  }, []);
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -356,10 +356,13 @@ export function PurchaseDashboard() {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      // Use selectedUserId if admin has selected a user, otherwise use current user's ID
+      const targetUserId = selectedUserId || user?.id;
+
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-      user?.role !== "accounts" && user?.role !== "admin" && user?.id
-          ? `${API_URL}/material/material-requests/user/${user.id}`
+      user?.role !== "accounts" && targetUserId && targetUserId !== user.id
+          ? `${API_URL}/material/material-requests/user/${targetUserId}`
           : `${API_URL}/material/material-requests`;
 
       const response = await axios.get(endpoint, { headers });
@@ -376,10 +379,13 @@ export function PurchaseDashboard() {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+      // Use selectedUserId if admin has selected a user, otherwise use current user's ID
+      const targetUserId = selectedUserId || user?.id;
+
       // Use user-specific route if role is not 'accounts'
       const endpoint =
-      user?.role !== "accounts" && user?.role !== "admin" && user?.id
-          ? `${API_URL}/vendors/count/${user.id}`
+      user?.role !== "accounts" && targetUserId && targetUserId !== user.id
+          ? `${API_URL}/vendors/count/${targetUserId}`
           : `${API_URL}/vendors/count`;
 
       const response = await axios.get(endpoint, { headers });
@@ -389,9 +395,10 @@ export function PurchaseDashboard() {
     }
   };
   useEffect(() => {
+    fetchPurchaseOrders();
     fetchMaterialRequests();
     fetchVendor()
-  }, []);
+  }, [user,selectedUserId]);
 
   const [isRequestDialogOpen, setIsRequestDialogOpen] = useState(false);
   const [isEditRequestDialogOpen, setIsEditRequestDialogOpen] = useState(false);
@@ -1740,7 +1747,7 @@ export function PurchaseDashboard() {
         </TabsContent>
 
         <TabsContent value="vendors" className="space-y-6">
-          <VendorManagement />
+          <VendorManagement selectedUserId={selectedUserId}/>
         </TabsContent>
       </Tabs>
       {/* </CardContent> */}

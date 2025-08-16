@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, ShoppingCart, Package, Users, TrendingUp, Loader2, AlertTriangle, ArrowLeft, Star, Sparkles, FileText } from "lucide-react";
+import { useUser } from "@/contexts/UserContext";
+import { User } from "@/types/user";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { PurchaseDashboard } from "@/components/purchase-management/purchase-dashboard";
 import { toast } from "@/components/ui/use-toast";
@@ -27,6 +29,8 @@ import {
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge";
 import { AddVendorModal } from "@/components/modals/AddVendorModal";
+
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 // Mock low stock items data
 const generateLowStockItems = (count: number) => {
@@ -226,7 +230,10 @@ const AutoStockCheck = ({
   };
 
 const PurchaseManagement = () => {
-
+  const { user } = useUser();
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  
   const [showAllContractsModal, setShowAllContractsModal] = useState(false);
 
   
@@ -240,6 +247,45 @@ const PurchaseManagement = () => {
   });
   
   const navigate = useNavigate();
+
+  // Fetch all users for admin dropdown
+  const fetchAllUsers = async () => {
+    if (!user) return;
+    
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await fetch(`${API_URL}/users`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        setAllUsers(data);
+      } else {
+        console.error("Failed to fetch all users:", response.status);
+        setAllUsers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching all users:', error);
+      setAllUsers([]);
+    }
+  };
+
+  // Fetch all users when component mounts (if admin)
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchAllUsers();
+    }
+  }, [user,selectedUserId]);
+
+  // Reset selectedUserId when user is not admin
+  useEffect(() => {
+    if (user?.role !== 'admin') {
+      setSelectedUserId("");
+    }
+  }, [user]);
+
   const [isLoading, setIsLoading] = useState({
     export: false,
     newPO: false,
@@ -826,6 +872,36 @@ const handleNewContractSubmit = async () => {
       </div>
     </div>
 
+      {/* Admin User Selection */}
+      {user?.role === 'admin' && (
+        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              <Label className="text-sm font-medium">View data for:</Label>
+            </div>
+            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="w-[250px]">
+                <SelectValue placeholder="Select user to view data for" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={user?.id}>Current User ({user?.name})</SelectItem>
+                {allUsers.filter(user => user.role ==='site'||user.role ==='store').map((userItem) => (
+                  <SelectItem key={userItem.id} value={userItem.id}>
+                    {userItem.name} - {userItem.role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedUserId && (
+            <div className="text-sm text-muted-foreground">
+              Currently viewing: {allUsers.find(u => u.id === selectedUserId)?.name || 'Unknown User'}
+            </div>
+          )}
+        </div>
+      )}
+
       <Tabs defaultValue="dashboard" className="space-y-6">
         {/* <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
@@ -870,7 +946,7 @@ const handleNewContractSubmit = async () => {
             />
           </div> */}
 
-          <PurchaseDashboard />
+          <PurchaseDashboard selectedUserId={selectedUserId} />
         
 
         <TabsContent value="procurement" className="space-y-6">
