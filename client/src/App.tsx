@@ -156,7 +156,7 @@ const AppLayout = () => {
 };
 
 const App = () => {
-  const { user } = useUser();
+  // const { user } = useUser();
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
@@ -164,10 +164,10 @@ const App = () => {
           <Toaster />
         <Sonner />
         <BrowserRouter>
-        <UserFilterProvider 
+        {/* <UserFilterProvider 
         currentUser={user}
         apiUrl={import.meta.env.VITE_API_URL}
-      >
+      > */}
           <UserProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -176,7 +176,7 @@ const App = () => {
               <Route path="/*" element={<AppLayout />} />
             </Routes>
           </UserProvider>
-          </UserFilterProvider>
+          {/* </UserFilterProvider> */}
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
