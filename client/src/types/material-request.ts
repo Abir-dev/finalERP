@@ -1,5 +1,11 @@
 // MaterialRequest types based on Prisma schema
 export interface MaterialRequestItem {
+  warehouse: any;
+  targetedWarehouse: any;
+  unit: string;
+  description: any;
+  itemName: any;
+  estimatedCost: number;
   id: string;
   materialRequestId: string;
   itemCode: string;
@@ -12,6 +18,8 @@ export interface MaterialRequestItem {
 }
 
 export interface MaterialRequest {
+  department: string;
+  priority: string;
   id: string;
   requestNumber: string;
   transactionDate: string;
@@ -21,7 +29,7 @@ export interface MaterialRequest {
   targetWarehouse?: string;
   terms?: string;
   moreInfo?: string;
-  status: 'PENDING'  | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' ;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' ;
   submittedAt?: string;
   approvedAt?: string;
   approvedBy?: string;
