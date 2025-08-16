@@ -43,6 +43,7 @@ import Notifications from "./pages/Notifications";
 import TenderManagement from "./pages/TenderManagement";
 import BillingManagement from "./pages/BillingManagement";
 import PurchaseManagement from "./pages/PurchaseManagement";
+import { UserFilterProvider } from "./contexts/UserFilterContext";
 
 
 const queryClient = new QueryClient();
@@ -154,13 +155,19 @@ const AppLayout = () => {
   );
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <TooltipProvider>
-        <Toaster />
+const App = () => {
+  const { user } = useUser();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <TooltipProvider>
+          <Toaster />
         <Sonner />
         <BrowserRouter>
+        <UserFilterProvider 
+        currentUser={user}
+        apiUrl={import.meta.env.VITE_API_URL}
+      >
           <UserProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -169,10 +176,12 @@ const App = () => (
               <Route path="/*" element={<AppLayout />} />
             </Routes>
           </UserProvider>
+          </UserFilterProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
+}
 
 export default App;
