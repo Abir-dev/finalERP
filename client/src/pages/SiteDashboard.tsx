@@ -1091,7 +1091,7 @@ const SiteDashboard = () => {
       
       setProgressStats(prev => ({
         ...prev,
-        activeTasks: activeTasks,
+        // activeTasks: activeTasks,
         completedThisWeek: completedThisWeek,
         onSchedule: calculateOnSchedulePercentage(),
         resourceUtilization: Math.min(95, Math.max(60, 75 + monthlyDprs.length * 2))
