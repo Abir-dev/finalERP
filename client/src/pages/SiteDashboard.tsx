@@ -2447,7 +2447,7 @@ const SiteDashboard = () => {
       </div>
       
       {/* Admin User Selection */}
-      {user?.role === 'admin' || user?.role === 'md'&& (
+      {(user?.role === 'admin' || user?.role === 'md')&& (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
