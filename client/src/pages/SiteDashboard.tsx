@@ -1235,9 +1235,11 @@ const SiteDashboard = () => {
       }
 
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+
+      const targetUserId = selectedUserId || user.id;
       
       const response = await axios.put(
-        `${API_URL}/projects/${user?.id}/tasks/${taskId}`,
+        `${API_URL}/projects/${targetUserId}/tasks/${taskId}`,
         updates,
         {
           headers: {
