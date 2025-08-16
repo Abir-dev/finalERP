@@ -77,6 +77,16 @@ const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface PurchaseOrder {
+  paymentSchedule: any[];
+  taxesAndCharges: any[];
+  userId: string;
+  roundingAdjustment: number;
+  terms: string;
+  paymentTermsTemplate: string;
+  placeOfSupply: string;
+  companyBillingAddress: string;
+  dispatchAddress: string;
+  shippingAddress: string;
   vendorContact: string;
   vendorAddress: any;
   setTargetWarehouse: string;
@@ -85,6 +95,7 @@ interface PurchaseOrder {
   date: string;
   vendorId: string;
   Vendor?: {
+    location: any;
     id: string;
     name: string;
     email?: string;
