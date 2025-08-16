@@ -370,10 +370,16 @@ const taskColumns: ColumnDef<Task>[] = [
       const variant =
         status === "completed"
           ? "default"
-          : status === "in-progress"
+          : status === "in_progress"
           ? "secondary"
           : "outline";
-      return <Badge variant={variant}>{status}</Badge>;
+      
+      // Format status for display
+      const displayStatus = status === "in_progress" 
+        ? "In Progress" 
+        : status.charAt(0).toUpperCase() + status.slice(1);
+      
+      return <Badge variant={variant}>{displayStatus}</Badge>;
     },
   },
 ];
@@ -515,7 +521,7 @@ const SiteDashboard = () => {
   useEffect(() => {
     fetchUsers();
     fetchProjects();
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || 'md') {
       fetchAllUsers();
     }
   }, [user]);
@@ -530,7 +536,7 @@ const SiteDashboard = () => {
 
   // Reset selectedUserId when user is not admin
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' || 'md') {
       setSelectedUserId("");
     }
   }, [user]);
@@ -770,9 +776,11 @@ const SiteDashboard = () => {
   const [budget, setBudget] = useState([]);
   const [costData, setCostData] = useState([]); // <-- Add this line
   const [tasks, setTasks] = useState<Task[]>([]);
+  // Updated progress stats to track task counts
   const [progressStats, setProgressStats] = useState({
-    activeTasks: 24,
-    completedThisWeek: 18,
+    pendingTasks: 0,
+    activeTasks: 0,
+    completedTasks: 0,
     onSchedule: 85,
     resourceUtilization: 92,
   });
@@ -895,7 +903,7 @@ const SiteDashboard = () => {
       (t) => t.status === "completed"
     ).length;
     const activeTasks = updatedTasks.filter(
-      (t) => t.status === "in-progress"
+      (t) => t.status === "in_progress"
     ).length;
     setProgressStats((prev) => ({
       ...prev,
@@ -1076,7 +1084,7 @@ const SiteDashboard = () => {
       // Update progress stats based on actual data
       const activeTasks = tasks.filter(t => 
         t.status === "In Progress" || 
-        t.status === "in-progress" ||
+        t.status === "in_progress" ||
         t.status === "In progress"
       ).length;
       const completedThisWeek = getCompletedTasksThisWeek();
@@ -1178,8 +1186,28 @@ const SiteDashboard = () => {
             assignedTo: task.assignedToId ? users.find(u => u.id === task.assignedToId)?.name || "Unknown User" : undefined,
           }));
           setTasks(tasksWithNames);
-        
+
+          // Update task statistics with correct status values
+          const pendingCount = tasksWithNames.filter(t => 
+            t.status === "pending"
+          ).length;
           
+          const activeCount = tasksWithNames.filter(t => 
+            t.status === "in_progress"
+          ).length;
+          
+          const completedCount = tasksWithNames.filter(t => 
+            t.status === "completed"
+          ).length;
+
+          setProgressStats(prev => ({
+            ...prev,
+            pendingTasks: pendingCount,
+            activeTasks: activeCount,
+            completedTasks: completedCount,
+            onSchedule: calculateOnSchedulePercentage(),
+          }));
+        
         } catch (error) {
           console.error(`Error fetching tasks for user ${user?.id}:`, error);
         }
@@ -1623,9 +1651,7 @@ const SiteDashboard = () => {
   // Active Tasks List component
   const ActiveTasksList = () => {
     const activeTasks = tasks.filter((t) => 
-      t.status === "in-progress" || 
-      t.status === "In Progress" || 
-      t.status === "In progress"
+      t.status === "in_progress"
     );
     return (
       <div className="space-y-6">
@@ -1807,8 +1833,7 @@ const SiteDashboard = () => {
   // Completed Tasks List component
   const CompletedTasksList = () => {
     const completedTasks = tasks.filter((t) => 
-      t.status === "completed" || 
-      t.status === "Completed"
+      t.status === "completed"
     );
     return (
       <div className="space-y-6">
@@ -2422,7 +2447,7 @@ const SiteDashboard = () => {
       </div>
       
       {/* Admin User Selection */}
-      {user?.role === 'admin' && (
+      {user?.role === 'admin' || user?.role === 'md'&& (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -2465,40 +2490,32 @@ const SiteDashboard = () => {
         <TabsContent value="timeline" className="space-y-6">
           {timelineSubview === "main" && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
-                  title="Active Tasks"
-                  value={progressStats.activeTasks.toString()}
-                  icon={Calendar}
-                  description="Currently in progress"
+                  title="Pending Tasks"
+                  value={progressStats.pendingTasks}
+                  icon={Clock}
+                  description="Tasks awaiting start"
                   onClick={() => setTimelineSubview("activeTasks")}
                 />
                 <StatCard
-                  title="Completed This Week"
-                  value={progressStats.completedThisWeek.toString()}
-                  icon={HardHat}
-                  description="Tasks finished"
-                  trend={{ value: 12, label: "vs last week" }}
+                  title="Active Tasks"
+                  value={progressStats.activeTasks}
+                  icon={AlertTriangle}
+                  description="Tasks in progress"
+                  onClick={() => setTimelineSubview("activeTasks")}
+                />
+                <StatCard
+                  title="Completed Tasks"
+                  value={progressStats.completedTasks}
+                  icon={CheckCircle2}
+                  description="Successfully completed tasks"
                   onClick={() => setTimelineSubview("completedTasks")}
-                />
-                <StatCard
-                  title="On Schedule"
-                  value={`${progressStats.onSchedule}%`}
-                  icon={Calendar}
-                  description="Timeline adherence"
-                  onClick={() => setTimelineSubview("onSchedule")}
-                />
-                <StatCard
-                  title="Resource Utilization"
-                  value={`${progressStats.resourceUtilization}%`}
-                  icon={HardHat}
-                  description="Team efficiency"
-                  onClick={() => setTimelineSubview("resourceUtilization")}
                 />
               </div>
               {timelineSubview === "main" && (
                 <>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
                         <CardTitle>Progress vs Plan</CardTitle>
@@ -2551,7 +2568,7 @@ const SiteDashboard = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  </div>
+                  </div> */}
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div>
