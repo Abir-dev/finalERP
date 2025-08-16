@@ -319,16 +319,17 @@ const equipmentColumns: ColumnDef<Equipment>[] = [
 ];
 
 type Task = {
+  projectName: string;
   id: string;
   name: string;
   projectId: string;
   assignedToId?: string;
   assignedTo?: string;
   description?: string;
-  startdate?: string;
+  startDate?: string;
   dueDate?: string;
   status: string;
-  projectName?: string;
+  project?: Project;
 };
 
 type Issue = (typeof issuesData)[0] & {
@@ -355,7 +356,7 @@ const taskColumns: ColumnDef<Task>[] = [
     },
   },
   {
-    accessorKey: "startdate",
+    accessorKey: "startDate",
     header: "Start Date",
   },
   {
@@ -518,17 +519,23 @@ const SiteDashboard = () => {
   });
   
   // Fetch users and projects on component mount
-  useEffect(() => {
-    fetchUsers();
+  // useEffect(() => {
+  //   fetchUsers();
+  //   fetchProjects();
+  //   if (user?.role === 'admin' || 'md') {
+  //     fetchAllUsers();
+  //   }
+  // }, [user]);
+
+  // Fetch data when user or selectedUserId changes
+  useEffect(()  => {
+    if (user?.id) {
+      fetchUsers();
+      // fetchUsers();
     fetchProjects();
     if (user?.role === 'admin' || 'md') {
       fetchAllUsers();
     }
-  }, [user]);
-
-  // Fetch data when user or selectedUserId changes
-  useEffect(() => {
-    if (user?.id) {
       fetchProgressReports();
       fetchTasks();
     }
@@ -555,7 +562,8 @@ const SiteDashboard = () => {
         const filteredUsers = allUsers.filter(
           (user: User) => user.role !== "user"
         );
-        setUsers(filteredUsers);
+        setUsers(allUsers);
+        console.log(allUsers)
       } else {
         console.error("Failed to fetch users:", response.status);
         setUsers([]);
@@ -579,6 +587,7 @@ const SiteDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setAllUsers(data);
+        // console.log(data)
       } else {
         console.error("Failed to fetch all users:", response.status);
         setAllUsers([]);
@@ -600,6 +609,7 @@ const SiteDashboard = () => {
       if (response.ok) {
         const projectsData = await response.json();
         setProjects(projectsData);
+        // console.log(projectsData)
       } else {
         console.error("Failed to fetch projects:", response.status);
         setProjects([]);
@@ -870,7 +880,7 @@ const SiteDashboard = () => {
     const task = tasks.find((t) => t.id === taskId);
     if (task) {
       toast.info(`Viewing Gantt chart for: ${task.name}`, {
-        description: `Start: ${task.startdate} - End: ${task.dueDate}`,
+        description: `Start: ${task.startDate} - End: ${task.dueDate}`,
         duration: 3000,
       });
     }
@@ -1178,14 +1188,20 @@ const SiteDashboard = () => {
               headers: { Authorization: `Bearer ${token}` }
             }
           );
-          console.log(response.data);
+          // console.log(response.data);
           // Add project name and assigned user name to each task for display
+          await fetchUsers()
           const tasksWithNames = response.data.map((task: Task) => ({
             ...task,
-            projectName: projects.find(p => p.id === task.projectId)?.name || "Unknown Project",
+            projectName: task.project?.name ,
+            // assignedTo: task.assignedToId,         
             assignedTo: task.assignedToId ? users.find(u => u.id === task.assignedToId)?.name || "Unknown User" : undefined,
+
+            startDate: new Date(task.startDate).toISOString().split('T')[0],
+            dueDate: new Date(task.dueDate).toISOString().split('T')[0],           
           }));
           setTasks(tasksWithNames);
+          console.log(tasksWithNames);
 
           // Update task statistics with correct status values
           const pendingCount = tasksWithNames.filter(t => 
@@ -1532,7 +1548,7 @@ const SiteDashboard = () => {
     projectId: string;
     assignedToId: string;
     description: string;
-    startdate: string;
+    startDate: string;
     dueDate: string;
   }) => {
     try {
@@ -1544,14 +1560,14 @@ const SiteDashboard = () => {
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
       
       // Format dates as ISO strings
-      const formattedDueDate = formData.dueDate ? new Date(formData.dueDate).toISOString() : null;
-      const formattedStartDate = formData.startdate ? new Date(formData.startdate).toISOString() : null;
+      const formattedDueDate = formData.dueDate ? new Date(formData.dueDate).toISOString().split('T')[0] : null;
+      const formattedStartDate = formData.startDate ? new Date(formData.startDate).toISOString().split('T')[0] : null;
       
       const taskData = {
         name: formData.name,
         description: formData.description || null,
         assignedToId: formData.assignedToId || null,
-        startdate: formattedStartDate,
+        startDate: formattedStartDate,
         dueDate: formattedDueDate,
         status: "pending",
         projectId: formData.projectId,
@@ -1677,7 +1693,7 @@ const SiteDashboard = () => {
               {activeTasks.length > 0 ? activeTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
+                  <td className="p-2">{task.assignedTo}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">
                     <div className="flex gap-2">
@@ -1768,7 +1784,7 @@ const SiteDashboard = () => {
               </div>
               <div>
                 <Label className="text-muted-foreground">Assigned To</Label>
-                <p className="font-medium">{task.assignedTo || task.assignedToId || "Unassigned"}</p>
+                <p className="font-medium">{task.assignedTo}</p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Description</Label>
@@ -1784,11 +1800,11 @@ const SiteDashboard = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label className="text-muted-foreground">Start Date</Label>
-                <p className="font-medium">{task.startdate ? new Date(task.startdate).toLocaleDateString() : "Not set"}</p>
+                <p className="font-medium">{task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : "Not set"}</p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Due Date</Label>
-                <p className="font-medium">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}</p>
+                <p className="font-medium">{task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "Not set"}</p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Current Status</Label>
@@ -1859,7 +1875,7 @@ const SiteDashboard = () => {
               {completedTasks.length > 0 ? completedTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
+                  <td className="p-2">{task.assignedTo}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">
                     <div className="flex gap-2">
@@ -1930,7 +1946,7 @@ const SiteDashboard = () => {
               {onScheduleTasks.length > 0 ? onScheduleTasks.map((task) => (
                 <tr key={task.id} className="border-t">
                   <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo || task.assignedToId || "Unassigned"}</td>
+                  <td className="p-2">{task.assignedTo || "Unassigned"}</td>
                   <td className="p-2">{task.status}</td>
                   <td className="p-2">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}</td>
                   <td className="p-2">
@@ -2382,10 +2398,10 @@ const SiteDashboard = () => {
       .then((res) => setBudget(res.data))
       .catch(() => {});
     // Fetch tasks
-    axios
-      .get(`${API_URL}/project/${user.id}/tasks`, { headers })
-      .then((res) => setTasks(res.data))
-      .catch(() => {});
+    // axios
+    //   .get(`${API_URL}/project/${user.id}/tasks`, { headers })
+    //   .then((res) => setTasks(res.data))
+    //   .catch(() => {});
     // Fetch material requests
     axios
       .get(`${API_URL}/inventory/material-requests`, { headers })
@@ -6296,8 +6312,8 @@ const SiteDashboard = () => {
                   projectId: formData.get("projectId") as string,
                   assignedToId: formData.get("assignedToId") as string,
                   description: formData.get("description") as string,
-                  startdate: formData.get("startDate") ? new Date(formData.get("startDate") as string).toISOString() : null,
-                  dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string).toISOString() : null,
+                  startDate: formData.get("startDate") ? new Date(formData.get("startDate") as string).toISOString().split('T')[0] : null,
+                  dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string).toISOString().split('T')[0] : null,
                 });
               }}
               className="space-y-4"
@@ -6356,8 +6372,8 @@ const SiteDashboard = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="startdate">Start Date</Label>
-                  <Input id="startdate" name="startdate" type="date" required />
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input id="startDate" name="startDate" type="date" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="dueDate">Due Date</Label>
@@ -8401,7 +8417,7 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Assigned To</Label>
-                  <p className="font-medium">{selectedTaskView.assignedTo || "Unassigned"}</p>
+                  <p className="font-medium">{selectedTaskView.assignedTo}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Description</Label>
@@ -8409,11 +8425,11 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Start Date</Label>
-                  <p className="font-medium">{selectedTaskView.startdate}</p>
+                  <p className="font-medium">{new Date(selectedTaskView.startDate).toISOString().split('T')[0]}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Due Date</Label>
-                  <p className="font-medium">{selectedTaskView.dueDate}</p>
+                  <p className="font-medium">{new Date(selectedTaskView.dueDate).toISOString().split('T')[0]}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
