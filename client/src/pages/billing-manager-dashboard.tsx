@@ -431,6 +431,98 @@ const BillingManagerDashboard = () => {
 
   const uniqueKPIs = calculateUniqueKPIs();
 
+  // Calculate collection trends by month
+  const calculateCollectionTrends = () => {
+    const monthlyData = new Map<string, { invoiced: number; collected: number; }>();
+
+    // Group invoices by month
+    invoices.forEach(invoice => {
+      const invoiceDate = new Date(invoice.date);
+      const monthKey = invoiceDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      
+      if (!monthlyData.has(monthKey)) {
+        monthlyData.set(monthKey, { invoiced: 0, collected: 0 });
+      }
+      
+      const monthData = monthlyData.get(monthKey)!;
+      monthData.invoiced += invoice.total || 0;
+      
+      // Calculate payments for this invoice
+      const totalPayments = payments
+        .filter(payment => payment.Invoice?.id === invoice.id && payment.paymentType === "RECEIVE")
+        .reduce((sum, payment) => sum + (payment.total || 0), 0);
+      
+      monthData.collected += Math.min(totalPayments, invoice.total || 0);
+    });
+
+    // Convert to array and calculate percentages
+    const trends = Array.from(monthlyData.entries())
+      .map(([month, data]) => ({
+        month,
+        collection: data.invoiced > 0 ? Math.round((data.collected / data.invoiced) * 100) : 0,
+        target: 90, // Standard target
+        collectedAmount: formatAmount(data.collected),
+        invoicedAmount: formatAmount(data.invoiced)
+      }))
+      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
+      .slice(-6); // Show last 6 months
+
+    return trends;
+  };
+
+  const collectionTrends = calculateCollectionTrends();
+
+  // Calculate payment trends by actual payment dates
+  const calculatePaymentTrends = () => {
+    const monthlyPayments = new Map<string, number>();
+    const monthlyInvoices = new Map<string, number>();
+
+    // Group payments by payment date
+    payments
+      .filter(p => p.paymentType === "RECEIVE")
+      .forEach(payment => {
+        const paymentDate = new Date(payment.postingDate);
+        const monthKey = paymentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+        
+        const current = monthlyPayments.get(monthKey) || 0;
+        monthlyPayments.set(monthKey, current + (payment.total || 0));
+      });
+
+    // Group invoices by invoice date to calculate targets
+    invoices.forEach(invoice => {
+      const invoiceDate = new Date(invoice.date);
+      const monthKey = invoiceDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      
+      const current = monthlyInvoices.get(monthKey) || 0;
+      monthlyInvoices.set(monthKey, current + (invoice.total || 0));
+    });
+
+    // Get all unique months from both payments and invoices
+    const allMonths = new Set([...monthlyPayments.keys(), ...monthlyInvoices.keys()]);
+    
+    const trends = Array.from(allMonths)
+      .map(month => {
+        const collected = monthlyPayments.get(month) || 0;
+        const invoiced = monthlyInvoices.get(month) || 0;
+        
+        return {
+          month,
+          collection: invoiced > 0 ? Math.round((collected / invoiced) * 100) : (collected > 0 ? 100 : 0),
+          target: 90,
+          collectedAmount: formatAmount(collected),
+          invoicedAmount: formatAmount(invoiced),
+          hasPayments: collected > 0,
+          hasInvoices: invoiced > 0
+        };
+      })
+      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
+      .slice(-6);
+
+    return trends;
+  };
+
+  const paymentTrends = calculatePaymentTrends();
+
   const handleExportStatement = () => {
     try {
       exportBillingStatement(invoices);
@@ -841,19 +933,19 @@ File Size: ${doc.size}`;
 
         <TabsContent value="overview">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">
-                      Weekly Revenue
+                      Total Invoices
                     </p>
-                    <p className="text-2xl font-bold text-green-600">{uniqueKPIs.weeklyRevenue}</p>
+                    <p className="text-2xl font-bold">{invoices.length}</p>
                   </div>
-                  <Banknote className="h-8 w-8 text-green-500" />
+                  <FileText className="h-8 w-8 text-blue-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Money collected last 7 days</p>
+                <p className="text-xs text-gray-500 mt-2">All invoices created</p>
               </CardContent>
             </Card>
 
@@ -862,13 +954,13 @@ File Size: ${doc.size}`;
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">
-                      Pipeline Value
+                      Total Payments
                     </p>
-                    <p className="text-2xl font-bold text-blue-600">{uniqueKPIs.pipelineValue}</p>
+                    <p className="text-2xl font-bold">{payments.filter(p => p.paymentType === "RECEIVE").length}</p>
                   </div>
-                  <PieChart className="h-8 w-8 text-blue-500" />
+                  <CreditCard className="h-8 w-8 text-green-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Outstanding invoice amounts</p>
+                <p className="text-xs text-gray-500 mt-2">Received payments</p>
               </CardContent>
             </Card>
 
@@ -876,12 +968,29 @@ File Size: ${doc.size}`;
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Top Client</p>
-                    <p className="text-2xl font-bold text-purple-600">{uniqueKPIs.topClient.revenue}</p>
+                    <p className="text-sm font-medium text-gray-600">
+                      Outstanding Amount
+                    </p>
+                    <p className="text-2xl font-bold">{paymentSummary.overdue.amount}</p>
                   </div>
-                  <Users className="h-8 w-8 text-purple-500" />
+                  <Clock className="h-8 w-8 text-red-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{uniqueKPIs.topClient.name}</p>
+                <p className="text-xs text-gray-500 mt-2">{paymentSummary.overdue.count} overdue invoices</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">
+                      Revenue Collected
+                    </p>
+                    <p className="text-2xl font-bold">{paymentSummary.paid.amount}</p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-green-500" />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">{paymentSummary.paid.count} paid invoices</p>
               </CardContent>
             </Card>
           </div>
@@ -1008,21 +1117,31 @@ File Size: ${doc.size}`;
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { month: "March 2024", collection: 88, target: 90 },
-                    { month: "April 2024", collection: 92, target: 90 },
-                    { month: "May 2024", collection: 85, target: 90 },
-                  ].map((item, index) => (
-                    <div key={index}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>{item.month}</span>
-                        <span>
-                          {item.collection}% / {item.target}%
-                        </span>
+                  {collectionTrends.length > 0 ? (
+                    collectionTrends.map((item, index) => (
+                      <div key={index}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="font-medium">{item.month}</span>
+                          <span>
+                            {item.collection}% / {item.target}%
+                          </span>
+                        </div>
+                        <Progress 
+                          value={item.collection} 
+                          className={`h-2 ${item.collection >= item.target ? 'bg-green-100' : 'bg-red-100'}`}
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                          <span>Collected: {item.collectedAmount}</span>
+                          <span>Invoiced: {item.invoicedAmount}</span>
+                        </div>
                       </div>
-                      <Progress value={item.collection} className="h-2" />
+                    ))
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No collection data available</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>

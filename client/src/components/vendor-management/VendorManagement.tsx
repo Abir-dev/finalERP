@@ -105,7 +105,7 @@ interface Vendor {
   documents?: string;
 }
 
-export function VendorManagement() {
+export function VendorManagement({ selectedUserId }: { selectedUserId?: string }) {
   const { user } = useUser();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [filteredVendors, setFilteredVendors] = useState<Vendor[]>([]);
@@ -130,10 +130,11 @@ export function VendorManagement() {
       if (!token) return;
 
       const headers = { Authorization: `Bearer ${token}` };
+      const targetUserId = selectedUserId || user.id;
       
       // Use user-specific route if role is not 'accounts'
-      const endpoint = user?.role !== 'accounts' && user?.id 
-        ? `${API_URL}/vendors/user/${user.id}`
+      const endpoint = user?.role !== 'accounts' && (user?.role==='admin' || user?.role==='md' ? targetUserId !== user?.id : targetUserId)
+        ? `${API_URL}/vendors/user/${targetUserId}`
         : `${API_URL}/vendors`;
       
       const response = await axios.get(endpoint, { headers });
@@ -153,7 +154,7 @@ export function VendorManagement() {
 
   useEffect(() => {
     fetchVendors();
-  }, []);
+  }, [selectedUserId, user?.id, user?.role]);
 
   // Filter vendors based on search and filters
   useEffect(() => {
@@ -188,7 +189,7 @@ export function VendorManagement() {
     }
 
     setFilteredVendors(filtered);
-  }, [vendors, searchQuery, selectedVendorType, selectedGstCategory]);
+  }, [vendors, searchQuery, selectedVendorType, selectedGstCategory,selectedUserId]);
 
   const getVendorTypeLabel = (type: string) => {
     switch (type) {
