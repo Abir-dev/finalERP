@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebarMobile } from "@/components/app-sidebar-mobile";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserProvider } from "@/contexts/UserContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -107,11 +108,15 @@ const AppLayout = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar />
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <div className="hidden md:block">
+          <AppSidebar />
+        </div>
         <main className="flex-1">
           <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-14 items-center px-4">
-              {/* <SidebarTrigger /> */}
+              {/* Mobile Sidebar Trigger - Only visible on mobile */}
+              <AppSidebarMobile className="mr-2" />
               <div className="ml-auto flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">
                   Construction Management System
@@ -156,32 +161,39 @@ const AppLayout = () => {
 };
 
 const App = () => {
-  // const { user } = useUser();
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <TooltipProvider>
           <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        {/* <UserFilterProvider 
-        currentUser={user}
-        apiUrl={import.meta.env.VITE_API_URL}
-      > */}
-          <UserProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/unauthorized" element={<Unauthorized />} />
-              <Route path="/*" element={<AppLayout />} />
-            </Routes>
-          </UserProvider>
-          {/* </UserFilterProvider> */}
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
-}
+          <Sonner />
+          <BrowserRouter>
+            <UserProvider>
+              <AppWithUser />
+            </UserProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
+
+const AppWithUser = () => {
+  const { user } = useUser();
+  
+  return (
+    <UserFilterProvider 
+      currentUser={user}
+      apiUrl={import.meta.env.VITE_API_URL}
+    >
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/*" element={<AppLayout />} />
+      </Routes>
+    </UserFilterProvider>
+  );
+};
 
 export default App;

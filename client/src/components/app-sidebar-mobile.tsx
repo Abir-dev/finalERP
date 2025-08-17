@@ -32,8 +32,8 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useUser } from "@/contexts/UserContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,9 +53,34 @@ interface AppSidebarMobileProps {
 export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
   const { user, logout } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeItem, setActiveItem] = useState("/");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Update active item when location changes
+  useEffect(() => {
+    setActiveItem(location.pathname);
+  }, [location.pathname]);
+
+  // Close sidebar when route changes (mobile UX improvement)
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when sidebar is open (mobile UX improvement)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup function to reset overflow when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const items = [
     {
@@ -233,7 +258,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[85vw] max-w-80 p-0 flex flex-col">
+      <SheetContent side="left" className="w-[85vw] max-w-80 p-0 flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/95">
         <SheetHeader className="border-b p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
