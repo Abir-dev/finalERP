@@ -292,8 +292,8 @@ export function AppSidebar() {
           {!isCollapsed && <SidebarGroupLabel>ERP Modules</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* HR Dropdown Menu - Moved to top */}
-              {showHR && (
+              {/* HR Dropdown Menu - Show at top only for HR role users */}
+              {showHR && user?.role === "hr" && (
                 <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
@@ -382,6 +382,66 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              
+              {/* HR Dropdown Menu - Show at bottom for admin/md users */}
+              {showHR && user?.role !== "hr" && (
+                <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={cn(
+                          activeItem.startsWith("/hr") ? "bg-accent" : "",
+                          isCollapsed && "justify-center px-0"
+                        )}
+                        tooltip={isCollapsed ? `${hrItems.title} - Click to expand` : undefined}
+                      >
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 w-full",
+                            isCollapsed && "justify-center"
+                          )}
+                        >
+                          <hrItems.icon
+                            className={cn(
+                              "flex-shrink-0",
+                              isCollapsed ? "h-4 w-4" : "h-4 w-4"
+                            )}
+                          />
+                          {!isCollapsed && (
+                            <>
+                              <span className="truncate text-base flex-1">{hrItems.title}</span>
+                              {isHROpen ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {hrItems.subitems.map((subitem) => (
+                          <SidebarMenuSubItem key={subitem.title}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={activeItem === subitem.url}
+                            >
+                              <button
+                                onClick={() => handleMenuItemClick(subitem.url)}
+                                className="w-full text-left"
+                              >
+                                <span>{subitem.title}</span>
+                              </button>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
