@@ -7,11 +7,11 @@ import { checkRole } from '../middleware/rbac';
 const router = Router();
 
 // Inventory CRUD
-router.post('/items', authenticateUser, checkRole('store'), validateInventoryItem, inventoryController.createItem);
+router.post('/items', authenticateUser,  validateInventoryItem, inventoryController.createItem);
 router.get('/items', authenticateUser, inventoryController.listItems);
 router.get('/items/:id', authenticateUser, inventoryController.getItem);
-router.put('/items/:id', authenticateUser, checkRole('store'), validateInventoryItem, inventoryController.updateItem);
-router.delete('/items/:id', authenticateUser, checkRole('store'), inventoryController.deleteItem);
+router.put('/items/:id', authenticateUser, validateInventoryItem, inventoryController.updateItem);
+router.delete('/items/:id', authenticateUser,  inventoryController.deleteItem);
 
 // Additional inventory management routes
 router.get('/items/category/:category', authenticateUser, inventoryController.getItemsByCategory);

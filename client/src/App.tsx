@@ -118,13 +118,13 @@ const AppLayout = () => {
               {/* Mobile Sidebar Trigger - Only visible on mobile */}
               <AppSidebarMobile className="mr-2" />
               <div className="ml-auto flex items-center space-x-4">
-                <span className="text-sm text-muted-foreground">
+                <span className="hidden sm:block text-sm text-muted-foreground">
                   Construction Management System
                 </span>
               </div>
             </div>
           </div>
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <Routes>
               <Route index element={<Index />} />
               <Route path="/md-dashboard" element={<MDDashboard />} />
@@ -141,6 +141,8 @@ const AppLayout = () => {
               {/* ERP module pages */}
               <Route path="/projects" element={<Projects />} />
               <Route path="/hr" element={<HR />} />
+              <Route path="/hr/employees" element={<HR />} />
+              <Route path="/hr/salaries" element={<HR />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/calendar" element={<Calendar />} />
