@@ -47,7 +47,6 @@ import {
   Edit,
   Trash2,
   Calculator,
-  TrendingUp,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import axios from "axios";
@@ -113,7 +112,7 @@ const BOQManagement: React.FC = () => {
     userRole === "admin" ||
     userRole === "design" ||
     userRole === "client-manager";
-  const canDelete = userRole === "admin" || userRole === "accounts";
+  const canDelete = userRole === "admin" || userRole === "accounts" || userRole === "client-manager";
 
   useEffect(() => {
     if (user?.id) {
@@ -171,6 +170,8 @@ const BOQManagement: React.FC = () => {
         localStorage.getItem("jwt_token_backup");
 
       console.log("User ID:", user?.id);
+      console.log("User role:", user?.role);
+      console.log("Can delete:", canDelete);
       console.log("Creating BOQ with token:", token ? "present" : "missing");
       console.log("Form data:", formData);
 
@@ -242,12 +243,16 @@ const BOQManagement: React.FC = () => {
   const handleDeleteBOQ = async () => {
     if (!selectedBOQ) return;
 
+    console.log("Attempting to delete BOQ");
+    console.log("User role:", user?.role);
+    console.log("Can delete:", canDelete);
+
     // Check if user has permission to delete
     if (!canDelete) {
       toast({
         title: "Permission Denied",
         description:
-          "You don't have permission to delete BOQs. Only admins can delete.",
+          "You don't have permission to delete BOQs. Only admins, accounts, or client managers can delete.",
         variant: "destructive",
       });
       setIsDeleteDialogOpen(false);
@@ -341,12 +346,7 @@ const BOQManagement: React.FC = () => {
     return statusMatch && projectMatch;
   });
 
-  // Debug logs
-  console.log("BOQs:", boqs.length);
-  console.log("Filtered BOQs:", filteredBOQs.length);
-  console.log("Loading:", loading);
-  console.log("User role:", userRole);
-  console.log("Can delete:", canDelete);
+
 
   return (
     <Card>
@@ -530,125 +530,7 @@ const BOQManagement: React.FC = () => {
             </Table>
           </div>
 
-          {/* Summary Statistics */}
-          {!loading && filteredBOQs.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-              <Card className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {filteredBOQs.length}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Total BOQs
-                      </p>
-                    </div>
-                    <Calculator className="h-8 w-8 text-blue-600 opacity-20" />
-                  </div>
-                  <p className="text-xs text-green-600 mt-2">
-                    +
-                    {
-                      filteredBOQs.filter(
-                        (boq) =>
-                          new Date(boq.createdAt) >
-                          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-                      ).length
-                    }{" "}
-                    this month
-                  </p>
-                </CardContent>
-              </Card>
 
-              <Card className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-green-600">
-                        {
-                          new Set(filteredBOQs.map((boq) => boq.project.id))
-                            .size
-                        }
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Active Projects
-                      </p>
-                    </div>
-                    <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <span className="text-green-600 font-bold">P</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">
-                    {
-                      new Set(
-                        filteredBOQs.map((boq) => boq.project.client.name)
-                      ).size
-                    }{" "}
-                    clients involved
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-purple-600">
-                        {Math.round(
-                          filteredBOQs.reduce(
-                            (avg, boq) => avg + boq.profitMargin,
-                            0
-                          ) / filteredBOQs.length
-                        )}
-                        %
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Avg Profit Margin
-                      </p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 text-purple-600 opacity-20" />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Range:{" "}
-                    {Math.min(...filteredBOQs.map((b) => b.profitMargin))}% -{" "}
-                    {Math.max(...filteredBOQs.map((b) => b.profitMargin))}%
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-2xl font-bold text-orange-600">
-                        {Math.round(
-                          filteredBOQs.reduce(
-                            (avg, boq) => avg + boq.contingency,
-                            0
-                          ) / filteredBOQs.length
-                        )}
-                        %
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Avg Contingency
-                      </p>
-                    </div>
-                    <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-                      <span className="text-orange-600 font-bold">C</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Overhead:{" "}
-                    {Math.round(
-                      filteredBOQs.reduce((avg, boq) => avg + boq.overhead, 0) /
-                        filteredBOQs.length
-                    )}
-                    % avg
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
       </CardContent>
 

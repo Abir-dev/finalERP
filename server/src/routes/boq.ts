@@ -10,6 +10,6 @@ router.post('/', authenticateUser, boqController.createBOQ);
 router.get('/', authenticateUser, boqController.listBOQs);
 router.get('/:id', authenticateUser, boqController.getBOQ);
 router.put('/:id', authenticateUser, boqController.updateBOQ);
-router.delete('/:id', authenticateUser, checkAnyRole(['admin', 'accounts']), boqController.deleteBOQ);
+router.delete('/:id', authenticateUser, boqController.deleteBOQ);
 
 export default router;

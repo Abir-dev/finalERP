@@ -30,6 +30,7 @@ import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { TenderDashboard } from "@/components/tender-management/tender-dashboard";
 import BidPreparationModal from "@/components/modals/BidPreparationModal";
 import BOQManagement from "@/components/boq/BOQManagement";
+import { useBOQStats } from "@/hooks/useBOQStats";
 import { read, utils, write } from "xlsx";
 import { saveAs } from "file-saver";
 import {
@@ -68,6 +69,9 @@ const TenderManagement = () => {
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
   const [editingTender, setEditingTender] = useState(null);
+  
+  // Get BOQ statistics
+  const boqStats = useBOQStats();
 
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -870,34 +874,43 @@ const TenderManagement = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <EnhancedStatCard
               title="Total BOQs"
-              value="12"
+              value={boqStats.loading ? "..." : boqStats.totalBOQs.toString()}
               icon={Calculator}
-              trend={{ value: 2, label: "new this month" }}
-              threshold={{ status: "good", message: "Active BOQ generation" }}
+              trend={{ value: boqStats.monthlyGrowth, label: "new this month" }}
+              threshold={{ 
+                status: boqStats.totalBOQs > 10 ? "good" : "warning", 
+                message: boqStats.totalBOQs > 10 ? "Active BOQ generation" : "Need more BOQs" 
+              }}
             />
             <EnhancedStatCard
               title="BOQ Value"
-              value="₹89Cr"
+              value={boqStats.loading ? "..." : boqStats.totalValue}
               icon={DollarSign}
-              trend={{ value: 12, label: "increase from last month" }}
-              threshold={{ status: "good", message: "Strong estimation" }}
+              trend={{ value: boqStats.monthlyGrowth, label: "BOQs added this month" }}
+              threshold={{ 
+                status: "good", 
+                message: `${boqStats.activeProjects} active projects` 
+              }}
             />
             <EnhancedStatCard
-              title="Avg. Accuracy"
-              value="94%"
-              description="Rate analysis precision"
+              title="Avg. Profit Margin"
+              value={boqStats.loading ? "..." : `${boqStats.avgProfitMargin}%`}
+              description="Cost optimization"
               icon={TrendingUp}
-              trend={{ value: 3, label: "improvement" }}
-              threshold={{ status: "good", message: "High precision rates" }}
+              trend={{ value: boqStats.avgProfitMargin, label: "margin percentage" }}
+              threshold={{ 
+                status: boqStats.avgProfitMargin > 15 ? "good" : "warning", 
+                message: boqStats.avgProfitMargin > 15 ? "Healthy margins" : "Consider increasing margins" 
+              }}
             />
             <EnhancedStatCard
-              title="Pending BOQs"
-              value="3"
-              description="Awaiting completion"
+              title="Recent BOQs"
+              value={boqStats.loading ? "..." : boqStats.pendingBOQs.toString()}
+              description="Created in last 7 days"
               icon={Clock}
               threshold={{
-                status: "warning",
-                message: "Complete pending BOQs",
+                status: boqStats.pendingBOQs > 0 ? "good" : "warning",
+                message: boqStats.pendingBOQs > 0 ? "Active BOQ creation" : "No recent activity",
               }}
             />
           </div>
