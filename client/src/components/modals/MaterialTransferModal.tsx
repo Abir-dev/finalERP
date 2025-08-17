@@ -108,7 +108,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     // Load vehicles and users
-    const vehiclesUrl = user?.id ? `${API_URL}/vehicles?userId=${user.id}` : `${API_URL}/vehicles`;
+    const vehiclesUrl = `${API_URL}/vehicles`;
     Promise.all([
       fetch(vehiclesUrl, { headers }).then((r) => (r.ok ? r.json() : [])),
       fetch(`${API_URL}/users`, { headers }).then((r) => (r.ok ? r.json() : [])),

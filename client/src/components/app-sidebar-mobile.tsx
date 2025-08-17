@@ -318,8 +318,8 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 ERP Modules
               </h3>
               <div className="space-y-1">
-                {/* HR Dropdown Menu - Moved to top */}
-                {showHR && (
+                {/* HR Dropdown Menu - Show at top only for HR role users */}
+                {showHR && user?.role === "hr" && (
                   <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                     <CollapsibleTrigger asChild>
                       <Button
@@ -388,6 +388,56 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                     </span>
                   </Button>
                 ))}
+                
+                {/* HR Dropdown Menu - Show at bottom for admin/md users */}
+                {showHR && user?.role !== "hr" && (
+                  <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant={activeItem.startsWith("/hr") ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start gap-3 h-12 px-3 text-left",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          "active:scale-95 transition-all duration-150",
+                          "touch-manipulation",
+                          activeItem.startsWith("/hr") && "bg-accent text-accent-foreground shadow-sm"
+                        )}
+                      >
+                        <hrItems.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="text-sm font-medium truncate flex-1">
+                          {hrItems.title}
+                        </span>
+                        {isHROpen ? (
+                          <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="ml-8 space-y-1 mt-1">
+                        {hrItems.subitems.map((subitem) => (
+                          <Button
+                            key={subitem.title}
+                            variant={activeItem === subitem.url ? "secondary" : "ghost"}
+                            className={cn(
+                              "w-full justify-start gap-3 h-10 px-3 text-left",
+                              "hover:bg-accent hover:text-accent-foreground",
+                              "active:scale-95 transition-all duration-150",
+                              "touch-manipulation",
+                              activeItem === subitem.url && "bg-accent text-accent-foreground shadow-sm"
+                            )}
+                            onClick={() => handleMenuItemClick(subitem.url)}
+                          >
+                            <span className="text-sm font-medium truncate">
+                              {subitem.title}
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             </div>
           </div>
