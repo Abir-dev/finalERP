@@ -62,7 +62,7 @@ export const UserFilterComponent: React.FC<UserFilterComponentProps> = ({
                 Current User ({currentUser?.name})
               </SelectItem>
               {allUsers
-                .filter(user => user.id !== currentUser?.id && user.role === 'site')
+                .filter(user => user.id !== currentUser?.id)
                 .map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name} - {user.role}

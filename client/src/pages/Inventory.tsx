@@ -85,6 +85,9 @@ import { saveAs } from "file-saver";
 import axios from "axios";
 import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
 import { useUser } from "@/contexts/UserContext";
+import { useUserFilter } from "@/contexts/UserFilterContext";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -248,14 +251,23 @@ const transferColumns = [
   { key: "actions", label: "Actions", type: "actions" as const },
 ];
 
-const Inventory = () => {
+const InventoryContent = () => {
   const [inventoryTrends, setInventoryTrends] = useState([]);
   const [warehouseUtilization, setWarehouseUtilization] = useState([]);
   const [grnData, setGrnData] = useState([]);
   const [transferData, setTransferData] = useState([]);
   const [tasks, setTasks] = useState([]);
   const { user } = useUser();
-  const userID = user?.id || ""
+  
+  // Use UserFilter Context
+  const { 
+    targetUserId, 
+    selectedUser, 
+    currentUser,
+    setSelectedUserId 
+  } = useUserFilter();
+  
+  const userID = targetUserId || user?.id || ""
   // Add new state variables for quick action dialogs
   const [isResolveIssuesOpen, setIsResolveIssuesOpen] = useState(false);
   const [isTrackMaterialsOpen, setIsTrackMaterialsOpen] = useState(false);
@@ -331,8 +343,16 @@ const Inventory = () => {
     }
   };
 
+  // Auto-reset on page change
+  useEffect(() => {
+    // Reset to current user on page load/change
+    setSelectedUserId(null);
+  }, []); // Empty dependency - runs once on mount
+
   // Function to fetch inventory data
   const fetchInventoryData = async () => {
+    if (!userID) return; // Don't fetch if no user ID
+    
     setIsLoading(true);
     try {
       const token =
@@ -340,7 +360,7 @@ const Inventory = () => {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      console.log("Fetching inventory items...");
+      console.log("Fetching inventory items for user:", userID);
 
       // Fetch inventory items
       const itemsResponse = await axios.get(`${API_URL}/inventory/items?userId=${userID}`, {
@@ -578,8 +598,14 @@ const Inventory = () => {
     }
   };
 
+  // Use effect to fetch data when targetUserId changes
   useEffect(() => {
-    fetchInventoryData();
+    if (userID) {
+      fetchInventoryData();
+    }
+  }, [userID]); // Refetch when target user changes
+
+  useEffect(() => {
     fetchVendors();
     fetchScheduleMaintenances();
   }, []);
@@ -1219,10 +1245,18 @@ const Inventory = () => {
 
   return (
     <div className="space-y-6">
+      {/* User Filter Component */}
+      <UserFilterComponent />
+      
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Inventory Management
+            {selectedUser && selectedUser.id !== currentUser?.id && (
+              <span className="text-lg text-muted-foreground ml-2">
+                - {selectedUser.name}
+              </span>
+            )}
           </h1>
           <p className="text-muted-foreground">
             Comprehensive project tracking, inventory management and material
@@ -3558,6 +3592,14 @@ const Inventory = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+const Inventory = () => {
+  return (
+    <PageUserFilterProvider allowedRoles={['site', 'store']}>
+      <InventoryContent />
+    </PageUserFilterProvider>
   );
 };
 

@@ -9,6 +9,10 @@ interface User {
 
 interface CurrentUser extends User {
   // Add any additional properties specific to the current user
+  id: string;
+  name: string;
+  role: 'admin' | 'md' | 'site' | string;
+
 }
 
 interface UserFilterContextType {
@@ -55,12 +59,14 @@ interface UserFilterProviderProps {
   children: ReactNode;
   currentUser: CurrentUser | null;
   apiUrl?: string;
+  allowedRoles?: string[]; // Roles that can be filtered/viewed by admin/md users
 }
 
 export const UserFilterProvider: React.FC<UserFilterProviderProps> = ({
   children,
   currentUser,
-  apiUrl = process.env.REACT_APP_API_URL || ''
+  apiUrl = import.meta.env.VITE_API_URL || '',
+  allowedRoles = ['admin'] // Default to 'site' role if not specified
 }) => {
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -119,7 +125,7 @@ export const UserFilterProvider: React.FC<UserFilterProviderProps> = ({
         const data = await response.json();
         // Filter to only show users that the current user can access
         const accessibleUsers = data.filter((user: User) => 
-          user.role === 'site' || user.id === currentUser.id
+          allowedRoles.includes(user.role) || user.id === currentUser.id
         );
         setAllUsers(accessibleUsers);
       } else {
