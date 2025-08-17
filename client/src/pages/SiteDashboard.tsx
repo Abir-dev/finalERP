@@ -19,6 +19,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -61,6 +72,8 @@ import {
   Briefcase,
   ChevronDown,
   ChevronUp,
+  Trash2,
+  Pencil
 } from "lucide-react";
 import { issuesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
@@ -508,6 +521,8 @@ const SiteDashboard = () => {
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
   const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState(false);
+  const [selectedDeleteTask, setSelectedDeleteTask] = useState<Task | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -2770,17 +2785,32 @@ const SiteDashboard = () => {
                                       </Badge>
                                     </td>
                                     <td className="py-3 px-4">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          setSelectedEditTask(task);
-                                          setIsEditTaskModalOpen(true);
+                                    <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                    onClick={() => {
+                                      setSelectedEditTask(task);
+                                        setIsEditTaskModalOpen(true);
                                         }}
-                                      >
-                                        Update
-                                      </Button>
-                                    </td>
+                                    >
+                                        <Pencil className="h-4 w-4 mr-1" />
+                                          Update
+                                         </Button>
+                                         <Button
+                                           variant="outline"
+                                           size="sm"
+                                           onClick={() => {
+                                             setSelectedDeleteTask(task);
+                                             setIsDeleteTaskDialogOpen(true);
+                                           }}
+                                           className="text-destructive hover:text-destructive"
+                                         >
+                                           <Trash2 className="h-4 w-4 mr-1" />
+                                           Delete
+                                         </Button>
+                                       </div>
+                                     </td>
                                   </tr>
                                   {expandedTaskId === task.id && (
                                   <tr className="bg-muted/30">
@@ -9056,6 +9086,35 @@ const SiteDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Task Confirmation Dialog */}
+      <AlertDialog open={isDeleteTaskDialogOpen} onOpenChange={setIsDeleteTaskDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the task "{selectedDeleteTask?.name}"? 
+              This action cannot be undone and will permanently remove the task from the project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedDeleteTask) {
+                  handleDeleteTask(selectedDeleteTask.id);
+                  setIsDeleteTaskDialogOpen(false);
+                  setSelectedDeleteTask(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Task
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
