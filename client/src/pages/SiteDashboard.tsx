@@ -59,6 +59,8 @@ import {
   Receipt,
   Building2,
   Briefcase,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { issuesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
@@ -374,12 +376,13 @@ const taskColumns: ColumnDef<Task>[] = [
           : status === "in_progress"
           ? "secondary"
           : "outline";
-      
+
       // Format status for display
-      const displayStatus = status === "in_progress" 
-        ? "In Progress" 
-        : status.charAt(0).toUpperCase() + status.slice(1);
-      
+      const displayStatus =
+        status === "in_progress"
+          ? "In Progress"
+          : status.charAt(0).toUpperCase() + status.slice(1);
+
       return <Badge variant={variant}>{displayStatus}</Badge>;
     },
   },
@@ -504,20 +507,21 @@ const SiteDashboard = () => {
   const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
   const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
   const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  
+
   // Progress Reports Data
   const [dprs, setDprs] = useState<any[]>([]);
   const [wprs, setWprs] = useState<any[]>([]);
   const [reportsStats, setReportsStats] = useState({
     dprsSubmitted: 0,
     wprsCompleted: 0,
-    averageScore: "0/5"
+    averageScore: "0/5",
   });
-  
+
   // Fetch users and projects on component mount
   // useEffect(() => {
   //   fetchUsers();
@@ -528,14 +532,14 @@ const SiteDashboard = () => {
   // }, [user]);
 
   // Fetch data when user or selectedUserId changes
-  useEffect(()  => {
+  useEffect(() => {
     if (user?.id) {
       fetchUsers();
       // fetchUsers();
-    fetchProjects();
-    if (user?.role === 'admin' || 'md') {
-      fetchAllUsers();
-    }
+      fetchProjects();
+      if (user?.role === "admin" || "md") {
+        fetchAllUsers();
+      }
       fetchProgressReports();
       fetchTasks();
     }
@@ -543,7 +547,7 @@ const SiteDashboard = () => {
 
   // Reset selectedUserId when user is not admin
   useEffect(() => {
-    if (user?.role !== 'admin' || 'md') {
+    if (user?.role !== "admin" || "md") {
       setSelectedUserId("");
     }
   }, [user]);
@@ -563,7 +567,7 @@ const SiteDashboard = () => {
           (user: User) => user.role !== "user"
         );
         setUsers(allUsers);
-        console.log(allUsers)
+        console.log(allUsers);
       } else {
         console.error("Failed to fetch users:", response.status);
         setUsers([]);
@@ -576,13 +580,13 @@ const SiteDashboard = () => {
 
   const fetchAllUsers = async () => {
     if (!user) return;
-    
+
     try {
       const token =
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
+
       const response = await fetch(`${API_URL}/users`, { headers });
       if (response.ok) {
         const data = await response.json();
@@ -593,7 +597,7 @@ const SiteDashboard = () => {
         setAllUsers([]);
       }
     } catch (error) {
-      console.error('Error fetching all users:', error);
+      console.error("Error fetching all users:", error);
       setAllUsers([]);
     }
   };
@@ -1047,70 +1051,81 @@ const SiteDashboard = () => {
   const fetchProgressReports = async () => {
     try {
       if (!user?.id) return;
-      
+
       // Use selectedUserId if admin has selected a user, otherwise use current user's ID
       const targetUserId = selectedUserId || user.id;
-      
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      
+
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+
       // Fetch DPRs
       const dprResponse = await axios.get(
         `${API_URL}/progress-reports/dpr/${targetUserId}`,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       setDprs(dprResponse.data);
-      
+
       // Fetch WPRs
       const wprResponse = await axios.get(
         `${API_URL}/progress-reports/wpr/${targetUserId}`,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
       setWprs(wprResponse.data);
-      
+
       // Calculate stats
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
-      
+
       const monthlyDprs = dprResponse.data.filter((dpr: any) => {
         const dprDate = new Date(dpr.createdAt);
-        return dprDate.getMonth() === currentMonth && dprDate.getFullYear() === currentYear;
+        return (
+          dprDate.getMonth() === currentMonth &&
+          dprDate.getFullYear() === currentYear
+        );
       });
-      
+
       const monthlyWprs = wprResponse.data.filter((wpr: any) => {
         const wprDate = new Date(wpr.createdAt);
-        return wprDate.getMonth() === currentMonth && wprDate.getFullYear() === currentYear;
+        return (
+          wprDate.getMonth() === currentMonth &&
+          wprDate.getFullYear() === currentYear
+        );
       });
-      
+
       setReportsStats({
         dprsSubmitted: monthlyDprs.length,
         wprsCompleted: monthlyWprs.length,
-        averageScore: "4.2/5" // You can implement actual scoring logic here
+        averageScore: "4.2/5", // You can implement actual scoring logic here
       });
-      
+
       // Update progress stats based on actual data
-      const activeTasks = tasks.filter(t => 
-        t.status === "In Progress" || 
-        t.status === "in_progress" ||
-        t.status === "In progress"
+      const activeTasks = tasks.filter(
+        (t) =>
+          t.status === "In Progress" ||
+          t.status === "in_progress" ||
+          t.status === "In progress"
       ).length;
       const completedThisWeek = getCompletedTasksThisWeek();
-      
-      setProgressStats(prev => ({
+
+      setProgressStats((prev) => ({
         ...prev,
         // activeTasks: activeTasks,
         completedThisWeek: completedThisWeek,
         onSchedule: calculateOnSchedulePercentage(),
-        resourceUtilization: Math.min(95, Math.max(60, 75 + monthlyDprs.length * 2))
+        resourceUtilization: Math.min(
+          95,
+          Math.max(60, 75 + monthlyDprs.length * 2)
+        ),
       }));
 
       // Generate weekly progress data from WPRs
       const weeklyProgressData = generateWeeklyProgressData(wprResponse.data);
       setWeeklyProgress(weeklyProgressData);
-      
     } catch (error) {
       console.error("Error fetching progress reports:", error);
     }
@@ -1119,9 +1134,8 @@ const SiteDashboard = () => {
   // Helper function to get completed tasks this week
   const getCompletedTasksThisWeek = () => {
     // For now, return a calculated value based on completed tasks
-    return tasks.filter(task => 
-      task.status === "Completed" || 
-      task.status === "completed"
+    return tasks.filter(
+      (task) => task.status === "Completed" || task.status === "completed"
     ).length;
   };
 
@@ -1129,24 +1143,27 @@ const SiteDashboard = () => {
   const calculateOnSchedulePercentage = () => {
     const totalTasks = tasks.length;
     if (totalTasks === 0) return 100;
-    
-    const onScheduleTasks = tasks.filter(task => {
+
+    const onScheduleTasks = tasks.filter((task) => {
       const dueDate = new Date(task.dueDate);
       const now = new Date();
-      
+
       if (task.status === "Completed" || task.status === "completed") {
         return true; // Completed tasks are considered on schedule
       }
-      
-      if ((task.status === "In Progress" || 
-           task.status === "in-progress" ||
-           task.status === "In progress") && dueDate > now) {
+
+      if (
+        (task.status === "In Progress" ||
+          task.status === "in-progress" ||
+          task.status === "In progress") &&
+        dueDate > now
+      ) {
         return true; // In progress tasks not yet overdue
       }
-      
+
       return false;
     }).length;
-    
+
     return Math.round((onScheduleTasks / totalTasks) * 100);
   };
 
@@ -1157,85 +1174,91 @@ const SiteDashboard = () => {
         { week: "Week 1", planned: 20, actual: 15 },
         { week: "Week 2", planned: 40, actual: 35 },
         { week: "Week 3", planned: 60, actual: 55 },
-        { week: "Week 4", planned: 80, actual: 75 }
+        { week: "Week 4", planned: 80, actual: 75 },
       ];
     }
 
     return wprs.slice(-4).map((wpr, index) => ({
       week: `Week ${index + 1}`,
       planned: parseInt(wpr.plannedProgress) || 0,
-      actual: parseInt(wpr.actualProgress) || 0
+      actual: parseInt(wpr.actualProgress) || 0,
     }));
   };
 
   // Task Management Functions
   const fetchTasks = async () => {
     try {
-      if (!user?.id ) return;
-      
+      if (!user?.id) return;
+
       // Use selectedUserId if admin has selected a user, otherwise use current user's ID
       const targetUserId = selectedUserId || user.id;
-      
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      
+
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+
       // Fetch tasks for all projects the user has access to
       // const allTasks: Task[] = [];
-      
-      
-          const response = await axios.get(
-            `${API_URL}/projects/${targetUserId}/tasks`,
-            {
-              headers: { Authorization: `Bearer ${token}` }
-            }
-          );
-          // console.log(response.data);
-          // Add project name and assigned user name to each task for display
-          await fetchUsers()
-          const tasksWithNames = response.data.map((task: Task) => ({
-            ...task,
-            projectName: task.project?.name ,
-            // assignedTo: task.assignedToId,         
-            assignedTo: task.assignedToId ? users.find(u => u.id === task.assignedToId)?.name || "Unknown User" : undefined,
 
-            startDate: new Date(task.startDate).toISOString().split('T')[0],
-            dueDate: new Date(task.dueDate).toISOString().split('T')[0],           
-          }));
-          setTasks(tasksWithNames);
-          console.log(tasksWithNames);
-
-          // Update task statistics with correct status values
-          const pendingCount = tasksWithNames.filter(t => 
-            t.status === "pending"
-          ).length;
-          
-          const activeCount = tasksWithNames.filter(t => 
-            t.status === "in_progress"
-          ).length;
-          
-          const completedCount = tasksWithNames.filter(t => 
-            t.status === "completed"
-          ).length;
-
-          setProgressStats(prev => ({
-            ...prev,
-            pendingTasks: pendingCount,
-            activeTasks: activeCount,
-            completedTasks: completedCount,
-            onSchedule: calculateOnSchedulePercentage(),
-          }));
-        
-        } catch (error) {
-          console.error(`Error fetching tasks for user ${user?.id}:`, error);
+      const response = await axios.get(
+        `${API_URL}/projects/${targetUserId}/tasks`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
-      }
-    
-      
-    // } catch (error) {
-    //   console.error("Error fetching tasks:", error);
-    // }
+      );
+      // console.log(response.data);
+      // Add project name and assigned user name to each task for display
+      await fetchUsers();
+      const token2 =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token2 ? { Authorization: `Bearer ${token2}` } : {};
+      const usersResponse = await fetch(`${API_URL}/users`, { headers });
+      const latestUsers = usersResponse.ok ? await usersResponse.json() : [];
 
+      const tasksWithNames = response.data.map((task: Task) => ({
+        ...task,
+        projectName: task.project?.name,
+        // assignedTo: task.assignedToId,
+        assignedTo: task.assignedToId
+          ? latestUsers.find((u: User) => u.id === task.assignedToId)?.name ||
+            "Unknown User"
+          : undefined,
 
+        startDate: new Date(task.startDate).toISOString().split("T")[0],
+        dueDate: new Date(task.dueDate).toISOString().split("T")[0],
+      }));
+      setTasks(tasksWithNames);
+      console.log(tasksWithNames);
 
+      // Update task statistics with correct status values
+      const pendingCount = tasksWithNames.filter(
+        (t) => t.status === "pending"
+      ).length;
+
+      const activeCount = tasksWithNames.filter(
+        (t) => t.status === "in_progress"
+      ).length;
+
+      const completedCount = tasksWithNames.filter(
+        (t) => t.status === "completed"
+      ).length;
+
+      setProgressStats((prev) => ({
+        ...prev,
+        pendingTasks: pendingCount,
+        activeTasks: activeCount,
+        completedTasks: completedCount,
+        onSchedule: calculateOnSchedulePercentage(),
+      }));
+    } catch (error) {
+      console.error(`Error fetching tasks for user ${user?.id}:`, error);
+    }
+  };
+
+  // } catch (error) {
+  //   console.error("Error fetching tasks:", error);
+  // }
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
@@ -1244,23 +1267,25 @@ const SiteDashboard = () => {
         return;
       }
 
-      const task = tasks.find(t => t.id === taskId);
+      const task = tasks.find((t) => t.id === taskId);
       if (!task) {
         toast.error("Task not found");
         return;
       }
 
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
 
       const targetUserId = selectedUserId || user.id;
-      
+
       const response = await axios.put(
         `${API_URL}/projects/${targetUserId}/tasks/${taskId}`,
         updates,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
@@ -1276,12 +1301,12 @@ const SiteDashboard = () => {
         data: error.response?.data,
         message: error.message,
         url: `${API_URL}/projects/${user?.id}/tasks/${taskId}`,
-        userId: user?.id
+        userId: user?.id,
       });
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to update task. Please try again."
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update task. Please try again."
       );
     }
   };
@@ -1293,14 +1318,16 @@ const SiteDashboard = () => {
         return;
       }
 
-      const task = tasks.find(t => t.id === taskId);
+      const task = tasks.find((t) => t.id === taskId);
       if (!task) {
         toast.error("Task not found");
         return;
       }
 
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+
       const response = await axios.delete(
         `${API_URL}/projects/${task.projectId}/tasks/${taskId}`,
         {
@@ -1317,9 +1344,9 @@ const SiteDashboard = () => {
     } catch (error: any) {
       console.error("Error deleting task:", error);
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to delete task. Please try again."
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to delete task. Please try again."
       );
     }
   };
@@ -1379,8 +1406,10 @@ const SiteDashboard = () => {
         return;
       }
 
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+
       const response = await axios.post(
         `${API_URL}/progress-reports/dpr/${user.id}`,
         {
@@ -1401,7 +1430,7 @@ const SiteDashboard = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
@@ -1415,9 +1444,9 @@ const SiteDashboard = () => {
     } catch (error: any) {
       console.error("Error uploading DPR:", error);
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to upload DPR. Please try again."
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to upload DPR. Please try again."
       );
     }
   };
@@ -1461,8 +1490,10 @@ const SiteDashboard = () => {
         return;
       }
 
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+
       const response = await axios.post(
         `${API_URL}/progress-reports/wpr/${user.id}`,
         {
@@ -1485,7 +1516,7 @@ const SiteDashboard = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
@@ -1499,9 +1530,9 @@ const SiteDashboard = () => {
     } catch (error: any) {
       console.error("Error uploading WPR:", error);
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to upload WPR. Please try again."
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to upload WPR. Please try again."
       );
     }
   };
@@ -1557,12 +1588,18 @@ const SiteDashboard = () => {
         return;
       }
 
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+
       // Format dates as ISO strings
-      const formattedDueDate = formData.dueDate ? new Date(formData.dueDate).toISOString().split('T')[0] : null;
-      const formattedStartDate = formData.startDate ? new Date(formData.startDate).toISOString().split('T')[0] : null;
-      
+      const formattedDueDate = formData.dueDate
+        ? new Date(formData.dueDate).toISOString().split("T")[0]
+        : null;
+      const formattedStartDate = formData.startDate
+        ? new Date(formData.startDate).toISOString().split("T")[0]
+        : null;
+
       const taskData = {
         name: formData.name,
         description: formData.description || null,
@@ -1573,7 +1610,7 @@ const SiteDashboard = () => {
         projectId: formData.projectId,
       };
 
-      console.log('Sending task data:', taskData); // For debugging
+      console.log("Sending task data:", taskData); // For debugging
 
       const response = await axios.post(
         `${API_URL}/projects/${user?.id}/tasks`,
@@ -1581,7 +1618,7 @@ const SiteDashboard = () => {
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         }
       );
@@ -1594,9 +1631,9 @@ const SiteDashboard = () => {
     } catch (error: any) {
       console.error("Error creating task:", error);
       toast.error(
-        error.response?.data?.message || 
-        error.message || 
-        "Failed to create task. Please try again."
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create task. Please try again."
       );
     }
   };
@@ -1668,9 +1705,7 @@ const SiteDashboard = () => {
 
   // Active Tasks List component
   const ActiveTasksList = () => {
-    const activeTasks = tasks.filter((t) => 
-      t.status === "in_progress"
-    );
+    const activeTasks = tasks.filter((t) => t.status === "in_progress");
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -1690,39 +1725,44 @@ const SiteDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {activeTasks.length > 0 ? activeTasks.map((task) => (
-                <tr key={task.id} className="border-t">
-                  <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo}</td>
-                  <td className="p-2">{task.status}</td>
-                  <td className="p-2">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedTimelineTask(task);
-                          setTimelineSubview("taskDetail");
-                        }}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedEditTask(task);
-                          setIsEditTaskModalOpen(true);
-                        }}
-                      >
-                        Update
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
+              {activeTasks.length > 0 ? (
+                activeTasks.map((task) => (
+                  <tr key={task.id} className="border-t">
+                    <td className="p-2">{task.name}</td>
+                    <td className="p-2">{task.assignedTo}</td>
+                    <td className="p-2">{task.status}</td>
+                    <td className="p-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedTimelineTask(task);
+                            setTimelineSubview("taskDetail");
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEditTask(task);
+                            setIsEditTaskModalOpen(true);
+                          }}
+                        >
+                          Update
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                  <td
+                    colSpan={4}
+                    className="p-4 text-center text-muted-foreground"
+                  >
                     No active tasks found
                   </td>
                 </tr>
@@ -1738,7 +1778,7 @@ const SiteDashboard = () => {
   const TaskDetailView = () => {
     const task = selectedTimelineTask;
     if (!task) return <div>Task not found</div>;
-    
+
     const handleStatusUpdate = async (newStatus: string) => {
       await handleUpdateTask(task.id, { status: newStatus });
     };
@@ -1767,7 +1807,7 @@ const SiteDashboard = () => {
             </Button>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -1780,7 +1820,9 @@ const SiteDashboard = () => {
               </div>
               <div>
                 <Label className="text-muted-foreground">Project</Label>
-                <p className="font-medium">{task.projectName || task.projectId}</p>
+                <p className="font-medium">
+                  {task.projectName || task.projectId}
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Assigned To</Label>
@@ -1788,11 +1830,13 @@ const SiteDashboard = () => {
               </div>
               <div>
                 <Label className="text-muted-foreground">Description</Label>
-                <p className="font-medium">{task.description || "No description provided"}</p>
+                <p className="font-medium">
+                  {task.description || "No description provided"}
+                </p>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Timeline & Status</CardTitle>
@@ -1800,22 +1844,33 @@ const SiteDashboard = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label className="text-muted-foreground">Start Date</Label>
-                <p className="font-medium">{task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : "Not set"}</p>
+                <p className="font-medium">
+                  {task.startDate
+                    ? new Date(task.startDate).toISOString().split("T")[0]
+                    : "Not set"}
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Due Date</Label>
-                <p className="font-medium">{task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "Not set"}</p>
+                <p className="font-medium">
+                  {task.dueDate
+                    ? new Date(task.dueDate).toISOString().split("T")[0]
+                    : "Not set"}
+                </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Current Status</Label>
                 <div className="flex items-center gap-2">
-                  <Badge variant={
-                    task.status === "completed" || task.status === "Completed" 
-                      ? "default" 
-                      : task.status === "in-progress" || task.status === "In Progress"
-                      ? "secondary" 
-                      : "outline"
-                  }>
+                  <Badge
+                    variant={
+                      task.status === "completed" || task.status === "Completed"
+                        ? "default"
+                        : task.status === "in-progress" ||
+                          task.status === "In Progress"
+                        ? "secondary"
+                        : "outline"
+                    }
+                  >
                     {task.status}
                   </Badge>
                 </div>
@@ -1850,9 +1905,7 @@ const SiteDashboard = () => {
 
   // Completed Tasks List component
   const CompletedTasksList = () => {
-    const completedTasks = tasks.filter((t) => 
-      t.status === "completed"
-    );
+    const completedTasks = tasks.filter((t) => t.status === "completed");
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
@@ -1872,39 +1925,44 @@ const SiteDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {completedTasks.length > 0 ? completedTasks.map((task) => (
-                <tr key={task.id} className="border-t">
-                  <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo}</td>
-                  <td className="p-2">{task.status}</td>
-                  <td className="p-2">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedTimelineTask(task);
-                          setTimelineSubview("taskDetail");
-                        }}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedEditTask(task);
-                          setIsEditTaskModalOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
+              {completedTasks.length > 0 ? (
+                completedTasks.map((task) => (
+                  <tr key={task.id} className="border-t">
+                    <td className="p-2">{task.name}</td>
+                    <td className="p-2">{task.assignedTo}</td>
+                    <td className="p-2">{task.status}</td>
+                    <td className="p-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedTimelineTask(task);
+                            setTimelineSubview("taskDetail");
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEditTask(task);
+                            setIsEditTaskModalOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                  <td
+                    colSpan={4}
+                    className="p-4 text-center text-muted-foreground"
+                  >
                     No completed tasks found
                   </td>
                 </tr>
@@ -1919,9 +1977,10 @@ const SiteDashboard = () => {
   // On Schedule Tasks List component
   const OnScheduleTasksList = () => {
     const onScheduleTasks = tasks.filter(
-      (t) => new Date(t.dueDate || '') >= new Date() || 
-      t.status === "completed" || 
-      t.status === "Completed"
+      (t) =>
+        new Date(t.dueDate || "") >= new Date() ||
+        t.status === "completed" ||
+        t.status === "Completed"
     );
     return (
       <div className="space-y-6">
@@ -1943,40 +2002,49 @@ const SiteDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {onScheduleTasks.length > 0 ? onScheduleTasks.map((task) => (
-                <tr key={task.id} className="border-t">
-                  <td className="p-2">{task.name}</td>
-                  <td className="p-2">{task.assignedTo || "Unassigned"}</td>
-                  <td className="p-2">{task.status}</td>
-                  <td className="p-2">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "Not set"}</td>
-                  <td className="p-2">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedTimelineTask(task);
-                          setTimelineSubview("taskDetail");
-                        }}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedEditTask(task);
-                          setIsEditTaskModalOpen(true);
-                        }}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
+              {onScheduleTasks.length > 0 ? (
+                onScheduleTasks.map((task) => (
+                  <tr key={task.id} className="border-t">
+                    <td className="p-2">{task.name}</td>
+                    <td className="p-2">{task.assignedTo || "Unassigned"}</td>
+                    <td className="p-2">{task.status}</td>
+                    <td className="p-2">
+                      {task.dueDate
+                        ? new Date(task.dueDate).toLocaleDateString()
+                        : "Not set"}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedTimelineTask(task);
+                            setTimelineSubview("taskDetail");
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEditTask(task);
+                            setIsEditTaskModalOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                  <td
+                    colSpan={5}
+                    className="p-4 text-center text-muted-foreground"
+                  >
                     No on-schedule tasks found
                   </td>
                 </tr>
@@ -2040,16 +2108,28 @@ const SiteDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {dprs.length > 0 ? dprs.map((dpr, idx) => (
-              <tr key={dpr.id || idx} className="border-t">
-                <td className="p-2">{new Date(dpr.createdAt).toLocaleDateString()}</td>
-                <td className="p-2">{dpr.weather}</td>
-                <td className="p-2">N/A</td>
-                <td className="p-2">{dpr.safetyIncident && dpr.safetyIncident.toLowerCase() !== 'n/a' ? "Yes" : "No"}</td>
-              </tr>
-            )) : (
+            {dprs.length > 0 ? (
+              dprs.map((dpr, idx) => (
+                <tr key={dpr.id || idx} className="border-t">
+                  <td className="p-2">
+                    {new Date(dpr.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-2">{dpr.weather}</td>
+                  <td className="p-2">N/A</td>
+                  <td className="p-2">
+                    {dpr.safetyIncident &&
+                    dpr.safetyIncident.toLowerCase() !== "n/a"
+                      ? "Yes"
+                      : "No"}
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                <td
+                  colSpan={4}
+                  className="p-4 text-center text-muted-foreground"
+                >
                   No DPRs submitted yet
                 </td>
               </tr>
@@ -2083,16 +2163,29 @@ const SiteDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {wprs.length > 0 ? wprs.map((wpr, idx) => (
-              <tr key={wpr.id || idx} className="border-t">
-                <td className="p-2">{new Date(wpr.weekStart).toLocaleDateString()}</td>
-                <td className="p-2">{new Date(wpr.weekEnding).toLocaleDateString()}</td>
-                <td className="p-2">{wpr.actualProgress}% actual</td>
-                <td className="p-2">{wpr.issues && wpr.issues.toLowerCase() !== 'n/a' ? "Yes" : "No"}</td>
-              </tr>
-            )) : (
+            {wprs.length > 0 ? (
+              wprs.map((wpr, idx) => (
+                <tr key={wpr.id || idx} className="border-t">
+                  <td className="p-2">
+                    {new Date(wpr.weekStart).toLocaleDateString()}
+                  </td>
+                  <td className="p-2">
+                    {new Date(wpr.weekEnding).toLocaleDateString()}
+                  </td>
+                  <td className="p-2">{wpr.actualProgress}% actual</td>
+                  <td className="p-2">
+                    {wpr.issues && wpr.issues.toLowerCase() !== "n/a"
+                      ? "Yes"
+                      : "No"}
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                <td
+                  colSpan={4}
+                  className="p-4 text-center text-muted-foreground"
+                >
                   No WPRs submitted yet
                 </td>
               </tr>
@@ -2463,9 +2556,8 @@ const SiteDashboard = () => {
           </Button>
         </div>
       </div>
-      
       {/* Admin User Selection */}
-      {(user?.role === 'admin' || user?.role === 'md')&& (
+      {(user?.role === "admin" || user?.role === "md") && (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -2477,23 +2569,28 @@ const SiteDashboard = () => {
                 <SelectValue placeholder="Select user to view data for" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={user?.id}>Current User ({user?.name})</SelectItem>
-                {allUsers.filter(user => user.role === 'site').map((userItem) => (
-                  <SelectItem key={userItem.id} value={userItem.id}>
-                    {userItem.name} - {userItem.role}
-                  </SelectItem>
-                ))}
+                <SelectItem value={user?.id}>
+                  Current User ({user?.name})
+                </SelectItem>
+                {allUsers
+                  .filter((user) => user.role === "site")
+                  .map((userItem) => (
+                    <SelectItem key={userItem.id} value={userItem.id}>
+                      {userItem.name} - {userItem.role}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
           {selectedUserId && (
             <div className="text-sm text-muted-foreground">
-              Currently viewing: {allUsers.find(u => u.id === selectedUserId)?.name || 'Unknown User'}
+              Currently viewing:{" "}
+              {allUsers.find((u) => u.id === selectedUserId)?.name ||
+                "Unknown User"}
             </div>
           )}
         </div>
       )}
-      
       <Tabs defaultValue="timeline" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
@@ -2606,49 +2703,242 @@ const SiteDashboard = () => {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <DataTable
-                        columns={[
-                          ...taskColumns,
-                          {
-                            id: "actions",
-                            header: "Actions",
-                            cell: ({ row }) => (
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    openTaskViewModal(row.original)
-                                  }
-                                >
-                                  View
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedEditTask(row.original);
-                                    setIsEditTaskModalOpen(true);
-                                  }}
-                                >
-                                  Update
-                                </Button>
-                                {/* <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    openStatusModal(row.original)
-                                  }
-                                >
-                                  Update
-                                </Button> */}
-                              </div>
-                            ),
-                          },
-                        ]}
-                        data={tasks}
-                        searchKey="name"
-                      />
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full">
+                        <thead>
+                        <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium w-12"></th>
+                        <th className="text-left py-3 px-4 font-medium">Task Name</th>
+                        <th className="text-left py-3 px-4 font-medium">Project</th>
+                        <th className="text-left py-3 px-4 font-medium">Assigned To</th>
+                        <th className="text-left py-3 px-4 font-medium">Start Date</th>
+                        <th className="text-left py-3 px-4 font-medium">Due Date</th>
+                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                          <th className="text-left py-3 px-4 font-medium">Actions</th>
+                          </tr>
+                            </thead>
+                          <tbody>
+                            {tasks.length > 0 ? (
+                              tasks.map((task) => (
+                                <>
+                                  <tr key={task.id} className="border-b hover:bg-muted/50">
+                                    <td className="py-3 px-4">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          setExpandedTaskId(
+                                            expandedTaskId === task.id ? null : task.id
+                                          )
+                                        }
+                                        className="p-1 h-6 w-6"
+                                      >
+                                        {expandedTaskId === task.id ? (
+                                          <ChevronUp className="h-4 w-4" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </td>
+                                    <td className="py-3 px-4">{task.name}</td>
+                                    <td className="py-3 px-4">{task.projectName}</td>
+                                    <td className="py-3 px-4">{task.assignedTo || "Unassigned"}</td>
+                                    <td className="py-3 px-4">
+                                      {task.startDate 
+                                        ? new Date(task.startDate).toLocaleDateString()
+                                        : "Not set"}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      {task.dueDate 
+                                        ? new Date(task.dueDate).toLocaleDateString()
+                                        : "Not set"}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Badge
+                                        variant={
+                                          task.status === "completed"
+                                            ? "default"
+                                            : task.status === "in_progress"
+                                            ? "secondary"
+                                            : "outline"
+                                        }
+                                      >
+                                        {task.status === "in_progress"
+                                          ? "In Progress"
+                                          : task.status.charAt(0).toUpperCase() +
+                                            task.status.slice(1)}
+                                      </Badge>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedEditTask(task);
+                                          setIsEditTaskModalOpen(true);
+                                        }}
+                                      >
+                                        Update
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                  {expandedTaskId === task.id && (
+                                  <tr className="bg-muted/30">
+                                  <td colSpan={8} className="p-6">
+                                        <div className="bg-background rounded-lg shadow-sm border p-6 space-y-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold">
+                                        Task Details
+                                        </h3>
+                                        </div>
+                                          
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                            <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="text-sm font-semibold text-muted-foreground">
+                                            Task Name
+                                            </Label>
+                                            </div>
+                                            <div className="bg-muted/50 p-3 rounded-lg border">
+                                            <p className="text-sm font-medium">{task.name}</p>
+                                            </div>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="text-sm font-semibold text-muted-foreground">
+                                            Project
+                                            </Label>
+                                            </div>
+                                            <div className="bg-muted/50 p-3 rounded-lg border">
+                                            <p className="text-sm font-medium">{task.projectName}</p>
+                                            </div>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="text-sm font-semibold text-muted-foreground">
+                                            Assigned To
+                                            </Label>
+                                            </div>
+                                            <div className="bg-muted/50 p-3 rounded-lg border">
+                                            <p className="text-sm font-medium">{task.assignedTo || "Unassigned"}</p>
+                                            </div>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="text-sm font-semibold text-muted-foreground">
+                                            Start Date
+                                            </Label>
+                                            </div>
+                                            <div className="bg-muted/50 p-3 rounded-lg border">
+                                            <p className="text-sm font-medium">
+                                            {task.startDate 
+                                            ? new Date(task.startDate).toLocaleDateString()
+                                            : "Not set"}
+                                            </p>
+                                            </div>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="text-sm font-semibold text-muted-foreground">
+                                            Due Date
+                                            </Label>
+                                            </div>
+                                            <div className="bg-muted/50 p-3 rounded-lg border">
+                                            <p className="text-sm font-medium">
+                                            {task.dueDate 
+                                            ? new Date(task.dueDate).toLocaleDateString()
+                                            : "Not set"}
+                                            </p>
+                                            </div>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                            <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                            <Label className="text-sm font-semibold text-muted-foreground">
+                                            Current Status
+                                            </Label>
+                                            </div>
+                                            <div className="bg-muted/50 p-3 rounded-lg border">
+                                            <Badge
+                                            variant={
+                                            task.status === "completed"
+                                            ? "default"
+                                            : task.status === "in_progress"
+                                            ? "secondary"
+                                            : "outline"
+                                            }
+                                            className="text-sm"
+                                            >
+                                            {task.status === "in_progress"
+                                            ? "In Progress"
+                                            : task.status.charAt(0).toUpperCase() +
+                                            task.status.slice(1)}
+                                            </Badge>
+                                            </div>
+                                            </div>
+                                          </div>
+                                          
+                                          {task.description && (
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                              <FileText className="h-4 w-4 text-muted-foreground" />
+                                              <Label className="text-sm font-semibold text-muted-foreground">
+                                              Description
+                                              </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-4 rounded-lg border">
+                                              <p className="text-sm leading-relaxed">
+                                              {task.description}
+                                              </p>
+                                              </div>
+                                            </div>
+                                          )}
+                                          
+                                          <div className="flex justify-between items-center pt-4 border-t">
+                                          <div className="text-xs text-muted-foreground">
+                                          </div>
+                                          <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                          setSelectedEditTask(task);
+                                          setIsEditTaskModalOpen(true);
+                                            setExpandedTaskId(null);
+                                          }}
+                                          >
+                                          <Edit className="h-4 w-4 mr-2" />
+                                          Edit Task
+                                          </Button>
+                                          </div>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                                  No tasks found. Add a new task to get started.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
                     </CardContent>
                   </Card>
                 </>
@@ -2748,21 +3038,25 @@ const SiteDashboard = () => {
                     {(() => {
                       // Combine DPRs and WPRs into a single array
                       const combinedReports = [
-                        ...dprs.map(dpr => ({
+                        ...dprs.map((dpr) => ({
                           ...dpr,
                           type: "DPR",
                           date: new Date(dpr.createdAt).toLocaleDateString(),
-                          
-                          photos: 0
+
+                          photos: 0,
                         })),
-                        ...wprs.map(wpr => ({
+                        ...wprs.map((wpr) => ({
                           ...wpr,
-                          type: "WPR", 
+                          type: "WPR",
                           date: new Date(wpr.createdAt).toLocaleDateString(),
-                          
-                          photos: 0
-                        }))
-                      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                          photos: 0,
+                        })),
+                      ].sort(
+                        (a, b) =>
+                          new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime()
+                      );
 
                       if (combinedReports.length === 0) {
                         return (
@@ -2774,38 +3068,40 @@ const SiteDashboard = () => {
                       }
 
                       return combinedReports.map((report, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-4">
-                          <Badge variant="outline">{report.type}</Badge>
-                          <span className="font-medium">{report.date}</span>
-                          {report.weather && (
-                            <Badge variant="secondary">{report.weather}</Badge>
-                          )}
-                          </div>
-                          {/* <p className="text-sm text-muted-foreground mt-1">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4">
+                              <Badge variant="outline">{report.type}</Badge>
+                              <span className="font-medium">{report.date}</span>
+                              {report.weather && (
+                                <Badge variant="secondary">
+                                  {report.weather}
+                                </Badge>
+                              )}
+                            </div>
+                            {/* <p className="text-sm text-muted-foreground mt-1">
                             {report.photos} photos attached
                           </p> */}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              console.log("Clicked report:", report);
-                              setSelectedReport({
-                                ...report,
-                                photos: report.photos || 0
-                              });
-                              setIsViewReportModalOpen(true);
-                            }}
-                          >
-                            View
-                          </Button>
-                          {/* <Button
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                console.log("Clicked report:", report);
+                                setSelectedReport({
+                                  ...report,
+                                  photos: report.photos || 0,
+                                });
+                                setIsViewReportModalOpen(true);
+                              }}
+                            >
+                              View
+                            </Button>
+                            {/* <Button
                             variant="outline"
                             size="sm"
                             onClick={() =>
@@ -2816,9 +3112,9 @@ const SiteDashboard = () => {
                           >
                             Download
                           </Button> */}
+                          </div>
                         </div>
-                      </div>
-                    ));
+                      ));
                     })()}
                   </div>
                 </CardContent>
@@ -4825,7 +5121,7 @@ const SiteDashboard = () => {
                                 staff.status === "On Duty"
                                   ? "default"
                                   : "secondary"
-                                }
+                              }
                             >
                               {staff.status}
                             </Badge>
@@ -5479,7 +5775,11 @@ const SiteDashboard = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[70vh] bg-muted/40 rounded-md p-4">
-            <WPRManualForm onSubmit={handleUploadWPR} onCancel={() => setIsWPRModalOpen(false)} projects={projects} />
+            <WPRManualForm
+              onSubmit={handleUploadWPR}
+              onCancel={() => setIsWPRModalOpen(false)}
+              projects={projects}
+            />
           </div>
         </DialogContent>
       </Dialog>
@@ -6312,8 +6612,16 @@ const SiteDashboard = () => {
                   projectId: formData.get("projectId") as string,
                   assignedToId: formData.get("assignedToId") as string,
                   description: formData.get("description") as string,
-                  startDate: formData.get("startDate") ? new Date(formData.get("startDate") as string).toISOString().split('T')[0] : null,
-                  dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string).toISOString().split('T')[0] : null,
+                  startDate: formData.get("startDate")
+                    ? new Date(formData.get("startDate") as string)
+                        .toISOString()
+                        .split("T")[0]
+                    : null,
+                  dueDate: formData.get("dueDate")
+                    ? new Date(formData.get("dueDate") as string)
+                        .toISOString()
+                        .split("T")[0]
+                    : null,
                 });
               }}
               className="space-y-4"
@@ -6380,8 +6688,6 @@ const SiteDashboard = () => {
                   <Input id="dueDate" name="dueDate" type="date" required />
                 </div>
               </div>
-
-
 
               <div className="space-y-2">
                 {/* <Label htmlFor="dependencies">Dependencies</Label>
@@ -7361,19 +7667,27 @@ const SiteDashboard = () => {
                   )}
                 </DialogTitle>
                 <DialogDescription className="text-base mt-2">
-                  Submitted on {selectedReport?.createdAt ? new Date(selectedReport.createdAt).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : selectedReport?.date}
+                  Submitted on{" "}
+                  {selectedReport?.createdAt
+                    ? new Date(selectedReport.createdAt).toLocaleDateString(
+                        "en-US",
+                        {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )
+                    : selectedReport?.date}
                 </DialogDescription>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <Badge 
-                  variant={selectedReport?.type === "DPR" ? "default" : "secondary"}
+                <Badge
+                  variant={
+                    selectedReport?.type === "DPR" ? "default" : "secondary"
+                  }
                   className="text-sm px-4 py-2 font-semibold"
                 >
                   {selectedReport?.type}
@@ -7395,20 +7709,36 @@ const SiteDashboard = () => {
                 {/* Header Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200 text-center">
-                    <div className="text-2xl font-bold text-blue-800">{selectedReport.manpower || "N/A"}</div>
-                    <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">Workers</div>
+                    <div className="text-2xl font-bold text-blue-800">
+                      {selectedReport.manpower || "N/A"}
+                    </div>
+                    <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">
+                      Workers
+                    </div>
                   </div>
                   <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200 text-center">
-                    <div className="text-2xl font-bold text-green-800">{selectedReport.weather || "N/A"}</div>
-                    <div className="text-xs text-green-600 font-medium uppercase tracking-wide">Weather</div>
+                    <div className="text-2xl font-bold text-green-800">
+                      {selectedReport.weather || "N/A"}
+                    </div>
+                    <div className="text-xs text-green-600 font-medium uppercase tracking-wide">
+                      Weather
+                    </div>
                   </div>
                   <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200 text-center">
-                    <div className="text-2xl font-bold text-purple-800">{selectedReport.safetyIncident ? "Yes" : "No"}</div>
-                    <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">Safety Issues</div>
+                    <div className="text-2xl font-bold text-purple-800">
+                      {selectedReport.safetyIncident ? "Yes" : "No"}
+                    </div>
+                    <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">
+                      Safety Issues
+                    </div>
                   </div>
                   <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200 text-center">
-                    <div className="text-2xl font-bold text-orange-800">{selectedReport.delayIssue ? "Yes" : "No"}</div>
-                    <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">Delays</div>
+                    <div className="text-2xl font-bold text-orange-800">
+                      {selectedReport.delayIssue ? "Yes" : "No"}
+                    </div>
+                    <div className="text-xs text-orange-600 font-medium uppercase tracking-wide">
+                      Delays
+                    </div>
                   </div>
                 </div>
 
@@ -7419,7 +7749,9 @@ const SiteDashboard = () => {
                     Work Completed Today
                   </h3>
                   <div className="bg-white rounded-lg p-4 border">
-                    <p className="text-gray-800 leading-relaxed">{selectedReport.workDone || "No work details provided"}</p>
+                    <p className="text-gray-800 leading-relaxed">
+                      {selectedReport.workDone || "No work details provided"}
+                    </p>
                   </div>
                 </div>
 
@@ -7432,13 +7764,21 @@ const SiteDashboard = () => {
                     </h3>
                     <div className="space-y-4">
                       <div className="bg-white rounded-lg p-4 border border-blue-100">
-                        <div className="text-sm text-blue-700 font-medium">Total Workers</div>
-                        <div className="text-2xl font-bold text-blue-900">{selectedReport.manpower || "Not specified"}</div>
+                        <div className="text-sm text-blue-700 font-medium">
+                          Total Workers
+                        </div>
+                        <div className="text-2xl font-bold text-blue-900">
+                          {selectedReport.manpower || "Not specified"}
+                        </div>
                       </div>
                       {selectedReport.manpowerRoles && (
                         <div className="bg-white rounded-lg p-4 border border-blue-100">
-                          <div className="text-sm text-blue-700 font-medium mb-2">Worker Roles & Distribution</div>
-                          <div className="text-blue-800">{selectedReport.manpowerRoles}</div>
+                          <div className="text-sm text-blue-700 font-medium mb-2">
+                            Worker Roles & Distribution
+                          </div>
+                          <div className="text-blue-800">
+                            {selectedReport.manpowerRoles}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -7451,13 +7791,21 @@ const SiteDashboard = () => {
                     </h3>
                     <div className="space-y-4">
                       <div className="bg-white rounded-lg p-4 border border-green-100">
-                        <div className="text-sm text-green-700 font-medium">Weather Conditions</div>
-                        <div className="text-xl font-bold text-green-900">{selectedReport.weather || "Not specified"}</div>
+                        <div className="text-sm text-green-700 font-medium">
+                          Weather Conditions
+                        </div>
+                        <div className="text-xl font-bold text-green-900">
+                          {selectedReport.weather || "Not specified"}
+                        </div>
                       </div>
                       {selectedReport.workSections && (
                         <div className="bg-white rounded-lg p-4 border border-green-100">
-                          <div className="text-sm text-green-700 font-medium mb-2">Work Sections</div>
-                          <div className="text-green-800">{selectedReport.workSections}</div>
+                          <div className="text-sm text-green-700 font-medium mb-2">
+                            Work Sections
+                          </div>
+                          <div className="text-green-800">
+                            {selectedReport.workSections}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -7473,7 +7821,9 @@ const SiteDashboard = () => {
                         Equipment Utilized
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-yellow-100">
-                        <div className="text-yellow-800 whitespace-pre-wrap">{selectedReport.equipmentUsed}</div>
+                        <div className="text-yellow-800 whitespace-pre-wrap">
+                          {selectedReport.equipmentUsed}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7487,23 +7837,42 @@ const SiteDashboard = () => {
                       <div className="bg-white rounded-lg p-4 border border-purple-100">
                         {(() => {
                           try {
-                            const materials =(selectedReport.materials);
+                            const materials = selectedReport.materials;
                             if (Array.isArray(materials)) {
                               return (
                                 <div className="space-y-3">
-                                  {materials.map((material: any, idx: number) => (
-                                    <div key={idx} className="flex justify-between items-center p-2 bg-purple-50 rounded border">
-                                      <span className="font-medium text-purple-900">{material.name || material.material || (typeof material === 'object' ? 'Material' : material)}</span>
-                                      {material.quantity && <span className="text-purple-700 font-semibold">{material.quantity}</span>}
-                                    </div>
-                                  ))}
+                                  {materials.map(
+                                    (material: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className="flex justify-between items-center p-2 bg-purple-50 rounded border"
+                                      >
+                                        <span className="font-medium text-purple-900">
+                                          {material.name ||
+                                            material.material ||
+                                            (typeof material === "object"
+                                              ? "Material"
+                                              : material)}
+                                        </span>
+                                        {material.quantity && (
+                                          <span className="text-purple-700 font-semibold">
+                                            {material.quantity}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )
+                                  )}
                                 </div>
                               );
                             }
                           } catch (e) {
                             // Fallback for non-JSON data
                           }
-                          return <div className="text-purple-800 whitespace-pre-wrap">{String(selectedReport.materials)}</div>;
+                          return (
+                            <div className="text-purple-800 whitespace-pre-wrap">
+                              {String(selectedReport.materials)}
+                            </div>
+                          );
                         })()}
                       </div>
                     </div>
@@ -7519,7 +7888,9 @@ const SiteDashboard = () => {
                         Safety Incident Report
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-red-100">
-                        <div className="text-red-800 whitespace-pre-wrap font-medium">{selectedReport.safetyIncident}</div>
+                        <div className="text-red-800 whitespace-pre-wrap font-medium">
+                          {selectedReport.safetyIncident}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7531,7 +7902,9 @@ const SiteDashboard = () => {
                         Quality Check Status
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-emerald-100">
-                        <div className="text-emerald-800 whitespace-pre-wrap font-medium">{selectedReport.qualityCheck}</div>
+                        <div className="text-emerald-800 whitespace-pre-wrap font-medium">
+                          {selectedReport.qualityCheck}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7545,7 +7918,9 @@ const SiteDashboard = () => {
                       Delays & Issues Encountered
                     </h3>
                     <div className="bg-white rounded-lg p-4 border border-orange-100">
-                      <div className="text-orange-800 whitespace-pre-wrap font-medium">{selectedReport.delayIssue}</div>
+                      <div className="text-orange-800 whitespace-pre-wrap font-medium">
+                        {selectedReport.delayIssue}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -7558,7 +7933,9 @@ const SiteDashboard = () => {
                       Additional Notes & Comments
                     </h3>
                     <div className="bg-white rounded-lg p-4 border border-gray-100">
-                      <div className="text-gray-800 whitespace-pre-wrap">{selectedReport.notes}</div>
+                      <div className="text-gray-800 whitespace-pre-wrap">
+                        {selectedReport.notes}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -7571,7 +7948,9 @@ const SiteDashboard = () => {
                       Subcontractor Details
                     </h3>
                     <div className="bg-white rounded-lg p-4 border border-indigo-100">
-                      <div className="text-indigo-800 whitespace-pre-wrap font-medium">{selectedReport.subcontractor}</div>
+                      <div className="text-indigo-800 whitespace-pre-wrap font-medium">
+                        {selectedReport.subcontractor}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -7587,25 +7966,37 @@ const SiteDashboard = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-white rounded-lg p-4 border">
-                      <div className="text-sm text-blue-700 font-medium mb-1">Week Start Date</div>
+                      <div className="text-sm text-blue-700 font-medium mb-1">
+                        Week Start Date
+                      </div>
                       <div className="text-lg font-bold text-blue-900">
-                        {selectedReport.weekStart ? new Date(selectedReport.weekStart).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        }) : "Not specified"}
+                        {selectedReport.weekStart
+                          ? new Date(
+                              selectedReport.weekStart
+                            ).toLocaleDateString("en-US", {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Not specified"}
                       </div>
                     </div>
                     <div className="bg-white rounded-lg p-4 border">
-                      <div className="text-sm text-green-700 font-medium mb-1">Week End Date</div>
+                      <div className="text-sm text-green-700 font-medium mb-1">
+                        Week End Date
+                      </div>
                       <div className="text-lg font-bold text-green-900">
-                        {selectedReport.weekEnding ? new Date(selectedReport.weekEnding).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        }) : "Not specified"}
+                        {selectedReport.weekEnding
+                          ? new Date(
+                              selectedReport.weekEnding
+                            ).toLocaleDateString("en-US", {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Not specified"}
                       </div>
                     </div>
                   </div>
@@ -7620,53 +8011,85 @@ const SiteDashboard = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl p-6 border border-blue-300">
                       <div className="text-center">
-                        <div className="text-sm text-blue-700 font-semibold mb-2">PLANNED PROGRESS</div>
-                        <div className="text-4xl font-black text-blue-900 mb-3">{selectedReport.plannedProgress || 0}%</div>
+                        <div className="text-sm text-blue-700 font-semibold mb-2">
+                          PLANNED PROGRESS
+                        </div>
+                        <div className="text-4xl font-black text-blue-900 mb-3">
+                          {selectedReport.plannedProgress || 0}%
+                        </div>
                         <div className="w-full bg-blue-300 rounded-full h-3">
-                          <div 
-                            className="bg-blue-600 h-3 rounded-full transition-all duration-1000 shadow-inner" 
-                            style={{ width: `${selectedReport.plannedProgress || 0}%` }}
+                          <div
+                            className="bg-blue-600 h-3 rounded-full transition-all duration-1000 shadow-inner"
+                            style={{
+                              width: `${selectedReport.plannedProgress || 0}%`,
+                            }}
                           ></div>
                         </div>
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-6 border border-green-300">
                       <div className="text-center">
-                        <div className="text-sm text-green-700 font-semibold mb-2">ACTUAL PROGRESS</div>
-                        <div className="text-4xl font-black text-green-900 mb-3">{selectedReport.actualProgress || 0}%</div>
+                        <div className="text-sm text-green-700 font-semibold mb-2">
+                          ACTUAL PROGRESS
+                        </div>
+                        <div className="text-4xl font-black text-green-900 mb-3">
+                          {selectedReport.actualProgress || 0}%
+                        </div>
                         <div className="w-full bg-green-300 rounded-full h-3">
-                          <div 
-                            className="bg-green-600 h-3 rounded-full transition-all duration-1000 shadow-inner" 
-                            style={{ width: `${selectedReport.actualProgress || 0}%` }}
+                          <div
+                            className="bg-green-600 h-3 rounded-full transition-all duration-1000 shadow-inner"
+                            style={{
+                              width: `${selectedReport.actualProgress || 0}%`,
+                            }}
                           ></div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Progress Variance Analysis */}
-                  {selectedReport.plannedProgress && selectedReport.actualProgress && (
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-gray-700">Progress Variance Analysis:</span>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xl font-bold ${
-                            parseInt(selectedReport.actualProgress) >= parseInt(selectedReport.plannedProgress) 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
-                          }`}>
-                            {(parseInt(selectedReport.actualProgress) - parseInt(selectedReport.plannedProgress)) > 0 ? '+' : ''}
-                            {(parseInt(selectedReport.actualProgress) - parseInt(selectedReport.plannedProgress))}%
+                  {selectedReport.plannedProgress &&
+                    selectedReport.actualProgress && (
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-gray-700">
+                            Progress Variance Analysis:
                           </span>
-                          <Badge variant={
-                            parseInt(selectedReport.actualProgress) >= parseInt(selectedReport.plannedProgress) ? "default" : "destructive"
-                          }>
-                            {parseInt(selectedReport.actualProgress) >= parseInt(selectedReport.plannedProgress) ? "On Track" : "Behind Schedule"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xl font-bold ${
+                                parseInt(selectedReport.actualProgress) >=
+                                parseInt(selectedReport.plannedProgress)
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {parseInt(selectedReport.actualProgress) -
+                                parseInt(selectedReport.plannedProgress) >
+                              0
+                                ? "+"
+                                : ""}
+                              {parseInt(selectedReport.actualProgress) -
+                                parseInt(selectedReport.plannedProgress)}
+                              %
+                            </span>
+                            <Badge
+                              variant={
+                                parseInt(selectedReport.actualProgress) >=
+                                parseInt(selectedReport.plannedProgress)
+                                  ? "default"
+                                  : "destructive"
+                              }
+                            >
+                              {parseInt(selectedReport.actualProgress) >=
+                              parseInt(selectedReport.plannedProgress)
+                                ? "On Track"
+                                : "Behind Schedule"}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 {/* Milestones Achieved */}
@@ -7677,7 +8100,9 @@ const SiteDashboard = () => {
                       Milestones Achieved This Week
                     </h3>
                     <div className="bg-white rounded-lg p-4 border border-emerald-100">
-                      <div className="text-emerald-800 whitespace-pre-wrap leading-relaxed">{selectedReport.milestones}</div>
+                      <div className="text-emerald-800 whitespace-pre-wrap leading-relaxed">
+                        {selectedReport.milestones}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -7690,7 +8115,9 @@ const SiteDashboard = () => {
                       Progress Remarks & Observations
                     </h3>
                     <div className="bg-white rounded-lg p-4 border border-teal-100">
-                      <div className="text-teal-800 whitespace-pre-wrap leading-relaxed">{selectedReport.progressRemarks}</div>
+                      <div className="text-teal-800 whitespace-pre-wrap leading-relaxed">
+                        {selectedReport.progressRemarks}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -7704,7 +8131,9 @@ const SiteDashboard = () => {
                         Issues Identified
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-red-100">
-                        <div className="text-red-800 whitespace-pre-wrap font-medium leading-relaxed">{selectedReport.issues}</div>
+                        <div className="text-red-800 whitespace-pre-wrap font-medium leading-relaxed">
+                          {selectedReport.issues}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7716,7 +8145,9 @@ const SiteDashboard = () => {
                         Risk Assessment
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-orange-100">
-                        <div className="text-orange-800 whitespace-pre-wrap font-medium leading-relaxed">{selectedReport.risks}</div>
+                        <div className="text-orange-800 whitespace-pre-wrap font-medium leading-relaxed">
+                          {selectedReport.risks}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7731,7 +8162,9 @@ const SiteDashboard = () => {
                         Safety Summary & Compliance
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-green-100">
-                        <div className="text-green-800 whitespace-pre-wrap leading-relaxed">{selectedReport.safetySummary}</div>
+                        <div className="text-green-800 whitespace-pre-wrap leading-relaxed">
+                          {selectedReport.safetySummary}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7743,7 +8176,9 @@ const SiteDashboard = () => {
                         Quality Assurance Summary
                       </h3>
                       <div className="bg-white rounded-lg p-4 border border-blue-100">
-                        <div className="text-blue-800 whitespace-pre-wrap leading-relaxed">{selectedReport.qualitySummary}</div>
+                        <div className="text-blue-800 whitespace-pre-wrap leading-relaxed">
+                          {selectedReport.qualitySummary}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -7755,7 +8190,7 @@ const SiteDashboard = () => {
                     <Warehouse className="h-6 w-6 text-gray-600" />
                     Detailed Resource Breakdown
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* WPR Manpower */}
                     {selectedReport.manpower && (
@@ -7767,31 +8202,54 @@ const SiteDashboard = () => {
                         <div className="bg-white rounded-lg p-4 border border-blue-100">
                           {(() => {
                             try {
-                              const manpowerData = (selectedReport.manpower);
+                              const manpowerData = selectedReport.manpower;
                               if (Array.isArray(manpowerData)) {
                                 return (
                                   <div className="space-y-3">
-                                    {manpowerData.map((item: any, idx: number) => (
-                                      <div key={idx} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <div className="font-semibold text-blue-900">{item.role}</div>
-                                            {item.remarks && <div className="text-xs text-blue-700 mt-1">{item.remarks}</div>}
-                                          </div>
-                                          <div className="text-right">
-                                            {item.planned && <div className="text-xs text-blue-600">Planned: {item.planned}</div>}
-                                            {item.actual && <div className="text-xs text-blue-600">Actual: {item.actual}</div>}
+                                    {manpowerData.map(
+                                      (item: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className="p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                        >
+                                          <div className="flex justify-between items-start">
+                                            <div>
+                                              <div className="font-semibold text-blue-900">
+                                                {item.role}
+                                              </div>
+                                              {item.remarks && (
+                                                <div className="text-xs text-blue-700 mt-1">
+                                                  {item.remarks}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="text-right">
+                                              {item.planned && (
+                                                <div className="text-xs text-blue-600">
+                                                  Planned: {item.planned}
+                                                </div>
+                                              )}
+                                              {item.actual && (
+                                                <div className="text-xs text-blue-600">
+                                                  Actual: {item.actual}
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    )}
                                   </div>
                                 );
                               }
                             } catch (e) {
                               // Fallback for non-JSON data
                             }
-                            return <div className="text-blue-800 whitespace-pre-wrap font-medium">{String(selectedReport.manpower)}</div>;
+                            return (
+                              <div className="text-blue-800 whitespace-pre-wrap font-medium">
+                                {String(selectedReport.manpower)}
+                              </div>
+                            );
                           })()}
                         </div>
                       </div>
@@ -7807,31 +8265,54 @@ const SiteDashboard = () => {
                         <div className="bg-white rounded-lg p-4 border border-green-100">
                           {(() => {
                             try {
-                              const equipmentData = (selectedReport.equipment);
+                              const equipmentData = selectedReport.equipment;
                               if (Array.isArray(equipmentData)) {
                                 return (
                                   <div className="space-y-3">
-                                    {equipmentData.map((item: any, idx: number) => (
-                                      <div key={idx} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <div className="font-semibold text-green-900">{item.equipment}</div>
-                                            {item.remarks && <div className="text-xs text-green-700 mt-1">{item.remarks}</div>}
-                                          </div>
-                                          <div className="text-right">
-                                            {item.uptime && <div className="text-xs text-green-600">Uptime: {item.uptime}</div>}
-                                            {item.downtime && <div className="text-xs text-green-600">Downtime: {item.downtime}</div>}
+                                    {equipmentData.map(
+                                      (item: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className="p-3 bg-green-50 rounded-lg border border-green-200"
+                                        >
+                                          <div className="flex justify-between items-start">
+                                            <div>
+                                              <div className="font-semibold text-green-900">
+                                                {item.equipment}
+                                              </div>
+                                              {item.remarks && (
+                                                <div className="text-xs text-green-700 mt-1">
+                                                  {item.remarks}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="text-right">
+                                              {item.uptime && (
+                                                <div className="text-xs text-green-600">
+                                                  Uptime: {item.uptime}
+                                                </div>
+                                              )}
+                                              {item.downtime && (
+                                                <div className="text-xs text-green-600">
+                                                  Downtime: {item.downtime}
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    )}
                                   </div>
                                 );
                               }
                             } catch (e) {
                               // Fallback for non-JSON data
                             }
-                            return <div className="text-green-800 whitespace-pre-wrap font-medium">{String(selectedReport.equipment)}</div>;
+                            return (
+                              <div className="text-green-800 whitespace-pre-wrap font-medium">
+                                {String(selectedReport.equipment)}
+                              </div>
+                            );
                           })()}
                         </div>
                       </div>
@@ -7847,32 +8328,55 @@ const SiteDashboard = () => {
                         <div className="bg-white rounded-lg p-4 border border-purple-100">
                           {(() => {
                             try {
-                              const materialsData =(selectedReport.materials);
+                              const materialsData = selectedReport.materials;
                               if (Array.isArray(materialsData)) {
                                 return (
                                   <div className="space-y-3">
-                                    {materialsData.map((item: any, idx: number) => (
-                                      <div key={idx} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                                        <div className="flex justify-between items-start">
-                                          <div>
-                                            <div className="font-semibold text-purple-900">{item.material}</div>
-                                            {item.remarks && <div className="text-xs text-purple-700 mt-1">{item.remarks}</div>}
-                                          </div>
-                                          <div className="text-right">
-                                            {item.planned && <div className="text-xs text-purple-600">Planned: {item.planned}</div>}
-                                            {item.actual && <div className="text-xs text-purple-600">Actual: {item.actual}</div>}
-                                            {/* {item.quantity && <div className="font-bold text-purple-800">{item.quantity}</div>} */}
+                                    {materialsData.map(
+                                      (item: any, idx: number) => (
+                                        <div
+                                          key={idx}
+                                          className="p-3 bg-purple-50 rounded-lg border border-purple-200"
+                                        >
+                                          <div className="flex justify-between items-start">
+                                            <div>
+                                              <div className="font-semibold text-purple-900">
+                                                {item.material}
+                                              </div>
+                                              {item.remarks && (
+                                                <div className="text-xs text-purple-700 mt-1">
+                                                  {item.remarks}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="text-right">
+                                              {item.planned && (
+                                                <div className="text-xs text-purple-600">
+                                                  Planned: {item.planned}
+                                                </div>
+                                              )}
+                                              {item.actual && (
+                                                <div className="text-xs text-purple-600">
+                                                  Actual: {item.actual}
+                                                </div>
+                                              )}
+                                              {/* {item.quantity && <div className="font-bold text-purple-800">{item.quantity}</div>} */}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      )
+                                    )}
                                   </div>
                                 );
                               }
                             } catch (e) {
                               // Fallback for non-JSON data
                             }
-                            return <div className="text-purple-800 whitespace-pre-wrap font-medium">{String(selectedReport.materials)}</div>;
+                            return (
+                              <div className="text-purple-800 whitespace-pre-wrap font-medium">
+                                {String(selectedReport.materials)}
+                              </div>
+                            );
                           })()}
                         </div>
                       </div>
@@ -7888,7 +8392,9 @@ const SiteDashboard = () => {
                       Team Performance Assessment
                     </h3>
                     <div className="bg-white rounded-lg p-4 border border-indigo-100">
-                      <div className="text-indigo-800 whitespace-pre-wrap leading-relaxed font-medium">{selectedReport.teamPerformance}</div>
+                      <div className="text-indigo-800 whitespace-pre-wrap leading-relaxed font-medium">
+                        {selectedReport.teamPerformance}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -7896,7 +8402,9 @@ const SiteDashboard = () => {
             ) : (
               <div className="text-center py-12">
                 <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-500 text-lg">No report data available</p>
+                <p className="text-gray-500 text-lg">
+                  No report data available
+                </p>
               </div>
             )}
           </div>
@@ -7905,8 +8413,15 @@ const SiteDashboard = () => {
           <div className="border-t bg-gradient-to-r from-gray-50 to-gray-100 p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                <div className="font-medium">Report ID: {selectedReport?.id || "N/A"}</div>
-                <div>Submitted: {selectedReport?.createdAt ? new Date(selectedReport.createdAt).toLocaleString() : selectedReport?.date}</div>
+                <div className="font-medium">
+                  Report ID: {selectedReport?.id || "N/A"}
+                </div>
+                <div>
+                  Submitted:{" "}
+                  {selectedReport?.createdAt
+                    ? new Date(selectedReport.createdAt).toLocaleString()
+                    : selectedReport?.date}
+                </div>
               </div>
               <div className="flex gap-3">
                 {/* <Button
@@ -8290,9 +8805,7 @@ const SiteDashboard = () => {
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
-            <DialogDescription>
-              Update task details
-            </DialogDescription>
+            <DialogDescription>Update task details</DialogDescription>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto p-2">
             {selectedEditTask && (
@@ -8300,7 +8813,7 @@ const SiteDashboard = () => {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
-                  
+
                   try {
                     await handleUpdateTask(selectedEditTask.id, {
                       name: formData.get("name") as string,
@@ -8309,7 +8822,7 @@ const SiteDashboard = () => {
                       dueDate: formData.get("dueDate") as string,
                       status: formData.get("status") as string,
                     });
-                    
+
                     setIsEditTaskModalOpen(false);
                     toast.success("Task updated successfully!");
                   } catch (error) {
@@ -8340,7 +8853,10 @@ const SiteDashboard = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="assignedToId">Assign To</Label>
-                  <Select name="assignedToId" defaultValue={selectedEditTask.assignedToId || ""}>
+                  <Select
+                    name="assignedToId"
+                    defaultValue={selectedEditTask.assignedToId || ""}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select assignee" />
                     </SelectTrigger>
@@ -8361,12 +8877,21 @@ const SiteDashboard = () => {
                       id="dueDate"
                       name="dueDate"
                       type="date"
-                      defaultValue={selectedEditTask.dueDate ? new Date(selectedEditTask.dueDate).toISOString().split('T')[0] : ""}
+                      defaultValue={
+                        selectedEditTask.dueDate
+                          ? new Date(selectedEditTask.dueDate)
+                              .toISOString()
+                              .split("T")[0]
+                          : ""
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select name="status" defaultValue={selectedEditTask.status}>
+                    <Select
+                      name="status"
+                      defaultValue={selectedEditTask.status}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
@@ -8394,7 +8919,6 @@ const SiteDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* Task View Modal */}
       <Dialog open={isTaskViewModalOpen} onOpenChange={setIsTaskViewModalOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -8413,7 +8937,9 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Project</Label>
-                  <p className="font-medium">{selectedTaskView.projectName || "Unknown Project"}</p>
+                  <p className="font-medium">
+                    {selectedTaskView.projectName || "Unknown Project"}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Assigned To</Label>
@@ -8425,11 +8951,23 @@ const SiteDashboard = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Start Date</Label>
-                  <p className="font-medium">{new Date(selectedTaskView.startDate).toISOString().split('T')[0]}</p>
+                  <p className="font-medium">
+                    {
+                      new Date(selectedTaskView.startDate)
+                        .toISOString()
+                        .split("T")[0]
+                    }
+                  </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Due Date</Label>
-                  <p className="font-medium">{new Date(selectedTaskView.dueDate).toISOString().split('T')[0]}</p>
+                  <p className="font-medium">
+                    {
+                      new Date(selectedTaskView.dueDate)
+                        .toISOString()
+                        .split("T")[0]
+                    }
+                  </p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
@@ -8774,60 +9312,84 @@ function DPRManualForm({
 }
 
 // Add this component above the SiteDashboard export
-function WPRManualForm({ 
-  onSubmit, 
-  onCancel, 
-  projects 
-}: { 
-  onSubmit: (formData: any) => void; 
-  onCancel: () => void; 
+function WPRManualForm({
+  onSubmit,
+  onCancel,
+  projects,
+}: {
+  onSubmit: (formData: any) => void;
+  onCancel: () => void;
   projects: Project[];
 }) {
-  const [manpower, setManpower] = useState([{ role: '', planned: '', actual: '' }]);
-  const [equipment, setEquipment] = useState([{ equipment: '', uptime: '', downtime: '', remarks: '' }]);
-  const [materials, setMaterials] = useState([{ material: '', planned: '', actual: '', remarks: '' }]);
+  const [manpower, setManpower] = useState([
+    { role: "", planned: "", actual: "" },
+  ]);
+  const [equipment, setEquipment] = useState([
+    { equipment: "", uptime: "", downtime: "", remarks: "" },
+  ]);
+  const [materials, setMaterials] = useState([
+    { material: "", planned: "", actual: "", remarks: "" },
+  ]);
 
   // Manpower handlers
-  const addManpowerRow = () => setManpower([...manpower, { role: '', planned: '', actual: '' }]);
-  const removeManpowerRow = (idx: number) => setManpower(manpower.filter((_, i) => i !== idx));
+  const addManpowerRow = () =>
+    setManpower([...manpower, { role: "", planned: "", actual: "" }]);
+  const removeManpowerRow = (idx: number) =>
+    setManpower(manpower.filter((_, i) => i !== idx));
   const updateManpower = (idx: number, field: string, value: string) => {
-    setManpower(manpower.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+    setManpower(
+      manpower.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+    );
   };
   // Equipment handlers
-  const addEquipmentRow = () => setEquipment([...equipment, { equipment: '', uptime: '', downtime: '', remarks: '' }]);
-  const removeEquipmentRow = (idx: number) => setEquipment(equipment.filter((_, i) => i !== idx));
+  const addEquipmentRow = () =>
+    setEquipment([
+      ...equipment,
+      { equipment: "", uptime: "", downtime: "", remarks: "" },
+    ]);
+  const removeEquipmentRow = (idx: number) =>
+    setEquipment(equipment.filter((_, i) => i !== idx));
   const updateEquipment = (idx: number, field: string, value: string) => {
-    setEquipment(equipment.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+    setEquipment(
+      equipment.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+    );
   };
   // Materials handlers
-  const addMaterialRow = () => setMaterials([...materials, { material: '', planned: '', actual: '', remarks: '' }]);
-  const removeMaterialRow = (idx: number) => setMaterials(materials.filter((_, i) => i !== idx));
+  const addMaterialRow = () =>
+    setMaterials([
+      ...materials,
+      { material: "", planned: "", actual: "", remarks: "" },
+    ]);
+  const removeMaterialRow = (idx: number) =>
+    setMaterials(materials.filter((_, i) => i !== idx));
   const updateMaterial = (idx: number, field: string, value: string) => {
-    setMaterials(materials.map((row, i) => i === idx ? { ...row, [field]: value } : row));
+    setMaterials(
+      materials.map((row, i) => (i === idx ? { ...row, [field]: value } : row))
+    );
   };
 
   return (
     <form
-      onSubmit={e => {
+      onSubmit={(e) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         onSubmit({
-          projectId: formData.get('projectId') as string,
-          weekStart: formData.get('weekStart') as string,
-          weekEnding: formData.get('weekEnding') as string,
-          milestones: formData.get('milestones') as string,
-          plannedProgress: formData.get('plannedProgress') as string,
-          actualProgress: formData.get('actualProgress') as string,
-          progressRemarks: formData.get('progressRemarks') as string,
-          issues: formData.get('issues') as string,
-          risks: formData.get('risks') as string,
-          safetySummary: formData.get('safetySummary') as string,
-          qualitySummary: formData.get('qualitySummary') as string,
+          projectId: formData.get("projectId") as string,
+          weekStart: formData.get("weekStart") as string,
+          weekEnding: formData.get("weekEnding") as string,
+          milestones: formData.get("milestones") as string,
+          plannedProgress: formData.get("plannedProgress") as string,
+          actualProgress: formData.get("actualProgress") as string,
+          progressRemarks: formData.get("progressRemarks") as string,
+          issues: formData.get("issues") as string,
+          risks: formData.get("risks") as string,
+          safetySummary: formData.get("safetySummary") as string,
+          qualitySummary: formData.get("qualitySummary") as string,
           manpower,
           equipment,
           materials,
-          teamPerformance: formData.get('teamPerformance') as string,
-          attachments: formData.get('attachments') as unknown as FileList,
+          teamPerformance: formData.get("teamPerformance") as string,
+          attachments: formData.get("attachments") as unknown as FileList,
         });
       }}
       className="space-y-4"
@@ -8859,40 +9421,84 @@ function WPRManualForm({
       </div>
       <div>
         <Label htmlFor="milestones">Key Milestones Achieved</Label>
-        <Textarea id="milestones" name="milestones" placeholder="Describe milestone achievements..." rows={3} required />
+        <Textarea
+          id="milestones"
+          name="milestones"
+          placeholder="Describe milestone achievements..."
+          rows={3}
+          required
+        />
       </div>
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="plannedProgress">Planned Progress (%)</Label>
-          <Input id="plannedProgress" name="plannedProgress" type="number" min="0" max="100" required />
+          <Input
+            id="plannedProgress"
+            name="plannedProgress"
+            type="number"
+            min="0"
+            max="100"
+            required
+          />
         </div>
         <div>
           <Label htmlFor="actualProgress">Actual Progress (%)</Label>
-          <Input id="actualProgress" name="actualProgress" type="number" min="0" max="100" required />
+          <Input
+            id="actualProgress"
+            name="actualProgress"
+            type="number"
+            min="0"
+            max="100"
+            required
+          />
         </div>
         <div>
           <Label htmlFor="progressRemarks">Remarks</Label>
-          <Input id="progressRemarks" name="progressRemarks" placeholder="Progress remarks" />
+          <Input
+            id="progressRemarks"
+            name="progressRemarks"
+            placeholder="Progress remarks"
+          />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="issues">Major Issues</Label>
-          <Textarea id="issues" name="issues" placeholder="Describe major issues..." rows={2} />
+          <Textarea
+            id="issues"
+            name="issues"
+            placeholder="Describe major issues..."
+            rows={2}
+          />
         </div>
         <div>
           <Label htmlFor="risks">Major Risks</Label>
-          <Textarea id="risks" name="risks" placeholder="Describe major risks..." rows={2} />
+          <Textarea
+            id="risks"
+            name="risks"
+            placeholder="Describe major risks..."
+            rows={2}
+          />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="safetySummary">Safety Summary</Label>
-          <Textarea id="safetySummary" name="safetySummary" placeholder="Incidents, toolbox talks, etc." rows={2} />
+          <Textarea
+            id="safetySummary"
+            name="safetySummary"
+            placeholder="Incidents, toolbox talks, etc."
+            rows={2}
+          />
         </div>
         <div>
           <Label htmlFor="qualitySummary">Quality Summary</Label>
-          <Textarea id="qualitySummary" name="qualitySummary" placeholder="Checks, NCRs, etc." rows={2} />
+          <Textarea
+            id="qualitySummary"
+            name="qualitySummary"
+            placeholder="Checks, NCRs, etc."
+            rows={2}
+          />
         </div>
       </div>
       <div>
@@ -8905,7 +9511,7 @@ function WPRManualForm({
                 placeholder="Role"
                 className="text-xs"
                 value={row.role}
-                onChange={e => updateManpower(idx, 'role', e.target.value)}
+                onChange={(e) => updateManpower(idx, "role", e.target.value)}
                 required
               />
               <Input
@@ -8913,7 +9519,7 @@ function WPRManualForm({
                 placeholder="Planned"
                 className="text-xs"
                 value={row.planned}
-                onChange={e => updateManpower(idx, 'planned', e.target.value)}
+                onChange={(e) => updateManpower(idx, "planned", e.target.value)}
                 required
               />
               <Input
@@ -8921,17 +9527,27 @@ function WPRManualForm({
                 placeholder="Actual"
                 className="text-xs"
                 value={row.actual}
-                onChange={e => updateManpower(idx, 'actual', e.target.value)}
+                onChange={(e) => updateManpower(idx, "actual", e.target.value)}
                 required
               />
               {manpower.length > 1 && (
-                <Button type="button" size="icon" variant="ghost" onClick={() => removeManpowerRow(idx)}>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => removeManpowerRow(idx)}
+                >
                   &times;
                 </Button>
               )}
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={addManpowerRow}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addManpowerRow}
+          >
             Add Manpower Row
           </Button>
         </div>
@@ -8946,7 +9562,9 @@ function WPRManualForm({
                 placeholder="Equipment"
                 className="text-xs"
                 value={row.equipment}
-                onChange={e => updateEquipment(idx, 'equipment', e.target.value)}
+                onChange={(e) =>
+                  updateEquipment(idx, "equipment", e.target.value)
+                }
                 required
               />
               <Input
@@ -8954,7 +9572,7 @@ function WPRManualForm({
                 placeholder="Uptime (hrs)"
                 className="text-xs"
                 value={row.uptime}
-                onChange={e => updateEquipment(idx, 'uptime', e.target.value)}
+                onChange={(e) => updateEquipment(idx, "uptime", e.target.value)}
                 required
               />
               <Input
@@ -8962,7 +9580,9 @@ function WPRManualForm({
                 placeholder="Downtime (hrs)"
                 className="text-xs"
                 value={row.downtime}
-                onChange={e => updateEquipment(idx, 'downtime', e.target.value)}
+                onChange={(e) =>
+                  updateEquipment(idx, "downtime", e.target.value)
+                }
                 required
               />
               <Input
@@ -8970,16 +9590,28 @@ function WPRManualForm({
                 placeholder="Remarks"
                 className="text-xs"
                 value={row.remarks}
-                onChange={e => updateEquipment(idx, 'remarks', e.target.value)}
+                onChange={(e) =>
+                  updateEquipment(idx, "remarks", e.target.value)
+                }
               />
               {equipment.length > 1 && (
-                <Button type="button" size="icon" variant="ghost" onClick={() => removeEquipmentRow(idx)}>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => removeEquipmentRow(idx)}
+                >
                   &times;
                 </Button>
               )}
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={addEquipmentRow}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addEquipmentRow}
+          >
             Add Equipment Row
           </Button>
         </div>
@@ -8994,7 +9626,9 @@ function WPRManualForm({
                 placeholder="Material"
                 className="text-xs"
                 value={row.material}
-                onChange={e => updateMaterial(idx, 'material', e.target.value)}
+                onChange={(e) =>
+                  updateMaterial(idx, "material", e.target.value)
+                }
                 required
               />
               <Input
@@ -9002,7 +9636,7 @@ function WPRManualForm({
                 placeholder="Planned"
                 className="text-xs"
                 value={row.planned}
-                onChange={e => updateMaterial(idx, 'planned', e.target.value)}
+                onChange={(e) => updateMaterial(idx, "planned", e.target.value)}
                 required
               />
               <Input
@@ -9010,7 +9644,7 @@ function WPRManualForm({
                 placeholder="Actual"
                 className="text-xs"
                 value={row.actual}
-                onChange={e => updateMaterial(idx, 'actual', e.target.value)}
+                onChange={(e) => updateMaterial(idx, "actual", e.target.value)}
                 required
               />
               <Input
@@ -9018,23 +9652,39 @@ function WPRManualForm({
                 placeholder="Remarks"
                 className="text-xs"
                 value={row.remarks}
-                onChange={e => updateMaterial(idx, 'remarks', e.target.value)}
+                onChange={(e) => updateMaterial(idx, "remarks", e.target.value)}
               />
               {materials.length > 1 && (
-                <Button type="button" size="icon" variant="ghost" onClick={() => removeMaterialRow(idx)}>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => removeMaterialRow(idx)}
+                >
                   &times;
                 </Button>
               )}
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={addMaterialRow}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addMaterialRow}
+          >
             Add Material Row
           </Button>
         </div>
       </div>
       <div>
         <Label htmlFor="teamPerformance">Team Performance</Label>
-        <Textarea id="teamPerformance" name="teamPerformance" placeholder="Team performance comments..." rows={3} required />
+        <Textarea
+          id="teamPerformance"
+          name="teamPerformance"
+          placeholder="Team performance comments..."
+          rows={3}
+          required
+        />
       </div>
       {/* <div>
         <Label htmlFor="attachments">Attachments (Photos, Documents)</Label>
