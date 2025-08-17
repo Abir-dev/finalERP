@@ -18,6 +18,8 @@ import {
   Receipt,
   PanelLeftClose,
   PanelLeft,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -30,6 +32,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -38,7 +43,7 @@ import { useUser } from "@/contexts/UserContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +52,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
 export function AppSidebar() {
@@ -55,6 +61,18 @@ export function AppSidebar() {
   const [activeItem, setActiveItem] = useState("/");
   const { state, toggleSidebar } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isHROpen, setIsHROpen] = useState(false);
+
+  // Update active item and HR dropdown state based on current location
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    setActiveItem(currentPath);
+    
+    // Auto-open HR dropdown if on HR pages
+    if (currentPath.startsWith("/hr")) {
+      setIsHROpen(true);
+    }
+  }, []);
 
   const items = [
     {
@@ -135,12 +153,7 @@ export function AppSidebar() {
       icon: ShoppingCart,
       allowedRoles: ["admin", "md", "site", "store", "accounts"],
     },
-    {
-      title: "Human Resources",
-      url: "/hr",
-      icon: Users,
-      allowedRoles: ["admin", "md", "hr"],
-    },
+
     {
       title: "Inventory",
       url: "/inventory",
@@ -187,13 +200,37 @@ export function AppSidebar() {
     },
   ];
 
+  // HR menu items with subitems
+  const hrItems = {
+    title: "Human Resources",
+    icon: Users,
+    allowedRoles: ["admin", "md", "hr"],
+    subitems: [
+      {
+        title: "Employees",
+        url: "/hr/employees",
+      },
+      {
+        title: "Salary Management",
+        url: "/hr/salaries",
+      },
+    ],
+  };
+
   const filteredItems = user
     ? items.filter((item) => item.allowedRoles.includes(user.role))
     : [];
 
+  const showHR = user && hrItems.allowedRoles.includes(user.role);
+
   const handleMenuItemClick = (url: string) => {
     setActiveItem(url);
     navigate(url);
+    
+    // Auto-open HR dropdown if navigating to HR pages
+    if (url.startsWith("/hr")) {
+      setIsHROpen(true);
+    }
   };
 
   const handleLogout = async () => {
@@ -255,6 +292,67 @@ export function AppSidebar() {
           {!isCollapsed && <SidebarGroupLabel>ERP Modules</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* HR Dropdown Menu - Moved to top */}
+              {showHR && (
+                <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className={cn(
+                          activeItem.startsWith("/hr") ? "bg-accent" : "",
+                          isCollapsed && "justify-center px-0"
+                        )}
+                        tooltip={isCollapsed ? `${hrItems.title} - Click to expand` : undefined}
+                      >
+                        <div
+                          className={cn(
+                            "flex items-center gap-2 w-full",
+                            isCollapsed && "justify-center"
+                          )}
+                        >
+                          <hrItems.icon
+                            className={cn(
+                              "flex-shrink-0",
+                              isCollapsed ? "h-4 w-4" : "h-4 w-4"
+                            )}
+                          />
+                          {!isCollapsed && (
+                            <>
+                              <span className="truncate text-base flex-1">{hrItems.title}</span>
+                              {isHROpen ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {hrItems.subitems.map((subitem) => (
+                          <SidebarMenuSubItem key={subitem.title}>
+                            <SidebarMenuSubButton
+                              asChild
+                              isActive={activeItem === subitem.url}
+                            >
+                              <button
+                                onClick={() => handleMenuItemClick(subitem.url)}
+                                className="w-full text-left"
+                              >
+                                <span>{subitem.title}</span>
+                              </button>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+              )}
+              
+              {/* Regular menu items */}
               {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton

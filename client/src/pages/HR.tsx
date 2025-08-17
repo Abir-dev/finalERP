@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { FilterIcon, Plus, Search, Users, DollarSign, Eye, Edit, Trash2, FileText } from "lucide-react";
@@ -17,10 +18,21 @@ import { ExpandableDataTable } from "@/components/expandable-data-table";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const HR = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeTab, setActiveTab] = useState("employees");
     const [employees, setEmployees] = useState([]);
     const [employeeSalaries, setEmployeeSalaries] = useState([]);
+
+    // Determine active tab based on URL
+    const getActiveTabFromUrl = () => {
+        const path = location.pathname;
+        if (path === "/hr/employees") return "employees";
+        if (path === "/hr/salaries") return "salaries";
+        return "employees"; // default
+    };
+
+    const [activeTab, setActiveTab] = useState(getActiveTabFromUrl());
 
     const [selectedEmployee, setSelectedEmployee] = useState<typeof employees[0] | null>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -36,6 +48,17 @@ const HR = () => {
     // Add payslip modal state
     const [isPayslipModalOpen, setIsPayslipModalOpen] = useState(false);
     const [selectedSalaryForPayslip, setSelectedSalaryForPayslip] = useState<any>(null);
+
+    // Update active tab when URL changes and handle default route
+    useEffect(() => {
+        const currentTab = getActiveTabFromUrl();
+        setActiveTab(currentTab);
+        
+        // Redirect /hr to /hr/employees by default
+        if (location.pathname === "/hr") {
+            navigate("/hr/employees", { replace: true });
+        }
+    }, [location.pathname, navigate]);
 
     useEffect(() => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -194,6 +217,16 @@ const HR = () => {
     const handleGeneratePayslip = (salaryRecord: any) => {
         setSelectedSalaryForPayslip(salaryRecord);
         setIsPayslipModalOpen(true);
+    };
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        // Navigate to the appropriate URL
+        if (value === "employees") {
+            navigate("/hr/employees");
+        } else if (value === "salaries") {
+            navigate("/hr/salaries");
+        }
     };
 
     // Define columns for employees table
@@ -580,14 +613,15 @@ const HR = () => {
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Human Resources</h1>
-                    <p className="text-muted-foreground">Manage employees, departments, and attendance</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Human Resources</h1>
+                    <p className="text-sm md:text-base text-muted-foreground">Manage employees, departments, and attendance</p>
                 </div>
                 <div className="flex gap-2">
                     <Button
                         onClick={() => setIsSalaryModalOpen(true)}
+                        className="w-full sm:w-auto"
                     >
                         <Plus className="mr-2 h-4 w-4" />
                         Add Employee
@@ -595,7 +629,7 @@ const HR = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <StatCard
                     title="Total Employees"
                     value={hrStats.totalEmployees}
@@ -620,13 +654,38 @@ const HR = () => {
                 />
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+                {/* Hide tabs on mobile - navigation is handled by sidebar */}
+                <TabsList className="hidden md:grid w-full grid-cols-2">
                     <TabsTrigger value="employees">Employees</TabsTrigger>
                     <TabsTrigger value="salaries">Salary Management</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="employees">
+                {/* Mobile-specific section header */}
+                <div className="md:hidden mb-4">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                            {activeTab === "employees" ? (
+                                <Users className="h-5 w-5 text-primary" />
+                            ) : (
+                                <DollarSign className="h-5 w-5 text-primary" />
+                            )}
+                            <div>
+                                <h2 className="text-lg font-semibold">
+                                    {activeTab === "employees" ? "Employees" : "Salary Management"}
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    HR › {activeTab === "employees" ? "Employees" : "Salaries"}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {activeTab === "employees" ? filteredEmployees.length : filteredSalaries.length} items
+                        </div>
+                    </div>
+                </div>
+
+                <TabsContent value="employees" className="mt-0">
                     <ExpandableDataTable
                         title="Employees"
                         description="View and manage all employees"
@@ -651,7 +710,7 @@ const HR = () => {
                     />
                 </TabsContent>
 
-                <TabsContent value="salaries">
+                <TabsContent value="salaries" className="mt-0">
                     <ExpandableDataTable
                         title="Salary Management"
                         description="View and manage employee salaries"

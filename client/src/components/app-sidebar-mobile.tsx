@@ -18,6 +18,8 @@ import {
   Receipt,
   Menu,
   X,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 import {
@@ -42,6 +44,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -57,10 +60,16 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
   const [activeItem, setActiveItem] = useState("/");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isHROpen, setIsHROpen] = useState(false);
 
   // Update active item when location changes
   useEffect(() => {
     setActiveItem(location.pathname);
+    
+    // Auto-open HR dropdown if on HR pages
+    if (location.pathname.startsWith("/hr")) {
+      setIsHROpen(true);
+    }
   }, [location.pathname]);
 
   // Close sidebar when route changes (mobile UX improvement)
@@ -161,12 +170,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       icon: ShoppingCart,
       allowedRoles: ["admin", "md", "site", "store", "accounts"],
     },
-    {
-      title: "Human Resources",
-      url: "/hr",
-      icon: Users,
-      allowedRoles: ["admin", "md", "hr"],
-    },
+
     {
       title: "Inventory",
       url: "/inventory",
@@ -213,14 +217,38 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     },
   ];
 
+  // HR menu items with subitems
+  const hrItems = {
+    title: "Human Resources",
+    icon: Users,
+    allowedRoles: ["admin", "md", "hr"],
+    subitems: [
+      {
+        title: "Employees",
+        url: "/hr/employees",
+      },
+      {
+        title: "Salary Management",
+        url: "/hr/salaries",
+      },
+    ],
+  };
+
   const filteredItems = user
     ? items.filter((item) => item.allowedRoles.includes(user.role))
     : [];
+
+  const showHR = user && hrItems.allowedRoles.includes(user.role);
 
   const handleMenuItemClick = (url: string) => {
     setActiveItem(url);
     navigate(url);
     setIsOpen(false); // Close the sheet after navigation
+    
+    // Auto-open HR dropdown if navigating to HR pages
+    if (url.startsWith("/hr")) {
+      setIsHROpen(true);
+    }
   };
 
   const handleLogout = async () => {
@@ -277,7 +305,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                   "active:scale-95 transition-all duration-150"
                 )}
               >
-                <X className="h-4 w-4" />
+                {/* <X className="h-4 w-4" /> */}
               </Button>
             </SheetClose>
           </div>
@@ -290,6 +318,57 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 ERP Modules
               </h3>
               <div className="space-y-1">
+                {/* HR Dropdown Menu - Moved to top */}
+                {showHR && (
+                  <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant={activeItem.startsWith("/hr") ? "secondary" : "ghost"}
+                        className={cn(
+                          "w-full justify-start gap-3 h-12 px-3 text-left",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          "active:scale-95 transition-all duration-150",
+                          "touch-manipulation",
+                          activeItem.startsWith("/hr") && "bg-accent text-accent-foreground shadow-sm"
+                        )}
+                      >
+                        <hrItems.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="text-sm font-medium truncate flex-1">
+                          {hrItems.title}
+                        </span>
+                        {isHROpen ? (
+                          <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="ml-8 space-y-1 mt-1">
+                        {hrItems.subitems.map((subitem) => (
+                          <Button
+                            key={subitem.title}
+                            variant={activeItem === subitem.url ? "secondary" : "ghost"}
+                            className={cn(
+                              "w-full justify-start gap-3 h-10 px-3 text-left",
+                              "hover:bg-accent hover:text-accent-foreground",
+                              "active:scale-95 transition-all duration-150",
+                              "touch-manipulation",
+                              activeItem === subitem.url && "bg-accent text-accent-foreground shadow-sm"
+                            )}
+                            onClick={() => handleMenuItemClick(subitem.url)}
+                          >
+                            <span className="text-sm font-medium truncate">
+                              {subitem.title}
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+                
+                {/* Regular menu items */}
                 {filteredItems.map((item) => (
                   <Button
                     key={item.title}
