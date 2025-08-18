@@ -126,7 +126,7 @@ const Login = () => {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col items-center">
-          <div className="text-xs text-muted-foreground mt-4 text-center">
+          {/* <div className="text-xs text-muted-foreground mt-4 text-center">
             <p className="mb-2">Demo Accounts (all use password: "password")</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-left">
               <span>admin@constructflow.com</span>
@@ -138,7 +138,7 @@ const Login = () => {
               <span>site@constructflow.com</span>
               <span>client@constructflow.com</span>
             </div>
-          </div>
+          </div> */}
         </CardFooter>
       </Card>
     </div>
