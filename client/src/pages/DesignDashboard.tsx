@@ -13,14 +13,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie } from 'recharts'
-import { PaintBucket, FileText, Clock, AlertTriangle, Upload, MessageSquare, CheckCircle, Eye } from "lucide-react"
+import { PaintBucket, FileText, Clock, AlertTriangle, Upload, MessageSquare, CheckCircle, Eye, Plus } from "lucide-react"
 import { designsData } from "@/lib/dummy-data"
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 import axios from "axios";
+import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 type Design = typeof designsData[0]
+
+// Types for clients and projects
+interface Client {
+  id: string;
+  name: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  clientId: string;
+}
 
 interface Bottleneck {
   type: string
@@ -121,24 +134,39 @@ const designColumns: ColumnDef<Design>[] = [
 ]
 
 const DesignDashboard = () => {
+  const { user } = useUser();
   const [designStats, setDesignStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [approvalTrendData, setApprovalTrendData] = useState([]);
   const [turnaroundData, setTurnaroundData] = useState([]);
   const [designs, setDesigns] = useState([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
-  const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [isAnalyticModalOpen, setIsAnalyticModalOpen] = useState(false)
   const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false)
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false)
+  const [isSubmitDesignModalOpen, setIsSubmitDesignModalOpen] = useState(false)
+  const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [selectedAnalytic, setSelectedAnalytic] = useState<string | null>(null)
   const [selectedBottleneck, setSelectedBottleneck] = useState<any | null>(null)
   const [selectedEscalation, setSelectedEscalation] = useState<any | null>(null)
+  
+  // New design form state
+  const [newDesignForm, setNewDesignForm] = useState({
+    name: "",
+    clientId: "",
+    projectId: "",
+    files: [] as File[],
+    images: [] as File[],
+  });
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    
+    // Fetch design data
     axios.get(`${API_URL}/design/stats`, { headers })
       .then(res => setDesignStats(res.data))
       .catch(() => {});
@@ -150,6 +178,14 @@ const DesignDashboard = () => {
       .catch(() => {});
     axios.get(`${API_URL}/designs`, { headers })
       .then(res => setDesigns(res.data))
+      .catch(() => {});
+    
+    // Fetch clients and projects for the form
+    axios.get(`${API_URL}/clients`, { headers })
+      .then(res => setClients(res.data))
+      .catch(() => {});
+    axios.get(`${API_URL}/projects`, { headers })
+      .then(res => setProjects(res.data))
       .catch(() => {});
   }, []);
 
@@ -207,6 +243,77 @@ const DesignDashboard = () => {
     setIsDetailsModalOpen(false)
   }
 
+  // Handle new design form input changes
+  const handleNewDesignInputChange = (field: string, value: string) => {
+    setNewDesignForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle file uploads for new design
+  const handleNewDesignFileChange = (field: 'files' | 'images', files: FileList | null) => {
+    if (files) {
+      const fileArray = Array.from(files);
+      setNewDesignForm(prev => ({ ...prev, [field]: fileArray }));
+    }
+  };
+
+  // Handle new design form submission
+  const handleSubmitNewDesign = async () => {
+    if (!user) {
+      toast.error("You must be logged in to submit a design");
+      return;
+    }
+
+    if (!newDesignForm.name || !newDesignForm.clientId || !newDesignForm.projectId) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Create form data for submission
+      const formData = new FormData();
+      formData.append("name", newDesignForm.name);
+      formData.append("clientId", newDesignForm.clientId);
+      formData.append("projectId", newDesignForm.projectId);
+      formData.append("createdById", user.id);
+
+      // Append files
+      newDesignForm.files.forEach(file => {
+        formData.append("files", file);
+      });
+
+      // Append images
+      newDesignForm.images.forEach(image => {
+        formData.append("images", image);
+      });
+
+      // Submit to backend
+      await axios.post(`${API_URL}/designs`, formData, { headers });
+
+      toast.success("Design submitted successfully!");
+      setIsSubmitDesignModalOpen(false);
+      
+      // Reset form
+      setNewDesignForm({
+        name: "",
+        clientId: "",
+        projectId: "",
+        files: [],
+        images: [],
+      });
+      
+      // Refresh designs list
+      axios.get(`${API_URL}/designs`, { headers })
+        .then(res => setDesigns(res.data))
+        .catch(() => {});
+    } catch (error) {
+      console.error("Error submitting design:", error);
+      toast.error("Failed to submit design");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -214,8 +321,8 @@ const DesignDashboard = () => {
           <h1 className="text-3xl font-bold tracking-tight">Design Dashboard</h1>
           <p className="text-muted-foreground">Design approval workflow and analytics</p>
         </div>
-        <Button onClick={() => setIsUploadModalOpen(true)} className="gap-2">
-          <Upload className="h-4 w-4" />
+        <Button onClick={() => setIsSubmitDesignModalOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
           Submit New Design
         </Button>
       </div>
@@ -798,6 +905,99 @@ const DesignDashboard = () => {
                 setIsEscalateModalOpen(false)
               }}>
                 Confirm Escalation
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submit New Design Modal */}
+      <Dialog open={isSubmitDesignModalOpen} onOpenChange={setIsSubmitDesignModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Submit New Design</DialogTitle>
+            <DialogDescription>
+              Submit a new design for review
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="design-name">Design Name *</Label>
+              <Input
+                id="design-name"
+                value={newDesignForm.name}
+                onChange={(e) => handleNewDesignInputChange("name", e.target.value)}
+                placeholder="Enter design name"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="client">Client *</Label>
+              <Select
+                value={newDesignForm.clientId}
+                onValueChange={(value) => handleNewDesignInputChange("clientId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map(client => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="project">Project *</Label>
+              <Select
+                value={newDesignForm.projectId}
+                onValueChange={(value) => handleNewDesignInputChange("projectId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="design-files">Design Files</Label>
+              <Input
+                id="design-files"
+                type="file"
+                accept=".pdf,.dwg,.dxf,.rvt"
+                multiple
+                onChange={(e) => handleNewDesignFileChange("files", e.target.files)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="design-images">Design Images</Label>
+              <Input
+                id="design-images"
+                type="file"
+                accept=".jpg,.jpeg,.png,.gif"
+                multiple
+                onChange={(e) => handleNewDesignFileChange("images", e.target.files)}
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsSubmitDesignModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitNewDesign}>
+                <Plus className="h-4 w-4 mr-2" />
+                Submit Design
               </Button>
             </div>
           </div>
