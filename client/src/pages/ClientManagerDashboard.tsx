@@ -16,6 +16,7 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
+import { useUser } from "@/contexts/UserContext"
 import type { Client, Invoice } from "@/types/dummy-data-types";
 import { add } from "date-fns"
 
@@ -50,14 +51,16 @@ const ClientManagerDashboard = () => {
   const [clientManagerStats, setClientManagerStats] = useState({ responsiveness: '', pendingApprovals: 0, avgDelay: '', slaBreaches: 0 });
   const [engagementData, setEngagementData] = useState([]);
   const [approvalDelayData, setApprovalDelayData] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [approvalQueue, setApprovalQueue] = useState([]);
   const [isInteractionModalOpen, setIsInteractionModalOpen] = useState(false)
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isContactAccountsModalOpen, setIsContactAccountsModalOpen] = useState(false)
   const [isAddClientOpen, setIsAddClientOpen] = useState(false)
-  const [newClient, setNewClient] = useState({ name: "", contactNo: "", email: "", address: "" })
+  // Matches server prisma Client model
+  const [newClient, setNewClient] = useState<{ name: string; contactNo: string; email: string; address: string }>({ name: "", contactNo: "", email: "", address: "" })
+  const { user } = useUser();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [invoices, setInvoices] = useState([]);
@@ -75,7 +78,19 @@ const ClientManagerDashboard = () => {
       .then(res => setApprovalDelayData(res.data))
       .catch(() => {});
     axios.get(`${API_URL}/clients`, { headers })
-      .then(res => setClients(res.data))
+      .then(res => {
+        // Map API clients to table format if needed
+        const mapped = (res.data || []).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
+          // Treat projects without endDate as active
+          activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
+          totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
+          lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
+        }));
+        setClients(mapped);
+      })
       .catch(() => {});
     axios.get(`${API_URL}/client-manager/approval-queue`, { headers })
       .then(res => setApprovalQueue(res.data))
@@ -154,9 +169,9 @@ Status: ${invoice.status}
       </div>
 
       <Tabs defaultValue="engagement" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="engagement">Client Engagement</TabsTrigger>
-          <TabsTrigger value="approvals">Approvals & Escalations</TabsTrigger>
+          {/* <TabsTrigger value="approvals">Approvals & Escalations</TabsTrigger> */}
           <TabsTrigger value="billing">Billing Insights</TabsTrigger>
         </TabsList>
 
@@ -192,63 +207,6 @@ Status: ${invoice.status}
               description="Client responsiveness"
               onClick={() => toast.info("Viewing response analytics")}
             />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Engagement Quality Trend</CardTitle>
-                <CardDescription>Monthly client interaction metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={engagementData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Line yAxisId="left" type="monotone" dataKey="calls" stroke="#3b82f6" strokeWidth={2} />
-                    <Line yAxisId="left" type="monotone" dataKey="meetings" stroke="#10b981" strokeWidth={2} />
-                    <Line yAxisId="right" type="monotone" dataKey="quality" stroke="#f59e0b" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Client Interaction Timeline</CardTitle>
-                <CardDescription>Recent client touchpoints</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { client: 'ABC Developers', type: 'Video Call', outcome: 'Follow-up Required', time: '2 hours ago' },
-                    { client: 'XYZ Corp', type: 'Site Visit', outcome: 'Closed', time: '1 day ago' },
-                    { client: 'Home Builders', type: 'Phone Call', outcome: 'Escalated', time: '2 days ago' },
-                    { client: 'Retail Group', type: 'Email', outcome: 'Pending Response', time: '3 days ago' },
-                  ].map((interaction, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">{interaction.client}</h3>
-                        <p className="text-sm text-muted-foreground">{interaction.type}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={
-                          interaction.outcome === 'Closed' ? 'default' :
-                          interaction.outcome === 'Escalated' ? 'destructive' :
-                          'secondary'
-                        }>
-                          {interaction.outcome}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">{interaction.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           <Card>
@@ -584,18 +542,33 @@ Status: ${invoice.status}
             onSubmit={async (e) => {
               e.preventDefault();
               // Simple required validation
-              if (!newClient.name || !newClient.contactNo || !newClient.email) {
+              if (!newClient.name || !newClient.contactNo || !newClient.email || !newClient.address) {
                 toast.error("Please fill all required fields");
                 return;
               }
               try {
                 const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                const { data } = await axios.post(`${API_URL}/clients`, newClient, { headers });
+
+                if (!user?.id) {
+                  toast.error("User not found. Please re-login.");
+                  return;
+                }
+
+                const payload = {
+                  name: newClient.name,
+                  contactNo: newClient.contactNo,
+                  email: newClient.email,
+                  address: newClient.address,
+                };
+
+                const { data } = await axios.post(`${API_URL}/clients/${user.id}`, payload, { headers });
+
+                // Optimistic add to table using backend response when possible
                 setClients((prev: any) => [
                   {
                     id: data?.id || crypto.randomUUID(),
-                    name: newClient.name,
+                    name: data?.name || newClient.name,
                     totalProjects: 0,
                     activeProjects: 0,
                     totalValue: 0,
@@ -606,8 +579,9 @@ Status: ${invoice.status}
                 toast.success("Client added successfully");
                 setIsAddClientOpen(false);
                 setNewClient({ name: "", contactNo: "", email: "", address: "" });
-              } catch (err) {
-                toast.error("Failed to add client");
+              } catch (err: any) {
+                const msg = err?.response?.data?.message || err?.message || "Failed to add client";
+                toast.error(msg);
               }
             }}
           >
