@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie } from 'recharts'
-import { PaintBucket, FileText, Clock, AlertTriangle, Upload, MessageSquare, CheckCircle, Eye, Plus } from "lucide-react"
+import { PaintBucket, FileText, Clock, AlertTriangle, Upload,Pencil, CheckCircle, Eye, Plus, Trash2 } from "lucide-react"
 import { designsData } from "@/lib/dummy-data"
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
@@ -21,7 +21,21 @@ import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-type Design = typeof designsData[0]
+interface Design {
+  id: string
+  name: string
+  clientId: string
+  client?: { id: string; name: string }
+  project?: { id: string; name: string }
+  status: string
+  createdAt: string
+  updatedAt: string
+  createdById: string
+  createdBy?: { id: string; name: string }
+  projectId: string
+  files: string[]
+  images: string[]
+}
 
 // Types for clients and projects
 interface Client {
@@ -90,7 +104,7 @@ const bottlenecks: Bottleneck[] = [
   }
 ]
 
-const designColumns: ColumnDef<Design>[] = [
+const designColumns: ColumnDef<any>[] = [
   {
     accessorKey: "name",
     header: "Design Name",
@@ -98,38 +112,74 @@ const designColumns: ColumnDef<Design>[] = [
   {
     accessorKey: "client",
     header: "Client",
+    cell: ({ row }) => {
+      const client = row.original.client
+      return client ? client.name : "N/A"
+    },
   },
   {
-    accessorKey: "designer",
-    header: "Designer",
+    accessorKey: "project",
+    header: "Project",
+    cell: ({ row }) => {
+      const project = row.original.project
+      return project ? project.name : "N/A"
+    },
+  },
+  {
+    accessorKey: "createdBy",
+    header: "Created By",
+    cell: ({ row }) => {
+      const createdBy = row.original.createdBy
+      return createdBy ? createdBy.name : "N/A"
+    },
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const status = row.getValue("status") as string
-      const variant = status === "Approved" ? "default" : 
-                     status === "Under Review" ? "secondary" : 
-                     status === "Rejected" ? "destructive" : "outline"
-      return <Badge variant={variant}>{status}</Badge>
+      const variant = status === "APPROVED" ? "default" : 
+                     status === "UNDER_REVIEW" ? "secondary" : 
+                     status === "REJECTED" ? "destructive" : "outline"
+      const displayStatus = status === "UNDER_REVIEW" ? "Under Review" : 
+                           status === "APPROVED" ? "Approved" : 
+                           status === "REJECTED" ? "Rejected" : status
+      return <Badge variant={variant}>{displayStatus}</Badge>
     },
   },
   {
-    accessorKey: "revisions",
-    header: "Revisions",
+    accessorKey: "files",
+    header: "Files",
     cell: ({ row }) => {
-      const revisions = row.getValue("revisions") as number
+      const files = row.getValue("files") as string[]
       return (
         <div className="flex items-center gap-2">
-          <span>{revisions}</span>
-          {revisions > 3 && <AlertTriangle className="h-4 w-4 text-yellow-500" />}
+          <FileText className="h-4 w-4" />
+          <span>{files ? files.length : 0}</span>
         </div>
       )
     },
   },
   {
-    accessorKey: "uploadDate",
-    header: "Upload Date",
+    accessorKey: "images",
+    header: "Images",
+    cell: ({ row }) => {
+      const images = row.getValue("images") as string[]
+      return (
+        <div className="flex items-center gap-2">
+          <PaintBucket className="h-4 w-4" />
+          <span>{images ? images.length : 0}</span>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Created Date",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("createdAt"))
+      return date.toLocaleDateString()
+    },
   },
 ]
 
@@ -148,6 +198,7 @@ const DesignDashboard = () => {
   const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false)
   const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false)
   const [isSubmitDesignModalOpen, setIsSubmitDesignModalOpen] = useState(false)
+  const [isEditDesignModalOpen, setIsEditDesignModalOpen] = useState(false)
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
   const [selectedAnalytic, setSelectedAnalytic] = useState<string | null>(null)
   const [selectedBottleneck, setSelectedBottleneck] = useState<any | null>(null)
@@ -162,20 +213,35 @@ const DesignDashboard = () => {
     images: [] as File[],
   });
 
+  // Edit design form state
+  const [editDesignForm, setEditDesignForm] = useState({
+    name: "",
+    clientId: "",
+    projectId: "",
+    status: "",
+    files: [] as string[],
+    images: [] as string[],
+  });
+
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
-    // Fetch design data
-    axios.get(`${API_URL}/design/stats`, { headers })
-      .then(res => setDesignStats(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/design/approval-trends`, { headers })
-      .then(res => setApprovalTrendData(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/design/turnaround`, { headers })
-      .then(res => setTurnaroundData(res.data))
-      .catch(() => {});
+    // Initialize empty stats (will be calculated from real data)
+    setDesignStats({ total: 0, pending: 0, approved: 0, rejected: 0 });
+    setApprovalTrendData([
+      { week: "Week 1", submitted: 10, approved: 7, rejected: 3 },
+      { week: "Week 2", submitted: 12, approved: 8, rejected: 4 },
+      { week: "Week 3", submitted: 15, approved: 10, rejected: 5 },
+      { week: "Week 4", submitted: 8, approved: 6, rejected: 2 }
+    ]);
+    setTurnaroundData([
+      { designer: "John Doe", avgDays: 3 },
+      { designer: "Jane Smith", avgDays: 2.5 },
+      { designer: "Mike Johnson", avgDays: 4 }
+    ]);
+    
+    // Fetch actual designs data
     axios.get(`${API_URL}/designs`, { headers })
       .then(res => setDesigns(res.data))
       .catch(() => {});
@@ -189,17 +255,33 @@ const DesignDashboard = () => {
       .catch(() => {});
   }, []);
 
-  const handleUploadRevision = (design: Design) => {
+  // Calculate design statistics whenever designs data changes
+  useEffect(() => {
+    if (designs && designs.length > 0) {
+      const total = designs.length;
+      const pending = designs.filter((d: any) => d.status === "UNDER_REVIEW").length;
+      const approved = designs.filter((d: any) => d.status === "APPROVED").length;
+      const rejected = designs.filter((d: any) => d.status === "REJECTED").length;
+
+      setDesignStats({
+        total,
+        pending,
+        approved,
+        rejected
+      });
+    }
+  }, [designs]);
+
+  const handleUploadRevision = (design: any) => {
     setSelectedDesign(design)
     setIsUploadModalOpen(true)
   }
 
-  const handleAddComment = (design: Design) => {
+  const handleAddComment = (design: any) => {
     setSelectedDesign(design)
     setIsCommentModalOpen(true)
   }
-
-  const handleEscalate = (design: Design) => {
+  const handleEscalate = (design: any) => {
     toast.success(`Design "${design.name}" escalated to Design Head`)
   }
 
@@ -215,32 +297,136 @@ const DesignDashboard = () => {
     setSelectedDesign(null)
   }
 
-  const handleSendToReview = (design: Design) => {
+  const handleSendToReview = (design: any) => {
     setDesigns(prevDesigns => 
       prevDesigns.map(d => 
         d.id === design.id 
-          ? { ...d, status: "Under Review" }
+          ? { ...d, status: "UNDER_REVIEW" }
           : d
       )
     )
     toast.success(`Design "${design.name}" sent for review`)
   }
 
-  const handleViewDetails = (design: Design) => {
+  const handleViewDetails = (design: any) => {
     setSelectedDesign(design)
     setIsDetailsModalOpen(true)
   }
 
-  const handleApproveDesign = (design: Design) => {
-    setDesigns(prevDesigns => 
-      prevDesigns.map(d => 
-        d.id === design.id 
-          ? { ...d, status: "Approved" }
-          : d
-      )
-    )
-    toast.success(`Design "${design.name}" approved`)
-    setIsDetailsModalOpen(false)
+  const handleApproveDesign = async (design: any) => {
+    if (!user) {
+      toast.error("You must be logged in to approve a design");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      } : {
+        "Content-Type": "application/json"
+      };
+
+      // Update design status to approved
+      await axios.put(`${API_URL}/designs/${design.id}`, {
+        ...design,
+        status: "APPROVED"
+      }, { headers });
+
+      // Update local state
+      setDesigns(prevDesigns => 
+        prevDesigns.map(d => 
+          d.id === design.id 
+            ? { ...d, status: "APPROVED" }
+            : d
+        )
+      );
+      
+      toast.success(`Design "${design.name}" approved`);
+      setIsDetailsModalOpen(false);
+    } catch (error) {
+      console.error("Error approving design:", error);
+      toast.error("Failed to approve design");
+    }
+  }
+
+  const handleRejectDesign = async (design: any) => {
+    if (!user) {
+      toast.error("You must be logged in to reject a design");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      } : {
+        "Content-Type": "application/json"
+      };
+
+      // Update design status to rejected
+      await axios.put(`${API_URL}/designs/${design.id}`, {
+        ...design,
+        status: "REJECTED"
+      }, { headers });
+
+      // Update local state
+      setDesigns(prevDesigns => 
+        prevDesigns.map(d => 
+          d.id === design.id 
+            ? { ...d, status: "REJECTED" }
+            : d
+        )
+      );
+      
+      toast.success(`Design "${design.name}" rejected`);
+      setIsDetailsModalOpen(false);
+    } catch (error) {
+      console.error("Error rejecting design:", error);
+      toast.error("Failed to reject design");
+    }
+  }
+
+  const handleEditDesign = (design: any) => {
+    setSelectedDesign(design);
+    setEditDesignForm({
+      name: design.name,
+      clientId: design.clientId,
+      projectId: design.projectId,
+      status: design.status,
+      files: design.files || [],
+      images: design.images || [],
+    });
+    setIsEditDesignModalOpen(true);
+  }
+
+  const handleDeleteDesign = async (design: any) => {
+    if (!user) {
+      toast.error("You must be logged in to delete a design");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete the design "${design.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      // Delete design via API
+      await axios.delete(`${API_URL}/designs/${design.id}`, { headers });
+
+      // Remove from local state
+      setDesigns(prevDesigns => prevDesigns.filter(d => d.id !== design.id));
+      
+      toast.success(`Design "${design.name}" deleted successfully`);
+    } catch (error) {
+      console.error("Error deleting design:", error);
+      toast.error("Failed to delete design");
+    }
   }
 
   // Handle new design form input changes
@@ -253,6 +439,59 @@ const DesignDashboard = () => {
     if (files) {
       const fileArray = Array.from(files);
       setNewDesignForm(prev => ({ ...prev, [field]: fileArray }));
+    }
+  };
+
+  // Handle edit design form input changes
+  const handleEditDesignInputChange = (field: string, value: string) => {
+    setEditDesignForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Handle edit design form submission
+  const handleUpdateDesign = async () => {
+    if (!user || !selectedDesign) {
+      toast.error("You must be logged in to update a design");
+      return;
+    }
+
+    if (!editDesignForm.name || !editDesignForm.clientId || !editDesignForm.projectId) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      } : {
+        "Content-Type": "application/json"
+      };
+
+      // Update design via API
+      await axios.put(`${API_URL}/designs/${selectedDesign.id}`, editDesignForm, { headers });
+
+      // Update local state
+      setDesigns(prevDesigns => 
+        prevDesigns.map(d => 
+          d.id === selectedDesign.id 
+            ? { ...d, ...editDesignForm }
+            : d
+        )
+      );
+
+      toast.success("Design updated successfully!");
+      setIsEditDesignModalOpen(false);
+      setSelectedDesign(null);
+      
+      // Refresh designs list
+      const refreshHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      axios.get(`${API_URL}/designs`, { headers: refreshHeaders })
+        .then(res => setDesigns(res.data))
+        .catch(() => {});
+    } catch (error) {
+      console.error("Error updating design:", error);
+      toast.error("Failed to update design");
     }
   };
 
@@ -270,27 +509,29 @@ const DesignDashboard = () => {
 
     try {
       const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = token ? { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      } : {
+        "Content-Type": "application/json"
+      };
 
-      // Create form data for submission
-      const formData = new FormData();
-      formData.append("name", newDesignForm.name);
-      formData.append("clientId", newDesignForm.clientId);
-      formData.append("projectId", newDesignForm.projectId);
-      formData.append("createdById", user.id);
+      // Convert files to file paths (for now, since file upload isn't fully implemented)
+      const filePaths = newDesignForm.files.map(file => file.name);
+      const imagePaths = newDesignForm.images.map(file => file.name);
 
-      // Append files
-      newDesignForm.files.forEach(file => {
-        formData.append("files", file);
-      });
+      // Create design data
+      const designData = {
+        name: newDesignForm.name,
+        clientId: newDesignForm.clientId,
+        projectId: newDesignForm.projectId,
+        files: filePaths,
+        images: imagePaths,
+        status: "UNDER_REVIEW"
+      };
 
-      // Append images
-      newDesignForm.images.forEach(image => {
-        formData.append("images", image);
-      });
-
-      // Submit to backend
-      await axios.post(`${API_URL}/designs`, formData, { headers });
+      // Submit to backend using the correct endpoint with userId
+      await axios.post(`${API_URL}/designs/${user.id}`, designData, { headers });
 
       toast.success("Design submitted successfully!");
       setIsSubmitDesignModalOpen(false);
@@ -328,9 +569,9 @@ const DesignDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Design Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Approval Analytics</TabsTrigger>
+          {/* <TabsTrigger value="analytics">Approval Analytics</TabsTrigger> */}
           <TabsTrigger value="queue">Review Queue</TabsTrigger>
         </TabsList>
 
@@ -369,7 +610,7 @@ const DesignDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Upload vs Approval Trends</CardTitle>
                 <CardDescription>Weekly submission and approval tracking</CardDescription>
@@ -387,9 +628,9 @@ const DesignDashboard = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
+            </Card> */}
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Designer Performance</CardTitle>
                 <CardDescription>Average turnaround time by designer</CardDescription>
@@ -405,7 +646,7 @@ const DesignDashboard = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           <Card>
@@ -432,18 +673,18 @@ const DesignDashboard = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleAddComment(row.original)}
+                          onClick={() => handleEditDesign(row.original)}
                         >
-                          <MessageSquare className="h-3 w-3" />
+                          <Pencil className="h-3 w-3" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleUploadRevision(row.original)}
+                          onClick={() => handleDeleteDesign(row.original)}
                         >
-                          <Upload className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
-                        {row.original.status !== "Under Review" && row.original.status !== "Approved" && (
+                        {row.original.status !== "UNDER_REVIEW" && row.original.status !== "APPROVED" && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -563,27 +804,62 @@ const DesignDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {designs.filter(d => d.status === "Under Review").map((design, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-medium">{design.name}</h3>
-                      <p className="text-sm text-muted-foreground">{design.client} • {design.designer}</p>
-                      <Badge variant="secondary">{design.status}</Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleAddComment(design)}>
-                        Comment
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)}>
-                        <Eye className="h-3 w-3 mr-1" />
-                        View Details
-                      </Button>
-                      <Button size="sm" onClick={() => handleApproveDesign(design)}>
-                        Approve
-                      </Button>
-                    </div>
+                {designs.filter(d => d.status === "UNDER_REVIEW").length === 0 ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-semibold text-gray-900">No designs under review</h3>
+                    <p className="mt-1 text-sm text-gray-500">All designs have been reviewed!</p>
                   </div>
-                ))}
+                ) : (
+                  designs.filter(d => d.status === "UNDER_REVIEW").map((design, index) => (
+                    <div key={design.id || index} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">{design.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Client: {design.client?.name || 'N/A'} • Project: {design.project?.name || 'N/A'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Created by: {design.createdBy?.name || 'N/A'} • 
+                          Created: {new Date(design.createdAt).toLocaleDateString()}
+                        </p>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="secondary">Under Review</Badge>
+                          {design.files && design.files.length > 0 && (
+                            <Badge variant="outline">
+                              <FileText className="h-3 w-3 mr-1" />
+                              {design.files.length} Files
+                            </Badge>
+                          )}
+                          {design.images && design.images.length > 0 && (
+                            <Badge variant="outline">
+                              <PaintBucket className="h-3 w-3 mr-1" />
+                              {design.images.length} Images
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleAddComment(design)}>
+                          Comment
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)}>
+                          <Eye className="h-3 w-3 mr-1" />
+                          View Details
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleRejectDesign(design)}
+                        >
+                          Reject
+                        </Button>
+                        <Button size="sm" onClick={() => handleApproveDesign(design)}>
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -664,13 +940,13 @@ const DesignDashboard = () => {
               Comprehensive view of the design and feedback
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="h-[500px] pr-4">
+          <ScrollArea className="h-[200px] pr-4">
             <div className="space-y-6">
               {selectedDesign && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-5">
                     <div>
-                      <h4 className="text-sm font-medium mb-2">Basic Information</h4>
+                      <h4 className="text-sm font-bold mb-2">Basic Information</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Name:</span>
@@ -678,53 +954,65 @@ const DesignDashboard = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Client:</span>
-                          <span>{selectedDesign.client}</span>
+                          <span>{selectedDesign.client?.name || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Designer:</span>
-                          <span>{selectedDesign.designer}</span>
+                          <span className="text-muted-foreground">Project:</span>
+                          <span>{selectedDesign.project?.name || 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Created By:</span>
+                          <span>{selectedDesign.createdBy?.name || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Status:</span>
                           <Badge variant={
-                            selectedDesign.status === "Approved" ? "default" :
-                            selectedDesign.status === "Under Review" ? "secondary" :
-                            "outline"
-                          }>{selectedDesign.status}</Badge>
+                            selectedDesign.status === "APPROVED" ? "default" :
+                            selectedDesign.status === "UNDER_REVIEW" ? "secondary" :
+                            selectedDesign.status === "REJECTED" ? "destructive" : "outline"
+                          }>
+                            {selectedDesign.status === "UNDER_REVIEW" ? "Under Review" : 
+                             selectedDesign.status === "APPROVED" ? "Approved" : 
+                             selectedDesign.status === "REJECTED" ? "Rejected" : selectedDesign.status}
+                          </Badge>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium mb-2">Timeline</h4>
+                      <h4 className="text-sm font-bold mb-2">Design Details</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Upload Date:</span>
-                          <span>{selectedDesign.uploadDate}</span>
+                          <span className="text-muted-foreground">Created Date:</span>
+                          <span>{new Date(selectedDesign.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Revisions:</span>
-                          <span>{selectedDesign.revisions}</span>
+                          <span className="text-muted-foreground">Files:</span>
+                          <span>{selectedDesign.files?.length || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Images:</span>
+                          <span>{selectedDesign.images?.length || 0}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Last Updated:</span>
-                          <span>{selectedDesign.uploadDate}</span>
+                          <span>{new Date(selectedDesign.updatedAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <Separator />
+                  {/* <Separator /> */}
 
-                  <div>
+                  {/* <div>
                     <h4 className="text-sm font-medium mb-4">Design Preview</h4>
                     <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                       <FileText className="h-8 w-8 text-muted-foreground" />
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator /> */}
 
-                  <div>
+                  {/* <div>
                     <h4 className="text-sm font-medium mb-4">Comments & Feedback</h4>
                     <div className="space-y-4">
                       {[
@@ -744,19 +1032,27 @@ const DesignDashboard = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div> */}
                 </>
               )}
             </div>
           </ScrollArea>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
+            {/* <Button variant="outline" onClick={() => setIsDetailsModalOpen(false)}>
               Close
-            </Button>
-            {selectedDesign?.status === "Under Review" && (
-              <Button onClick={() => handleApproveDesign(selectedDesign)}>
-                Approve Design
-              </Button>
+            </Button> */}
+            {selectedDesign?.status === "UNDER_REVIEW" && (
+              <>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleRejectDesign(selectedDesign)}
+                >
+                  Reject Design
+                </Button>
+                <Button onClick={() => handleApproveDesign(selectedDesign)}>
+                  Approve Design
+                </Button>
+              </>
             )}
           </div>
         </DialogContent>
@@ -998,6 +1294,94 @@ const DesignDashboard = () => {
               <Button onClick={handleSubmitNewDesign}>
                 <Plus className="h-4 w-4 mr-2" />
                 Submit Design
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Design Modal */}
+      <Dialog open={isEditDesignModalOpen} onOpenChange={setIsEditDesignModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Design</DialogTitle>
+            <DialogDescription>
+              Update design information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-design-name">Design Name *</Label>
+              <Input
+                id="edit-design-name"
+                value={editDesignForm.name}
+                onChange={(e) => handleEditDesignInputChange("name", e.target.value)}
+                placeholder="Enter design name"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-client">Client *</Label>
+              <Select
+                value={editDesignForm.clientId}
+                onValueChange={(value) => handleEditDesignInputChange("clientId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients.map(client => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="edit-project">Project *</Label>
+              <Select
+                value={editDesignForm.projectId}
+                onValueChange={(value) => handleEditDesignInputChange("projectId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <Select
+                value={editDesignForm.status}
+                onValueChange={(value) => handleEditDesignInputChange("status", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
+                  <SelectItem value="APPROVED">Approved</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsEditDesignModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateDesign}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Update Design
               </Button>
             </div>
           </div>

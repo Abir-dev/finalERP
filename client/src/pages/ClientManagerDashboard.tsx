@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Plus, ChevronDown, ChevronRight } from "lucide-react"
+import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Plus, ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react"
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 import { ColumnDef } from "@tanstack/react-table"
@@ -60,12 +60,20 @@ const ClientManagerDashboard = () => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isContactAccountsModalOpen, setIsContactAccountsModalOpen] = useState(false)
   const [isAddClientOpen, setIsAddClientOpen] = useState(false)
+  const [isEditClientOpen, setIsEditClientOpen] = useState(false)
   // Matches server prisma Client model
   const [newClient, setNewClient] = useState<{ name: string; contactNo: string; email: string; address: string }>({ name: "", contactNo: "", email: "", address: "" })
+  const [editClient, setEditClient] = useState<{ id: string; name: string; contactNo: string; email: string; address: string }>({ id: "", name: "", contactNo: "", email: "", address: "" })
   const { user } = useUser();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
   const [invoices, setInvoices] = useState([]);
+  
+  // Calculate KPI metrics from client data
+  const totalClients = clients.length;
+  const activeClients = clients.filter(c => c.activeProjects > 0).length;
+  const totalActiveProjects = clients.reduce((sum, c) => sum + c.activeProjects, 0);
+  const totalValue = clients.reduce((sum, c) => sum + c.totalValue, 0);
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -135,19 +143,21 @@ const ClientManagerDashboard = () => {
     setIsProfileModalOpen(true)
   }
 
-  const handleDownloadInvoice = (invoice: Invoice) => {
+  const handleDownloadInvoice = (invoice: any) => {
     const invoiceContent = `
 Invoice ID: ${invoice.id}
-Client: ${invoice.clientName}
-Amount: ₹${(invoice.amount / 1000).toFixed(0)}K
-Due Date: ${invoice.dueDate}
+Invoice Number: ${invoice.invoiceNumber}
+Client: ${invoice.client?.name || 'Unknown Client'}
+Total Amount: ₹${(invoice.total / 1000).toFixed(0)}K
+Due Date: ${new Date(invoice.dueDate).toLocaleDateString()}
 Status: ${invoice.status}
+Work Completed: ${invoice.workCompletedPercent || 0}%
     `
     const blob = new Blob([invoiceContent], { type: 'text/plain' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `invoice-${invoice.id}.txt`
+    link.download = `invoice-${invoice.invoiceNumber || invoice.id}.txt`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -156,9 +166,40 @@ Status: ${invoice.status}
     toast.success("Invoice downloaded successfully!")
   }
 
-  const handleContactAccounts = (invoice: Invoice) => {
+  const handleContactAccounts = (invoice: any) => {
     setSelectedInvoice(invoice)
     setIsContactAccountsModalOpen(true)
+  }
+
+  const handleEditClient = (client: ClientRow) => {
+    setEditClient({
+      id: client.id,
+      name: client.name,
+      contactNo: client.contactNo,
+      email: client.email,
+      address: client.address
+    })
+    setIsEditClientOpen(true)
+  }
+
+  const handleDeleteClient = async (client: ClientRow) => {
+    if (!confirm(`Are you sure you want to delete ${client.name}?`)) {
+      return
+    }
+    
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      await axios.delete(`${API_URL}/clients/${client.id}`, { headers });
+      
+      // Remove from local state
+      setClients(prev => prev.filter(c => c.id !== client.id));
+      toast.success("Client deleted successfully");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || "Failed to delete client";
+      toast.error(msg);
+    }
   }
 
   return (
@@ -184,81 +225,77 @@ Status: ${invoice.status}
         <TabsContent value="engagement" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
-              title="Calls/Meetings Logged"
-              value="156"
-              icon={Phone}
-              description="This month"
-              trend={{ value: 12, label: "vs last month" }}
-              onClick={() => toast.info("Viewing interaction logs")}
-            />
-            <StatCard
-              title="Escalations Raised"
-              value="8"
-              icon={AlertTriangle}
-              description="Pending resolution"
-              onClick={() => toast.info("Opening escalation list")}
-            />
-            <StatCard
-              title="Client Satisfaction"
-              value="4.6/5"
+              title="Total Clients"
+              value={totalClients.toString()}
               icon={Users}
-              description="Average rating"
-              trend={{ value: 0.3, label: "improvement" }}
-              onClick={() => toast.info("Viewing satisfaction survey")}
+              description="Registered clients"
+              onClick={() => toast.info("Viewing all clients")}
             />
             <StatCard
-              title="Response Rate"
-              value="94%"
+              title="Active Clients"
+              value={activeClients.toString()}
+              icon={Users}
+              description="With ongoing projects"
+              onClick={() => toast.info("Viewing active clients")}
+            />
+            <StatCard
+              title="Total Projects"
+              value={totalActiveProjects.toString()}
               icon={FileText}
-              description="Client responsiveness"
-              onClick={() => toast.info("Viewing response analytics")}
+              description="Active projects"
+              onClick={() => toast.info("Viewing project status")}
+            />
+            <StatCard
+              title="Portfolio Value"
+              value={`₹${(totalValue / 1000000).toFixed(1)}M`}
+              icon={DollarSign}
+              description="Total client value"
+              onClick={() => toast.info("Viewing portfolio breakdown")}
             />
           </div>
 
-          <Card>
+         <Card>
             <CardHeader>
               <CardTitle>Client Relationship Management</CardTitle>
               <CardDescription>Client portfolio and engagement tracking</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable 
+              <DataTable
                 columns={[
-                  {
-                    id: "projects",
-                    header: "Projects",
-                    cell: ({ row }) => {
-                      const projects = (row.original as any).projects || []
-                      return (
-                        <div className="w-[110px]">
-                          <Collapsible>
-                            <div className="flex items-center gap-2">
-                              <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm" className="p-0 h-7 w-7 transition-transform data-[state=open]:rotate-180">
-                                  <ChevronRight className="h-4 w-4" />
-                                </Button>
-                              </CollapsibleTrigger>
-                              <div className="text-sm">
-                                {projects.length ? `${projects.length} project${projects.length > 1 ? 's' : ''}` : 'No Project'}
-                              </div>
-                            </div>
-                            <CollapsibleContent>
-                              <div className="mt-2 ml-9 text-sm space-y-1">
-                                {projects.length ? (
-                                  projects.map((p: any) => (
-                                    <div key={p.id} className="text-muted-foreground">• {p.name}</div>
-                                  ))
-                                ) : null}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        </div>
-                      )
-                    },
-                  },
                   ...clientColumns,
+                  {
+                    id: "actions",
+                    header: "Actions",
+                    cell: ({ row }) => (
+                      <div className="flex gap-2">
+                          <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewProfile(row.original)}
+                        >
+                          View Profile
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClient(row.original)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteClient(row.original)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ),
+                  },
                 ]}
-                data={clients} 
-                searchKey="name" 
+                data={clients}
+                searchKey="name"
               />
             </CardContent>
           </Card>
@@ -390,25 +427,25 @@ Status: ${invoice.status}
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {invoices.map((invoice) => (
+                {invoices.map((invoice: any) => (
                   <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="flex-1">
                       <div className="flex items-center gap-4">
-                        <h3 className="font-medium">{invoice.id}</h3>
+                        <h3 className="font-medium">{invoice.invoiceNumber}</h3>
                         <Badge variant={
-                          invoice.status === 'Paid' ? 'default' :
-                          invoice.status === 'Overdue' ? 'destructive' :
+                          invoice.status === 'PAID' ? 'default' :
+                          invoice.status === 'OVERDUE' ? 'destructive' :
                           'secondary'
                         }>
                           {invoice.status}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {invoice.clientName} • Due: {invoice.dueDate}
+                        {invoice.client?.name || 'Unknown Client'} • Due: {new Date(invoice.dueDate).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold">₹{(invoice.amount / 1000).toFixed(0)}K</div>
+                      <div className="text-lg font-semibold">₹{(invoice.total / 1000).toFixed(0)}K</div>
                       <div className="flex gap-2 mt-2">
                         <Button 
                           variant="outline" 
@@ -649,6 +686,109 @@ Status: ${invoice.status}
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isEditClientOpen} onOpenChange={setIsEditClientOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription>
+              Update client information
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              // Simple required validation
+              if (!editClient.name || !editClient.contactNo || !editClient.email || !editClient.address) {
+                toast.error("Please fill all required fields");
+                return;
+              }
+              try {
+                const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                const payload = {
+                  name: editClient.name,
+                  contactNo: editClient.contactNo,
+                  email: editClient.email,
+                  address: editClient.address,
+                };
+
+                const { data } = await axios.put(`${API_URL}/clients/${editClient.id}`, payload, { headers });
+
+                // Update client in local state
+                setClients((prev: any) => prev.map((client: any) => 
+                  client.id === editClient.id 
+                    ? {
+                        ...client,
+                        name: data?.name || editClient.name,
+                        contactNo: data?.contactNo ?? editClient.contactNo,
+                        email: data?.email ?? editClient.email,
+                        address: data?.address ?? editClient.address,
+                      }
+                    : client
+                ));
+                toast.success("Client updated successfully");
+                setIsEditClientOpen(false);
+                setEditClient({ id: "", name: "", contactNo: "", email: "", address: "" });
+              } catch (err: any) {
+                const msg = err?.response?.data?.message || err?.message || "Failed to update client";
+                toast.error(msg);
+              }
+            }}
+          >
+            <div>
+              <Label htmlFor="editClientName">Name*</Label>
+              <Input
+                id="editClientName"
+                value={editClient.name}
+                onChange={(e) => setEditClient((c) => ({ ...c, name: e.target.value }))}
+                placeholder="Enter client name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="editClientContact">Contact Number*</Label>
+              <Input
+                id="editClientContact"
+                value={editClient.contactNo}
+                onChange={(e) => setEditClient((c) => ({ ...c, contactNo: e.target.value }))}
+                placeholder="Enter contact number"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="editClientEmail">Email Address*</Label>
+              <Input
+                id="editClientEmail"
+                type="email"
+                value={editClient.email}
+                onChange={(e) => setEditClient((c) => ({ ...c, email: e.target.value }))}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="editClientAddress">Address*</Label>
+              <Input
+                id="editClientAddress"
+                type="text"
+                value={editClient.address}
+                onChange={(e) => setEditClient((c) => ({ ...c, address: e.target.value }))}
+                placeholder="Enter address"
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditClientOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Update</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -683,7 +823,7 @@ Status: ${invoice.status}
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <h4 className="text-sm font-medium">Recent Interactions</h4>
                   <div className="space-y-2">
                     {[
@@ -700,9 +840,9 @@ Status: ${invoice.status}
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <h4 className="text-sm font-medium">Project Status</h4>
                   <div className="space-y-2">
                     {[
@@ -721,7 +861,7 @@ Status: ${invoice.status}
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </>
             )}
           </div>
@@ -733,7 +873,7 @@ Status: ${invoice.status}
           <DialogHeader>
             <DialogTitle>Contact Accounts Team</DialogTitle>
             <DialogDescription>
-              Send a message to accounts team regarding Invoice {selectedInvoice?.id}
+              Send a message to accounts team regarding Invoice {selectedInvoice?.invoiceNumber || selectedInvoice?.id}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

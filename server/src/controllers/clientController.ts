@@ -138,7 +138,8 @@ export const clientController = {
       }
       
       // Check if user is authorized to update this client
-      if (req.user?.id !== existingClient.createdById) {
+      // Allow if user created the client OR user is a client manager
+      if (req.user?.id !== existingClient.createdById && req.user?.role !== 'client_manager') {
         return res.status(403).json({ message: "Not authorized to update this client" });
       }
       
@@ -172,7 +173,8 @@ export const clientController = {
       }
       
       // Check if user is authorized to delete this client
-      if (req.user?.id !== existingClient.createdById) {
+      // Allow if user created the client OR user is a client manager
+      if (req.user?.id !== existingClient.createdById && req.user?.role !== 'client_manager') {
         return res.status(403).json({ message: "Not authorized to delete this client" });
       }
       
