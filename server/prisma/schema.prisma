@@ -34,9 +34,7 @@ model User {
   documents            Document[]
   managedProjects      Project[]              @relation("ProjectManagers")
   memberProjects       Project[]              @relation("ProjectMembers")
-  clientProjects       Project[]              @relation("ProjectClient")
-  invoices             Invoice[]              @relation("UserInvoices")
-  // bids             Bid[]             @relation("UserBids")
+  // bids             Bid[]                   @relation("UserBids")
   notifications        Notification[]         @relation("UserNotifications")
   messagesSent         Message[]              @relation("MessagesSent")
   messagesReceived     Message[]              @relation("MessagesReceived")
@@ -60,12 +58,13 @@ model User {
   scheduledMaintenance ScheduleMaintenance[]  @relation("MaintenanceScheduler")
   createdProjects      Project[]              @relation("ProjectCreator")
   StoreStaff           StoreStaff[]           @relation("StoreStaffCreator")
-  clientTenders        Tender[]               @relation("TenderClient")
   WeeklyProgressReport WeeklyProgressReport[] @relation("WeeklyProgressReportsCreated")
   DailyProgressReport  DailyProgressReport[]  @relation("DailyProgressReportsCreated")
   Tender               Tender[]               @relation("TenderCreator")
   Task                 Task[]                 @relation("TaskCreator")
   BOQ                  BOQ[]                  @relation("BOQCreator")
+  Design               Design[]               @relation("DesignCreator")
+  Client               Client[]               @relation("ClientCreator")
 
   @@map("users")
 }
@@ -88,7 +87,7 @@ model Project {
   id               String            @id @default(uuid()) @db.Uuid
   name             String
   clientId         String            @db.Uuid
-  client           User              @relation("ProjectClient", fields: [clientId], references: [id])
+  client           Client            @relation("ProjectClient", fields: [clientId], references: [id], onDelete: Cascade)
   startDate        DateTime
   endDate          DateTime?
   location         String?
@@ -121,6 +120,7 @@ model Project {
   createdById       String?            @db.Uuid
   createdBy         User?              @relation("ProjectCreator", fields: [createdById], references: [id])
   billOfQuantities  BOQ[]              @relation("projectBOQ")
+  Design            Design[]
 }
 
 model ProjectMilestone {
@@ -179,7 +179,7 @@ model Invoice {
   projectId            String        @db.Uuid
   project              Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   clientId             String        @db.Uuid
-  client               User          @relation("UserInvoices", fields: [clientId], references: [id])
+  client               Client        @relation("ClientInvoices", fields: [clientId], references: [id])
   invoiceNumber        String
   date                 DateTime
   dueDate              DateTime
@@ -307,7 +307,6 @@ model Tender {
   submissionDate      DateTime
   projectId           String          @db.Uuid
   clientId            String          @db.Uuid
-  client              User            @relation("TenderClient", fields: [clientId], references: [id])
   location            String
   projectDuration     Int // in months
   projectCategory     ProjectCategory
@@ -326,6 +325,7 @@ model Tender {
   Project     Project      @relation("TenderCreated", fields: [projectId], references: [id], onDelete: Cascade)
   createdById String?      @db.Uuid
   createdBy   User?        @relation("TenderCreator", fields: [createdById], references: [id])
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model Bid {
@@ -852,6 +852,47 @@ model BOQ {
   createdBy      User        @relation("BOQCreator", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+}
+
+model Client {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  contactNo   String
+  address     String
+  email       String
+  designId    String   @db.Uuid
+  design      Design[] @relation("ClientDesigns")
+  tenders     Tender[]
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById String   @map("created_by_id") @db.Uuid
+  createdBy   User     @relation("ClientCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  // User        User?     @relation(fields: [userId], references: [id])
+  userId      String?  @db.Uuid
+
+  Project Project[] @relation("ProjectClient")
+
+  Invoice Invoice[] @relation("ClientInvoices")
+}
+
+model Design {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  clientId    String       @db.Uuid
+  client      Client       @relation("ClientDesigns", fields: [clientId], references: [id], onDelete: Cascade)
+  project     Project      @relation(fields: [projectId], references: [id])
+  status      DesignStatus @default(UNDER_REVIEW)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdById String       @map("created_by_id") @db.Uuid
+  createdBy   User         @relation("DesignCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  projectId   String       @db.Uuid
+}
+
+enum DesignStatus {
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
 }
 
 enum BOQTemplate {
