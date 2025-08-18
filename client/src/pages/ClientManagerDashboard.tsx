@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Mail } from "lucide-react"
+import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Plus } from "lucide-react"
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 import type { Client, Invoice } from "@/types/dummy-data-types";
+import { add } from "date-fns"
 
 const clientColumns: ColumnDef<Client>[] = [
   {
@@ -53,9 +54,10 @@ const ClientManagerDashboard = () => {
   const [approvalQueue, setApprovalQueue] = useState([]);
   const [isInteractionModalOpen, setIsInteractionModalOpen] = useState(false)
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false)
-  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false)
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [isContactAccountsModalOpen, setIsContactAccountsModalOpen] = useState(false)
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false)
+  const [newClient, setNewClient] = useState({ name: "", contactNo: "", email: "", address: "" })
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [invoices, setInvoices] = useState([]);
@@ -93,10 +95,7 @@ const ClientManagerDashboard = () => {
     setIsEscalationModalOpen(true)
   }
 
-  const handleSendReminder = () => {
-    toast.success("Reminder sent successfully!")
-    setIsReminderModalOpen(false)
-  }
+
 
   const handleSaveInteraction = () => {
     toast.success("Interaction logged successfully!")
@@ -148,9 +147,9 @@ Status: ${invoice.status}
           <h1 className="text-3xl font-bold tracking-tight">Client Dashboard</h1>
           <p className="text-muted-foreground">Client engagement and relationship management</p>
         </div>
-        <Button onClick={() => setIsReminderModalOpen(true)} className="gap-2">
-          <Mail className="h-4 w-4" />
-          Send Reminder
+        <Button onClick={() => setIsAddClientOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Client
         </Button>
       </div>
 
@@ -376,13 +375,13 @@ Status: ${invoice.status}
                       >
                         Escalate
                       </Button>
-                      <Button 
+                      {/* <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => setIsReminderModalOpen(true)}
                       >
                         Remind
-                      </Button>
+                      </Button> */}
                     </div>
                   </div>
                 ))}
@@ -572,32 +571,95 @@ Status: ${invoice.status}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isReminderModalOpen} onOpenChange={setIsReminderModalOpen}>
+      <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send Reminder</DialogTitle>
+            <DialogTitle>Add Client</DialogTitle>
             <DialogDescription>
-              Send reminder to clients for pending items
+              Create a new client with required details
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              // Simple required validation
+              if (!newClient.name || !newClient.contactNo || !newClient.email) {
+                toast.error("Please fill all required fields");
+                return;
+              }
+              try {
+                const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const { data } = await axios.post(`${API_URL}/clients`, newClient, { headers });
+                setClients((prev: any) => [
+                  {
+                    id: data?.id || crypto.randomUUID(),
+                    name: newClient.name,
+                    totalProjects: 0,
+                    activeProjects: 0,
+                    totalValue: 0,
+                    lastContact: new Date().toISOString().slice(0, 10),
+                  },
+                  ...prev,
+                ]);
+                toast.success("Client added successfully");
+                setIsAddClientOpen(false);
+                setNewClient({ name: "", contactNo: "", email: "", address: "" });
+              } catch (err) {
+                toast.error("Failed to add client");
+              }
+            }}
+          >
             <div>
-              <Label htmlFor="recipients">Recipients</Label>
-              <Input id="recipients" placeholder="Select recipients..." />
+              <Label htmlFor="clientName">Name*</Label>
+              <Input
+                id="clientName"
+                value={newClient.name}
+                onChange={(e) => setNewClient((c) => ({ ...c, name: e.target.value }))}
+                placeholder="Enter client name"
+                required
+              />
             </div>
             <div>
-              <Label htmlFor="reminderNote">Optional Note</Label>
-              <Textarea id="reminderNote" placeholder="Add custom message..." rows={3} />
+              <Label htmlFor="clientContact">Contact Number*</Label>
+              <Input
+                id="clientContact"
+                value={newClient.contactNo}
+                onChange={(e) => setNewClient((c) => ({ ...c, contactNo: e.target.value }))}
+                placeholder="Enter contact number"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="clientEmail">Email Address*</Label>
+              <Input
+                id="clientEmail"
+                type="email"
+                value={newClient.email}
+                onChange={(e) => setNewClient((c) => ({ ...c, email: e.target.value }))}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="clientEmail">Address*</Label>
+              <Input
+                id="clientEmail"
+                type="text"
+                value={newClient.address}
+                onChange={(e) => setNewClient((c) => ({ ...c, address: e.target.value }))}
+                placeholder="Enter address"
+                required
+              />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsReminderModalOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsAddClientOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSendReminder}>
-                Send Reminder
-              </Button>
+              <Button type="submit">Save</Button>
             </div>
-          </div>
+          </form>
         </DialogContent>
       </Dialog>
 
