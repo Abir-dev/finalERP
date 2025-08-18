@@ -988,7 +988,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                 Cancel
               </Button>
               <Button
-                className="bg-black hover:bg-black"
+                className="bg-[#1e9df1] hover:bg-[#1e9df1]"
                 onClick={handleSubmit}
                 disabled={loading}
               >

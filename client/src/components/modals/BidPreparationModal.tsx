@@ -627,7 +627,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
                 Cancel
               </Button>
               <Button 
-                className="bg-purple-600 hover:bg-purple-700 gap-2" 
+                className="bg-[#1e9df1] hover:bg-[#1e9df1] gap-2" 
                 onClick={handleSubmit}
                 disabled={loading}
               >
