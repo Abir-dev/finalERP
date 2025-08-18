@@ -103,7 +103,7 @@ const Index = () => {
             ))}
           </div>
           
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-none">
+          {/* <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-none">
             <CardHeader>
               <CardTitle className="text-2xl">Quick Stats</CardTitle>
               <CardDescription>Overview of system-wide metrics</CardDescription>
@@ -128,7 +128,7 @@ const Index = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </>
       ) : (
         <div className="text-center py-12">
