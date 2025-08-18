@@ -10,7 +10,7 @@ router.get('/user/:userId', authenticateUser, vendorController.getVendorsByUser)
 router.get('/:id', authenticateUser, vendorController.getVendorById);
 router.put('/:id', authenticateUser, vendorController.updateVendor);
 router.delete('/:id', authenticateUser, vendorController.deleteVendor);
-router.get('/count/:id',vendorController.getVendorsCountByUser)
+router.get('/count/:userId',vendorController.getVendorsCountByUser)
 router.get('/count',vendorController.getVendorsCount)
 
 export default router; 
