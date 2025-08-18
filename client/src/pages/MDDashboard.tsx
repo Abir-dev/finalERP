@@ -1,22 +1,53 @@
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { EnhancedStatCard } from "@/components/enhanced-stat-card"
-import { InteractiveChart } from "@/components/interactive-chart"
-import { ExpandableDataTable } from "@/components/expandable-data-table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Progress } from "@/components/ui/progress"
+import { useState, useEffect } from "react";
 import {
-  TrendingUp, DollarSign, Users, Building2, AlertTriangle, Calendar,
-  Download, Target, Zap, Clock, Shield, Activity, BarChart3
-} from "lucide-react"
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { EnhancedStatCard } from "@/components/enhanced-stat-card";
+import { InteractiveChart } from "@/components/interactive-chart";
+import { ExpandableDataTable } from "@/components/expandable-data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
+import {
+  TrendingUp,
+  DollarSign,
+  Users,
+  Building2,
+  AlertTriangle,
+  Calendar,
+  Download,
+  Target,
+  Zap,
+  Clock,
+  Shield,
+  Activity,
+  BarChart3,
+} from "lucide-react";
 import axios from "axios";
-import { toast } from "sonner"
+import { toast } from "sonner";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 // Enhanced data for hyper-detailed dashboard
 // const executiveScorecard = [
@@ -53,12 +84,12 @@ interface Risk {
 }
 
 // const projectRiskMatrix: Risk[] = [
-//   { 
+//   {
 //     id: '1',
-//     project: 'Tower A', 
-//     riskLevel: 'High', 
-//     probability: 80, 
-//     impact: 'Critical', 
+//     project: 'Tower A',
+//     riskLevel: 'High',
+//     probability: 80,
+//     impact: 'Critical',
 //     mitigation: 'Resource reallocation',
 //     category: 'Technical',
 //     lastAssessment: '2024-02-01',
@@ -71,12 +102,12 @@ interface Risk {
 //     ],
 //     isFlagged: false
 //   },
-//   { 
+//   {
 //     id: '2',
-//     project: 'Mall Complex', 
-//     riskLevel: 'Medium', 
-//     probability: 45, 
-//     impact: 'Moderate', 
+//     project: 'Mall Complex',
+//     riskLevel: 'Medium',
+//     probability: 45,
+//     impact: 'Moderate',
 //     mitigation: 'Schedule adjustment',
 //     category: 'Operational',
 //     lastAssessment: '2024-01-28',
@@ -88,12 +119,12 @@ interface Risk {
 //     ],
 //     isFlagged: false
 //   },
-//   { 
+//   {
 //     id: '3',
-//     project: 'Villa Phase 2', 
-//     riskLevel: 'Low', 
-//     probability: 20, 
-//     impact: 'Minor', 
+//     project: 'Villa Phase 2',
+//     riskLevel: 'Low',
+//     probability: 20,
+//     impact: 'Minor',
 //     mitigation: 'Monitor closely',
 //     category: 'Financial',
 //     lastAssessment: '2024-01-25',
@@ -105,12 +136,12 @@ interface Risk {
 //     ],
 //     isFlagged: false
 //   },
-//   { 
+//   {
 //     id: '4',
-//     project: 'Office Building', 
-//     riskLevel: 'High', 
-//     probability: 75, 
-//     impact: 'Major', 
+//     project: 'Office Building',
+//     riskLevel: 'High',
+//     probability: 75,
+//     impact: 'Major',
 //     mitigation: 'Stakeholder meeting',
 //     category: 'Environmental',
 //     lastAssessment: '2024-01-30',
@@ -142,8 +173,8 @@ interface Department {
 // ]
 
 const MDDashboard = () => {
-  const [selectedTimeRange, setSelectedTimeRange] = useState('30d')
-  const [selectedProject, setSelectedProject] = useState<any>(null)
+  const [selectedTimeRange, setSelectedTimeRange] = useState("30d");
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   // Replace static arrays with backend data
   const [executiveScorecard, setExecutiveScorecard] = useState([]);
   const [revenueData, setRevenueData] = useState([]);
@@ -151,90 +182,123 @@ const MDDashboard = () => {
   const [departments, setDepartments] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [collections, setCollections] = useState([]);
+  const [budget, setBudget] = useState(null);
+  const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/md/scorecard`, { headers })
-      .then(res => setExecutiveScorecard(res.data))
+    axios
+      .get(`${API_URL}/md/scorecard`, { headers })
+      .then((res) => setExecutiveScorecard(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/md/revenue`, { headers })
-      .then(res => setRevenueData(res.data))
+    axios
+      .get(`${API_URL}/md/revenue`, { headers })
+      .then((res) => setRevenueData(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/md/risks`, { headers })
-      .then(res => setRisks(res.data))
+    axios
+      .get(`${API_URL}/md/risks`, { headers })
+      .then((res) => setRisks(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/md/team-performance`, { headers })
-      .then(res => setDepartments(res.data))
+    axios
+      .get(`${API_URL}/md/team-performance`, { headers })
+      .then((res) => setDepartments(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/projects`, { headers })
-      .then(res => setProjects(res.data))
+    axios
+      .get(`${API_URL}/projects`, { headers })
+      .then((res) => setProjects(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/clients`, { headers })
-      .then(res => setClients(res.data))
+    axios
+      .get(`${API_URL}/clients`, { headers })
+      .then((res) => setClients(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/accounts/payments`, { headers })
+      .then((res) => setPayments(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/accounts/collections`, { headers })
+      .then((res) => setCollections(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/accounts/budget`, { headers })
+      .then((res) => setBudget(res.data))
+      .catch(() => {});
+    axios
+      .get(`${API_URL}/billing/invoices`, { headers })
+      .then((res) => setInvoices(res.data))
       .catch(() => {});
   }, []);
 
   const handleExportSnapshot = () => {
     // Generate comprehensive dashboard report
-    const timestamp = new Date().toISOString().split('T')[0];
+    const timestamp = new Date().toISOString().split("T")[0];
     const reportData = {
       reportTitle: "MD Dashboard Executive Snapshot",
       generatedOn: new Date().toLocaleString(),
       timeRange: selectedTimeRange,
-      
-      executiveScorecard: executiveScorecard.map(item => ({
+
+      executiveScorecard: executiveScorecard.map((item) => ({
         metric: item.metric,
         current: `${item.current}%`,
         target: `${item.target}%`,
         status: item.status,
-        performance: item.current >= item.target ? 'Above Target' : 'Below Target'
+        performance:
+          item.current >= item.target ? "Above Target" : "Below Target",
       })),
-      
+
       keyMetrics: {
         activeProjects: 24,
         totalRevenue: "₹50M",
         monthlyGrowth: "15.2%",
-        teamUtilization: "87%"
+        teamUtilization: "87%",
       },
-      
-      financialSummary: revenueData.map(item => ({
+
+      financialSummary: revenueData.map((item) => ({
         month: item.month,
         revenue: `₹${(item.revenue / 1000000).toFixed(1)}M`,
         expense: `₹${(item.expense / 1000000).toFixed(1)}M`,
         profit: `₹${((item.revenue - item.expense) / 1000000).toFixed(1)}M`,
-        profitMargin: `${(((item.revenue - item.expense) / item.revenue) * 100).toFixed(1)}%`
+        profitMargin: `${(
+          ((item.revenue - item.expense) / item.revenue) *
+          100
+        ).toFixed(1)}%`,
       })),
-      
-      teamPerformance: departments.map(dept => ({
+
+      teamPerformance: departments.map((dept) => ({
         department: dept.department,
         efficiency: `${dept.efficiency}%`,
         utilization: `${dept.utilization}%`,
         openIssues: dept.issues,
-        trend: dept.trend > 0 ? `+${dept.trend}%` : `${dept.trend}%`
+        trend: dept.trend > 0 ? `+${dept.trend}%` : `${dept.trend}%`,
       })),
-      
+
       riskSummary: {
-        highRiskProjects: risks.filter(r => r.riskLevel === 'High').length,
-        mediumRiskProjects: risks.filter(r => r.riskLevel === 'Medium').length,
-        lowRiskProjects: risks.filter(r => r.riskLevel === 'Low').length,
+        highRiskProjects: risks.filter((r) => r.riskLevel === "High").length,
+        mediumRiskProjects: risks.filter((r) => r.riskLevel === "Medium")
+          .length,
+        lowRiskProjects: risks.filter((r) => r.riskLevel === "Low").length,
         avgRiskScore: "3.2/10",
-        mitigationRate: "76%"
+        mitigationRate: "76%",
       },
-      
+
       criticalAlerts: [
         "2 projects exceeding budget variance threshold",
         "3 departments below optimal utilization",
         "4 high-risk projects requiring immediate attention",
-        "Cost control measures needed for Q2 targets"
+        "Cost control measures needed for Q2 targets",
       ],
-      
+
       recommendations: [
         "Implement enhanced cost control measures for budget variance projects",
         "Increase resource allocation for underutilized departments",
         "Escalate risk mitigation plans for high-risk projects",
-        "Review and adjust Q2 financial targets based on current performance"
-      ]
+        "Review and adjust Q2 financial targets based on current performance",
+      ],
     };
 
     // Convert to formatted text report
@@ -246,9 +310,14 @@ Time Range: ${reportData.timeRange}
 ==========================================
 EXECUTIVE SCORECARD
 ==========================================
-${reportData.executiveScorecard.map(item => 
-  `${item.metric}: ${item.current} (Target: ${item.target}) - ${item.status.toUpperCase()}`
-).join('\n')}
+${reportData.executiveScorecard
+  .map(
+    (item) =>
+      `${item.metric}: ${item.current} (Target: ${
+        item.target
+      }) - ${item.status.toUpperCase()}`
+  )
+  .join("\n")}
 
 ==========================================
 KEY PERFORMANCE METRICS
@@ -261,16 +330,22 @@ Team Utilization: ${reportData.keyMetrics.teamUtilization}
 ==========================================
 FINANCIAL SUMMARY (6-MONTH)
 ==========================================
-${reportData.financialSummary.map(item => 
-  `${item.month}: Revenue ${item.revenue} | Expense ${item.expense} | Profit ${item.profit} (${item.profitMargin} margin)`
-).join('\n')}
+${reportData.financialSummary
+  .map(
+    (item) =>
+      `${item.month}: Revenue ${item.revenue} | Expense ${item.expense} | Profit ${item.profit} (${item.profitMargin} margin)`
+  )
+  .join("\n")}
 
 ==========================================
 TEAM PERFORMANCE BY DEPARTMENT
 ==========================================
-${reportData.teamPerformance.map(dept => 
-  `${dept.department}: ${dept.efficiency} efficiency | ${dept.utilization} utilization | ${dept.openIssues} issues | Trend: ${dept.trend}`
-).join('\n')}
+${reportData.teamPerformance
+  .map(
+    (dept) =>
+      `${dept.department}: ${dept.efficiency} efficiency | ${dept.utilization} utilization | ${dept.openIssues} issues | Trend: ${dept.trend}`
+  )
+  .join("\n")}
 
 ==========================================
 RISK ASSESSMENT SUMMARY
@@ -284,30 +359,37 @@ Risk Mitigation Rate: ${reportData.riskSummary.mitigationRate}
 ==========================================
 CRITICAL ALERTS
 ==========================================
-${reportData.criticalAlerts.map((alert, index) => `${index + 1}. ${alert}`).join('\n')}
+${reportData.criticalAlerts
+  .map((alert, index) => `${index + 1}. ${alert}`)
+  .join("\n")}
 
 ==========================================
 STRATEGIC RECOMMENDATIONS
 ==========================================
-${reportData.recommendations.map((rec, index) => `${index + 1}. ${rec}`).join('\n')}
+${reportData.recommendations
+  .map((rec, index) => `${index + 1}. ${rec}`)
+  .join("\n")}
 
 ==========================================
 DETAILED PROJECT RISK MATRIX
 ==========================================
-${risks.map(risk => 
-  `${risk.project}: ${risk.riskLevel} Risk (${risk.probability}% probability) - ${risk.impact} impact
+${risks
+  .map(
+    (risk) =>
+      `${risk.project}: ${risk.riskLevel} Risk (${risk.probability}% probability) - ${risk.impact} impact
    Category: ${risk.category} | Owner: ${risk.owner}
    Mitigation: ${risk.mitigation}
    Next Review: ${risk.nextReview}`
-).join('\n\n')}
+  )
+  .join("\n\n")}
 
 Report End - Generated by MD Dashboard System
     `.trim();
 
     // Create and download the file
-    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const blob = new Blob([reportContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `MD_Dashboard_Snapshot_${timestamp}.txt`;
     document.body.appendChild(link);
@@ -319,137 +401,284 @@ Report End - Generated by MD Dashboard System
   };
 
   const handleDrillDown = (data: any) => {
-    toast.info(`Drilling down into ${data.month || data.name} data...`)
-  }
+    toast.info(`Drilling down into ${data.month || data.name} data...`);
+  };
 
   const enhancedProjectColumns = [
-    { key: 'name', label: 'Project Name', type: 'text' as const },
-    { key: 'client', label: 'Client', type: 'text' as const },
-    { 
-      key: 'status', 
-      label: 'Status', 
-      type: 'badge' as const,
-      options: ['In Progress', 'Completed', 'Planning', 'On Hold']
+    {
+      key: "name",
+      label: "Project Name",
+      type: "text" as const,
+      render: (value: string) => value || "Untitled Project",
     },
-    { key: 'progress', label: 'Progress', type: 'progress' as const },
-    { key: 'budget', label: 'Budget', render: (value: number) => `₹${(value / 1000000).toFixed(1)}M` },
-    { 
-      key: 'riskLevel', 
-      label: 'Risk', 
-      type: 'badge' as const,
-      options: ['Low', 'Medium', 'High']
+    {
+      key: "clientName",
+      label: "Client",
+      type: "text" as const,
+      render: (value: string) => value || "N/A",
     },
-    { key: 'actions', label: 'Actions', type: 'actions' as const }
-  ]
+    {
+      key: "location",
+      label: "Location",
+      type: "text" as const,
+      render: (value: string) => value || "N/A",
+    },
+    {
+      key: "projectType",
+      label: "Type",
+      type: "text" as const,
+      render: (value: string) => value || "N/A",
+    },
+    {
+      key: "budget",
+      label: "Budget",
+      render: (value: number) => {
+        if (typeof value !== "number" || isNaN(value)) return "N/A";
+        return `₹${(value / 1000000).toFixed(1)}M`;
+      },
+    },
+    {
+      key: "totalSpend",
+      label: "Spent",
+      render: (value: number) => {
+        if (typeof value !== "number" || isNaN(value)) return "N/A";
+        return `₹${(value / 1000000).toFixed(1)}M`;
+      },
+    },
+    {
+      key: "contingency",
+      label: "Contingency",
+      render: (value: number) => {
+        if (typeof value !== "number" || isNaN(value)) return "N/A";
+        return `₹${(value / 1000000).toFixed(1)}M`;
+      },
+    },
+    {
+      key: "milestones",
+      label: "Milestones",
+      render: (row: any) => {
+        try {
+          const milestones = Array.isArray(row.milestones)
+            ? row.milestones
+            : [];
+          const total = milestones.length;
+          const completed = milestones.filter(
+            (m: any) => m && m.endDate
+          ).length;
+          return `${completed}/${total}`;
+        } catch (e) {
+          return "0/0";
+        }
+      },
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      type: "actions" as const,
+    },
+  ];
 
-  const projectExpandableContent = (row: any) => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div>
-        <h4 className="font-medium mb-2">Key Metrics</h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>Budget Utilization:</span>
-            <span className="font-medium">{row.budgetUtilization || 67}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Timeline Adherence:</span>
-            <span className="font-medium">{row.timelineAdherence || 94}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Quality Score:</span>
-            <span className="font-medium">{row.qualityScore || 8.5}/10</span>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h4 className="font-medium mb-2">Recent Milestones</h4>
-        <div className="space-y-1 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span>Foundation completed</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-            <span>Design approval received</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-            <span>Material procurement in progress</span>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h4 className="font-medium mb-2">Alerts & Actions</h4>
-        <div className="space-y-1 text-sm">
-          {row.alerts?.map((alert: string, index: number) => (
-            <div key={index} className="flex items-center gap-2 text-orange-600">
-              <AlertTriangle className="h-3 w-3" />
-              <span>{alert}</span>
+  const projectExpandableContent = (row: any) => {
+    // Ensure we have a valid row object
+    if (!row) return null;
+
+    // Safe accessors for nested objects
+    const getNestedValue = (
+      obj: any,
+      path: string,
+      defaultValue: any = "N/A"
+    ) => {
+      try {
+        return (
+          path.split(".").reduce((acc, part) => acc?.[part], obj) ??
+          defaultValue
+        );
+      } catch (e) {
+        return defaultValue;
+      }
+    };
+
+    // Safe number formatter
+    const formatCurrency = (value: number | undefined | null) => {
+      if (typeof value !== "number" || isNaN(value)) return "N/A";
+      return `₹${(value / 1000000).toFixed(1)}M`;
+    };
+
+    const safeMilestones = Array.isArray(row.milestones) ? row.milestones : [];
+    const safeTasks = Array.isArray(row.tasks) ? row.tasks : [];
+    const safeMembers = Array.isArray(row.members) ? row.members : [];
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <h4 className="font-medium mb-2">Financial Details</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span>Budget Utilization:</span>
+              <span className="font-medium">
+                {typeof row.budget === "number" &&
+                typeof row.totalSpend === "number"
+                  ? `${((row.totalSpend / row.budget) * 100).toFixed(1)}%`
+                  : "N/A"}
+              </span>
             </div>
-          )) || (
-              <div className="text-green-600">No active alerts</div>
-            )}
+            <div className="flex justify-between">
+              <span>Contingency:</span>
+              <span className="font-medium">
+                {formatCurrency(row.contingency)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Non-Billables:</span>
+              <span className="font-medium">
+                {Array.isArray(row.nonBillables)
+                  ? `${row.nonBillables.length} items`
+                  : "0 items"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Cost Center:</span>
+              <span className="font-medium">
+                {row.defaultCostCenter || "Not assigned"}
+              </span>
+            </div>
+          </div>
         </div>
+        <div>
+          <h4 className="font-medium mb-2">Project Milestones</h4>
+          <div className="space-y-1 text-sm">
+            {safeMilestones.length > 0 ? (
+              safeMilestones
+                .slice(0, 3)
+                .map((milestone: any, index: number) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        milestone?.endDate ? "bg-green-500" : "bg-yellow-500"
+                      }`}
+                    />
+                    <span>{milestone?.name || "Unnamed Milestone"}</span>
+                    <span className="text-muted-foreground ml-auto">
+                      {milestone?.endDate
+                        ? new Date(milestone.endDate).toLocaleDateString()
+                        : "In Progress"}
+                    </span>
+                  </div>
+                ))
+            ) : (
+              <div className="text-muted-foreground">No milestones defined</div>
+            )}
+          </div>
+        </div>
+        {/* <div>
+          <h4 className="font-medium mb-2">Team & Tasks</h4>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span>Project Manager:</span>
+              <span className="font-medium">
+                {getNestedValue(row, 'managers.name', 'Unassigned')}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Team Size:</span>
+              <span className="font-medium">
+                {safeMembers.length} members
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Active Tasks:</span>
+              <span className="font-medium">
+                {safeTasks.filter(t => t?.status === 'in_progress').length}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Square Footage:</span>
+              <span className="font-medium">
+                {typeof row.squareFootage === 'number' 
+                  ? `${row.squareFootage.toLocaleString()} sq ft` 
+                  : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div> */}
       </div>
-    </div>
-  )
+    );
+  };
 
   const handleRiskAction = (action: string, risk: Risk, updatedData?: any) => {
     switch (action) {
-      case 'edit':
-        const updatedRisks = risks.map(r => 
+      case "edit":
+        const updatedRisks = risks.map((r) =>
           r.id === risk.id ? { ...r, ...updatedData } : r
         );
         setRisks(updatedRisks);
-        toast.success('Risk updated successfully');
+        toast.success("Risk updated successfully");
         break;
-      
-      case 'flag':
-        const flaggedRisks = risks.map(r => 
+
+      case "flag":
+        const flaggedRisks = risks.map((r) =>
           r.id === risk.id ? { ...r, isFlagged: !r.isFlagged } : r
         );
         setRisks(flaggedRisks);
-        toast.success(`Risk ${risk.isFlagged ? 'unflagged' : 'flagged'} successfully`);
+        toast.success(
+          `Risk ${risk.isFlagged ? "unflagged" : "flagged"} successfully`
+        );
         break;
     }
   };
 
-  const handleDepartmentAction = (action: string, department: Department, updatedData?: any) => {
+  const handleDepartmentAction = (
+    action: string,
+    department: Department,
+    updatedData?: any
+  ) => {
     switch (action) {
-      case 'edit':
-        const updatedDepartments = departments.map(d => 
+      case "edit":
+        const updatedDepartments = departments.map((d) =>
           d.department === department.department ? { ...d, ...updatedData } : d
         );
         setDepartments(updatedDepartments);
-        toast.success('Department updated successfully');
+        toast.success("Department updated successfully");
         break;
-      
-      case 'flag':
-        const flaggedDepartments = departments.map(d => 
-          d.department === department.department ? { ...d, isFlagged: !d.isFlagged } : d
+
+      case "flag":
+        const flaggedDepartments = departments.map((d) =>
+          d.department === department.department
+            ? { ...d, isFlagged: !d.isFlagged }
+            : d
         );
         setDepartments(flaggedDepartments);
-        toast.success(`Department ${department.isFlagged ? 'unflagged' : 'flagged'} successfully`);
+        toast.success(
+          `Department ${
+            department.isFlagged ? "unflagged" : "flagged"
+          } successfully`
+        );
         break;
     }
   };
 
-  const handleProjectAction = (action: string, project: any, updatedData?: any) => {
+  const handleProjectAction = (
+    action: string,
+    project: any,
+    updatedData?: any
+  ) => {
     switch (action) {
-      case 'edit':
-        const updatedProjects = projects.map(p => 
+      case "edit":
+        const updatedProjects = projects.map((p) =>
           p.name === project.name ? { ...p, ...updatedData } : p
         );
         setProjects(updatedProjects);
-        toast.success('Project updated successfully');
+        toast.success("Project updated successfully");
         break;
-      
-      case 'flag':
-        const flaggedProjects = projects.map(p => 
+
+      case "flag":
+        const flaggedProjects = projects.map((p) =>
           p.name === project.name ? { ...p, isFlagged: !p.isFlagged } : p
         );
         setProjects(flaggedProjects);
-        toast.success(`Project ${project.isFlagged ? 'unflagged' : 'flagged'} successfully`);
+        toast.success(
+          `Project ${project.isFlagged ? "unflagged" : "flagged"} successfully`
+        );
         break;
     }
   };
@@ -458,11 +687,18 @@ Report End - Generated by MD Dashboard System
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Managing Director Dashboard</h1>
-          <p className="text-muted-foreground">Strategic overview and executive insights</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Managing Director Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Strategic overview and executive insights
+          </p>
         </div>
         <div className="flex gap-2">
-          <Select value={selectedTimeRange} onValueChange={setSelectedTimeRange}>
+          <Select
+            value={selectedTimeRange}
+            onValueChange={setSelectedTimeRange}
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -481,238 +717,481 @@ Report End - Generated by MD Dashboard System
       </div>
 
       <Tabs defaultValue="executive" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="executive">Executive Overview</TabsTrigger>
           <TabsTrigger value="projects">Project Performance</TabsTrigger>
           <TabsTrigger value="financials">Financial Insights</TabsTrigger>
-          <TabsTrigger value="team">Team Performance</TabsTrigger>
-          <TabsTrigger value="risks">Risk Management</TabsTrigger>
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          {/* Executive Scorecard */}
-          <Card>
+          {/* Enhanced KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <EnhancedStatCard
+              title="Total Projects"
+              value={projects.length.toString()}
+              icon={Building2}
+              description="All projects in system"
+              trend={{
+                value: projects.length,
+                label: "total projects",
+                data: projects.map((p, i) => ({ value: i + 1 })),
+              }}
+              threshold={{
+                status:
+                  projects.length > 10
+                    ? "good"
+                    : projects.length > 5
+                    ? "warning"
+                    : "critical",
+                message:
+                  projects.length > 10
+                    ? "Project count within optimal range"
+                    : "Low project count",
+              }}
+              onClick={() => toast.info("Viewing all projects")}
+            />
+            <EnhancedStatCard
+              title="Total Expenses"
+              value={`₹${projects
+                .reduce((sum, p) => sum + (p.totalSpend || 0), 0)
+                .toLocaleString()}`}
+              icon={DollarSign}
+              description="Combined project expenses"
+              trend={{
+                value: projects.length,
+                label: "projects with expenses",
+                data: projects.map((p) => ({ value: p.totalSpend || 0 })),
+              }}
+              threshold={{
+                status: projects.length > 0 ? "good" : "warning",
+                message:
+                  projects.length > 0
+                    ? "Expense data available"
+                    : "No expense data",
+              }}
+              onClick={() => toast.info("Opening expense breakdown")}
+            />
+
+            <EnhancedStatCard
+              title="Total Clients"
+              value={clients.length.toString()}
+              icon={Users}
+              description="Client portfolio"
+              trend={{
+                value: clients.length,
+                label: "total clients",
+                data: clients.map((c, i) => ({ value: i + 1 })),
+              }}
+              threshold={{
+                status:
+                  clients.length > 5
+                    ? "good"
+                    : clients.length > 2
+                    ? "warning"
+                    : "critical",
+                message:
+                  clients.length > 5
+                    ? "Healthy client base"
+                    : "Need more clients",
+              }}
+              onClick={() => toast.info("Viewing client details")}
+            />
+          </div>
+
+          {/* Portfolio Analysis */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Portfolio Distribution</CardTitle>
+                <CardDescription>
+                  By project type and budget allocation
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InteractiveChart
+                  title="Budget Distribution"
+                  description="Budget allocation by project type"
+                  data={Object.entries(
+                    projects.reduce((acc, project) => {
+                      const type = project.projectType || "Unspecified";
+                      acc[type] = (acc[type] || 0) + (project.budget || 0);
+                      return acc;
+                    }, {} as Record<string, number>)
+                  ).map(([type, budget]) => ({
+                    name: type,
+                    value: budget,
+                  }))}
+                  type="pie"
+                  dataKey="value"
+                  // nameKey="name"
+                  onDrillDown={handleDrillDown}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Timeline Overview</CardTitle>
+                <CardDescription>
+                  Project distribution across timeline
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <InteractiveChart
+                  type="line"
+                  title="Project Timeline Distribution"
+                  description="Projects by start date and duration"
+                  data={projects
+                    .map((p) => ({
+                      name: p.name,
+                      startDate: p.startDate
+                        ? new Date(p.startDate).getTime()
+                        : 0,
+                      endDate: p.endDate
+                        ? new Date(p.endDate).getTime()
+                        : new Date().getTime(),
+                      budget: p.budget || 0,
+                    }))
+                    .sort((a, b) => a.startDate - b.startDate)}
+                  // type="scatter"
+                  xAxisKey="startDate"
+                  dataKey="budget"
+                  onDrillDown={handleDrillDown}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Project Health Matrix */}
+          <Card className="mt-6">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Executive Scorecard
-              </CardTitle>
-              <CardDescription>Key performance indicators with targets and thresholds</CardDescription>
+              <CardTitle>Project Health Overview</CardTitle>
+              <CardDescription>
+                Comprehensive project status analysis
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {executiveScorecard.map((item) => (
-                  <div key={item.metric} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">{item.metric}</span>
-                      <Badge variant={item.status === 'good' ? 'default' : item.status === 'warning' ? 'secondary' : 'destructive'}>
-                        {item.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-2xl font-bold">{item.current}%</span>
-                      <span className="text-sm text-muted-foreground">of {item.target}%</span>
-                    </div>
-                    <Progress value={item.current} className="h-2" />
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Budget Health */}
+                <div className="space-y-2">
+                  <h4 className="font-medium">Budget Variance</h4>
+                  <Progress
+                    value={
+                      (projects.filter(
+                        (p) => (p.totalSpend || 0) <= (p.budget || 0)
+                      ).length /
+                        Math.max(projects.length, 1)) *
+                      100
+                    }
+                    className="h-2"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {
+                      projects.filter(
+                        (p) => (p.totalSpend || 0) <= (p.budget || 0)
+                      ).length
+                    }{" "}
+                    projects within budget
+                  </p>
+                </div>
+
+                {/* Milestone Progress */}
+                <div className="space-y-2">
+                  <h4 className="font-medium">Milestone Completion</h4>
+                  <Progress
+                    value={
+                      (projects.reduce(
+                        (sum, p) =>
+                          sum +
+                          (p.milestones?.filter((m) => m.endDate)?.length || 0),
+                        0
+                      ) /
+                        Math.max(
+                          projects.reduce(
+                            (sum, p) => sum + (p.milestones?.length || 0),
+                            0
+                          ),
+                          1
+                        )) *
+                      100
+                    }
+                    className="h-2"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {projects.reduce(
+                      (sum, p) =>
+                        sum +
+                        (p.milestones?.filter((m) => m.endDate)?.length || 0),
+                      0
+                    )}{" "}
+                    milestones completed
+                  </p>
+                </div>
+
+                {/* Client Distribution */}
+                <div className="space-y-2">
+                  <h4 className="font-medium">Client Engagement</h4>
+                  <Progress
+                    value={
+                      (new Set(projects.map((p) => p.clientId)).size /
+                        Math.max(clients.length, 1)) *
+                      100
+                    }
+                    className="h-2"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {new Set(projects.map((p) => p.clientId)).size} active
+                    clients
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Enhanced KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <EnhancedStatCard
-              title="Active Projects"
-              value={24}
-              icon={Building2}
-              description="Currently in progress"
-              trend={{
-                value: 12,
-                label: "from last month",
-                data: [{ value: 20 }, { value: 22 }, { value: 21 }, { value: 24 }]
-              }}
-              threshold={{
-                status: 'good',
-                message: 'Project count within optimal range'
-              }}
-              comparison={{
-                period: 'Last quarter',
-                value: '21',
-                change: 14
-              }}
-              onClick={() => toast.info("Viewing active projects breakdown")}
-            />
-            <EnhancedStatCard
-              title="Total Revenue"
-              value="₹50M"
-              icon={DollarSign}
-              description="This fiscal year"
-              trend={{
-                value: 8,
-                label: "growth rate",
-                data: [{ value: 45 }, { value: 47 }, { value: 49 }, { value: 50 }]
-              }}
-              threshold={{
-                status: 'warning',
-                message: 'Revenue slightly below target'
-              }}
-              comparison={{
-                period: 'Same period last year',
-                value: '₹46M',
-                change: 8
-              }}
-              onClick={() => toast.info("Opening revenue breakdown")}
-            />
-            <EnhancedStatCard
-              title="Monthly Growth"
-              value="15.2%"
-              icon={TrendingUp}
-              description="Compared to last month"
-              trend={{
-                value: 3.2,
-                label: "improvement",
-                data: [{ value: 12 }, { value: 13.5 }, { value: 14.8 }, { value: 15.2 }]
-              }}
-              threshold={{
-                status: 'good',
-                message: 'Growth exceeding expectations'
-              }}
-              onClick={() => toast.info("Viewing growth analytics")}
-            />
-            <EnhancedStatCard
-              title="Team Utilization"
-              value="87%"
-              icon={Users}
-              description="Resource efficiency"
-              trend={{
-                value: -2,
-                label: "from last week",
-                data: [{ value: 89 }, { value: 88 }, { value: 89 }, { value: 87 }]
-              }}
-              threshold={{
-                status: 'warning',
-                message: 'Utilization below optimal threshold'
-              }}
-              onClick={() => toast.info("Opening utilization matrix")}
-            />
-          </div>
-
-          {/* Advanced Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <InteractiveChart
-              title="Revenue vs Expense vs Forecast"
-              description="6-month financial overview with predictive trends"
-              data={revenueData}
-              type="line"
-              dataKey="revenue"
-              secondaryDataKey="forecast"
-              xAxisKey="month"
-              timeRanges={['30d', '90d', '6m', '1y']}
-              onDrillDown={handleDrillDown}
-              showComparison={true}
-            />
-
-            <InteractiveChart
-              title="Department Performance Matrix"
-              description="Efficiency and utilization by department"
-              data={departments}
-              type="bar"
-              dataKey="efficiency"
-              secondaryDataKey="utilization"
-              xAxisKey="department"
-              onDrillDown={handleDrillDown}
-            />
-          </div>
+          {/* </div> */}
         </TabsContent>
 
         <TabsContent value="projects" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <EnhancedStatCard
-              title="On-Time Projects"
-              value="18"
-              icon={Calendar}
-              description="Meeting deadlines"
-              trend={{ value: 5, label: "this month" }}
-              threshold={{ status: 'good', message: 'Excellent project delivery performance' }}
-              onClick={() => toast.info("Viewing on-time project details")}
-            />
-            <EnhancedStatCard
-              title="At Risk Projects"
-              value="3"
-              icon={AlertTriangle}
-              description="Requiring attention"
-              trend={{ value: -1, label: "vs last month" }}
-              threshold={{ status: 'warning', message: 'Monitor risk mitigation progress' }}
-              onClick={() => toast.info("Opening risk assessment")}
-            />
-            <EnhancedStatCard
-              title="Cost Overruns"
-              value="2"
+              title="Project Budget"
+              value={`₹${projects
+                .reduce((sum, p) => sum + (p.budget || 0), 0)
+                .toLocaleString()}`}
               icon={DollarSign}
-              description="Exceeding budget"
-              threshold={{ status: 'critical', message: 'Immediate cost control needed' }}
-              onClick={() => toast.info("Opening cost overrun analysis")}
+              description="Total project budgets"
+              trend={{
+                value: projects.filter((p) => p.budget).length,
+                label: "budgeted projects",
+                data: projects.map((p) => ({ value: p.budget || 0 })),
+              }}
+              threshold={{
+                status:
+                  projects.filter((p) => p.budget).length > 0
+                    ? "good"
+                    : "warning",
+                message:
+                  projects.filter((p) => p.budget).length > 0
+                    ? "Budget data available"
+                    : "No budget data",
+              }}
             />
             <EnhancedStatCard
-              title="Quality Score"
-              value="8.7/10"
+              title="Budget Usage"
+              value={`${(
+                (projects.reduce((sum, p) => sum + (p.totalSpend || 0), 0) /
+                  projects.reduce((sum, p) => sum + (p.budget || 0), 0)) *
+                100
+              ).toFixed(1)}%`}
+              icon={Target}
+              description="Budget utilization"
+              trend={{
+                value: projects.filter((p) => p.totalSpend && p.budget).length,
+                label: "tracked",
+                data: projects.map((p) => ({
+                  value: ((p.totalSpend || 0) / (p.budget || 1)) * 100,
+                })),
+              }}
+              threshold={{
+                status:
+                  (projects.reduce((sum, p) => sum + (p.totalSpend || 0), 0) /
+                    projects.reduce((sum, p) => sum + (p.budget || 0), 0)) *
+                    100 <=
+                  100
+                    ? "good"
+                    : "warning",
+                message: "Budget utilization status",
+              }}
+            />
+
+            <EnhancedStatCard
+              title="Average Contingency"
+              value={`${(
+                projects.reduce((sum, p) => sum + (p.contingency || 0), 0) /
+                (projects.filter((p) => p.contingency).length || 1)
+              ).toLocaleString("en-IN", {
+                style: "currency",
+                currency: "INR",
+                maximumFractionDigits: 0,
+              })}
+              `}
               icon={Shield}
-              description="Average project quality"
-              trend={{ value: 2, label: "improvement" }}
-              threshold={{ status: 'good', message: 'Quality standards maintained' }}
-              onClick={() => toast.info("Viewing quality metrics")}
+              description="Per project contingency"
+              trend={{
+                value: projects.filter((p) => p.contingency).length,
+                label: "projects with contingency",
+                data: projects.map((p) => ({
+                  value: p.contingency || 0,
+                })),
+              }}
+              threshold={{
+                status:
+                  projects.filter((p) => p.contingency).length >
+                  projects.length * 0.5
+                    ? "good"
+                    : "warning",
+                message: "Contingency allocation coverage",
+              }}
             />
           </div>
 
-          <ExpandableDataTable
-            title="Project Performance Matrix"
-            description="Comprehensive project tracking with expandable details"
-            data={projects}
-            columns={enhancedProjectColumns}
-            expandableContent={projectExpandableContent}
-            searchKey="name"
-            filters={[
-              { key: 'status', label: 'Status', options: ['In Progress', 'Completed', 'Planning', 'On Hold'] },
-              { key: 'riskLevel', label: 'Risk Level', options: ['Low', 'Medium', 'High'] }
-            ]}
-            onRowAction={handleProjectAction}
-          />
+          {projects.length > 0 ? (
+            <>
+              <ExpandableDataTable
+                title="Project Performance Matrix"
+                description="Comprehensive project tracking with expandable details"
+                data={(projects || [])
+                  .map((p) => {
+                    // Ensure we have a valid project object
+                    if (!p) return null;
+
+                    const client = p.client || {};
+                    const clientName =
+                      typeof client === "object"
+                        ? client.name || client.email || client.id || "N/A"
+                        : String(client || "N/A");
+
+                    // Transform the project data with safe accessors
+                    return {
+                      ...p,
+                      clientName,
+                      location: p.location || "N/A",
+                      projectType: p.projectType || "N/A",
+                      budget: typeof p.budget === "number" ? p.budget : 0,
+                      totalSpend:
+                        typeof p.totalSpend === "number" ? p.totalSpend : 0,
+                      startDate: p.startDate || null,
+                      endDate: p.endDate || null,
+                      milestones: Array.isArray(p.milestones)
+                        ? p.milestones
+                        : [],
+                      tasks: Array.isArray(p.tasks) ? p.tasks : [],
+                      members: Array.isArray(p.members) ? p.members : [],
+                    };
+                  })
+                  .filter(Boolean)}
+                columns={enhancedProjectColumns}
+                expandableContent={projectExpandableContent}
+                searchKey="name"
+                filters={[
+                  {
+                    key: "projectType",
+                    label: "Project Type",
+                    options: [
+                      "Commercial",
+                      "Residential",
+                      "Industrial",
+                      "Infrastructure",
+                    ].filter(Boolean),
+                  },
+                  {
+                    key: "location",
+                    label: "Location",
+                    options: Array.from(
+                      new Set(
+                        (projects || []).map((p) => p?.location).filter(Boolean)
+                      )
+                    ),
+                  },
+                ]}
+                onRowAction={handleProjectAction}
+              />
+
+              {/* Cost and Resource Analysis */}
+              <div className="grid grid-cols-1  gap-6 mt-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Budget vs Actual Spend</CardTitle>
+                    <CardDescription>Project cost analysis</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <InteractiveChart
+                      title="Cost Comparison"
+                      description="Budget allocation and utilization"
+                      data={projects.map((p) => ({
+                        name: p.name,
+                        budget: p.budget || 0,
+                        spent: p.totalSpend || 0,
+                        variance: p.budget
+                          ? ((p.totalSpend || 0) / p.budget) * 100 - 100
+                          : 0,
+                      }))}
+                      type="bar"
+                      dataKey="budget"
+                      secondaryDataKey="spent"
+                      xAxisKey="name"
+                      onDrillDown={handleDrillDown}
+                      showComparison={true}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <div className="text-center text-muted-foreground py-12">
+              No project data available.
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="financials" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <EnhancedStatCard
-              title="Cash Flow"
-              value="₹8.2M"
-              icon={Activity}
-              description="Monthly net cash flow"
-              trend={{ value: 12, label: "improvement" }}
-              threshold={{ status: 'good', message: 'Healthy cash flow position' }}
+              title="Total Payments"
+              value={`₹${payments
+                .reduce((sum, p) => sum + (p.amount || 0), 0)
+                .toLocaleString()}`}
+              icon={DollarSign}
+              description="Total payments received"
+              trend={{
+                value: payments.length,
+                label: "payments",
+                data: payments.map((p) => ({ value: p.amount || 0 })),
+              }}
+              threshold={{
+                status: payments.length > 0 ? "good" : "warning",
+                message:
+                  payments.length > 0
+                    ? "Payment records present"
+                    : "No payment records",
+              }}
             />
             <EnhancedStatCard
-              title="Receivables"
-              value="₹12M"
+              title="Total Invoices"
+              value={`₹${invoices
+                .reduce((sum, inv) => sum + (inv.total || 0), 0)
+                .toLocaleString()}`}
               icon={Clock}
-              description="Outstanding payments"
-              trend={{ value: -5, label: "reduction" }}
-              threshold={{ status: 'warning', message: 'Monitor collection efforts' }}
+              description="Total invoiced amount"
+              trend={{
+                value: invoices.length,
+                label: "invoices",
+                data: invoices.map((inv) => ({ value: inv.total || 0 })),
+              }}
+              threshold={{
+                status: invoices.length > 0 ? "good" : "warning",
+                message: "Outstanding invoices",
+              }}
             />
             <EnhancedStatCard
-              title="Profit Margin"
-              value="18.5%"
-              icon={TrendingUp}
-              description="Net profit margin"
-              trend={{ value: 2.3, label: "increase" }}
-              threshold={{ status: 'good', message: 'Margin above industry average' }}
-            />
-            <EnhancedStatCard
-              title="Cost Control"
-              value="92%"
+              title="Budget Utilization"
+              value={`${(
+                (projects.reduce((sum, p) => sum + (p.totalSpend || 0), 0) /
+                  projects.reduce((sum, p) => sum + (p.budget || 0), 0)) *
+                100
+              ).toFixed(1)}%`}
               icon={Target}
-              description="Budget adherence"
-              trend={{ value: -3, label: "vs target" }}
-              threshold={{ status: 'warning', message: 'Cost control measures needed' }}
+              description="Total spend vs budget"
+              trend={{
+                value: projects.filter((p) => p.totalSpend && p.budget).length,
+                label: "tracked projects",
+              }}
+              threshold={{
+                status:
+                  projects.filter((p) => p.totalSpend && p.budget).length > 0
+                    ? "good"
+                    : "warning",
+                message: "Budget tracking status",
+              }}
             />
           </div>
 
@@ -728,175 +1207,9 @@ Report End - Generated by MD Dashboard System
             showComparison={true}
           />
         </TabsContent>
-
-        <TabsContent value="team" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <EnhancedStatCard
-              title="Team Efficiency"
-              value="89%"
-              icon={Zap}
-              description="Overall performance"
-              trend={{ value: 4, label: "this quarter" }}
-              threshold={{ status: 'good', message: 'Team performing above expectations' }}
-            />
-            <EnhancedStatCard
-              title="Resource Utilization"
-              value="94%"
-              icon={Activity}
-              description="Optimal allocation"
-              trend={{ value: 2, label: "improvement" }}
-              threshold={{ status: 'good', message: 'Excellent resource utilization' }}
-            />
-            <EnhancedStatCard
-              title="Skill Gap Issues"
-              value="5"
-              icon={AlertTriangle}
-              description="Training needed"
-              trend={{ value: -2, label: "reduction" }}
-              threshold={{ status: 'warning', message: 'Address skill gaps proactively' }}
-            />
-            <EnhancedStatCard
-              title="Employee Satisfaction"
-              value="8.4/10"
-              icon={Users}
-              description="Latest survey results"
-              trend={{ value: 3, label: "improvement" }}
-              threshold={{ status: 'good', message: 'High employee satisfaction' }}
-            />
-          </div>
-
-          <ExpandableDataTable
-            title="Department Performance Analysis"
-            description="Detailed team metrics with drill-down capabilities"
-            data={departments}
-            columns={[
-              { key: 'department', label: 'Department', type: 'text' as const },
-              { key: 'efficiency', label: 'Efficiency %', type: 'progress' as const },
-              { key: 'utilization', label: 'Utilization %', type: 'progress' as const },
-              { 
-                key: 'issues', 
-                label: 'Open Issues', 
-                type: 'number' as const,
-                min: 0,
-                max: 100,
-                step: 1
-              },
-              { key: 'actions', label: 'Actions', type: 'actions' as const }
-            ]}
-            expandableContent={(row) => (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Team Composition</h4>
-                  <div className="text-sm space-y-1">
-                    <div>Total Members: 25</div>
-                    <div>Senior: 8 | Mid: 12 | Junior: 5</div>
-                    <div>Contractor: 3 | Permanent: 22</div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Recent Activities</h4>
-                  <div className="text-sm space-y-1">
-                    <div>• Project Alpha milestone completed</div>
-                    <div>• 2 new team members onboarded</div>
-                    <div>• Training session scheduled</div>
-                  </div>
-                </div>
-              </div>
-            )}
-            searchKey="department"
-            onRowAction={handleDepartmentAction}
-          />
-        </TabsContent>
-
-        <TabsContent value="risks" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <EnhancedStatCard
-              title="High Risk Projects"
-              value="4"
-              icon={AlertTriangle}
-              description="Requiring immediate attention"
-              threshold={{ status: 'critical', message: 'Escalate risk mitigation plans' }}
-            />
-            <EnhancedStatCard
-              title="Risk Mitigation Rate"
-              value="76%"
-              icon={Shield}
-              description="Successfully managed risks"
-              trend={{ value: 8, label: "improvement" }}
-              threshold={{ status: 'good', message: 'Effective risk management' }}
-            />
-            <EnhancedStatCard
-              title="Avg Risk Score"
-              value="3.2/10"
-              icon={BarChart3}
-              description="Portfolio risk level"
-              trend={{ value: -5, label: "reduction" }}
-              threshold={{ status: 'good', message: 'Risk levels under control' }}
-            />
-          </div>
-
-          <ExpandableDataTable
-            title="Project Risk Matrix"
-            description="Comprehensive risk assessment and mitigation tracking"
-            data={risks}
-            columns={[
-              { key: 'project', label: 'Project', type: 'text' as const },
-              { 
-                key: 'riskLevel', 
-                label: 'Risk Level', 
-                type: 'badge' as const,
-                options: ['Low', 'Medium', 'High']
-              },
-              { 
-                key: 'probability', 
-                label: 'Probability %', 
-                type: 'progress' as const 
-              },
-              { 
-                key: 'impact', 
-                label: 'Impact', 
-                type: 'badge' as const,
-                options: ['Minor', 'Moderate', 'Major', 'Critical']
-              },
-              { 
-                key: 'mitigation', 
-                label: 'Mitigation Strategy', 
-                type: 'text' as const 
-              },
-              { key: 'actions', label: 'Actions', type: 'actions' as const }
-            ]}
-            expandableContent={(row) => (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Risk Details</h4>
-                  <div className="text-sm space-y-1">
-                    <div>Risk Category: {row.category}</div>
-                    <div>Last Assessment: {row.lastAssessment}</div>
-                    <div>Next Review: {row.nextReview}</div>
-                    <div>Assigned Owner: {row.owner}</div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Mitigation Actions</h4>
-                  <div className="text-sm space-y-1">
-                    {row.mitigationActions.map((action, index) => (
-                      <div key={index}>• {action}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-            searchKey="project"
-            filters={[
-              { key: 'riskLevel', label: 'Risk Level', options: ['Low', 'Medium', 'High'] },
-              { key: 'impact', label: 'Impact', options: ['Minor', 'Moderate', 'Major', 'Critical'] }
-            ]}
-            onRowAction={handleRiskAction}
-          />
-        </TabsContent>
       </Tabs>
     </div>
-  )
-}
+  );
+};
 
-export default MDDashboard
+export default MDDashboard;
