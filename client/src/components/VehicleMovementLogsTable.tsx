@@ -26,11 +26,13 @@ interface VehicleMovement {
 interface VehicleMovementLogsTableProps {
   vehicleMovementLogs: VehicleMovement[];
   onRefresh: () => void;
+  userID?: string;
 }
 
 const VehicleMovementLogsTable: React.FC<VehicleMovementLogsTableProps> = ({ 
   vehicleMovementLogs, 
-  onRefresh 
+  onRefresh ,
+  userID
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -190,6 +192,7 @@ const VehicleMovementLogsTable: React.FC<VehicleMovementLogsTableProps> = ({
 
       {showAddModal && (
         <AddVehicleMovementModal
+          userID={userID}
           onClose={() => setShowAddModal(false)}
           onSuccess={handleAddSuccess}
         />

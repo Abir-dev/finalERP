@@ -84,6 +84,9 @@ import MaintenanceVehiclesView from "@/components/MaintenanceVehiclesView";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
+import { useUserFilter } from "@/contexts/UserFilterContext";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import { Textarea } from "@/components/ui/textarea";
 
 const toast2 = toast;
@@ -219,7 +222,7 @@ type MaintenanceSchedule = {
     notes?: string;
 };
 
-const StoreDashboard = () => {
+const StoreDashboardContent = () => {
     const [isGRNModalOpen, setIsGRNModalOpen] = useState(false);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -281,10 +284,18 @@ const StoreDashboard = () => {
 
     const { toast } = useToast();
     const { user } = useUser();
-    const userID: string = user?.id || "";
+    
+    // Use UserFilter Context
+    const { 
+        targetUserId, 
+        selectedUser, 
+        currentUser,
+        setSelectedUserId
+    } = useUserFilter();
+    const userID = targetUserId || user?.id || "";
 
     // Admin user selection state
-    const [selectedUserId, setSelectedUserId] = useState<string>("");
+
     const [allUsers, setAllUsers] = useState<User[]>([]);
 
     const [inventory, setInventory] = useState<any[]>([]);
@@ -351,6 +362,12 @@ const StoreDashboard = () => {
             notes: ''
         });
     };
+
+    // Auto-reset on page change
+    useEffect(() => {
+        // Reset to current user on page load/change
+        setSelectedUserId(null);
+    }, []); // Empty dependency - runs once on mount
 
     const fetchAllUsers = async () => {
         if (!user) return;
@@ -528,7 +545,7 @@ const StoreDashboard = () => {
         if (!user?.id) return;
 
         // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-        const targetUserId = selectedUserId || user.id;
+       
 
         const token =
             sessionStorage.getItem("jwt_token") ||
@@ -536,7 +553,7 @@ const StoreDashboard = () => {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         try {
-            const response = await axios.get(`${API_URL}/staff/store-staff?userId=${targetUserId}`, {
+            const response = await axios.get(`${API_URL}/staff/store-staff?userId=${userID}`, {
                 headers,
             });
             setStoreStaff(response.data || []);
@@ -554,7 +571,7 @@ const StoreDashboard = () => {
         if (!user?.id) return;
 
         // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-        const targetUserId = selectedUserId || user.id;
+        
 
         const token =
             sessionStorage.getItem("jwt_token") ||
@@ -562,7 +579,7 @@ const StoreDashboard = () => {
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
         try {
-            const response = await axios.get(`${API_URL}/vendors/user/${targetUserId}`, {
+            const response = await axios.get(`${API_URL}/vendors/user/${userID}`, {
                 headers,
             });
             setVendors(response.data || []);
@@ -579,8 +596,7 @@ const StoreDashboard = () => {
     const fetchTransfersData = async () => {
         if (!user?.id) return;
 
-        // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-        const targetUserId = selectedUserId || user.id;
+        
 
         const token =
             sessionStorage.getItem("jwt_token") ||
@@ -589,7 +605,7 @@ const StoreDashboard = () => {
 
         try {
             const response = await axios.get(
-                `${API_URL}/store/transfers?userId=${targetUserId}`,
+                `${API_URL}/store/transfers?userId=${userID}`,
                 { headers }
             );
             setTransfers(response.data || []);
@@ -1036,8 +1052,7 @@ const StoreDashboard = () => {
         if (!user?.id) return;
 
         // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-        const targetUserId = selectedUserId || user.id;
-        
+       
         const token =
             sessionStorage.getItem("jwt_token") ||
             localStorage.getItem("jwt_token_backup");
@@ -1046,28 +1061,28 @@ const StoreDashboard = () => {
         try {
             // Fetch inventory turnover data
             const turnoverRes = await axios.get(
-                `${API_URL}/store/analytics/turnover?userId=${targetUserId}`,
+                `${API_URL}/store/analytics/turnover?userId=${userID}`,
                 { headers }
             );
             setInventoryTurnover(turnoverRes.data);
 
             // Fetch consumption trends
             const consumptionRes = await axios.get(
-                `${API_URL}/store/analytics/consumption?userId=${targetUserId}`,
+                `${API_URL}/store/analytics/consumption?userId=${userID}`,
                 { headers }
             );
             setConsumptionTrends(consumptionRes.data);
 
             // Fetch supplier performance
             const supplierRes = await axios.get(
-                `${API_URL}/store/analytics/supplier-performance?userId=${targetUserId}`,
+                `${API_URL}/store/analytics/supplier-performance?userId=${userID}`,
                 { headers }
             );
             setSupplierPerformance(supplierRes.data);
 
             // Fetch cost analysis
             const costRes = await axios.get(
-                `${API_URL}/store/analytics/cost-analysis?userId=${targetUserId}`,
+                `${API_URL}/store/analytics/cost-analysis?userId=${userID}`,
                 { headers }
             );
             setCostAnalysis(costRes.data);
@@ -1091,11 +1106,11 @@ const StoreDashboard = () => {
         }
     }, [user]);
 
+    // Use effect to fetch data when targetUserId changes
     useEffect(() => {
-        if (!user?.id) return;
+        if (!userID) return; // Don't fetch if no user ID
 
-        // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-        const targetUserId = selectedUserId || user.id;
+        console.log("Fetching store data for user:", userID);
         
         const token =
             sessionStorage.getItem("jwt_token") ||
@@ -1104,7 +1119,7 @@ const StoreDashboard = () => {
 
         // Store Overview Data
         axios
-            .get(`${API_URL}/store/overview?userId=${targetUserId}`, { headers })
+            .get(`${API_URL}/store/overview?userId=${userID}`, { headers })
             .then((res) => {
                 setStoreOverview(res.data);
                 setRecentTransactions(res.data.recentTransactions || []);
@@ -1113,13 +1128,13 @@ const StoreDashboard = () => {
 
         // Store Inventory Data
         axios
-            .get(`${API_URL}/store/inventory-data?userId=${targetUserId}`, { headers })
+            .get(`${API_URL}/store/inventory-data?userId=${userID}`, { headers })
             .then((res) => setInventory(res.data || []))
             .catch((error) => console.error("Error fetching inventory data:", error));
 
         // Store Stock Levels
         axios
-            .get(`${API_URL}/store/stock-levels?userId=${targetUserId}`, { headers })
+            .get(`${API_URL}/store/stock-levels?userId=${userID}`, { headers })
             .then((res) => setStockData(res.data.stockData || []))
             .catch((error) => console.error("Error fetching stock levels:", error));
 
@@ -1128,7 +1143,7 @@ const StoreDashboard = () => {
 
         // Vehicle data - using new vehicle APIs
         axios
-            .get(`${API_URL}/vehicles/analytics?userId=${targetUserId}`, { headers })
+            .get(`${API_URL}/vehicles/analytics?userId=${userID}`, { headers })
             .then((res) => {
                 setVehicleKpis(res.data);
                 setTopVehicles(res.data.allVehiclesBySite || []);
@@ -1136,12 +1151,12 @@ const StoreDashboard = () => {
             .catch(() => { });
 
         axios
-            .get(`${API_URL}/vehicles/movements/list?userId=${targetUserId}`, { headers })
+            .get(`${API_URL}/vehicles/movements/list?userId=${userID}`, { headers })
             .then((res) => setVehicleMovementLogs(res.data))
             .catch(() => { });
 
         axios
-            .get(`${API_URL}/vehicles/maintenance/list?userId=${targetUserId}`, { headers })
+            .get(`${API_URL}/vehicles/maintenance/list?userId=${userID}`, { headers })
             .then((res) => {
                 setMaintenanceSchedules(res.data);
                 // Filter costly maintenance from the data
@@ -1185,21 +1200,29 @@ const StoreDashboard = () => {
 
         // Fetch material requests data
         axios
-            .get(`${API_URL}/material/material-requests/user/${targetUserId}`, {
+            .get(`${API_URL}/material/material-requests/user/${userID}`, {
                 headers,
             })
             .then((res) => setMaterialRequests(res.data || []))
             .catch((error) =>
                 console.error("Error fetching material requests:", error)
             );
-    }, [user, selectedUserId]);
+    }, [userID]); // Refetch when target user changes
 
     return (
         <div className="space-y-6">
+            {/* User Filter Component */}
+            <UserFilterComponent />
+            
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
                         Store Manager Dashboard
+                        {selectedUser && selectedUser.id !== currentUser?.id && (
+                            <span className="text-lg text-muted-foreground ml-2">
+                                - {selectedUser.name}
+                            </span>
+                        )}
                     </h1>
                     <p className="text-muted-foreground">
                         Inventory management and logistics
@@ -1222,34 +1245,7 @@ const StoreDashboard = () => {
             </div>
 
             {/* Admin User Selection */}
-            {(user?.role === 'admin' ||user?.role==='md') && (
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Users className="h-5 w-5" />
-                            <Label className="text-sm font-medium">View data for:</Label>
-                        </div>
-                        <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                            <SelectTrigger className="w-[250px]">
-                                <SelectValue placeholder="Select user to view data for" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {/* <SelectItem value={user?.id}>Current User ({user?.name})</SelectItem> */}
-                                {allUsers.filter(user => user.role === 'store').map((userItem) => (
-                                    <SelectItem key={userItem.id} value={userItem.id}>
-                                        {userItem.name} - {userItem.role}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {selectedUserId && (
-                        <div className="text-sm text-muted-foreground">
-                            Currently viewing: {allUsers.find(u => u.id === selectedUserId)?.name || 'Unknown User'}
-                        </div>
-                    )}
-                </div>
-            )}
+          
 
             <Tabs
                 defaultValue="overview"
@@ -3617,113 +3613,47 @@ const StoreDashboard = () => {
                                 <CardHeader>
                                     <CardTitle>Material Requests</CardTitle>
                                     <CardDescription>
-                                        Material requisition requests from sites
+                                        Recent material requests from sites
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-6">
+                                <CardContent>
                                     {materialRequests.length > 0 ? (
                                         <div className="space-y-4">
                                             <h3 className="font-semibold mb-2">Request Details</h3>
 
                                             {/* Status Summary */}
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                                                {getMaterialRequestStats().map((item) => (
-                                                    <div
-                                                        key={item.status}
-                                                        className="p-4 border rounded-lg"
-                                                    >
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div
-                                                                className={`w-3 h-3 rounded-full ${item.color}`}
-                                                            ></div>
-                                                            <span className="text-sm font-medium">
-                                                                {item.label}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-2xl font-bold">
-                                                            {item.count}
-                                                        </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>
+                                            {materialRequests.slice(0, 10).map((request: any) => (
+                                                <div
+                                                    key={request.id}
+                                                    className="flex items-center justify-between p-4 border rounded-lg"
+                                                >
+                                                    <div>
+                                                        <h3 className="font-medium">{request.itemName}</h3>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Quantity: {request.quantity} | Site: {request.siteName}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {new Date(request.createdAt).toLocaleDateString()}
+                                                        </p>
                                                     </div>
-                                                ))}
-                                            </div>
-
-                                            <div className="overflow-x-auto">
-                                                <table className="min-w-full text-sm border rounded-lg overflow-hidden">
-                                                    <thead>
-                                                        <tr className="bg-muted">
-                                                            <th className="p-3 text-left">Transfer ID</th>
-                                                            <th className="p-3 text-left">Site</th>
-                                                            <th className="p-3 text-left">Priority</th>
-                                                            <th className="p-3 text-left">Status</th>
-                                                            <th className="p-3 text-left">Created Date</th>
-                                                            <th className="p-3 text-left">Required By</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {materialRequests.map((request, idx) => (
-                                                            <tr
-                                                                key={request.id || idx}
-                                                                className="border-b hover:bg-muted/50"
-                                                            >
-                                                                <td className="p-3 font-medium">
-                                                                    {request.requestNumber}
-                                                                </td>
-                                                                <td className="p-3">
-                                                                    {request.site?.name ||
-                                                                        request.targetWarehouse ||
-                                                                        "N/A"}
-                                                                </td>
-                                                                <td className="p-3">
-                                                                    <Badge
-                                                                        variant={
-                                                                            request.priority === "HIGH"
-                                                                                ? "destructive"
-                                                                                : request.priority === "MEDIUM"
-                                                                                    ? "default"
-                                                                                    : "outline"
-                                                                        }
-                                                                    >
-                                                                        {request.priority || "MEDIUM"}
-                                                                    </Badge>
-                                                                </td>
-                                                                <td className="p-3">
-                                                                    <Badge
-                                                                        variant={
-                                                                            request.status === "APPROVED" ||
-                                                                                request.status === "COMPLETED"
-                                                                                ? "default"
-                                                                                : request.status === "PENDING"
-                                                                                    ? "outline"
-                                                                                    : "destructive"
-                                                                        }
-                                                                    >
-                                                                        {request.status || "PENDING"}
-                                                                    </Badge>
-                                                                </td>
-                                                                <td className="p-3">
-                                                                    {request.createdAt
-                                                                        ? new Date(
-                                                                            request.createdAt
-                                                                        ).toLocaleDateString()
-                                                                        : "N/A"}
-                                                                </td>
-                                                                <td className="p-3">
-                                                                    {request.requiredBy
-                                                                        ? new Date(
-                                                                            request.requiredBy
-                                                                        ).toLocaleDateString()
-                                                                        : "N/A"}
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                    <Badge
+                                                        variant={
+                                                            request.status === "Approved"
+                                                                ? "default"
+                                                                : request.status === "Pending"
+                                                                    ? "secondary"
+                                                                    : "destructive"
+                                                        }
+                                                    >
+                                                        {request.status}
+                                                    </Badge>
+                                                </div>
+                                            ))}
                                         </div>
                                     ) : (
                                         <div className="text-center py-8 text-muted-foreground">
-                                            No material requests found. Create material requests to
-                                            see them here.
+                                            No material requests found.
                                         </div>
                                     )}
                                 </CardContent>
@@ -3731,8 +3661,7 @@ const StoreDashboard = () => {
                         </div>
                     )}
                 </TabsContent>
-
-                <TabsContent value="vehicle-tracking" className="space-y-6">
+                                <TabsContent value="vehicle-tracking" className="space-y-6">
                     {/* Filters */}
                     <div className="flex flex-wrap gap-4 justify-between items-center mr-4">
                         {/* <Select value={vehicleType} onValueChange={setVehicleType}>
@@ -3792,7 +3721,7 @@ const StoreDashboard = () => {
               </Badge>
             </div> */}
                     </div>
-                    {vehicleSubview === "main" && (
+                                    {vehicleSubview === "main" && (
                         <>
                             {/* KPI Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -3834,6 +3763,7 @@ const StoreDashboard = () => {
                             {/* Vehicle Movement Logs Table */}
                             <VehicleMovementLogsTable
                                 vehicleMovementLogs={vehicleMovementLogs}
+                                userID={userID}
                                 onRefresh={() =>
                                     fetchVehicleData({
                                         vehicleType,
@@ -4135,8 +4065,8 @@ const StoreDashboard = () => {
                         </Card>
                     )}
                 </TabsContent>
-
-                <TabsContent value="store-staffs" className="space-y-6">
+                
+                            <TabsContent value="store-staffs" className="space-y-6">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
                             <div>
@@ -4298,8 +4228,10 @@ const StoreDashboard = () => {
                     </Card>
                 </TabsContent>
             </Tabs>
+            
+            
 
-            {/* All modals are already defined earlier in the file */}
+                    {/* All modals are already defined earlier in the file */}
     {/* Add Vehicle Modal */ }
     {
         showAddVehicleModal && (
@@ -4384,6 +4316,411 @@ const StoreDashboard = () => {
             </form>
         </DialogContent>
     </Dialog>
+
+     <Dialog open={isAddStaffModalOpen} onOpenChange={setIsAddStaffModalOpen}>
+        <DialogContent className="max-w-xl sm:max-w-2xl">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Add New Staff Member
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Enter staff details to register a new store team member
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+
+              const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+              const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+              // Get role value from state (backend expects enum values)
+              const roleEnumMap: Record<string, string> = {
+                "store-manager": "STORE_MANAGER",
+                "assistant-manager": "ASSISTANT_MANAGER",
+                "inventory-clerk": "INVENTORY_CLERK",
+                "logistics-coordinator": "LOGISTICS_COORDINATOR",
+                "warehouse-staff": "WAREHOUSE_STAFF",
+                "material-specialist": "MATERIAL_SPECIALIST",
+                "inventory-analyst": "INVENTORY_ANALYST",
+                "quality-inspector": "QUALITY_INSPECTOR",
+              };
+
+              // Get availability value (backend expects enum values)
+              const availabilityEnumMap: Record<string, string> = {
+                "full-time": "FULL_TIME",
+                "part-time": "PART_TIME",
+                contract: "CONTRACT",
+                seasonal: "SEASONAL",
+                "on-call": "ON_CALL",
+              };
+
+              // Get shift timing enum value
+              const shiftEnumMap: Record<string, string> = {
+                morning: "MORNING",
+                day: "DAY", 
+                evening: "EVENING",
+                night: "NIGHT",
+                flexible: "FLEXIBLE"
+              };
+
+              // Parse certifications
+              const certifications = staffFormData.certifications
+                ? staffFormData.certifications.split(",").map((cert) => cert.trim())
+                : [];
+
+              // Create staff data for backend
+              const staffData = {
+                fullName: staffFormData.fullName,
+                email: staffFormData.email,
+                contactNumber: staffFormData.contactNumber,
+                emergencyContact: staffFormData.emergencyContact || null,
+                address: staffFormData.address || "",
+                position: roleEnumMap[staffFormData.role] || "WAREHOUSE_STAFF",
+                experienceYears: parseInt(staffFormData.experience) || 0,
+                availabilityStatus: availabilityEnumMap[staffFormData.availability] || "FULL_TIME",
+                shiftTiming: shiftEnumMap[staffFormData.shiftPreference] || "DAY",
+                joiningDate: staffFormData.joiningDate || new Date().toISOString().split('T')[0],
+                status: "OFF_DUTY", // Initially off duty
+                certifications: certifications.length > 0 ? certifications.join(", ") : null,
+                areaOfSpecialization: staffFormData.specialization || null,
+                notes: staffFormData.notes || null,
+                createdById: userID
+              };
+
+              try {
+                // Call backend API to create staff
+                await axios.post(`${API_URL}/staff/store-staff`, staffData, { headers });
+
+                // Show success message
+                toast2.success("Staff Member Added Successfully", {
+                  description: `${staffData.fullName} has been added to the staff`,
+                });
+
+                // Refresh staff data
+                fetchStoreStaffData();
+
+                // Reset form and close modal
+                resetStaffForm();
+                setIsAddStaffModalOpen(false);
+
+              } catch (error) {
+                console.error("Error adding staff:", error);
+                toast({
+                  title: "Error",
+                  description: "Failed to add staff member",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2"
+          >
+            {/* Staff Information Tab Panel */}
+            <Tabs defaultValue="personal" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsTrigger value="personal">Personal</TabsTrigger>
+                <TabsTrigger value="professional">Professional</TabsTrigger>
+                <TabsTrigger value="qualifications">Qualifications</TabsTrigger>
+              </TabsList>
+
+              {/* Personal Information Tab */}
+              <TabsContent value="personal" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="fullName"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Full Name <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      placeholder="John Doe"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.fullName}
+                      onChange={(e) => handleStaffFormChange('fullName', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="contactNumber"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Contact <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="contactNumber"
+                      name="contactNumber"
+                      placeholder="+91 98765 43210"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.contactNumber}
+                      onChange={(e) => handleStaffFormChange('contactNumber', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="email"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Email <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="john.doe@example.com"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.email}
+                      onChange={(e) => handleStaffFormChange('email', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="emergencyContact" className="text-xs">
+                      Emergency Contact
+                    </Label>
+                    <Input
+                      id="emergencyContact"
+                      name="emergencyContact"
+                      placeholder="+91 98765 43210"
+                      className="h-8 text-sm"
+                      value={staffFormData.emergencyContact}
+                      onChange={(e) => handleStaffFormChange('emergencyContact', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="address" className="text-xs">
+                    Address
+                  </Label>
+                  <Textarea
+                    id="address"
+                    name="address"
+                    placeholder="Full address"
+                    className="resize-none text-sm"
+                    rows={2}
+                    value={staffFormData.address}
+                    onChange={(e) => handleStaffFormChange('address', e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Professional Information Tab */}
+              <TabsContent value="professional" className="space-y-3 mt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="role"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Position/Role{" "}
+                      <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Select name="role" required value={staffFormData.role} onValueChange={(value) => handleStaffFormChange('role', value)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="store-manager">
+                          Store Manager
+                        </SelectItem>
+                        <SelectItem value="assistant-manager">
+                          Assistant Manager
+                        </SelectItem>
+                        <SelectItem value="inventory-clerk">
+                          Inventory Clerk
+                        </SelectItem>
+                        <SelectItem value="logistics-coordinator">
+                          Logistics Coordinator
+                        </SelectItem>
+                        <SelectItem value="warehouse-staff">
+                          Warehouse Staff
+                        </SelectItem>
+                        <SelectItem value="material-specialist">
+                          Material Specialist
+                        </SelectItem>
+                        <SelectItem value="inventory-analyst">
+                          Inventory Analyst
+                        </SelectItem>
+                        <SelectItem value="quality-inspector">
+                          Quality Inspector
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="experience"
+                      className="text-xs flex items-center gap-1"
+                    >
+                      Experience (Years){" "}
+                      <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Input
+                      id="experience"
+                      name="experience"
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      placeholder="2"
+                      required
+                      className="h-8 text-sm"
+                      value={staffFormData.experience}
+                      onChange={(e) => handleStaffFormChange('experience', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label
+                      htmlFor="availability"
+                      className="text-xs flex items-center gap-1"
+
+
+                    >
+                      Availability{" "}
+                      <span className="text-red-500 text-xs">*</span>
+                    </Label>
+                    <Select name="availability" required value={staffFormData.availability} onValueChange={(value) => handleStaffFormChange('availability', value)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select availability" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full-time">Full-time</SelectItem>
+                        <SelectItem value="part-time">Part-time</SelectItem>
+                        <SelectItem value="contract">Contract</SelectItem>
+                        <SelectItem value="seasonal">Seasonal</SelectItem>
+                        <SelectItem value="on-call">On-Call</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="shiftPreference" className="text-xs">
+                      Shift Preference
+                    </Label>
+                    <Select name="shiftPreference" value={staffFormData.shiftPreference} onValueChange={(value) => handleStaffFormChange('shiftPreference', value)}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Select shift" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="morning">
+                          Morning (6AM-2PM)
+                        </SelectItem>
+                        <SelectItem value="day">Day (9AM-5PM)</SelectItem>
+                        <SelectItem value="evening">
+                          Evening (2PM-10PM)
+                        </SelectItem>
+                        <SelectItem value="night">Night (10PM-6AM)</SelectItem>
+                        <SelectItem value="flexible">Flexible</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="joiningDate" className="text-xs">
+                    Joining Date
+                  </Label>
+                  <Input
+                    id="joiningDate"
+                    name="joiningDate"
+                    type="date"
+                    className="h-8 text-sm"
+                    value={staffFormData.joiningDate}
+                    onChange={(e) => handleStaffFormChange('joiningDate', e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Qualifications Tab */}
+              <TabsContent value="qualifications" className="space-y-3 mt-0">
+                <div className="space-y-1">
+                  <Label htmlFor="certifications" className="text-xs">
+                    Certifications & Licenses
+                  </Label>
+                  <Input
+                    id="certifications"
+                    name="certifications"
+                    placeholder="Inventory Management, Supply Chain, etc."
+                    className="h-8 text-sm"
+                    value={staffFormData.certifications}
+                    onChange={(e) => handleStaffFormChange('certifications', e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Separate multiple certifications with commas
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="specialization" className="text-xs">
+                    Area of Specialization
+                  </Label>
+                  <Input
+                    id="specialization"
+                    name="specialization"
+                    placeholder="Procurement, Inventory Control, etc."
+                    className="h-8 text-sm"
+                    value={staffFormData.specialization}
+                    onChange={(e) => handleStaffFormChange('specialization', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="notes" className="text-xs">
+                    Notes & Special Considerations
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    name="notes"
+                    placeholder="Additional information, special skills, etc."
+                    rows={3}
+                    className="resize-none text-sm"
+                    value={staffFormData.notes}
+                    onChange={(e) => handleStaffFormChange('notes', e.target.value)}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex items-center pt-2 border-t">
+              <p className="text-xs text-muted-foreground mr-auto">
+                <span className="text-red-500">*</span> Required fields
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    resetStaffForm();
+                    setIsAddStaffModalOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm">
+                  Add Staff
+                </Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
     {/* View/Edit Staff Modal */ }
     <Dialog open={isViewStaffModalOpen} onOpenChange={setIsViewStaffModalOpen}>
@@ -4773,6 +5110,15 @@ const StoreDashboard = () => {
                 </AlertDialogContent>
             </AlertDialog>
         </div>
+    );
+};
+const StoreDashboard = () => {
+    return (
+        
+        <PageUserFilterProvider allowedRoles={['store']}>
+            <StoreDashboardContent />
+        </PageUserFilterProvider>
+        
     );
 };
 

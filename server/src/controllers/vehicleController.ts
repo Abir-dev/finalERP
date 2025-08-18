@@ -194,6 +194,7 @@ export const vehicleController = {
   async createVehicleMovement(req: Request, res: Response) {
     try {
       const { vehicleId, from, to, date } = req.body;
+      const { userId } = req.params;
 
       if (!vehicleId || !from || !to || !date) {
         return res.status(400).json({ error: "Missing required fields" });

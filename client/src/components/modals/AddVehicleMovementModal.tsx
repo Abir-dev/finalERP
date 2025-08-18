@@ -12,6 +12,7 @@ const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender
 interface AddVehicleMovementModalProps {
   onClose: () => void;
   onSuccess?: () => void;
+  userID?: string;
 }
 
 interface Vehicle {
@@ -21,7 +22,7 @@ interface Vehicle {
   registrationNumber: string;
 }
 
-const AddVehicleMovementModal: React.FC<AddVehicleMovementModalProps> = ({ onClose, onSuccess }) => {
+const AddVehicleMovementModal: React.FC<AddVehicleMovementModalProps> = ({ onClose, onSuccess, userID }) => {
   const [vehicleId, setVehicleId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -39,8 +40,9 @@ const AddVehicleMovementModal: React.FC<AddVehicleMovementModalProps> = ({ onClo
       try {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        
-        const response = await axios.get(`${API_URL}/vehicles`, { headers });
+        console.log(`Fetching vehicles for user ID: ${userID}`); // Debug log
+        const response = await axios.get(`${API_URL}/vehicles?userId=${userID}`, { headers });
+        console.log('Fetched vehicles:', response.data); // Debug log
         setVehicles(response.data || []);
       } catch (error) {
         console.error('Error fetching vehicles:', error);
