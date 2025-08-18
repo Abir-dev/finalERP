@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -109,13 +109,13 @@ const invoiceColumns: ColumnDef<Invoice>[] = [
     },
 ]
 
-const payrollColumns: ColumnDef<Employee>[] = [
+const payrollColumns: ColumnDef<any>[] = [
     {
         accessorKey: "name",
         header: "Employee",
     },
     {
-        accessorKey: "role",
+        accessorKey: "position",
         header: "Role",
     },
     {
@@ -123,18 +123,22 @@ const payrollColumns: ColumnDef<Employee>[] = [
         header: "Department",
     },
     {
-        accessorKey: "salary",
+        accessorKey: "latestNetSalary",
         header: "Salary",
         cell: ({ row }) => {
-            const salary = row.getValue("salary") as number
-            return `₹${(salary / 1000).toFixed(0)}K`
+            const salary = row.getValue("latestNetSalary") as number | null | undefined;
+            if (typeof salary === "number" && !Number.isNaN(salary)) {
+                return `₹${(salary / 1000).toFixed(0)}K`;
+            }
+            return "N/A";
         },
     },
     {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => {
-            const status = row.getValue("status") as string
+            // Backend doesn't provide status on Employee; default to Active unless leftAt is set
+            const status = (row.original as any).leftAt ? "Inactive" : "Active";
             return <Badge variant={status === "Active" ? "default" : "secondary"}>{status}</Badge>
         },
     },
@@ -152,10 +156,10 @@ const AccountsDashboard = () => {
     const [labourWages, setLabourWages] = useState([])
     const [collections, setCollections] = useState([]);
     const [invoices, setInvoices] = useState([]);
-    const [employees, setEmployees] = useState([]);
+    const [employees, setEmployees] = useState<any[]>([]);
     const [collectionTrends, setCollectionTrends] = useState([]);
     const [budgetData, setBudgetData] = useState([]);
-    const [payrollStats, setPayrollStats] = useState({ totalEmployees: 0, payrollAmount: '', avgSalary: '', compliance: '' });
+    const [payrollStats, setPayrollStats] = useState({ totalEmployees: 0, payrollAmount: '', avgSalary: '', compliance: '' }); // legacy, not displayed
     const [kpiData, setKpiData] = useState({
         totalOutstanding: 0,
         overdueAmount: 0,
@@ -172,6 +176,20 @@ const AccountsDashboard = () => {
         remaining: 0,
         projectCount: 0
     });
+
+    // Memoized Payroll KPIs derived from employees with latestNetSalary
+    const payrollKPIs = useMemo(() => {
+        const active = employees.filter(e => !e.leftAt);
+        const totalEmployees = active.length;
+        const totalPayroll = active.reduce((sum, e) => sum + (typeof e.latestNetSalary === 'number' ? e.latestNetSalary : 0), 0);
+        const countWithSalary = active.reduce((c, e) => c + (typeof e.latestNetSalary === 'number' && e.latestNetSalary > 0 ? 1 : 0), 0);
+        const avg = countWithSalary ? totalPayroll / countWithSalary : 0;
+        return {
+            totalEmployees,
+            payrollAmountLabel: `₹${(totalPayroll / 1000000).toFixed(1)}M`,
+            avgSalaryLabel: `₹${(avg / 1000).toFixed(0)}K`
+        };
+    }, [employees]);
 
     useEffect(() => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -191,7 +209,31 @@ const AccountsDashboard = () => {
             .catch(() => { });
 
         axios.get(`${API_URL}/hr/employees`, { headers })
-            .then(res => setEmployees(res.data))
+            .then(async res => {
+                const baseEmployees = res.data as any[];
+                // Fetch all salaries and map latest net salary per employee
+                try {
+                    const salariesRes = await axios.get(`${API_URL}/hr-salary/employee-salaries`, { headers });
+                    const salaries = salariesRes.data as any[];
+                    // Build latest net salary map by employeeId
+                    const latestMap = new Map<string, number>();
+                    for (const s of salaries) {
+                        const empId = s.employeeId;
+                        const current = latestMap.get(empId);
+                        const date = s.paymentDate || s.createdAt;
+                        // Store by the latest date
+                        if (!current) {
+                            latestMap.set(empId, s.netSalary || 0);
+                        }
+                    }
+                    const enriched = baseEmployees.map(e => ({ ...e, latestNetSalary: latestMap.get(e.id) ?? null }));
+                    setEmployees(enriched);
+                } catch (e) {
+                    // If salaries fetch fails, still render employees with N/A salary
+                    const enriched = baseEmployees.map(e => ({ ...e, latestNetSalary: null }));
+                    setEmployees(enriched);
+                }
+            })
             .catch(() => { });
 
         // Fetch projects data
@@ -969,24 +1011,24 @@ const AccountsDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatCard
                             title="Total Employees"
-                            value={payrollStats.totalEmployees}
+                            value={payrollKPIs.totalEmployees}
                             icon={Users}
                             description="Active staff"
-                            trend={{ value: 3, label: "vs last month" }}
-                        />
-                        <StatCard
-                            title="Payroll Amount"
-                            value={payrollStats.payrollAmount}
-                            icon={DollarSign}
-                            description="This month"
-                            trend={{ value: 5, label: "vs last month" }}
+                            trend={{ value: 0, label: "vs last month" }}
                         />
                         {/* <StatCard
-              title="Avg. Salary"
-              value={payrollStats.avgSalary}
-              icon={TrendingUp}
-              description="Per employee"
-            /> */}
+                            title="Payroll Amount"
+                            value={payrollKPIs.payrollAmountLabel}
+                            icon={DollarSign}
+                            description="Sum of latest net salaries"
+                            trend={{ value: 0, label: "vs last month" }}
+                        /> */}
+                        <StatCard
+                            title="Avg. Salary"
+                            value={payrollKPIs.avgSalaryLabel}
+                            icon={TrendingUp}
+                            description="Per active employee"
+                        />
                         <StatCard
                             title="Labour Wages"
                             value={`₹${(labourWages.reduce((sum: number, wage: any) => sum + (wage.amount || 0), 0) / 1000).toFixed(0)}K`}
