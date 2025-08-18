@@ -14,6 +14,9 @@ import { useRef } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { toast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { useUserFilter } from "@/contexts/UserFilterContext";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -450,8 +453,17 @@ const DPRModal = ({ onClose, projects }) => {
     );
 };
 
-const Projects = () => {
+const ProjectsContent = () => {
     const { user } = useUser();
+    // Use UserFilter Context
+    const { 
+        targetUserId, 
+        selectedUser, 
+        currentUser,
+        setSelectedUserId 
+    } = useUserFilter();
+    const userID = targetUserId || user?.id || ""
+    
     const [searchQuery, setSearchQuery] = useState("");
     const [view, setView] = useState("overview");
     const [showDPRModal, setShowDPRModal] = useState(false);
@@ -799,7 +811,7 @@ Add any additional notes here...
 
                 // Filter managers (roles that can manage projects)
                 const managerUsers = response.data.filter((user: User) =>
-                    ['admin', 'md', 'client_manager', 'site'].includes(user.role)
+                    ['admin', 'md', 'client_manager', 'site','project'].includes(user.role)
                 );
                 setManagers(managerUsers);
             }
@@ -910,14 +922,16 @@ Add any additional notes here...
 
     // Function to fetch projects
     const fetchProjects = async () => {
+        if (!userID) return; // Don't fetch if no user ID
         try {
             const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
+            console.log("Fetching projects for user:", userID);
             const endpoint =
-                user?.role !== "admin" && user?.id
-                    ? `${API_URL}/projects/user/${user.id}`
-                    : `${API_URL}/projects`;
+                // user?.role !== "admin" && userID
+                     `${API_URL}/projects/user/${userID}`
+                    // : `${API_URL}/projects`;
 
             const response = await axios.get(endpoint, { headers });
             setProjects(response.data);
@@ -926,8 +940,20 @@ Add any additional notes here...
         }
     };
 
+    // Auto-reset on page change
     useEffect(() => {
-        fetchProjects();
+        // Reset to current user on page load/change
+        setSelectedUserId(null);
+    }, []); // Empty dependency - runs once on mount
+
+    // Use effect to fetch data when targetUserId changes
+    useEffect(() => {
+        if (userID) {
+            fetchProjects();
+        }
+    }, [userID]); // Refetch when target user changes
+
+    useEffect(() => {
         fetchUsers();
 
         // Fetch heatmap data if needed
@@ -941,9 +967,19 @@ Add any additional notes here...
 
     return (
         <div className="space-y-4">
+            {/* User Filter Component */}
+            <UserFilterComponent />
+            
             <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Project Management</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Project Management
+                        {selectedUser && selectedUser.id !== currentUser?.id && (
+                            <span className="text-lg text-muted-foreground ml-2">
+                                - {selectedUser.name}
+                            </span>
+                        )}
+                    </h1>
                     <p className="text-muted-foreground">Manage all your construction projects in one place</p>
                 </div>
 
@@ -2733,6 +2769,14 @@ Add any additional notes here...
                 <DPRModal onClose={() => setShowDPRModal(false)} projects={projects} />
             )}
         </div>
+    );
+};
+
+const Projects = () => {
+    return (
+        <PageUserFilterProvider allowedRoles={['project']}>
+            <ProjectsContent />
+        </PageUserFilterProvider>
     );
 };
 

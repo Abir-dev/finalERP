@@ -4,6 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Download, Plus, ShoppingCart, Package, Users, TrendingUp, Loader2, AlertTriangle, ArrowLeft, Star, Sparkles, FileText } from "lucide-react";
 import { useUser } from "@/contexts/UserContext";
+import { useUserFilter } from "@/contexts/UserFilterContext";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import { User } from "@/types/user";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { PurchaseDashboard } from "@/components/purchase-management/purchase-dashboard";
@@ -229,10 +232,18 @@ const AutoStockCheck = ({
     );
   };
 
-const PurchaseManagement = () => {
+const PurchaseManagementContent = () => {
   const { user } = useUser();
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  
+  // Use UserFilter Context
+  const { 
+    targetUserId, 
+    selectedUser, 
+    currentUser,
+    setSelectedUserId 
+  } = useUserFilter();
+  
+  const userID = targetUserId || user?.id || ""
   
   const [showAllContractsModal, setShowAllContractsModal] = useState(false);
 
@@ -248,9 +259,15 @@ const PurchaseManagement = () => {
   
   const navigate = useNavigate();
 
-  // Fetch all users for admin dropdown
-  const fetchAllUsers = async () => {
-    if (!user) return;
+  // Auto-reset on page change
+  useEffect(() => {
+    // Reset to current user on page load/change
+    setSelectedUserId(null);
+  }, []); // Empty dependency - runs once on mount
+
+  // Function to fetch purchase data
+  const fetchPurchaseData = async () => {
+    if (!userID) return; // Don't fetch if no user ID
     
     try {
       const token =
@@ -258,33 +275,23 @@ const PurchaseManagement = () => {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await fetch(`${API_URL}/users`, { headers });
-      if (response.ok) {
-        const data = await response.json();
-        setAllUsers(data);
-      } else {
-        console.error("Failed to fetch all users:", response.status);
-        setAllUsers([]);
-      }
+      console.log("Fetching purchase data for user:", userID);
+      
+      // Add any purchase-specific data fetching here
+      // Example: fetch purchase orders, vendor data, etc.
+      // const purchaseResponse = await fetch(`${API_URL}/purchases?userId=${userID}`, { headers });
+      
     } catch (error) {
-      console.error('Error fetching all users:', error);
-      setAllUsers([]);
+      console.error('Error fetching purchase data:', error);
     }
   };
-+
-  // Fetch all users when component mounts (if admin)
-  useEffect(() => {
-    if (user?.role === 'admin' || 'md') {
-      fetchAllUsers();
-    }
-  }, [user,selectedUserId]);
 
-  // Reset selectedUserId when user is not admin
+  // Use effect to fetch data when targetUserId changes
   useEffect(() => {
-    if (user?.role !== 'admin'  || 'md') {
-      setSelectedUserId("");
+    if (userID) {
+      fetchPurchaseData();
     }
-  }, [user]);
+  }, [userID]); // Refetch when target user changes
 
   const [isLoading, setIsLoading] = useState({
     export: false,
@@ -865,42 +872,22 @@ const handleNewContractSubmit = async () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-      <div>
-      <h1 className="text-3xl font-bold tracking-tight">Purchase Management</h1>
-      <p className="text-muted-foreground">Manage all your purchases</p>
-      </div>
-    </div>
+      {/* User Filter Component */}
+      <UserFilterComponent />
 
-      {/* Admin User Selection */}
-      {(user?.role === 'admin' || user?.role === 'md') && (
-        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              <Label className="text-sm font-medium">View data for:</Label>
-            </div>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Select user to view data for" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={user?.id}>Current User ({user?.name})</SelectItem>
-                {allUsers.filter(user => user.role ==='site'||user.role ==='store').map((userItem) => (
-                  <SelectItem key={userItem.id} value={userItem.id}>
-                    {userItem.name} - {userItem.role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {selectedUserId && (
-            <div className="text-sm text-muted-foreground">
-              Currently viewing: {allUsers.find(u => u.id === selectedUserId)?.name || 'Unknown User'}
-            </div>
-          )}
+      <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Purchase Management
+            {selectedUser && selectedUser.id !== currentUser?.id && (
+              <span className="text-lg text-muted-foreground ml-2">
+                - {selectedUser.name}
+              </span>
+            )}
+          </h1>
+          <p className="text-muted-foreground">Manage all your purchases</p>
         </div>
-      )}
+      </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
         {/* <TabsList className="grid w-full grid-cols-5">
@@ -946,7 +933,7 @@ const handleNewContractSubmit = async () => {
             />
           </div> */}
 
-          <PurchaseDashboard selectedUserId={selectedUserId} />
+          <PurchaseDashboard selectedUserId={userID} />
         
 
         <TabsContent value="procurement" className="space-y-6">
@@ -3120,6 +3107,14 @@ const handleNewContractSubmit = async () => {
   </DialogContent>
 </Dialog>
     </div>
+  );
+};
+
+const PurchaseManagement = () => {
+  return (
+    <PageUserFilterProvider allowedRoles={['site', 'store']}>
+      <PurchaseManagementContent />
+    </PageUserFilterProvider>
   );
 };
 
