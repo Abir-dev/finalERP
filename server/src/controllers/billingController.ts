@@ -27,11 +27,11 @@ export const billingController = {
       });
       await recalculateProjectTotalSpend(projectId)
       // Send notification to client
-      await prismaNotificationService.createNotification({
-        to: invoice.clientId,
-        type: 'invoice',
-        message: `A new invoice has been created for you.`,
-      });
+      // await prismaNotificationService.createNotification({
+      //   to: invoice.clientId,
+      //   type: 'invoice',
+      //   message: `A new invoice has been created for you.`,
+      // });
       
       res.status(201).json(invoice);
     } catch (error) {
