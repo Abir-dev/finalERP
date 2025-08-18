@@ -887,6 +887,8 @@ model Design {
   createdById String       @map("created_by_id") @db.Uuid
   createdBy   User         @relation("DesignCreator", fields: [createdById], references: [id], onDelete: Cascade)
   projectId   String       @db.Uuid
+  files       String[]     @db.Text
+  images      String[]     @db.Text
 }
 
 enum DesignStatus {
