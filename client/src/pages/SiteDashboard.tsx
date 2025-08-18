@@ -87,6 +87,9 @@ import {
 } from "@/components/ui/sheet";
 import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { useUserFilter } from "@/contexts/UserFilterContext";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -449,9 +452,8 @@ const issueColumns: ColumnDef<Issue>[] = [
 ];
 
 // Add subview state and selected task state
-const SiteDashboard = () => {
+const SiteDashboardContent = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
   // Modal states
   const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
   const [isWPRModalOpen, setIsWPRModalOpen] = useState(false);
@@ -525,9 +527,16 @@ const SiteDashboard = () => {
   const [selectedDeleteTask, setSelectedDeleteTask] = useState<Task | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  // const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
-
+  const { user } = useUser()
+  const { 
+    targetUserId, 
+    selectedUser, 
+    currentUser,
+    setSelectedUserId 
+  } = useUserFilter();
+  const userID = targetUserId || user?.id || "";
   // Progress Reports Data
   const [dprs, setDprs] = useState<any[]>([]);
   const [wprs, setWprs] = useState<any[]>([]);
@@ -548,24 +557,22 @@ const SiteDashboard = () => {
 
   // Fetch data when user or selectedUserId changes
   useEffect(() => {
-    if (user?.id) {
+    if (userID) {
       fetchUsers();
       // fetchUsers();
       fetchProjects();
-      if (user?.role === "admin" || "md") {
         fetchAllUsers();
-      }
       fetchProgressReports();
       fetchTasks();
     }
-  }, [user, selectedUserId]);
+  }, [userID]);
 
   // Reset selectedUserId when user is not admin
-  useEffect(() => {
-    if (user?.role !== "admin" || "md") {
-      setSelectedUserId("");
-    }
-  }, [user]);
+  // useEffect(() => {
+  //   if (user?.role !== "admin" || "md") {
+  //     setSelectedUserId("");
+  //   }
+  // }, [user]);
 
   const fetchUsers = async () => {
     try {
@@ -1068,15 +1075,13 @@ const SiteDashboard = () => {
       if (!user?.id) return;
 
       // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-      const targetUserId = selectedUserId || user.id;
-
       const token =
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
 
       // Fetch DPRs
       const dprResponse = await axios.get(
-        `${API_URL}/progress-reports/dpr/${targetUserId}`,
+        `${API_URL}/progress-reports/dpr/${userID}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -1206,8 +1211,6 @@ const SiteDashboard = () => {
       if (!user?.id) return;
 
       // Use selectedUserId if admin has selected a user, otherwise use current user's ID
-      const targetUserId = selectedUserId || user.id;
-
       const token =
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
@@ -1216,7 +1219,7 @@ const SiteDashboard = () => {
       // const allTasks: Task[] = [];
 
       const response = await axios.get(
-        `${API_URL}/projects/${targetUserId}/tasks`,
+        `${API_URL}/projects/${userID}/tasks`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -1292,10 +1295,8 @@ const SiteDashboard = () => {
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
 
-      const targetUserId = selectedUserId || user.id;
-
       const response = await axios.put(
-        `${API_URL}/projects/${targetUserId}/tasks/${taskId}`,
+        `${API_URL}/projects/${userID}/tasks/${taskId}`,
         updates,
         {
           headers: {
@@ -1411,7 +1412,7 @@ const SiteDashboard = () => {
     projectId: string;
   }) => {
     try {
-      if (!user?.id) {
+      if (!userID) {
         toast.error("User not authenticated");
         return;
       }
@@ -1426,7 +1427,7 @@ const SiteDashboard = () => {
         localStorage.getItem("jwt_token_backup");
 
       const response = await axios.post(
-        `${API_URL}/progress-reports/dpr/${user.id}`,
+        `${API_URL}/progress-reports/dpr/${userID}`,
         {
           projectId: formData.projectId,
           workDone: formData.workDone,
@@ -1510,7 +1511,7 @@ const SiteDashboard = () => {
         localStorage.getItem("jwt_token_backup");
 
       const response = await axios.post(
-        `${API_URL}/progress-reports/wpr/${user.id}`,
+        `${API_URL}/progress-reports/wpr/${userID}`,
         {
           projectId: formData.projectId,
           weekStart: formData.weekStart,
@@ -1628,7 +1629,7 @@ const SiteDashboard = () => {
       console.log("Sending task data:", taskData); // For debugging
 
       const response = await axios.post(
-        `${API_URL}/projects/${user?.id}/tasks`,
+        `${API_URL}/projects/${userID}/tasks`,
         taskData,
         {
           headers: {
@@ -2451,6 +2452,7 @@ const SiteDashboard = () => {
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     // Fetch purchase orders
+    if(userID){
     axios
       .get(`${API_URL}/purchase-orders`, { headers })
       .then((res) => setPurchaseOrders(res.data))
@@ -2539,7 +2541,8 @@ const SiteDashboard = () => {
       .get(`${API_URL}/equipment`, { headers })
       .then((res) => setEquipmentList(res.data))
       .catch(() => {});
-  }, []);
+    }
+  }, [userID]);
 
   // Ensure costData and laborData are always defined
   const safeCostData = Array.isArray(costData) ? costData : [];
@@ -2547,10 +2550,16 @@ const SiteDashboard = () => {
 
   return (
     <div className="space-y-6">
+       <UserFilterComponent/>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Site Manager Dashboard
+            {selectedUser && selectedUser.id !== currentUser?.id && (
+              <span className="text-lg text-muted-foreground ml-2">
+                - {selectedUser.name}
+              </span>
+            )}
           </h1>
           <p className="text-muted-foreground">
             On-site operations and progress tracking
@@ -2572,7 +2581,7 @@ const SiteDashboard = () => {
         </div>
       </div>
       {/* Admin User Selection */}
-      {(user?.role === "admin" || user?.role === "md") && (
+      {/* {(user?.role === "admin" || user?.role === "md") && (
         <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -2605,7 +2614,7 @@ const SiteDashboard = () => {
             </div>
           )}
         </div>
-      )}
+      )} */}
       <Tabs defaultValue="timeline" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
@@ -8444,7 +8453,7 @@ const SiteDashboard = () => {
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
                 <div className="font-medium">
-                  Report ID: {selectedReport?.id || "N/A"}
+                  {/* Report ID: {selectedReport?.id || "N/A"} */}
                 </div>
                 <div>
                   Submitted:{" "}
@@ -9119,6 +9128,13 @@ const SiteDashboard = () => {
   );
 };
 
+const SiteDashboard = () =>{
+  return (
+    <PageUserFilterProvider allowedRoles={["site"]}>
+    <SiteDashboardContent/>
+    </PageUserFilterProvider>
+  )
+}
 export default SiteDashboard;
 
 // Add this component above the SiteDashboard export
