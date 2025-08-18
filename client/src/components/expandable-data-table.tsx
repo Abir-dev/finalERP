@@ -38,6 +38,7 @@ interface ExpandableTableProps {
     max?: number
     step?: number
     multiple?: boolean
+    className?: string
     render?: (value: any, row: any) => React.ReactNode
   }>
   expandableContent?: (row: any) => React.ReactNode
@@ -562,7 +563,7 @@ export function ExpandableDataTable({
                   {columns.map((column) => (
                     <th
                       key={column.key}
-                      className="h-12 px-4 text-left align-middle font-medium cursor-pointer hover:bg-muted/50"
+                      className={`h-12 px-4 text-left align-middle font-medium cursor-pointer hover:bg-muted/50 ${column.className || ''}`}
                       onClick={() => handleSort(column.key)}
                     >
                       <div className="flex items-center gap-2">
@@ -606,7 +607,7 @@ export function ExpandableDataTable({
                           </td>
                         )}
                         {columns.map((column) => (
-                          <td key={column.key} className="p-4 align-middle">
+                          <td key={column.key} className={`p-4 align-middle ${column.className || ''}`}>
                             {renderCellContent(column, row[column.key], row)}
                           </td>
                         ))}

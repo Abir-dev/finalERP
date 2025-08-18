@@ -237,22 +237,35 @@ const HR = () => {
             type: 'text' as const,
             render: (value: any, row: any) => (
                 <div className="flex items-center gap-3">
-                    <Avatar>
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                         <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${row.name}`} />
-                        <AvatarFallback>{row.name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">{row.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                        <p className="font-medium">{row.name}</p>
+                    <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base truncate">{row.name}</p>
+                        <p className="text-xs text-muted-foreground truncate sm:hidden">{row.position}</p>
+                        <p className="text-xs text-muted-foreground truncate sm:hidden">{row.department}</p>
                     </div>
                 </div>
             )
         },
-        { key: 'position', label: 'Position', type: 'text' as const },
-        { key: 'department', label: 'Department', type: 'text' as const },
+        { 
+            key: 'position', 
+            label: 'Position', 
+            type: 'text' as const,
+            className: 'hidden sm:table-cell'
+        },
+        { 
+            key: 'department', 
+            label: 'Department', 
+            type: 'text' as const,
+            className: 'hidden sm:table-cell'
+        },
         {
             key: 'joinedAt',
             label: 'Joined At',
             type: 'text' as const,
+            className: 'hidden md:table-cell',
             render: (value: any) => value ?
                 new Date(value).toLocaleDateString() :
                 <Badge variant="secondary">N/A</Badge>
@@ -261,6 +274,7 @@ const HR = () => {
             key: 'netSalary',
             label: 'Net Salary',
             type: 'text' as const,
+            className: 'hidden lg:table-cell',
             render: (value: any, row: any) => {
                 const employeeSalary = employeeSalaries.find(salary => 
                     salary.employeeId === row.id
@@ -275,22 +289,24 @@ const HR = () => {
             label: 'Actions',
             type: 'actions' as const,
             render: (value: any, row: any) => (
-                <div className="flex gap-2">
+                <div className="flex gap-1 sm:gap-2">
                     <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => handleEditEmployee(row)}
+                        className="h-8 px-2 sm:h-9 sm:px-3"
                     >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
+                        <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Edit</span>
                     </Button>
                     <Button 
                         variant="destructive" 
                         size="sm" 
                         onClick={() => handleDeleteEmployee(row)}
+                        className="h-8 px-2 sm:h-9 sm:px-3"
                     >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Delete</span>
                     </Button>
                 </div>
             )
@@ -379,13 +395,14 @@ const HR = () => {
             type: 'text' as const,
             render: (value: any, row: any) => (
                 <div className="flex items-center gap-3">
-                    <Avatar>
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                         <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${row.employee?.name}`} />
-                        <AvatarFallback>{row.employee?.name?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">{row.employee?.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                        <p className="font-medium">{row.employee?.name}</p>
-                        <p className="text-xs text-muted-foreground">{row.employee?.position}</p>
+                    <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base truncate">{row.employee?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate sm:hidden">{row.employee?.position}</p>
+                        <p className="text-xs text-muted-foreground truncate sm:hidden">₹{row.netSalary?.toLocaleString()}</p>
                     </div>
                 </div>
             )
@@ -394,55 +411,53 @@ const HR = () => {
             key: 'department', 
             label: 'Department', 
             type: 'text' as const,
+            className: 'hidden sm:table-cell',
             render: (value: any, row: any) => row.employee?.department
         },
         {
             key: 'netSalary',
             label: 'Net Salary',
             type: 'text' as const,
+            className: 'hidden sm:table-cell',
             render: (value: any) => `₹${value?.toLocaleString()}`
         },
         {
             key: 'earnings',
             label: 'Earnings',
             type: 'text' as const,
+            className: 'hidden md:table-cell',
             render: (value: any) => `₹${value?.total?.toLocaleString()}`
         },
         {
             key: 'deductions',
             label: 'Deductions',
             type: 'text' as const,
+            className: 'hidden lg:table-cell',
             render: (value: any) => `₹${value?.total?.toLocaleString()}`
         },
-        // {
-        //     key: 'paymentDate',
-        //     label: 'Payment Date',
-        //     type: 'text' as const,
-        //     render: (value: any) => value ?
-        //         new Date(value).toLocaleDateString() :
-        //         <Badge variant="secondary">Pending</Badge>
-        // },
         {
             key: 'actions',
             label: 'Actions',
             type: 'actions' as const,
             render: (value: any, row: any) => (
-                <div className="flex gap-2">
+                <div className="flex gap-1 sm:gap-2">
                     <Button 
                         variant="outline" 
                         size="sm" 
                         onClick={() => handleGeneratePayslip(row)}
+                        className="h-8 px-2 sm:h-9 sm:px-3"
                     >
-                        <FileText className="h-4 w-4 mr-1" />
-                        Payslip
+                        <FileText className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Payslip</span>
                     </Button>
                     <Button 
                         variant="destructive" 
                         size="sm" 
                         onClick={() => handleDeleteEmployee(row.employee)}
+                        className="h-8 px-2 sm:h-9 sm:px-3"
                     >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Delete</span>
                     </Button>
                 </div>
             )
