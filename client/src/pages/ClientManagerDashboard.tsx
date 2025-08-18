@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge"
 import { StatCard } from "@/components/stat-card"
 import { DataTable } from "@/components/data-table"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Plus } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Users, Phone, AlertTriangle, FileText, Calendar, DollarSign, Plus, ChevronDown, ChevronRight } from "lucide-react"
 import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 import { ColumnDef } from "@tanstack/react-table"
@@ -20,30 +22,30 @@ import { useUser } from "@/contexts/UserContext"
 import type { Client, Invoice } from "@/types/dummy-data-types";
 import { add } from "date-fns"
 
-const clientColumns: ColumnDef<Client>[] = [
+// Define a row type with contact fields for the table
+interface ClientRow extends Client {
+  contactNo: string;
+  email: string;
+  address: string;
+  projects?: { id: string; name: string }[];
+}
+
+const clientColumns: ColumnDef<ClientRow>[] = [
   {
     accessorKey: "name",
     header: "Client Name",
   },
   {
-    accessorKey: "totalProjects",
-    header: "Total Projects",
+    accessorKey: "contactNo",
+    header: "Contact No",
   },
   {
-    accessorKey: "activeProjects",
-    header: "Active Projects",
+    accessorKey: "email",
+    header: "Email",
   },
   {
-    accessorKey: "totalValue",
-    header: "Total Value",
-    cell: ({ row }) => {
-      const value = row.getValue("totalValue") as number
-      return `₹${(value / 1000000).toFixed(1)}M`
-    },
-  },
-  {
-    accessorKey: "lastContact",
-    header: "Last Contact",
+    accessorKey: "address",
+    header: "Address",
   },
 ]
 
@@ -51,7 +53,7 @@ const ClientManagerDashboard = () => {
   const [clientManagerStats, setClientManagerStats] = useState({ responsiveness: '', pendingApprovals: 0, avgDelay: '', slaBreaches: 0 });
   const [engagementData, setEngagementData] = useState([]);
   const [approvalDelayData, setApprovalDelayData] = useState([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientRow[]>([]);
   const [approvalQueue, setApprovalQueue] = useState([]);
   const [isInteractionModalOpen, setIsInteractionModalOpen] = useState(false)
   const [isEscalationModalOpen, setIsEscalationModalOpen] = useState(false)
@@ -79,8 +81,8 @@ const ClientManagerDashboard = () => {
       .catch(() => {});
     axios.get(`${API_URL}/clients`, { headers })
       .then(res => {
-        // Map API clients to table format if needed
-        const mapped = (res.data || []).map((c: any) => ({
+        // Map API clients to table format with contact fields
+        const mapped: ClientRow[] = (res.data || []).map((c: any) => ({
           id: c.id,
           name: c.name,
           totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
@@ -88,6 +90,10 @@ const ClientManagerDashboard = () => {
           activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
           totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
           lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
+          contactNo: c.contactNo,
+          email: c.email,
+          address: c.address,
+          projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
         }));
         setClients(mapped);
       })
@@ -217,36 +223,39 @@ Status: ${invoice.status}
             <CardContent>
               <DataTable 
                 columns={[
-                  ...clientColumns,
                   {
-                    id: "actions",
-                    header: "Actions",
-                    cell: ({ row }) => (
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleAddInteraction(row.original)}
-                        >
-                          <Phone className="h-3 w-3" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewProfile(row.original)}
-                        >
-                          View Profile
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => toast.info(`Scheduling next meeting with ${row.original.name}`)}
-                        >
-                          <Calendar className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ),
+                    id: "projects",
+                    header: "Projects",
+                    cell: ({ row }) => {
+                      const projects = (row.original as any).projects || []
+                      return (
+                        <div className="w-[110px]">
+                          <Collapsible>
+                            <div className="flex items-center gap-2">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" className="p-0 h-7 w-7 transition-transform data-[state=open]:rotate-180">
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                              </CollapsibleTrigger>
+                              <div className="text-sm">
+                                {projects.length ? `${projects.length} project${projects.length > 1 ? 's' : ''}` : 'No Project'}
+                              </div>
+                            </div>
+                            <CollapsibleContent>
+                              <div className="mt-2 ml-9 text-sm space-y-1">
+                                {projects.length ? (
+                                  projects.map((p: any) => (
+                                    <div key={p.id} className="text-muted-foreground">• {p.name}</div>
+                                  ))
+                                ) : null}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </div>
+                      )
+                    },
                   },
+                  ...clientColumns,
                 ]}
                 data={clients} 
                 searchKey="name" 
@@ -573,6 +582,9 @@ Status: ${invoice.status}
                     activeProjects: 0,
                     totalValue: 0,
                     lastContact: new Date().toISOString().slice(0, 10),
+                    contactNo: data?.contactNo ?? newClient.contactNo,
+                    email: data?.email ?? newClient.email,
+                    address: data?.address ?? newClient.address,
                   },
                   ...prev,
                 ]);
