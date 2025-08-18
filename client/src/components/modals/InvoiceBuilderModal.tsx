@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { updateProjectSpent } from "@/utils/project-utils";
+import axios from "axios";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -142,6 +143,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   // Fetch users and projects on component mount
   useEffect(() => {
     fetchUsers();
+    getClients();
     fetchProjects();
   }, []);
 
@@ -215,6 +217,25 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
     }
   };
 
+  const getClients = async () => {
+            try {
+              const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const response = await axios.get(`${API_URL}/clients`, { headers });
+                if (response.data) {
+                    setClients(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching clients:', error);
+                toast({
+                    title: "Error",
+                    description: "Failed to fetch clients",
+                    variant: "destructive",
+                });
+            }
+        };
   const fetchProjects = async () => {
     try {
       const token =

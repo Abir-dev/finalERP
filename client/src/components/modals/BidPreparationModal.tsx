@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
+import axios from 'axios';
 
 interface BidPreparationModalProps {
   onClose: () => void;
@@ -83,7 +84,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
   });
 
   useEffect(() => {
-    fetchClients();
+    getClients();
     fetchProjects();
     
     // Load existing requirements if editing
@@ -107,6 +108,21 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
       toast.error('Failed to fetch clients');
     }
   };
+  const getClients = async () => {
+            try {
+              const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                const response = await axios.get(`${API_URL}/clients`, { headers });
+                if (response.data) {
+                    setClients(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching clients:', error);
+                toast.error("Failed to fetch clients");
+            }
+        };
 
   const fetchProjects = async () => {
     try {
