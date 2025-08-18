@@ -806,8 +806,8 @@ Add any additional notes here...
             });
             if (response.data) {
                 // Filter clients (role === "client")
-                const clientUsers = response.data.filter((user: User) => user.role === 'client');
-                setClients(clientUsers);
+                // const clientUsers = response.data.filter((user: User) => user.role === 'client');
+                // setClients(clientUsers);
 
                 // Filter managers (roles that can manage projects)
                 const managerUsers = response.data.filter((user: User) =>
@@ -824,6 +824,27 @@ Add any additional notes here...
             });
         }
     };
+
+    const getClients = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/clients`, {
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                },
+            });
+            if (response.data) {
+                setClients(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching clients:', error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch clients",
+                variant: "destructive",
+            });
+        }
+    };
+
 
     // Function to create project
     const createProject = async () => {
@@ -955,6 +976,7 @@ Add any additional notes here...
 
     useEffect(() => {
         fetchUsers();
+        getClients();
 
         // Fetch heatmap data if needed
         const token = getToken();
