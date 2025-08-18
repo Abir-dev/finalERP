@@ -42,22 +42,22 @@ export const nonBillableController = {
       });
 
       // Send notification to project managers
-      if (project) {
-        const projectWithManagers = await prisma.project.findUnique({
-          where: { id: projectId },
-          include: { managers: true }
-        });
+      // if (project) {
+      //   const projectWithManagers = await prisma.project.findUnique({
+      //     where: { id: projectId },
+      //     include: { managers: true }
+      //   });
 
-        if (projectWithManagers?.managers && projectWithManagers.managers.length > 0) {
-          await Promise.all(projectWithManagers.managers.map((manager: any) =>
-            prismaNotificationService.createNotification({
-              to: manager.id,
-              type: 'project',
-              message: `A new expense "${nonBillable.name}" has been added to project ${project.name}.`
-            })
-          ));
-        }
-      }
+      //   if (projectWithManagers?.managers && projectWithManagers.managers.length > 0) {
+      //     await Promise.all(projectWithManagers.managers.map((manager: any) =>
+      //       prismaNotificationService.createNotification({
+      //         to: manager.id,
+      //         type: 'project',
+      //         message: `A new expense "${nonBillable.name}" has been added to project ${project.name}.`
+      //       })
+      //     ));
+      //   }
+      // }
       
       res.status(201).json(nonBillable);
     } catch (error) {

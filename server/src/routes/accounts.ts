@@ -17,6 +17,6 @@ router.delete('/payments/:id', authenticateUser, checkRole('accounts'), accounts
 router.get('/collections', authenticateUser, accountsController.getCollections);
 router.get('/collection-trends', authenticateUser, accountsController.getCollectionTrends);
 router.get('/budget', authenticateUser, accountsController.getBudget);
-router.get('/payroll-stats', authenticateUser, accountsController.getPayrollStats);
+// router.get('/payroll-stats', authenticateUser, accountsController.getPayrollStats);
 
 export default router; 

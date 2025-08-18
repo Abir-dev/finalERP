@@ -224,44 +224,44 @@ export const accountsController = {
     }
   },
 
-  async getPayrollStats(req: Request, res: Response) {
-    try {
-      const totalEmployees = await prisma.employee.count({
-        where: {
-          leftAt: null
-        }
-      });
+  // async getPayrollStats(req: Request, res: Response) {
+  //   try {
+  //     const totalEmployees = await prisma.employee.count({
+  //       where: {
+  //         leftAt: null
+  //       }
+  //     });
       
-      const payrollAmount = await prisma.employee.aggregate({
-        where: {
-          leftAt: null
-        },
-        _sum: {
-          salary: true
-        }
-      });
+  //     const payrollAmount = await prisma.employee.aggregate({
+  //       where: {
+  //         leftAt: null
+  //       },
+  //       // _sum: {
+  //       //   salary: true
+  //       // }
+  //     });
       
-      const avgSalary = await prisma.employee.aggregate({
-        where: {
-          leftAt: null
-        },
-        _avg: {
-          salary: true
-        }
-      });
+  //     const avgSalary = await prisma.employee.aggregate({
+  //       where: {
+  //         leftAt: null
+  //       },
+  //       // _avg: {
+  //       //   salary: true
+  //       // }
+  //     });
       
-      res.json({
-        totalEmployees,
-        payrollAmount: `₹${((payrollAmount._sum.salary || 0) / 1000000).toFixed(1)}M`,
-        avgSalary: `₹${((avgSalary._avg.salary || 0) / 1000).toFixed(0)}K`,
-        compliance: '98%'
-      });
-    } catch (error) {
-      logger.error("Error:", error);
-      res.status(500).json({
-        message: "Internal server error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
+  //     res.json({
+  //       totalEmployees,
+  //       payrollAmount: `₹${((payrollAmount._sum.salary || 0) / 1000000).toFixed(1)}M`,
+  //       avgSalary: `₹${((avgSalary._avg.salary || 0) / 1000).toFixed(0)}K`,
+  //       compliance: '98%'
+  //     });
+  //   } catch (error) {
+  //     logger.error("Error:", error);
+  //     res.status(500).json({
+  //       message: "Internal server error",
+  //       error: error instanceof Error ? error.message : "Unknown error",
+  //     });
+  //   }
+  // }
 }; 
