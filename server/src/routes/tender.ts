@@ -8,7 +8,7 @@ import { UserRole } from '@prisma/client';
 const router = Router();
 
 // Tender CRUD
-router.post('/', authenticateUser, checkRole('md'), validateTender, tenderController.createTender);
+router.post('/', authenticateUser, validateTender, tenderController.createTender);
 router.get('/', authenticateUser, tenderController.listTenders);
 router.get('/:id', authenticateUser, tenderController.getTender);
 router.put('/:id', authenticateUser,  validateTender, tenderController.updateTender);

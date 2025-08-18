@@ -81,7 +81,12 @@ interface BOQ {
     name: string;
   };
 }
-
+interface BOQManagementProps {
+  targetUserId?: string;
+  selectedUser:any;
+  currentUser:any;
+  setSelectedUserId:(value:string)=>void;
+}
 interface Project {
   id: string;
   name: string;
@@ -90,7 +95,7 @@ interface Project {
   };
 }
 
-const BOQManagement: React.FC = () => {
+const BOQManagement: React.FC<BOQManagementProps> = ({targetUserId,selectedUser,currentUser,setSelectedUserId}) => {
   const [boqs, setBOQs] = useState<BOQ[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -104,6 +109,7 @@ const BOQManagement: React.FC = () => {
 
   // Get user from context
   const { user } = useUser();
+  const userID = targetUserId || user?.id || ""
 
   // Get user role for permission checks
   const userRole = user?.role;
@@ -115,11 +121,11 @@ const BOQManagement: React.FC = () => {
   const canDelete = userRole === "admin" || userRole === "accounts" || userRole === "client-manager";
 
   useEffect(() => {
-    if (user?.id) {
+    if (userID) {
       fetchBOQs();
       fetchProjects();
     }
-  }, [user?.id]);
+  }, [userID]);
 
   const fetchBOQs = async () => {
     try {
@@ -138,7 +144,7 @@ const BOQManagement: React.FC = () => {
       }
 
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/boqs?userId=${user.id}`, {
+      const response = await axios.get(`${API_URL}/boqs?userId=${userID}`, {
         headers,
       });
       setBOQs(response.data);
@@ -216,7 +222,7 @@ const BOQManagement: React.FC = () => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       await axios.put(
-        `${API_URL}/boqs/${selectedBOQ.id}?userId=${user?.id}`,
+        `${API_URL}/boqs/${selectedBOQ.id}?userId=${userID}`,
         formData,
         { headers }
       );
@@ -276,7 +282,7 @@ const BOQManagement: React.FC = () => {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       await axios.delete(
-        `${API_URL}/boqs/${selectedBOQ.id}?userId=${user.id}`,
+        `${API_URL}/boqs/${selectedBOQ.id}?userId=${userID}`,
         {
           headers,
         }

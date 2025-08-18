@@ -61,15 +61,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import axios from "axios";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { useUserFilter } from "@/contexts/UserFilterContext";
+import { useUser } from "@/contexts/UserContext";
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
-const TenderManagement = () => {
+const TenderManagementContent = () => {
   const [isGRNModalOpen, setIsGRNModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
   const [editingTender, setEditingTender] = useState(null);
-  
+  const {user} = useUser()
+  const { targetUserId, selectedUser, currentUser, setSelectedUserId } =  useUserFilter();
+  const userID = targetUserId || user?.id || ""
+
   // Get BOQ statistics
   const boqStats = useBOQStats();
 
@@ -99,7 +106,7 @@ const TenderManagement = () => {
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     axios
-      .get(`${API_URL}/tenders`, { headers })
+      .get(`${API_URL}/tenders?userId=${userID}`, { headers })
       .then((res) => setTenders(res.data))
       .catch(() => {});
   };
@@ -166,10 +173,12 @@ const TenderManagement = () => {
       });
     }
   };
-
+ 
   useEffect(() => {
+    if(userID){
     fetchTenders();
-  }, []);
+    }
+  }, [userID]);
 
   function handleExport() {
     const tendersSheet = utils.json_to_sheet(
@@ -263,10 +272,16 @@ const TenderManagement = () => {
 
   return (
     <div className="space-y-6">
+      <UserFilterComponent />
       <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Tender Management
+             {selectedUser && selectedUser.id !== currentUser?.id && (
+              <span className="text-lg text-muted-foreground ml-2">
+                - {selectedUser.name}
+              </span>
+            )}
           </h1>
           <p className="text-muted-foreground">
             Comprehensive bid preparation, submission tracking, and tender
@@ -865,7 +880,8 @@ const TenderManagement = () => {
                 BOQ Generation & Management
               </h2>
               <p className="text-muted-foreground">
-                Create, manage and track your Bills of Quantities for tender preparation
+                Create, manage and track your Bills of Quantities for tender
+                preparation
               </p>
             </div>
           </div>
@@ -877,19 +893,25 @@ const TenderManagement = () => {
               value={boqStats.loading ? "..." : boqStats.totalBOQs.toString()}
               icon={Calculator}
               trend={{ value: boqStats.monthlyGrowth, label: "new this month" }}
-              threshold={{ 
-                status: boqStats.totalBOQs > 10 ? "good" : "warning", 
-                message: boqStats.totalBOQs > 10 ? "Active BOQ generation" : "Need more BOQs" 
+              threshold={{
+                status: boqStats.totalBOQs > 10 ? "good" : "warning",
+                message:
+                  boqStats.totalBOQs > 10
+                    ? "Active BOQ generation"
+                    : "Need more BOQs",
               }}
             />
             <EnhancedStatCard
               title="BOQ Value"
               value={boqStats.loading ? "..." : boqStats.totalValue}
               icon={DollarSign}
-              trend={{ value: boqStats.monthlyGrowth, label: "BOQs added this month" }}
-              threshold={{ 
-                status: "good", 
-                message: `${boqStats.activeProjects} active projects` 
+              trend={{
+                value: boqStats.monthlyGrowth,
+                label: "BOQs added this month",
+              }}
+              threshold={{
+                status: "good",
+                message: `${boqStats.activeProjects} active projects`,
               }}
             />
             <EnhancedStatCard
@@ -897,10 +919,16 @@ const TenderManagement = () => {
               value={boqStats.loading ? "..." : `${boqStats.avgProfitMargin}%`}
               description="Cost optimization"
               icon={TrendingUp}
-              trend={{ value: boqStats.avgProfitMargin, label: "margin percentage" }}
-              threshold={{ 
-                status: boqStats.avgProfitMargin > 15 ? "good" : "warning", 
-                message: boqStats.avgProfitMargin > 15 ? "Healthy margins" : "Consider increasing margins" 
+              trend={{
+                value: boqStats.avgProfitMargin,
+                label: "margin percentage",
+              }}
+              threshold={{
+                status: boqStats.avgProfitMargin > 15 ? "good" : "warning",
+                message:
+                  boqStats.avgProfitMargin > 15
+                    ? "Healthy margins"
+                    : "Consider increasing margins",
               }}
             />
             <EnhancedStatCard
@@ -910,13 +938,16 @@ const TenderManagement = () => {
               icon={Clock}
               threshold={{
                 status: boqStats.pendingBOQs > 0 ? "good" : "warning",
-                message: boqStats.pendingBOQs > 0 ? "Active BOQ creation" : "No recent activity",
+                message:
+                  boqStats.pendingBOQs > 0
+                    ? "Active BOQ creation"
+                    : "No recent activity",
               }}
             />
           </div>
 
           {/* BOQ Management Section */}
-          <BOQManagement />
+          <BOQManagement targetUserId={targetUserId} selectedUser={selectedUser} currentUser={currentUser} setSelectedUserId={setSelectedUserId} />
         </TabsContent>
 
         <TabsContent value="tracking" className="space-y-6">
@@ -2870,4 +2901,11 @@ const TenderManagement = () => {
   );
 };
 
+const TenderManagement = () => {
+  return (
+    <PageUserFilterProvider allowedRoles={["client_manager"]}>
+      <TenderManagementContent />
+    </PageUserFilterProvider>
+  );
+};
 export default TenderManagement;

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
+import { useUserFilter } from "@/contexts/UserFilterContext";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -48,10 +49,11 @@ export const useBOQStats = (): BOQStats => {
   const [boqs, setBOQs] = useState<BOQ[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useUser();
-
+  const { targetUserId , currentUser , selectedUserId} = useUserFilter()
+  const userID = targetUserId || user?.id || ""
   useEffect(() => {
     const fetchBOQs = async () => {
-      if (!user?.id) {
+      if (!userID) {
         setLoading(false);
         return;
       }
@@ -63,7 +65,7 @@ export const useBOQStats = (): BOQStats => {
           localStorage.getItem("jwt_token_backup");
 
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get(`${API_URL}/boqs?userId=${user.id}`, {
+        const response = await axios.get(`${API_URL}/boqs?userId=${userID}`, {
           headers,
         });
         setBOQs(response.data);
@@ -76,7 +78,7 @@ export const useBOQStats = (): BOQStats => {
     };
 
     fetchBOQs();
-  }, [user?.id]);
+  }, [userID]);
 
   // Calculate statistics
   const totalBOQs = boqs.length;
