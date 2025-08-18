@@ -794,6 +794,29 @@ export const projectController = {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  },
+  async listAllTasks(req: Request, res: Response) {
+    console.log("listAllTasks endpoint hit");
+    try {
+      const tasks = await prisma.task.findMany({
+        include: {
+          project: true,
+          assignedTo: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+      
+      res.json(tasks);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+
   }
 };
 

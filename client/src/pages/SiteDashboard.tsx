@@ -534,7 +534,9 @@ const SiteDashboardContent = () => {
     targetUserId, 
     selectedUser, 
     currentUser,
-    setSelectedUserId 
+    selectedUserId,
+    setSelectedUserId,
+    isAdminUser 
   } = useUserFilter();
   const userID = targetUserId || user?.id || "";
   // Progress Reports Data
@@ -1217,14 +1219,27 @@ const SiteDashboardContent = () => {
 
       // Fetch tasks for all projects the user has access to
       // const allTasks: Task[] = [];
+      
+      // const response = await axios.get(
+      //   `${API_URL}/projects/${userID}/tasks`,
+      //   {
+      //     headers: { Authorization: `Bearer ${token}` },
+      //   }
+      // )
+        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/tasks`
+          : `${API_URL}/projects/${userID}/tasks`;
+        console.log("Fetching tasks from:", endpoint);
+      if (user?.role !== "admin") {
+        console.log("Admin");
+      }else {
+        console.log("Not Admin");
+      }
+        const response = await axios.get(endpoint, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      const response = await axios.get(
-        `${API_URL}/projects/${userID}/tasks`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      // console.log(response.data);
+              // console.log(response.data);
       // Add project name and assigned user name to each task for display
       await fetchUsers();
       const token2 =
