@@ -277,7 +277,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
           size="icon"
           className={cn(
             "md:hidden h-10 w-10 touch-manipulation",
-            "hover:bg-accent hover:text-accent-foreground",
+            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             "active:scale-95 transition-all duration-150",
             className
           )}
@@ -286,12 +286,12 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[85vw] max-w-80 p-0 flex flex-col bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/95">
-        <SheetHeader className="border-b p-4 flex-shrink-0">
+      <SheetContent side="left" className="w-[85vw] max-w-80 p-0 flex flex-col bg-sidebar text-sidebar-foreground">
+        <SheetHeader className="border-b border-sidebar-border p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Building2 className="h-7 w-7 text-primary" />
-              <SheetTitle className="text-lg font-semibold text-foreground">
+              <Building2 className="h-7 w-7 text-sidebar-foreground" />
+              <SheetTitle className="text-lg font-semibold text-sidebar-foreground">
                 ConstructFlow
               </SheetTitle>
             </div>
@@ -301,7 +301,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 size="icon" 
                 className={cn(
                   "h-8 w-8 touch-manipulation",
-                  "hover:bg-accent hover:text-accent-foreground",
+                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   "active:scale-95 transition-all duration-150"
                 )}
               >
@@ -314,7 +314,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
         <ScrollArea className="flex-1 px-4">
           <div className="py-4">
             <div className="mb-4">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3 px-1">
+              <h3 className="text-sm font-medium text-sidebar-foreground/70 mb-3 px-1">
                 ERP Modules
               </h3>
               <div className="space-y-1">
@@ -323,13 +323,13 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                   <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                     <CollapsibleTrigger asChild>
                       <Button
-                        variant={activeItem.startsWith("/hr") ? "secondary" : "ghost"}
+                        variant="ghost"
                         className={cn(
                           "w-full justify-start gap-3 h-12 px-3 text-left",
-                          "hover:bg-accent hover:text-accent-foreground",
+                          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           "active:scale-95 transition-all duration-150",
-                          "touch-manipulation",
-                          activeItem.startsWith("/hr") && "bg-accent text-accent-foreground shadow-sm"
+                          "touch-manipulation text-sidebar-foreground",
+                          activeItem.startsWith("/hr") && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                         )}
                       >
                         <hrItems.icon className="h-5 w-5 flex-shrink-0" />
@@ -348,13 +348,13 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                         {hrItems.subitems.map((subitem) => (
                           <Button
                             key={subitem.title}
-                            variant={activeItem === subitem.url ? "secondary" : "ghost"}
+                            variant="ghost"
                             className={cn(
                               "w-full justify-start gap-3 h-10 px-3 text-left",
-                              "hover:bg-accent hover:text-accent-foreground",
+                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               "active:scale-95 transition-all duration-150",
-                              "touch-manipulation",
-                              activeItem === subitem.url && "bg-accent text-accent-foreground shadow-sm"
+                              "touch-manipulation text-sidebar-foreground",
+                              activeItem === subitem.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                             )}
                             onClick={() => handleMenuItemClick(subitem.url)}
                           >
@@ -372,13 +372,13 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 {filteredItems.map((item) => (
                   <Button
                     key={item.title}
-                    variant={activeItem === item.url ? "secondary" : "ghost"}
+                    variant="ghost"
                     className={cn(
                       "w-full justify-start gap-3 h-12 px-3 text-left",
-                      "hover:bg-accent hover:text-accent-foreground",
+                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                       "active:scale-95 transition-all duration-150",
-                      "touch-manipulation",
-                      activeItem === item.url && "bg-accent text-accent-foreground shadow-sm"
+                      "touch-manipulation text-sidebar-foreground",
+                      activeItem === item.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                     )}
                     onClick={() => handleMenuItemClick(item.url)}
                   >
@@ -394,13 +394,13 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                   <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                     <CollapsibleTrigger asChild>
                       <Button
-                        variant={activeItem.startsWith("/hr") ? "secondary" : "ghost"}
+                        variant="ghost"
                         className={cn(
                           "w-full justify-start gap-3 h-12 px-3 text-left",
-                          "hover:bg-accent hover:text-accent-foreground",
+                          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           "active:scale-95 transition-all duration-150",
-                          "touch-manipulation",
-                          activeItem.startsWith("/hr") && "bg-accent text-accent-foreground shadow-sm"
+                          "touch-manipulation text-sidebar-foreground",
+                          activeItem.startsWith("/hr") && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                         )}
                       >
                         <hrItems.icon className="h-5 w-5 flex-shrink-0" />
@@ -419,13 +419,13 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                         {hrItems.subitems.map((subitem) => (
                           <Button
                             key={subitem.title}
-                            variant={activeItem === subitem.url ? "secondary" : "ghost"}
+                            variant="ghost"
                             className={cn(
                               "w-full justify-start gap-3 h-10 px-3 text-left",
-                              "hover:bg-accent hover:text-accent-foreground",
+                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                               "active:scale-95 transition-all duration-150",
-                              "touch-manipulation",
-                              activeItem === subitem.url && "bg-accent text-accent-foreground shadow-sm"
+                              "touch-manipulation text-sidebar-foreground",
+                              activeItem === subitem.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                             )}
                             onClick={() => handleMenuItemClick(subitem.url)}
                           >
@@ -443,16 +443,16 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
           </div>
         </ScrollArea>
 
-        <div className="border-t p-4 flex-shrink-0 space-y-4">
+        <div className="border-t border-sidebar-border p-4 flex-shrink-0 space-y-4">
           {/* Theme Toggle */}
           <div className="flex items-center justify-between py-1">
-            <span className="text-sm font-medium text-muted-foreground">
+            <span className="text-sm font-medium text-sidebar-foreground/70">
               Theme
             </span>
             <ThemeToggle />
           </div>
 
-          <Separator className="my-3" />
+          <Separator className="my-3 bg-sidebar-border" />
 
           {/* User Profile Section */}
           <DropdownMenu>
@@ -461,9 +461,9 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start p-3 h-auto min-h-[60px]",
-                  "hover:bg-accent hover:text-accent-foreground",
+                  "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   "active:scale-95 transition-all duration-150",
-                  "touch-manipulation"
+                  "touch-manipulation text-sidebar-foreground"
                 )}
               >
                 <div className="flex items-center gap-3 w-full">
@@ -477,7 +477,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                     <span className="text-sm font-medium truncate w-full">
                       {user.name}
                     </span>
-                    <span className="text-xs text-muted-foreground truncate w-full capitalize">
+                    <span className="text-xs text-sidebar-foreground/70 truncate w-full capitalize">
                       {user.role}
                     </span>
                   </div>
