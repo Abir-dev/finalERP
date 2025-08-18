@@ -31,6 +31,7 @@ import storeAnalyticsRoutes from './routes/storeAnalytics';
 import storeStaffRoutes from './routes/storeStaff';
 import progressReportRoutes from './routes/progressReport';
 import boqRoutes from './routes/boq';
+import designRoutes from './routes/design';
 
 dotenv.config();
 
@@ -94,6 +95,7 @@ app.use('/api/store', storeAnalyticsRoutes);
 app.use('/api/staff', storeStaffRoutes);
 app.use('/api/progress-reports', progressReportRoutes);
 app.use('/api/boqs', boqRoutes);
+app.use('/api/designs', designRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {
