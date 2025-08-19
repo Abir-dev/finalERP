@@ -8,8 +8,7 @@
   "redirects": [
     {
       "source": "/",
-      "destination": "/index.html",
-      "permanent": false
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -30,10 +29,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "app/api/**": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
