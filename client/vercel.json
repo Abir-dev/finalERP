@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://your-backend-name.onrender.com/api/:path*"
+      "destination": "https://testboard-mysql-uejv.onrender.com/api/:path*"
     }
   ],
   "redirects": [
@@ -32,7 +32,7 @@
     }
   ],
   "functions": {
-    "app/api/": {
+    "app/api/**": {
       "maxDuration": 30
     }
   }
