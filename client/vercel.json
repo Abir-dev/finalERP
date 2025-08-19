@@ -2,12 +2,12 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "https://testboard-mysql-uejv.onrender.com/api/:path*"
+      "destination": "/index.html"
     }
   ],
   "redirects": [
     {
-      "source": "/",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
