@@ -2650,7 +2650,7 @@ const SiteDashboardContent = () => {
         </div>
       )} */}
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="hidden md:grid w-full grid-cols-2">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
           {/* <TabsTrigger value="materials">Material Flow</TabsTrigger>
@@ -2767,11 +2767,11 @@ const SiteDashboardContent = () => {
                         <tr className="border-b">
                         <th className="text-left py-3 px-4 font-medium w-12"></th>
                         <th className="text-left py-3 px-4 font-medium">Task Name</th>
-                        <th className="text-left py-3 px-4 font-medium">Project</th>
-                        <th className="text-left py-3 px-4 font-medium">Assigned To</th>
-                        <th className="text-left py-3 px-4 font-medium">Start Date</th>
-                        <th className="text-left py-3 px-4 font-medium">Due Date</th>
-                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                        <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">Project</th>
+                        <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">Assigned To</th>
+                        <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Start Date</th>
+                        <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Due Date</th>
+                        <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">Status</th>
                           <th className="text-left py-3 px-4 font-medium">Actions</th>
                           </tr>
                             </thead>
@@ -2798,62 +2798,86 @@ const SiteDashboardContent = () => {
                                         )}
                                       </Button>
                                     </td>
-                                    <td className="py-3 px-4">{task.name}</td>
-                                    <td className="py-3 px-4">{task.projectName}</td>
-                                    <td className="py-3 px-4">{task.assignedTo || "Unassigned"}</td>
                                     <td className="py-3 px-4">
-                                      {task.startDate 
-                                        ? new Date(task.startDate).toLocaleDateString()
-                                        : "Not set"}
-                                    </td>
-                                    <td className="py-3 px-4">
-                                      {task.dueDate 
-                                        ? new Date(task.dueDate).toLocaleDateString()
-                                        : "Not set"}
-                                    </td>
-                                    <td className="py-3 px-4">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="font-medium text-sm sm:text-base truncate">{task.name}</p>
+                                        <p className="text-xs text-muted-foreground truncate sm:hidden">{task.projectName}</p>
+                                      <p className="text-xs text-muted-foreground truncate sm:hidden">{task.assignedTo || "Unassigned"}</p>
+                                    <div className="sm:hidden mt-1">
                                       <Badge
-                                        variant={
-                                          task.status === "completed"
-                                            ? "default"
+                                            variant={
+                                              task.status === "completed"
+                                              ? "default"
                                             : task.status === "in_progress"
                                             ? "secondary"
-                                            : "outline"
-                                        }
+                                                : "outline"
+                                            }
+                                          className="text-xs"
                                       >
-                                        {task.status === "in_progress"
-                                          ? "In Progress"
-                                          : task.status.charAt(0).toUpperCase() +
-                                            task.status.slice(1)}
-                                      </Badge>
+                                      {task.status === "in_progress"
+                                      ? "In Progress"
+                                      : task.status.charAt(0).toUpperCase() +
+                                        task.status.slice(1)}
+                                    </Badge>
+                                    </div>
+                                    </div>
                                     </td>
+                                    <td className="py-3 px-4 hidden sm:table-cell">{task.projectName}</td>
+                                    <td className="py-3 px-4 hidden sm:table-cell">{task.assignedTo || "Unassigned"}</td>
+                                    <td className="py-3 px-4 hidden md:table-cell">
+                                    {task.startDate 
+                                        ? new Date(task.startDate).toLocaleDateString()
+                                         : "Not set"}
+                                     </td>
+                                     <td className="py-3 px-4 hidden md:table-cell">
+                                       {task.dueDate 
+                                         ? new Date(task.dueDate).toLocaleDateString()
+                                         : "Not set"}
+                                     </td>
+                                     <td className="py-3 px-4 hidden sm:table-cell">
+                                       <Badge
+                                         variant={
+                                           task.status === "completed"
+                                             ? "default"
+                                             : task.status === "in_progress"
+                                             ? "secondary"
+                                             : "outline"
+                                         }
+                                       >
+                                         {task.status === "in_progress"
+                                           ? "In Progress"
+                                           : task.status.charAt(0).toUpperCase() +
+                                             task.status.slice(1)}
+                                       </Badge>
+                                     </td>
                                     <td className="py-3 px-4">
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-1 sm:gap-2">
                                     <Button
-                                      variant="outline"
-                                      size="sm"
+                                    variant="outline"
+                                    size="sm"
+                                      className="h-8 w-8 sm:w-auto"
                                     onClick={() => {
-                                      setSelectedEditTask(task);
-                                        setIsEditTaskModalOpen(true);
+                                    setSelectedEditTask(task);
+                                    setIsEditTaskModalOpen(true);
                                         }}
                                     >
-                                        <Pencil className="h-4 w-4 mr-1" />
-                                          Update
-                                         </Button>
-                                         <Button
-                                           variant="outline"
-                                           size="sm"
-                                           onClick={() => {
-                                             setSelectedDeleteTask(task);
-                                             setIsDeleteTaskDialogOpen(true);
-                                           }}
-                                           className="text-destructive hover:text-destructive"
-                                         >
-                                           <Trash2 className="h-4 w-4 mr-1" />
-                                           Delete
-                                         </Button>
-                                       </div>
-                                     </td>
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="hidden sm:inline ml-1">Update</span>
+                                    </Button>
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 w-8 sm:w-auto text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                      setSelectedDeleteTask(task);
+                                      setIsDeleteTaskDialogOpen(true);
+                                      }}
+                                    >
+                                    <Trash2 className="h-4 w-4" />
+                                      <span className="hidden sm:inline ml-1">Delete</span>
+                                      </Button>
+                                      </div>
+                                      </td>
                                   </tr>
                                   {expandedTaskId === task.id && (
                                   <tr className="bg-muted/30">

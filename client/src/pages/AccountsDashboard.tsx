@@ -569,7 +569,8 @@ const AccountsDashboard = () => {
             </div>
 
             <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-5">
+                {/* Hide tabs on mobile - navigation is handled by sidebar */}
+                <TabsList className="hidden md:grid w-full grid-cols-5">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
                     <TabsTrigger value="budget">Budget Control</TabsTrigger>
@@ -577,6 +578,41 @@ const AccountsDashboard = () => {
                     <TabsTrigger value="taxes">Tax Management</TabsTrigger>
                     {/* <TabsTrigger value="reconciliation">Reconciliation</TabsTrigger> */}
                 </TabsList>
+
+                {/* Mobile-specific section header */}
+                <div className="md:hidden mb-4">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                            {getCurrentTab() === "overview" ? (
+                                <PieChart className="h-5 w-5 text-primary" />
+                            ) : getCurrentTab() === "invoicing" ? (
+                                <FileText className="h-5 w-5 text-primary" />
+                            ) : getCurrentTab() === "budget" ? (
+                                <Calculator className="h-5 w-5 text-primary" />
+                            ) : getCurrentTab() === "payroll" ? (
+                                <Users className="h-5 w-5 text-primary" />
+                            ) : (
+                                <DollarSign className="h-5 w-5 text-primary" />
+                            )}
+                            <div>
+                                <h2 className="text-lg font-semibold">
+                                    {getCurrentTab() === "overview" ? "Overview" 
+                                     : getCurrentTab() === "invoicing" ? "Invoicing"
+                                     : getCurrentTab() === "budget" ? "Budget Control"
+                                     : getCurrentTab() === "payroll" ? "Payroll & Compliance"
+                                     : "Tax Management"}
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    Accounts › {getCurrentTab() === "overview" ? "Overview" 
+                                              : getCurrentTab() === "invoicing" ? "Invoicing"
+                                              : getCurrentTab() === "budget" ? "Budget Control"
+                                              : getCurrentTab() === "payroll" ? "Payroll & Compliance"
+                                              : "Tax Management"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <TabsContent value="overview">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
