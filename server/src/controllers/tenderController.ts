@@ -45,24 +45,44 @@ export const tenderController = {
   async listTenders(req: Request, res: Response) {
     try {
       const { userId } = req.query;
-      
-      const tenders = await prisma.tender.findMany({
-        where: {
-          createdById: userId as string
-        },
-        include: {
-          requirements: true,
-          client: true,
-          Project: true,
-          createdBy: true,
-          bids: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
+      if(userId){
 
-      res.json(tenders);
+        const tenders = await prisma.tender.findMany({
+          where: {
+            createdById: userId as string
+          },
+          include: {
+            requirements: true,
+            client: true,
+            Project: true,
+            createdBy: true,
+            bids: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+  
+        res.json(tenders);
+      } else{
+        const tenders = await prisma.tender.findMany({
+          // where: {
+          //   createdById: userId as string
+          // },
+          include: {
+            requirements: true,
+            client: true,
+            Project: true,
+            createdBy: true,
+            bids: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+  
+        res.json(tenders);
+      }
     } catch (error) {
       logger.error("Error:", error);
       res.status(500).json({

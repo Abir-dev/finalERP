@@ -45,28 +45,45 @@ export const boqController = {
     try {
       const { userId } = req.query;
       
-      if (!userId) {
-        return res.status(400).json({ error: 'userId is required' });
-      }
-
-      const boqs = await prisma.bOQ.findMany({
-        where: {
-          createdById: userId as string
-        },
-        include: {
-          project: {
-            include: {
-              client: true
-            }
+      if (userId) {
+        const boqs = await prisma.bOQ.findMany({
+          where: {
+            createdById: userId as string
           },
-          createdBy: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
+          include: {
+            project: {
+              include: {
+                client: true
+              }
+            },
+            createdBy: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+  
+        res.json(boqs);
+      } else{
+        const boqs = await prisma.bOQ.findMany({
+         
+          include: {
+            project: {
+              include: {
+                client: true
+              }
+            },
+            createdBy: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        });
+  
+        res.json(boqs);
 
-      res.json(boqs);
+      }
+      
     } catch (error) {
       logger.error("Error:", error);
       res.status(500).json({
