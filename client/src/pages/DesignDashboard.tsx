@@ -19,6 +19,9 @@ import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
+import { UserFilterComponent } from "@/components/UserFilterComponent";
+import { useUserFilter } from "@/contexts/UserFilterContext";
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Design {
@@ -183,7 +186,7 @@ const designColumns: ColumnDef<any>[] = [
   },
 ]
 
-const DesignDashboard = () => {
+const DesignDashboardContent = () => {
   const { user } = useUser();
   const [designStats, setDesignStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [approvalTrendData, setApprovalTrendData] = useState([]);
@@ -213,6 +216,8 @@ const DesignDashboard = () => {
     images: [] as File[],
   });
 
+  
+
   // Edit design form state
   const [editDesignForm, setEditDesignForm] = useState({
     name: "",
@@ -222,6 +227,31 @@ const DesignDashboard = () => {
     files: [] as string[],
     images: [] as string[],
   });
+     const { 
+        targetUserId, 
+        selectedUser, 
+        currentUser,
+        selectedUserId,
+        setSelectedUserId,
+        isAdminUser 
+      } = useUserFilter();
+  
+    const userID = targetUserId || user?.id;
+
+    const fetchDesigns = async () => {
+      
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+        ? `${API_URL}/designs`
+        : `${API_URL}/designs/${userID}`;
+        const response = await axios.get(endpoint, { headers });
+        setDesigns(response.data);
+      } catch (error) {
+        console.error("Error fetching designs:", error);
+      }
+    }
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -242,9 +272,8 @@ const DesignDashboard = () => {
     ]);
     
     // Fetch actual designs data
-    axios.get(`${API_URL}/designs`, { headers })
-      .then(res => setDesigns(res.data))
-      .catch(() => {});
+    
+    fetchDesigns();
     
     // Fetch clients and projects for the form
     axios.get(`${API_URL}/clients`, { headers })
@@ -253,7 +282,7 @@ const DesignDashboard = () => {
     axios.get(`${API_URL}/projects`, { headers })
       .then(res => setProjects(res.data))
       .catch(() => {});
-  }, []);
+  }, [userID]);
 
   // Calculate design statistics whenever designs data changes
   useEffect(() => {
@@ -531,7 +560,7 @@ const DesignDashboard = () => {
       };
 
       // Submit to backend using the correct endpoint with userId
-      await axios.post(`${API_URL}/designs/${user.id}`, designData, { headers });
+      await axios.post(`${API_URL}/designs/${userID}`, designData, { headers });
 
       toast.success("Design submitted successfully!");
       setIsSubmitDesignModalOpen(false);
@@ -546,7 +575,7 @@ const DesignDashboard = () => {
       });
       
       // Refresh designs list
-      axios.get(`${API_URL}/designs`, { headers })
+      axios.get(`${API_URL}/designs/${userID}`, { headers })
         .then(res => setDesigns(res.data))
         .catch(() => {});
     } catch (error) {
@@ -557,6 +586,7 @@ const DesignDashboard = () => {
 
   return (
     <div className="space-y-6">
+      <UserFilterComponent/>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Design Dashboard</h1>
@@ -1390,5 +1420,13 @@ const DesignDashboard = () => {
     </div>
   )
 }
+const DesignDashboard = () => {
+  return (
+    <PageUserFilterProvider allowedRoles={["client_manager", "site"]}>
+      <DesignDashboardContent />
+    </PageUserFilterProvider>
+  );
+}
+
 
 export default DesignDashboard

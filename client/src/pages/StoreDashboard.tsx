@@ -1093,7 +1093,7 @@ const StoreDashboardContent = () => {
 
     // Fetch all users if current user is admin
     useEffect(() => {
-        if (user?.role === 'admin') {
+        if (user?.role === 'admin'||user?.role === 'md') {
             fetchAllUsers();
             // setSelectedUserId(allUsers[0].id)
         }
@@ -1101,7 +1101,7 @@ const StoreDashboardContent = () => {
 
     // Reset selectedUserId when user is not admin
     useEffect(() => {
-        if (user?.role !== 'admin') {
+        if (user?.role !== 'admin'&& user?.role !== 'md') {
             setSelectedUserId("");
         }
     }, [user]);
