@@ -965,16 +965,16 @@ Add any additional notes here...
 
     // Function to fetch projects
     const fetchProjects = async () => {
-        if (!userID) return; // Don't fetch if no user ID
+        // if (!userID) return; // Don't fetch if no user ID
         try {
             const token = getToken();
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
             console.log("Fetching projects for user:", userID);
             const endpoint =
-                // user?.role !== "admin" && userID
-                     `${API_URL}/projects/user/${userID}`
-                    // : `${API_URL}/projects`;
+                ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+                     ? `${API_URL}/projects`
+                    :`${API_URL}/projects/user/${userID}` ;
 
             const response = await axios.get(endpoint, { headers });
             setProjects(response.data);
@@ -999,6 +999,7 @@ Add any additional notes here...
     useEffect(() => {
         fetchUsers();
         getClients();
+        fetchProjects();
 
         // Fetch heatmap data if needed
         const token = getToken();
