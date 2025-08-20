@@ -535,10 +535,10 @@ const AccountsDashboard = () => {
                         <Calculator className="h-4 w-4" />
                         Generate Tax
                     </Button>
-                    <Button onClick={handleBulkReminder} variant="outline" className="gap-2">
+                    {/* <Button onClick={handleBulkReminder} variant="outline" className="gap-2">
                         <AlertTriangle className="h-4 w-4" />
                         Bulk Reminder
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 
