@@ -39,3 +39,4 @@ pnpm-lock.yaml
 
 # Optional (if using TurboRepo or other monorepo tools)
 .turbo/
+.vercel
