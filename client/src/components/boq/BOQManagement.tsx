@@ -52,6 +52,7 @@ import { toast } from "@/components/ui/use-toast";
 import axios from "axios";
 import BOQForm from "./BOQForm";
 import { useUser } from "@/contexts/UserContext";
+import { useUserFilter } from "@/contexts/UserFilterContext";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -83,9 +84,9 @@ interface BOQ {
 }
 interface BOQManagementProps {
   targetUserId?: string;
-  selectedUser:any;
-  currentUser:any;
-  setSelectedUserId:(value:string)=>void;
+  selectedUser?:any;
+  currentUser?:any;
+  setSelectedUserId?:(value:string)=>void;
 }
 interface Project {
   id: string;
@@ -95,7 +96,7 @@ interface Project {
   };
 }
 
-const BOQManagement: React.FC<BOQManagementProps> = ({targetUserId,selectedUser,currentUser,setSelectedUserId}) => {
+const BOQManagement: React.FC<BOQManagementProps> = () => {
   const [boqs, setBOQs] = useState<BOQ[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,7 +110,9 @@ const BOQManagement: React.FC<BOQManagementProps> = ({targetUserId,selectedUser,
 
   // Get user from context
   const { user } = useUser();
-  const userID = targetUserId || user?.id || ""
+    const { targetUserId,  currentUser, selectedUser, setSelectedUserId } =  useUserFilter();
+
+    const userID = targetUserId || user?.id || ""
 
   // Get user role for permission checks
   const userRole = user?.role;
@@ -144,7 +147,11 @@ const BOQManagement: React.FC<BOQManagementProps> = ({targetUserId,selectedUser,
       }
 
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(`${API_URL}/boqs?userId=${userID}`, {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/boqs`
+          : `${API_URL}/boqs?userId=${userID}`;
+          console.log("Fetching BOQs from endpoint:", endpoint);
+      const response = await axios.get(endpoint, {
         headers,
       });
       setBOQs(response.data);

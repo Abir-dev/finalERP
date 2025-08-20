@@ -386,11 +386,12 @@ export function AppSidebar() {
       title: "Tender Management",
       base: "/tender-management",
       icon: FileText,
-      allowedRoles: ["admin", "md", "accounts", "project"],
+      allowedRoles: ["admin", "md", "client-manager"],
       subitems: [
         { title: "Dashboard", url: "/tender-management/dashboard" },
         { title: "BOQ Generation", url: "/tender-management/preparation" },
         { title: "Submission Tracking", url: "/tender-management/tracking" },
+        { title: "Active Tenders", url: "/tender-management/active-tenders" },
       ],
     },
     {

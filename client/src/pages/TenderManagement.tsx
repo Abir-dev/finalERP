@@ -108,8 +108,12 @@ const TenderManagementContent = () => {
       sessionStorage.getItem("jwt_token") ||
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/tenders`
+          : `${API_URL}/tenders?userId=${userID}`;
+          console.log("Fetching tenders from endpoint:", endpoint);
     axios
-      .get(`${API_URL}/tenders?userId=${userID}`, { headers })
+      .get(endpoint, { headers })
       .then((res) => setTenders(res.data))
       .catch(() => {});
   };
@@ -971,7 +975,7 @@ const TenderManagementContent = () => {
           </div>
 
           {/* BOQ Management Section */}
-          <BOQManagement targetUserId={targetUserId} selectedUser={selectedUser} currentUser={currentUser} setSelectedUserId={setSelectedUserId} />
+          <BOQManagement  />
         </TabsContent>
 
         <TabsContent value="tracking" className="space-y-6">

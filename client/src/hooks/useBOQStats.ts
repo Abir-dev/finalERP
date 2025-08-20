@@ -49,14 +49,14 @@ export const useBOQStats = (): BOQStats => {
   const [boqs, setBOQs] = useState<BOQ[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useUser();
-  const { targetUserId , currentUser , selectedUserId} = useUserFilter()
+  const { targetUserId , currentUser , selectedUser, selectedUserId} = useUserFilter()
   const userID = targetUserId || user?.id || ""
   useEffect(() => {
     const fetchBOQs = async () => {
-      if (!userID) {
-        setLoading(false);
-        return;
-      }
+      // if (!userID) {
+      //   setLoading(false);
+      //   return;
+      // }
 
       try {
         setLoading(true);
@@ -65,7 +65,10 @@ export const useBOQStats = (): BOQStats => {
           localStorage.getItem("jwt_token_backup");
 
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await axios.get(`${API_URL}/boqs?userId=${userID}`, {
+        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/boqs`
+          : `${API_URL}/boqs?userId=${userID}`;
+        const response = await axios.get(endpoint, {
           headers,
         });
         setBOQs(response.data);
