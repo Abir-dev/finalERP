@@ -64,6 +64,7 @@ import {
     ArrowLeft,
     MapPin,
     TrendingDown,
+    TrendingUp,
     BarChart3,
     Download,
     Trash2,
@@ -1276,13 +1277,45 @@ const StoreDashboardContent = () => {
                 onValueChange={handleTabChange}
                 className="space-y-6"
             >
-                <TabsList className="grid w-full grid-cols-4">
+                {/* Hide tabs on mobile - navigation is handled by sidebar */}
+                <TabsList className="hidden md:grid w-full grid-cols-4">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     {/* <TabsTrigger value="warehouse">Warehouse</TabsTrigger> */}
                     <TabsTrigger value="analytics">Analytics</TabsTrigger>
                     <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger>
                     <TabsTrigger value="store-staffs">Store Staff</TabsTrigger>
                 </TabsList>
+
+                {/* Mobile-specific section header */}
+                <div className="md:hidden mb-4">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                            {getCurrentTab() === "overview" ? (
+                                <BarChart3 className="h-5 w-5 text-primary" />
+                            ) : getCurrentTab() === "analytics" ? (
+                                <TrendingUp className="h-5 w-5 text-primary" />
+                            ) : getCurrentTab() === "vehicle-tracking" ? (
+                                <MapPin className="h-5 w-5 text-primary" />
+                            ) : (
+                                <Users className="h-5 w-5 text-primary" />
+                            )}
+                            <div>
+                                <h2 className="text-lg font-semibold">
+                                    {getCurrentTab() === "overview" ? "Overview" 
+                                     : getCurrentTab() === "analytics" ? "Analytics"
+                                     : getCurrentTab() === "vehicle-tracking" ? "Vehicle Tracking"
+                                     : "Store Staff"}
+                                </h2>
+                                <p className="text-xs text-muted-foreground">
+                                    Store › {getCurrentTab() === "overview" ? "Overview" 
+                                            : getCurrentTab() === "analytics" ? "Analytics"
+                                            : getCurrentTab() === "vehicle-tracking" ? "Vehicle Tracking"
+                                            : "Store Staff"}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <TabsContent value="overview">
                     {overviewSubview === "main" && (
