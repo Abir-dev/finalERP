@@ -275,11 +275,11 @@ const InventoryContent = () => {
   // Function to get current tab from URL
   const getCurrentTab = () => {
     const path = location.pathname;
-    if (path.includes('/inventory')) return 'inventory';
     if (path.includes('/material-forecast')) return 'material-forecast';
     if (path.includes('/issue-tracking')) return 'issue-tracking';
     if (path.includes('/transfers')) return 'transfers';
     if (path.includes('/warehouse')) return 'warehouse';
+    if (path.includes('/inventory')) return 'inventory';
     return 'inventory'; // default tab
   };
 
