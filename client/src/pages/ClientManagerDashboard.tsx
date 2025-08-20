@@ -21,6 +21,9 @@ import { toast } from "sonner"
 import { useUser } from "@/contexts/UserContext"
 import type { Client, Invoice } from "@/types/dummy-data-types";
 import { add } from "date-fns"
+import { useUserFilter } from "@/contexts/UserFilterContext"
+import { PageUserFilterProvider } from "@/components/PageUserFilterProvider"
+import { UserFilterComponent } from "@/components/UserFilterComponent"
 
 // Define a row type with contact fields for the table
 interface ClientRow extends Client {
@@ -49,7 +52,7 @@ const clientColumns: ColumnDef<ClientRow>[] = [
   },
 ]
 
-const ClientManagerDashboard = () => {
+const ClientManagerDashboardContent = () => {
   const [clientManagerStats, setClientManagerStats] = useState({ responsiveness: '', pendingApprovals: 0, avgDelay: '', slaBreaches: 0 });
   const [engagementData, setEngagementData] = useState([]);
   const [approvalDelayData, setApprovalDelayData] = useState([]);
@@ -75,45 +78,58 @@ const ClientManagerDashboard = () => {
   const totalActiveProjects = clients.reduce((sum, c) => sum + c.activeProjects, 0);
   const totalValue = clients.reduce((sum, c) => sum + c.totalValue, 0);
 
+    const { 
+      targetUserId, 
+      selectedUser, 
+      currentUser,
+      selectedUserId,
+      setSelectedUserId,
+      isAdminUser 
+    } = useUserFilter();
+
+  const userID = targetUserId || user?.id || "";
+
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    axios.get(`${API_URL}/client-manager/stats`, { headers })
-      .then(res => setClientManagerStats(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/client-manager/engagement`, { headers })
-      .then(res => setEngagementData(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/client-manager/approval-delays`, { headers })
-      .then(res => setApprovalDelayData(res.data))
-      .catch(() => {});
-    axios.get(`${API_URL}/clients`, { headers })
-      .then(res => {
-        // Map API clients to table format with contact fields
-        const mapped: ClientRow[] = (res.data || []).map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
-          // Treat projects without endDate as active
-          activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
-          totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
-          lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
-          contactNo: c.contactNo,
-          email: c.email,
-          address: c.address,
-          projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
-        }));
-        setClients(mapped);
-      })
-      .catch(() => {});
-    axios.get(`${API_URL}/client-manager/approval-queue`, { headers })
-      .then(res => setApprovalQueue(res.data))
-      .catch(() => {});
+    fetchClients();
     axios.get(`${API_URL}/billing/invoices`, { headers })
       .then(res => setInvoices(res.data))
       .catch(() => {});
-  }, []);
-
+  }, [userID]);
+    const fetchClients = async () => {
+    try {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+        ? `${API_URL}/clients`
+        : `${API_URL}/clients?userId=${userID}`;
+    
+    console.log("Fetching clients for user:", userID, "Endpoint:", endpoint);
+    
+    const response = await axios.get(endpoint, { headers });
+    
+    // Map API clients to table format with contact fields
+    const mapped: ClientRow[] = (response.data || []).map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
+      // Treat projects without endDate as active
+      activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
+      totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
+      lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
+      contactNo: c.contactNo,
+      email: c.email,
+      address: c.address,
+      projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
+    }));
+    
+    setClients(mapped);
+    
+  } catch (err: any) {
+    console.log(err.message); // Handle error appropriately
+  }
+};
   const handleAddInteraction = (client: Client) => {
     setSelectedClient(client)
     setIsInteractionModalOpen(true)
@@ -204,6 +220,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
 
   return (
     <div className="space-y-6">
+      <UserFilterComponent/>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Client Dashboard</h1>
@@ -924,4 +941,15 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
   )
 }
 
-export default ClientManagerDashboard
+
+const ClientManagerDashboard = () => {
+  return (
+    <PageUserFilterProvider allowedRoles={["client_manager"]}>
+      <ClientManagerDashboardContent />
+    </PageUserFilterProvider>
+  );
+};
+export default ClientManagerDashboard;
+
+
+
