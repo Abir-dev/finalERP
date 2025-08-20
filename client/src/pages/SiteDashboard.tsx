@@ -1093,7 +1093,7 @@ const SiteDashboardContent = () => {
   // Fetch Progress Reports
   const fetchProgressReports = async () => {
     try {
-      if (!user?.id) return;
+      // if (!user?.id) return;
 
       // Use selectedUserId if admin has selected a user, otherwise use current user's ID
       const token =
@@ -1101,22 +1101,29 @@ const SiteDashboardContent = () => {
         localStorage.getItem("jwt_token_backup");
 
       // Fetch DPRs
-      const dprResponse = await axios.get(
-        `${API_URL}/progress-reports/dpr/${userID}`,
+       const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/progress-reports/dpr`
+          : `${API_URL}/progress-reports/dpr/${userID}`;
+      const dprResponse = await axios.get(endpoint,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       setDprs(dprResponse.data);
+      console.log("DPRs fetched:", dprResponse.data);
 
       // Fetch WPRs
-      const wprResponse = await axios.get(
-        `${API_URL}/progress-reports/wpr/${targetUserId}`,
+      const endpoint2 = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/progress-reports/wpr`
+          : `${API_URL}/progress-reports/wpr/${userID}`;
+          console.log("Fetching WPRs from:", endpoint2);
+      const wprResponse = await axios.get(endpoint2,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       setWprs(wprResponse.data);
+      console.log("WPRs fetched:", wprResponse.data);
 
       // Calculate stats
       const currentMonth = new Date().getMonth();

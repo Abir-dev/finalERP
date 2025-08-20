@@ -98,6 +98,51 @@ export const progressReportController = {
       });
     }
   },
+  async getAllDPRs(req: Request, res: Response) {
+    try {
+      // const { userId } = req.params;
+      const { projectId } = req.query;
+
+      const whereClause: any = {
+        // createdById: userId
+      };
+
+      if (projectId) {
+        whereClause.projectId = projectId as string;
+      }
+
+      const dprs = await (prisma as any).dailyProgressReport.findMany({
+        where: whereClause,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      // Parse materials JSON for response
+      const dprsWithParsedMaterials = dprs.map((dpr: any) => ({
+        ...dpr,
+        materials: dpr.materials ? JSON.parse(dpr.materials) : []
+      }));
+
+      logger.info(`Retrieved ${dprs.length} DPRs for all user:`);
+      res.json(dprsWithParsedMaterials);
+    } catch (error) {
+      logger.error("Error retrieving DPRs:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
 
   async getDPRById(req: Request, res: Response) {
     try {
@@ -357,6 +402,53 @@ export const progressReportController = {
       }));
 
       logger.info(`Retrieved ${wprs.length} WPRs for user: ${userId}`);
+      res.json(wprsWithParsedData);
+    } catch (error) {
+      logger.error("Error retrieving WPRs:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+  async getAllWPRs(req: Request, res: Response) {
+    try {
+      // const { userId } = req.params;
+      const { projectId } = req.query;
+
+      const whereClause: any = {
+        // createdById: userId
+      };
+
+      if (projectId) {
+        whereClause.projectId = projectId as string;
+      }
+
+      const wprs = await (prisma as any).weeklyProgressReport.findMany({
+        where: whereClause,
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      // Parse JSON fields for response
+      const wprsWithParsedData = wprs.map((wpr: any) => ({
+        ...wpr,
+        manpower: wpr.manpower ? JSON.parse(wpr.manpower) : [],
+        equipment: wpr.equipment ? JSON.parse(wpr.equipment) : [],
+        materials: wpr.materials ? JSON.parse(wpr.materials) : []
+      }));
+
+      logger.info(`Retrieved ${wprs.length} WPRs for user: `);
       res.json(wprsWithParsedData);
     } catch (error) {
       logger.error("Error retrieving WPRs:", error);
