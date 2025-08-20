@@ -140,15 +140,56 @@ const AppLayout = () => {
               
               {/* ERP module pages */}
               <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/overview" element={<Projects />} />
+              <Route path="/projects/list" element={<Projects />} />
+              <Route path="/projects/milestone" element={<Projects />} />
+
               <Route path="/hr" element={<HR />} />
               <Route path="/hr/employees" element={<HR />} />
               <Route path="/hr/salaries" element={<HR />} />
+
               <Route path="/inventory" element={<Inventory />} />
+              <Route path="/inventory/inventory" element={<Inventory />} />
+              <Route path="/inventory/material-forecast" element={<Inventory />} />
+              <Route path="/inventory/issue-tracking" element={<Inventory />} />
+              <Route path="/inventory/transfers" element={<Inventory />} />
+              <Route path="/inventory/warehouse" element={<Inventory />} />
+
               <Route path="/documents" element={<Documents />} />
+              <Route path="/documents/all" element={<Documents />} />
+              <Route path="/documents/my" element={<Documents />} />
+
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/notifications" element={<Notifications />} />
+              
+              {/* Dashboard deep links */}
+              <Route path="/admin-dashboard/monitoring" element={<AdminDashboard />} />
+              <Route path="/admin-dashboard/users" element={<AdminDashboard />} />
+              <Route path="/admin-dashboard/modules" element={<AdminDashboard />} />
+              <Route path="/admin-dashboard/security" element={<AdminDashboard />} />
+              <Route path="/admin-dashboard/logs" element={<AdminDashboard />} />
+
+              <Route path="/design-dashboard/overview" element={<DesignDashboard />} />
+              <Route path="/design-dashboard/queue" element={<DesignDashboard />} />
+
+              <Route path="/client-manager/engagement" element={<ClientManagerDashboard />} />
+              <Route path="/client-manager/billing" element={<ClientManagerDashboard />} />
+
+              <Route path="/store-manager/overview" element={<StoreDashboard />} />
+              <Route path="/store-manager/analytics" element={<StoreDashboard />} />
+              <Route path="/store-manager/vehicle-tracking" element={<StoreDashboard />} />
+              <Route path="/store-manager/store-staffs" element={<StoreDashboard />} />
+
+              <Route path="/accounts-manager/overview" element={<AccountsDashboard />} />
+              <Route path="/accounts-manager/invoicing" element={<AccountsDashboard />} />
+              <Route path="/accounts-manager/budget" element={<AccountsDashboard />} />
+              <Route path="/accounts-manager/payroll" element={<AccountsDashboard />} />
+              <Route path="/accounts-manager/taxes" element={<AccountsDashboard />} />
+
+              <Route path="/site-manager/timeline" element={<SiteDashboard />} />
+              <Route path="/site-manager/reports" element={<SiteDashboard />} />
               
               {/* New ERP feature pages */}
               <Route path="/tender-management" element={<TenderManagement />} />

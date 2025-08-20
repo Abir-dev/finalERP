@@ -62,16 +62,31 @@ export function AppSidebar() {
   const { state, toggleSidebar } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isHROpen, setIsHROpen] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
-  // Update active item and HR dropdown state based on current location
+  // Update active item and dropdown states based on current location
   useEffect(() => {
     const currentPath = window.location.pathname;
     setActiveItem(currentPath);
-    
-    // Auto-open HR dropdown if on HR pages
-    if (currentPath.startsWith("/hr")) {
-      setIsHROpen(true);
-    }
+
+    if (currentPath.startsWith("/hr")) setIsHROpen(true);
+
+    const baseMap: Record<string, string> = {
+      admin: "/admin-dashboard",
+      design: "/design-dashboard",
+      client: "/client-manager",
+      store: "/store-manager",
+      accounts: "/accounts-manager",
+      site: "/site-manager",
+      inventory: "/inventory",
+      projects: "/projects",
+      documents: "/documents",
+    };
+    const next: Record<string, boolean> = {};
+    Object.entries(baseMap).forEach(([id, base]) => {
+      next[id] = currentPath === base || currentPath.startsWith(base + "/");
+    });
+    setOpenSections(next);
   }, []);
 
   const items = [
@@ -217,10 +232,138 @@ export function AppSidebar() {
     ],
   };
 
+  // Sections with dropdown subitems (deep links)
+  const sections = [
+    {
+      id: "admin",
+      title: "Admin & IT",
+      base: "/admin-dashboard",
+      icon: Monitor,
+      allowedRoles: ["admin"],
+      subitems: [
+        { title: "System Monitoring", url: "/admin-dashboard/monitoring" },
+        { title: "User Management", url: "/admin-dashboard/users" },
+        { title: "Modules & API", url: "/admin-dashboard/modules" },
+        { title: "Security", url: "/admin-dashboard/security" },
+        { title: "Logs & Audit", url: "/admin-dashboard/logs" },
+      ],
+    },
+    {
+      id: "design",
+      title: "Design Dashboard",
+      base: "/design-dashboard",
+      icon: PaintBucket,
+      allowedRoles: ["admin", "md", "client-manager", "site"],
+      subitems: [
+        { title: "Design Overview", url: "/design-dashboard/overview" },
+        { title: "Review Queue", url: "/design-dashboard/queue" },
+      ],
+    },
+    {
+      id: "client",
+      title: "Client Dashboard",
+      base: "/client-manager",
+      icon: Users,
+      allowedRoles: ["admin", "md", "client-manager"],
+      subitems: [
+        { title: "Client Engagement", url: "/client-manager/engagement" },
+        { title: "Billing Insights", url: "/client-manager/billing" },
+      ],
+    },
+    {
+      id: "store",
+      title: "Store Dashboard",
+      base: "/store-manager",
+      icon: Package,
+      allowedRoles: ["admin", "md", "store"],
+      subitems: [
+        { title: "Overview", url: "/store-manager/overview" },
+        { title: "Analytics", url: "/store-manager/analytics" },
+        { title: "Vehicle Tracking", url: "/store-manager/vehicle-tracking" },
+        { title: "Store Staff", url: "/store-manager/store-staffs" },
+      ],
+    },
+    {
+      id: "accounts",
+      title: "Accounts Dashboard",
+      base: "/accounts-manager",
+      icon: DollarSign,
+      allowedRoles: ["admin", "md", "accounts"],
+      subitems: [
+        { title: "Overview", url: "/accounts-manager/overview" },
+        { title: "Invoicing", url: "/accounts-manager/invoicing" },
+        { title: "Budget Control", url: "/accounts-manager/budget" },
+        { title: "Payroll & Compliance", url: "/accounts-manager/payroll" },
+        { title: "Tax Management", url: "/accounts-manager/taxes" },
+      ],
+    },
+    {
+      id: "site",
+      title: "Site Dashboard",
+      base: "/site-manager",
+      icon: HardHat,
+      allowedRoles: ["admin", "md", "site"],
+      subitems: [
+        { title: "Execution Timeline", url: "/site-manager/timeline" },
+        { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
+      ],
+    },
+    {
+      id: "projects",
+      title: "Project Management",
+      base: "/projects",
+      icon: ClipboardList,
+      allowedRoles: ["admin", "md", "project"],
+      subitems: [
+        { title: "Overview", url: "/projects/overview" },
+        { title: "List", url: "/projects/list" },
+        { title: "Milestone", url: "/projects/milestone" },
+      ],
+    },
+    {
+      id: "inventory",
+      title: "Inventory",
+      base: "/inventory",
+      icon: Warehouse,
+      allowedRoles: ["admin", "md", "store", "site"],
+      subitems: [
+        { title: "Inventory", url: "/inventory/inventory" },
+        { title: "Material Forecast", url: "/inventory/material-forecast" },
+        { title: "Issue Tracking", url: "/inventory/issue-tracking" },
+        { title: "Transfers", url: "/inventory/transfers" },
+        { title: "Warehouse", url: "/inventory/warehouse" },
+      ],
+    },
+    {
+      id: "documents",
+      title: "Documents",
+      base: "/documents",
+      icon: FileText,
+      allowedRoles: [
+        "admin",
+        "md",
+        "client-manager",
+        "store",
+        "accounts",
+        "site",
+        "client",
+        "hr",
+        "project",
+      ],
+      subitems: [
+        { title: "All Files", url: "/documents/all" },
+        { title: "My Documents", url: "/documents/my" },
+      ],
+    },
+  ];
+
   const filteredItems = user
     ? items.filter((item) => item.allowedRoles.includes(user.role))
     : [];
 
+  const sectionBases = sections.map((s) => s.base);
+  const filteredItemsNoSections = filteredItems.filter((i) => !sectionBases.includes(i.url));
+  
   const showHR = user && hrItems.allowedRoles.includes(user.role);
 
   const handleMenuItemClick = (url: string) => {
@@ -352,8 +495,68 @@ export function AppSidebar() {
                 </Collapsible>
               )}
               
-              {/* Regular menu items */}
-              {filteredItems.map((item) => (
+              {/* Dropdown sections with subitems */}
+              {sections
+                .filter((section) => user && section.allowedRoles.includes(user.role))
+                .map((section) => (
+                  <Collapsible
+                    key={section.id}
+                    open={openSections[section.id]}
+                    onOpenChange={(o) => setOpenSections((prev) => ({ ...prev, [section.id]: o }))}
+                  >
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton
+                          className={cn(
+                            activeItem === section.base || activeItem.startsWith(section.base + "/") ? "bg-accent" : "",
+                            isCollapsed && "justify-center px-0"
+                          )}
+                          tooltip={isCollapsed ? `${section.title} - Click to expand` : undefined}
+                        >
+                          <div
+                            className={cn(
+                              "flex items-center gap-2 w-full",
+                              isCollapsed && "justify-center"
+                            )}
+                          >
+                            <section.icon
+                              className={cn(
+                                "flex-shrink-0",
+                                isCollapsed ? "h-4 w-4" : "h-4 w-4"
+                              )}
+                            />
+                            {!isCollapsed && (
+                              <>
+                                <span className="truncate text-base flex-1">{section.title}</span>
+                                {openSections[section.id] ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {section.subitems.map((subitem) => (
+                            <SidebarMenuSubItem key={subitem.title}>
+                              <SidebarMenuSubButton asChild isActive={activeItem === subitem.url}>
+                                <button onClick={() => handleMenuItemClick(subitem.url)} className="w-full text-left">
+                                  <span>{subitem.title}</span>
+                                </button>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ))}
+
+              {/* Keep other single links that aren’t part of dropdown sections */}
+              {filteredItemsNoSections.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     className={cn(
@@ -382,9 +585,9 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              
-              {/* HR Dropdown Menu - Show at bottom for admin/md users */}
-              {showHR && user?.role !== "hr" && (
+
+              {/* HR Dropdown Menu - placed at end */}
+              {showHR && (
                 <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
@@ -424,14 +627,8 @@ export function AppSidebar() {
                       <SidebarMenuSub>
                         {hrItems.subitems.map((subitem) => (
                           <SidebarMenuSubItem key={subitem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeItem === subitem.url}
-                            >
-                              <button
-                                onClick={() => handleMenuItemClick(subitem.url)}
-                                className="w-full text-left"
-                              >
+                            <SidebarMenuSubButton asChild isActive={activeItem === subitem.url}>
+                              <button onClick={() => handleMenuItemClick(subitem.url)} className="w-full text-left">
                                 <span>{subitem.title}</span>
                               </button>
                             </SidebarMenuSubButton>

@@ -61,6 +61,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isHROpen, setIsHROpen] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   // Update active item when location changes
   useEffect(() => {
@@ -70,6 +71,23 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     if (location.pathname.startsWith("/hr")) {
       setIsHROpen(true);
     }
+
+    const baseMap: Record<string, string> = {
+      admin: "/admin-dashboard",
+      design: "/design-dashboard",
+      client: "/client-manager",
+      store: "/store-manager",
+      accounts: "/accounts-manager",
+      site: "/site-manager",
+      inventory: "/inventory",
+      projects: "/projects",
+      documents: "/documents",
+    };
+    const next: Record<string, boolean> = {};
+    Object.entries(baseMap).forEach(([id, base]) => {
+      next[id] = location.pathname === base || location.pathname.startsWith(base + "/");
+    });
+    setOpenSections(next);
   }, [location.pathname]);
 
   // Close sidebar when route changes (mobile UX improvement)
@@ -234,9 +252,137 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     ],
   };
 
+  // Sections with dropdown subitems (deep links)
+  const sections = [
+    {
+      id: "admin",
+      title: "Admin & IT",
+      base: "/admin-dashboard",
+      icon: Monitor,
+      allowedRoles: ["admin"],
+      subitems: [
+        { title: "System Monitoring", url: "/admin-dashboard/monitoring" },
+        { title: "User Management", url: "/admin-dashboard/users" },
+        { title: "Modules & API", url: "/admin-dashboard/modules" },
+        { title: "Security", url: "/admin-dashboard/security" },
+        { title: "Logs & Audit", url: "/admin-dashboard/logs" },
+      ],
+    },
+    {
+      id: "design",
+      title: "Design Dashboard",
+      base: "/design-dashboard",
+      icon: PaintBucket,
+      allowedRoles: ["admin", "md", "client-manager", "site"],
+      subitems: [
+        { title: "Design Overview", url: "/design-dashboard/overview" },
+        { title: "Review Queue", url: "/design-dashboard/queue" },
+      ],
+    },
+    {
+      id: "client",
+      title: "Client Dashboard",
+      base: "/client-manager",
+      icon: Users,
+      allowedRoles: ["admin", "md", "client-manager"],
+      subitems: [
+        { title: "Client Engagement", url: "/client-manager/engagement" },
+        { title: "Billing Insights", url: "/client-manager/billing" },
+      ],
+    },
+    {
+      id: "store",
+      title: "Store Dashboard",
+      base: "/store-manager",
+      icon: Package,
+      allowedRoles: ["admin", "md", "store"],
+      subitems: [
+        { title: "Overview", url: "/store-manager/overview" },
+        { title: "Analytics", url: "/store-manager/analytics" },
+        { title: "Vehicle Tracking", url: "/store-manager/vehicle-tracking" },
+        { title: "Store Staff", url: "/store-manager/store-staffs" },
+      ],
+    },
+    {
+      id: "accounts",
+      title: "Accounts Dashboard",
+      base: "/accounts-manager",
+      icon: DollarSign,
+      allowedRoles: ["admin", "md", "accounts"],
+      subitems: [
+        { title: "Overview", url: "/accounts-manager/overview" },
+        { title: "Invoicing", url: "/accounts-manager/invoicing" },
+        { title: "Budget Control", url: "/accounts-manager/budget" },
+        { title: "Payroll & Compliance", url: "/accounts-manager/payroll" },
+        { title: "Tax Management", url: "/accounts-manager/taxes" },
+      ],
+    },
+    {
+      id: "site",
+      title: "Site Dashboard",
+      base: "/site-manager",
+      icon: HardHat,
+      allowedRoles: ["admin", "md", "site"],
+      subitems: [
+        { title: "Execution Timeline", url: "/site-manager/timeline" },
+        { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
+      ],
+    },
+    {
+      id: "projects",
+      title: "Project Management",
+      base: "/projects",
+      icon: ClipboardList,
+      allowedRoles: ["admin", "md", "project"],
+      subitems: [
+        { title: "Overview", url: "/projects/overview" },
+        { title: "List", url: "/projects/list" },
+        { title: "Milestone", url: "/projects/milestone" },
+      ],
+    },
+    {
+      id: "inventory",
+      title: "Inventory",
+      base: "/inventory",
+      icon: Warehouse,
+      allowedRoles: ["admin", "md", "store", "site"],
+      subitems: [
+        { title: "Inventory", url: "/inventory/inventory" },
+        { title: "Material Forecast", url: "/inventory/material-forecast" },
+        { title: "Issue Tracking", url: "/inventory/issue-tracking" },
+        { title: "Transfers", url: "/inventory/transfers" },
+        { title: "Warehouse", url: "/inventory/warehouse" },
+      ],
+    },
+    {
+      id: "documents",
+      title: "Documents",
+      base: "/documents",
+      icon: FileText,
+      allowedRoles: [
+        "admin",
+        "md",
+        "client-manager",
+        "store",
+        "accounts",
+        "site",
+        "client",
+        "hr",
+        "project",
+      ],
+      subitems: [
+        { title: "All Files", url: "/documents/all" },
+        { title: "My Documents", url: "/documents/my" },
+      ],
+    },
+  ];
+
   const filteredItems = user
     ? items.filter((item) => item.allowedRoles.includes(user.role))
     : [];
+
+  const sectionBases = sections.map((s) => s.base);
+  const filteredItemsNoSections = filteredItems.filter((i) => !sectionBases.includes(i.url));
 
   const showHR = user && hrItems.allowedRoles.includes(user.role);
 
@@ -318,58 +464,64 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 ERP Modules
               </h3>
               <div className="space-y-1">
-                {/* HR Dropdown Menu - Show at top only for HR role users */}
-                {showHR && user?.role === "hr" && (
-                  <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start gap-3 h-12 px-3 text-left",
-                          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          "active:scale-95 transition-all duration-150",
-                          "touch-manipulation text-sidebar-foreground",
-                          activeItem.startsWith("/hr") && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                        )}
-                      >
-                        <hrItems.icon className="h-5 w-5 flex-shrink-0" />
-                        <span className="text-sm font-medium truncate flex-1">
-                          {hrItems.title}
-                        </span>
-                        {isHROpen ? (
-                          <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 flex-shrink-0" />
-                        )}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="ml-8 space-y-1 mt-1">
-                        {hrItems.subitems.map((subitem) => (
-                          <Button
-                            key={subitem.title}
-                            variant="ghost"
-                            className={cn(
-                              "w-full justify-start gap-3 h-10 px-3 text-left",
-                              "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                              "active:scale-95 transition-all duration-150",
-                              "touch-manipulation text-sidebar-foreground",
-                              activeItem === subitem.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                            )}
-                            onClick={() => handleMenuItemClick(subitem.url)}
-                          >
-                            <span className="text-sm font-medium truncate">
-                              {subitem.title}
-                            </span>
-                          </Button>
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                )}
-                
-                {/* Regular menu items */}
-                {filteredItems.map((item) => (
+                {/* Collapsible dropdown sections */}
+                {sections
+                  .filter((section) => user && section.allowedRoles.includes(user.role))
+                  .map((section) => (
+                    <Collapsible
+                      key={section.id}
+                      open={openSections[section.id]}
+                      onOpenChange={(o) => setOpenSections((prev) => ({ ...prev, [section.id]: o }))}
+                    >
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start gap-3 h-12 px-3 text-left",
+                            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            "active:scale-95 transition-all duration-150",
+                            "touch-manipulation text-sidebar-foreground",
+                            (activeItem === section.base || activeItem.startsWith(section.base + "/")) && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                          )}
+                        >
+                          <section.icon className="h-5 w-5 flex-shrink-0" />
+                          <span className="text-sm font-medium truncate flex-1">
+                            {section.title}
+                          </span>
+                          {openSections[section.id] ? (
+                            <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 flex-shrink-0" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="ml-8 space-y-1 mt-1">
+                          {section.subitems.map((subitem) => (
+                            <Button
+                              key={subitem.title}
+                              variant="ghost"
+                              className={cn(
+                                "w-full justify-start gap-3 h-10 px-3 text-left",
+                                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                "active:scale-95 transition-all duration-150",
+                                "touch-manipulation text-sidebar-foreground",
+                                activeItem === subitem.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                              )}
+                              onClick={() => handleMenuItemClick(subitem.url)}
+                            >
+                              <span className="text-sm font-medium truncate">
+                                {subitem.title}
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+
+                {/* Keep other single links not part of dropdown */}
+                {filteredItemsNoSections.map((item) => (
                   <Button
                     key={item.title}
                     variant="ghost"
@@ -388,9 +540,9 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                     </span>
                   </Button>
                 ))}
-                
-                {/* HR Dropdown Menu - Show at bottom for admin/md users */}
-                {showHR && user?.role !== "hr" && (
+
+                {/* HR Dropdown */}
+                {showHR && (
                   <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                     <CollapsibleTrigger asChild>
                       <Button
