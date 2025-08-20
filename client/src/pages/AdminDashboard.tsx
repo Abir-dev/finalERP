@@ -404,10 +404,10 @@ const ITDashboard = () => {
             System administration and IT operations
           </p>
         </div>
-        <Button onClick={handleManualSync} className="gap-2">
+        {/* <Button onClick={handleManualSync} className="gap-2">
           <Settings className="h-4 w-4" />
           Manual Sync
-        </Button>
+        </Button> */}
       </div>
 
       <Tabs defaultValue="monitoring" className="space-y-6">
