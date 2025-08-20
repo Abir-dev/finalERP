@@ -139,12 +139,12 @@ export function AppSidebar() {
       icon: HardHat,
       allowedRoles: ["admin", "md", "site"],
     },
-    {
-      title: "Client Portal",
-      url: "/client-portal",
-      icon: Building2,
-      allowedRoles: ["admin", "client"],
-    },
+    // {
+    //   title: "Client Portal",
+    //   url: "/client-portal",
+    //   icon: Building2,
+    //   allowedRoles: ["admin", "client"],
+    // },
     {
       title: "Project Management",
       url: "/projects",
@@ -176,22 +176,22 @@ export function AppSidebar() {
       icon: Warehouse,
       allowedRoles: ["admin", "md", "store", "site"],
     },
-    {
-      title: "Documents",
-      url: "/documents",
-      icon: FileText,
-      allowedRoles: [
-        "admin",
-        "md",
-        "client-manager",
-        "store",
-        "accounts",
-        "site",
-        "client",
-        "hr",
-        "project"
-      ],
-    },
+    // {
+    //   title: "Documents",
+    //   url: "/documents",
+    //   icon: FileText,
+    //   allowedRoles: [
+    //     "admin",
+    //     "md",
+    //     "client-manager",
+    //     "store",
+    //     "accounts",
+    //     "site",
+    //     "client",
+    //     "hr",
+    //     "project"
+    //   ],
+    // },
     {
       title: "Calendar",
       url: "/calendar",
@@ -208,12 +208,12 @@ export function AppSidebar() {
         "project"
       ],
     },
-    {
-      title: "System Settings",
-      url: "/settings",
-      icon: Settings,
-      allowedRoles: ["admin"],
-    },
+    // {
+    //   title: "System Settings",
+    //   url: "/settings",
+    //   icon: Settings,
+    //   allowedRoles: ["admin"],
+    // },
   ];
 
   // HR menu items with subitems
@@ -347,40 +347,40 @@ export function AppSidebar() {
         { title: "Warehouse", url: "/inventory/warehouse" },
       ],
     },
-    {
-      id: "documents",
-      title: "Documents",
-      base: "/documents",
-      icon: FileText,
-      allowedRoles: [
-        "admin",
-        "md",
-        "client-manager",
-        "store",
-        "accounts",
-        "site",
-        "client",
-        "hr",
-        "project",
-      ],
-      subitems: [
-        { title: "All Files", url: "/documents/all" },
-        { title: "My Documents", url: "/documents/my" },
-      ],
-    },
-    {
-      id: "client-portal",
-      title: "Client Portal",
-      base: "/client-portal",
-      icon: Users,
-      allowedRoles: ["admin", "md", "client"],
-      subitems: [
-        { title: "Design Review", url: "/client-portal/designs" },
-        { title: "Financials", url: "/client-portal/financials" },
-        { title: "Progress Tracker", url: "/client-portal/progress" },
-        { title: "Documents", url: "/client-portal/documents" },
-      ],
-    },
+    // {
+    //   id: "documents",
+    //   title: "Documents",
+    //   base: "/documents",
+    //   icon: FileText,
+    //   allowedRoles: [
+    //     "admin",
+    //     "md",
+    //     "client-manager",
+    //     "store",
+    //     "accounts",
+    //     "site",
+    //     "client",
+    //     "hr",
+    //     "project",
+    //   ],
+    //   subitems: [
+    //     { title: "All Files", url: "/documents/all" },
+    //     { title: "My Documents", url: "/documents/my" },
+    //   ],
+    // },
+    // {
+    //   id: "client-portal",
+    //   title: "Client Portal",
+    //   base: "/client-portal",
+    //   icon: Users,
+    //   allowedRoles: ["admin", "md", "client"],
+    //   subitems: [
+    //     { title: "Design Review", url: "/client-portal/designs" },
+    //     { title: "Financials", url: "/client-portal/financials" },
+    //     { title: "Progress Tracker", url: "/client-portal/progress" },
+    //     { title: "Documents", url: "/client-portal/documents" },
+    //   ],
+    // },
     {
       id: "tender",
       title: "Tender Management",
