@@ -483,6 +483,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                             "touch-manipulation text-sidebar-foreground",
                             (activeItem === section.base || activeItem.startsWith(section.base + "/")) && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                           )}
+                          onClick={() => handleMenuItemClick(section.base)}
                         >
                           <section.icon className="h-5 w-5 flex-shrink-0" />
                           <span className="text-sm font-medium truncate flex-1">
@@ -554,6 +555,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                           "touch-manipulation text-sidebar-foreground",
                           activeItem.startsWith("/hr") && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                         )}
+                        onClick={() => handleMenuItemClick("/hr")}
                       >
                         <hrItems.icon className="h-5 w-5 flex-shrink-0" />
                         <span className="text-sm font-medium truncate flex-1">

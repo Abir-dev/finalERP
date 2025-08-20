@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -145,6 +146,8 @@ const payrollColumns: ColumnDef<any>[] = [
 ]
 
 const AccountsDashboard = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
     const [isPayrollModalOpen, setIsPayrollModalOpen] = useState(false)
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
@@ -190,6 +193,29 @@ const AccountsDashboard = () => {
             avgSalaryLabel: `₹${(avg / 1000).toFixed(0)}K`
         };
     }, [employees]);
+
+    // Function to get current tab from URL
+    const getCurrentTab = () => {
+        const path = location.pathname;
+        if (path.includes('/overview')) return 'overview';
+        if (path.includes('/invoicing')) return 'invoicing';
+        if (path.includes('/budget')) return 'budget';
+        if (path.includes('/payroll')) return 'payroll';
+        if (path.includes('/taxes')) return 'taxes';
+        return 'overview'; // default tab
+    };
+
+    // Handle tab changes
+    const handleTabChange = (value: string) => {
+        const tabRoutes: Record<string, string> = {
+            overview: '/accounts-manager/overview',
+            invoicing: '/accounts-manager/invoicing',
+            budget: '/accounts-manager/budget',
+            payroll: '/accounts-manager/payroll',
+            taxes: '/accounts-manager/taxes'
+        };
+        navigate(tabRoutes[value]);
+    };
 
     useEffect(() => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -542,7 +568,7 @@ const AccountsDashboard = () => {
                 </div>
             </div>
 
-            <Tabs defaultValue="overview" className="space-y-6">
+            <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
@@ -598,7 +624,7 @@ const AccountsDashboard = () => {
                                         <CartesianGrid strokeDasharray="3 3" />
                                         <XAxis dataKey="month" />
                                         <YAxis />
-                                        <Tooltip formatter={(value) => [`₹${(Number(value) / 100000).toFixed(1)}L`, '']} />
+                                        <Tooltip formatter={(value) => [`��${(Number(value) / 100000).toFixed(1)}L`, '']} />
                                         <Line type="monotone" dataKey="invoiced" stroke="#3b82f6" strokeWidth={2} />
                                         <Line type="monotone" dataKey="collected" stroke="#10b981" strokeWidth={2} />
                                         <Line type="monotone" dataKey="outstanding" stroke="#ef4444" strokeWidth={2} />
@@ -1473,4 +1499,3 @@ const AccountsDashboard = () => {
 }
 
 export default AccountsDashboard
-

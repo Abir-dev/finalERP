@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -455,6 +456,8 @@ const DPRModal = ({ onClose, projects }) => {
 
 const ProjectsContent = () => {
     const { user } = useUser();
+    const location = useLocation();
+    const navigate = useNavigate();
     // Use UserFilter Context
     const { 
         targetUserId, 
@@ -463,7 +466,26 @@ const ProjectsContent = () => {
         setSelectedUserId 
     } = useUserFilter();
     const userID = targetUserId || user?.id || ""
-    
+
+    // Function to get current tab from URL
+    const getCurrentTab = () => {
+        const path = location.pathname;
+        if (path.includes('/overview')) return 'overview';
+        if (path.includes('/list')) return 'list';
+        if (path.includes('/milestone')) return 'milestone';
+        return 'overview'; // default tab
+    };
+
+    // Handle tab changes
+    const handleTabChange = (value: string) => {
+        const tabRoutes: Record<string, string> = {
+            overview: '/projects/overview',
+            list: '/projects/list',
+            milestone: '/projects/milestone'
+        };
+        navigate(tabRoutes[value]);
+    };
+
     const [searchQuery, setSearchQuery] = useState("");
     const [view, setView] = useState("overview");
     const [showDPRModal, setShowDPRModal] = useState(false);
@@ -1463,7 +1485,15 @@ Add any additional notes here...
                 </div>
             </div>
 
-            {subview === 'main' && (
+            <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="list">List</TabsTrigger>
+                    <TabsTrigger value="milestone">Milestone</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-6">
+                    {subview === 'main' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard
                         title="Total Square Footage"
@@ -2785,6 +2815,33 @@ Add any additional notes here...
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+                </TabsContent>
+
+                <TabsContent value="list" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Project List</CardTitle>
+                            <CardDescription>Detailed list view of all projects</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p>Project list view coming soon...</p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="milestone" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Project Milestones</CardTitle>
+                            <CardDescription>Track and manage project milestones</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p>Milestone tracking view coming soon...</p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             {/* DPR Modal */}
             {showDPRModal && (

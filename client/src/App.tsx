@@ -128,6 +128,10 @@ const AppLayout = () => {
             <Routes>
               <Route index element={<Index />} />
               <Route path="/md-dashboard" element={<MDDashboard />} />
+              <Route path="/md-dashboard/executive" element={<MDDashboard />} />
+              <Route path="/md-dashboard/projects" element={<MDDashboard />} />
+              <Route path="/md-dashboard/financials" element={<MDDashboard />} />
+
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
               <Route path="/design-dashboard" element={<DesignDashboard />} />
               <Route path="/client-manager" element={<ClientManagerDashboard />} />
@@ -136,7 +140,12 @@ const AppLayout = () => {
               <Route path="/site-manager" element={<SiteDashboard />} />
               <Route path="/active-tasks" element={<ActiveTasksPage />} />
               <Route path="/active-tasks/:taskId" element={<TaskDetailPage />} />
+
               <Route path="/client-portal" element={<ClientPortal />} />
+              <Route path="/client-portal/designs" element={<ClientPortal />} />
+              <Route path="/client-portal/financials" element={<ClientPortal />} />
+              <Route path="/client-portal/progress" element={<ClientPortal />} />
+              <Route path="/client-portal/documents" element={<ClientPortal />} />
               
               {/* ERP module pages */}
               <Route path="/projects" element={<Projects />} />

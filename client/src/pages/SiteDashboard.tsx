@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -454,6 +454,7 @@ const issueColumns: ColumnDef<Issue>[] = [
 // Add subview state and selected task state
 const SiteDashboardContent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   // Modal states
   const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
   const [isWPRModalOpen, setIsWPRModalOpen] = useState(false);
@@ -539,6 +540,24 @@ const SiteDashboardContent = () => {
     isAdminUser 
   } = useUserFilter();
   const userID = targetUserId || user?.id || "";
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/timeline')) return 'timeline';
+    if (path.includes('/reports')) return 'reports';
+    return 'timeline'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      timeline: '/site-manager/timeline',
+      reports: '/site-manager/reports'
+    };
+    navigate(tabRoutes[value]);
+  };
+
   // Progress Reports Data
   const [dprs, setDprs] = useState<any[]>([]);
   const [wprs, setWprs] = useState<any[]>([]);
@@ -2630,7 +2649,7 @@ const SiteDashboardContent = () => {
           )}
         </div>
       )} */}
-      <Tabs defaultValue="timeline" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import { User } from "@/types/user";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { PurchaseDashboard } from "@/components/purchase-management/purchase-dashboard";
 import { toast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -234,6 +234,8 @@ const AutoStockCheck = ({
 
 const PurchaseManagementContent = () => {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
   
   // Use UserFilter Context
   const { 
@@ -256,8 +258,25 @@ const PurchaseManagementContent = () => {
     priority: 'medium',
     attachments: null
   });
-  
-  const navigate = useNavigate();
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/dashboard')) return 'dashboard';
+    if (path.includes('/procurement')) return 'procurement';
+    if (path.includes('/vendors')) return 'vendors';
+    return 'dashboard'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      dashboard: '/purchase-management/dashboard',
+      procurement: '/purchase-management/procurement',
+      vendors: '/purchase-management/vendors'
+    };
+    navigate(tabRoutes[value]);
+  };
 
   // Auto-reset on page change
   useEffect(() => {
@@ -889,14 +908,12 @@ const handleNewContractSubmit = async () => {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-6">
-        {/* <TabsList className="grid w-full grid-cols-5">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="procurement">Smart Procurement</TabsTrigger>
           <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
-          <TabsTrigger value="optimization">Cost Optimization</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList> */}
+        </TabsList>
 
        
           {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -933,8 +950,9 @@ const handleNewContractSubmit = async () => {
             />
           </div> */}
 
+        <TabsContent value="dashboard" className="space-y-6">
           <PurchaseDashboard selectedUserId={userID} />
-        
+        </TabsContent>
 
         <TabsContent value="procurement" className="space-y-6">
           <Card>

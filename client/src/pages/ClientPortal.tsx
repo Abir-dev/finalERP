@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -34,6 +35,8 @@ const progressData = [
 ]
 
 const ClientPortal = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isDesignModalOpen, setIsDesignModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [isServiceRequestModalOpen, setIsServiceRequestModalOpen] = useState(false)
@@ -46,6 +49,27 @@ const ClientPortal = () => {
   const [progress, setProgress] = useState([]);
   const [designs, setDesigns] = useState([]);
   const [invoices, setInvoices] = useState([]);
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/designs')) return 'designs';
+    if (path.includes('/financials')) return 'financials';
+    if (path.includes('/progress')) return 'progress';
+    if (path.includes('/documents')) return 'documents';
+    return 'designs'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      designs: '/client-portal/designs',
+      financials: '/client-portal/financials',
+      progress: '/client-portal/progress',
+      documents: '/client-portal/documents'
+    };
+    navigate(tabRoutes[value]);
+  };
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -173,7 +197,7 @@ const ClientPortal = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="designs" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="designs">Design Review</TabsTrigger>
           <TabsTrigger value="financials">Financials</TabsTrigger>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -53,6 +54,8 @@ const clientColumns: ColumnDef<ClientRow>[] = [
 ]
 
 const ClientManagerDashboardContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [clientManagerStats, setClientManagerStats] = useState({ responsiveness: '', pendingApprovals: 0, avgDelay: '', slaBreaches: 0 });
   const [engagementData, setEngagementData] = useState([]);
   const [approvalDelayData, setApprovalDelayData] = useState([]);
@@ -88,6 +91,23 @@ const ClientManagerDashboardContent = () => {
     } = useUserFilter();
 
   const userID = targetUserId || user?.id;
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/engagement')) return 'engagement';
+    if (path.includes('/billing')) return 'billing';
+    return 'engagement'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      engagement: '/client-manager/engagement',
+      billing: '/client-manager/billing'
+    };
+    navigate(tabRoutes[value]);
+  };
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -233,7 +253,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
         </Button>
       </div>
 
-      <Tabs defaultValue="engagement" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="engagement">Client Engagement</TabsTrigger>
           {/* <TabsTrigger value="approvals">Approvals & Escalations</TabsTrigger> */}
@@ -951,6 +971,3 @@ const ClientManagerDashboard = () => {
   );
 };
 export default ClientManagerDashboard;
-
-
-

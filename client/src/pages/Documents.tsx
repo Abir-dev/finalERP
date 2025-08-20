@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { File, FileText, FolderClosed, FolderOpen, Plus, Search, Upload, MoreVertical, Download, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,6 +45,8 @@ const MOCK_USERS: User[] = [
 
 const Documents = () => {
   const { toast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState<Document[]>([
     { id: '1', name: 'Project Documents', type: 'folder', modifiedDate: '2024-02-20', category: 'my' },
     { id: '2', name: 'Site Photos', type: 'folder', modifiedDate: '2024-02-19', category: 'my' },
@@ -75,6 +78,24 @@ const Documents = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/all')) return 'all';
+    if (path.includes('/my')) return 'my';
+    return 'all'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      all: '/documents/all',
+      my: '/documents/my'
+    };
+    navigate(tabRoutes[value]);
+    setActiveTab(value);
+  };
   const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -256,7 +277,7 @@ const Documents = () => {
         />
       </div>
       
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="all" value={getCurrentTab()} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="all">
             <FolderOpen className="mr-2 h-4 w-4" />

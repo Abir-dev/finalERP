@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -69,6 +70,8 @@ const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 const TenderManagementContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isGRNModalOpen, setIsGRNModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
@@ -174,6 +177,25 @@ const TenderManagementContent = () => {
     }
   };
  
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/dashboard')) return 'dashboard';
+    if (path.includes('/preparation')) return 'preparation';
+    if (path.includes('/tracking')) return 'tracking';
+    return 'dashboard'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      dashboard: '/tender-management/dashboard',
+      preparation: '/tender-management/preparation',
+      tracking: '/tender-management/tracking'
+    };
+    navigate(tabRoutes[value]);
+  };
+
   useEffect(() => {
     if(userID){
     fetchTenders();
@@ -305,7 +327,7 @@ const TenderManagementContent = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="preparation">BOQ Generation</TabsTrigger>

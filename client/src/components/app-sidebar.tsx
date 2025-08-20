@@ -42,7 +42,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useUser } from "@/contexts/UserContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
   DropdownMenu,
@@ -58,6 +58,7 @@ import { cn } from "@/lib/utils";
 export function AppSidebar() {
   const { user, logout } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeItem, setActiveItem] = useState("/");
   const { state, toggleSidebar } = useSidebar();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -66,7 +67,7 @@ export function AppSidebar() {
 
   // Update active item and dropdown states based on current location
   useEffect(() => {
-    const currentPath = window.location.pathname;
+    const currentPath = location.pathname;
     setActiveItem(currentPath);
 
     if (currentPath.startsWith("/hr")) setIsHROpen(true);
@@ -87,7 +88,7 @@ export function AppSidebar() {
       next[id] = currentPath === base || currentPath.startsWith(base + "/");
     });
     setOpenSections(next);
-  }, []);
+  }, [location.pathname]);
 
   const items = [
     {
@@ -249,6 +250,18 @@ export function AppSidebar() {
       ],
     },
     {
+      id: "md",
+      title: "Managing Director",
+      base: "/md-dashboard",
+      icon: BarChart3,
+      allowedRoles: ["admin", "md"],
+      subitems: [
+        { title: "Executive Overview", url: "/md-dashboard/executive" },
+        { title: "Project Performance", url: "/md-dashboard/projects" },
+        { title: "Financial Insights", url: "/md-dashboard/financials" },
+      ],
+    },
+    {
       id: "design",
       title: "Design Dashboard",
       base: "/design-dashboard",
@@ -355,6 +368,55 @@ export function AppSidebar() {
         { title: "My Documents", url: "/documents/my" },
       ],
     },
+    {
+      id: "client-portal",
+      title: "Client Portal",
+      base: "/client-portal",
+      icon: Users,
+      allowedRoles: ["admin", "md", "client"],
+      subitems: [
+        { title: "Design Review", url: "/client-portal/designs" },
+        { title: "Financials", url: "/client-portal/financials" },
+        { title: "Progress Tracker", url: "/client-portal/progress" },
+        { title: "Documents", url: "/client-portal/documents" },
+      ],
+    },
+    {
+      id: "tender",
+      title: "Tender Management",
+      base: "/tender-management",
+      icon: FileText,
+      allowedRoles: ["admin", "md", "accounts", "project"],
+      subitems: [
+        { title: "Dashboard", url: "/tender-management/dashboard" },
+        { title: "BOQ Generation", url: "/tender-management/preparation" },
+        { title: "Submission Tracking", url: "/tender-management/tracking" },
+      ],
+    },
+    {
+      id: "billing",
+      title: "Billing Management",
+      base: "/billing-management",
+      icon: DollarSign,
+      allowedRoles: ["admin", "md", "accounts"],
+      subitems: [
+        { title: "Overview", url: "/billing-management/overview" },
+        { title: "Invoices", url: "/billing-management/invoices" },
+        { title: "Payments", url: "/billing-management/payments" },
+      ],
+    },
+    {
+      id: "purchase",
+      title: "Purchase Management",
+      base: "/purchase-management",
+      icon: Package,
+      allowedRoles: ["admin", "md", "store", "accounts"],
+      subitems: [
+        { title: "Dashboard", url: "/purchase-management/dashboard" },
+        { title: "Smart Procurement", url: "/purchase-management/procurement" },
+        { title: "Vendor Management", url: "/purchase-management/vendors" },
+      ],
+    },
   ];
 
   const filteredItems = user
@@ -446,6 +508,7 @@ export function AppSidebar() {
                           isCollapsed && "justify-center px-0"
                         )}
                         tooltip={isCollapsed ? `${hrItems.title} - Click to expand` : undefined}
+                        onClick={() => handleMenuItemClick("/hr")}
                       >
                         <div
                           className={cn(
@@ -512,6 +575,7 @@ export function AppSidebar() {
                             isCollapsed && "justify-center px-0"
                           )}
                           tooltip={isCollapsed ? `${section.title} - Click to expand` : undefined}
+                          onClick={() => handleMenuItemClick(section.base)}
                         >
                           <div
                             className={cn(
@@ -597,6 +661,7 @@ export function AppSidebar() {
                           isCollapsed && "justify-center px-0"
                         )}
                         tooltip={isCollapsed ? `${hrItems.title} - Click to expand` : undefined}
+                        onClick={() => handleMenuItemClick("/hr")}
                       >
                         <div
                           className={cn(

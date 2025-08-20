@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
     Card,
     CardContent,
@@ -223,6 +224,8 @@ type MaintenanceSchedule = {
 };
 
 const StoreDashboardContent = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [isGRNModalOpen, setIsGRNModalOpen] = useState(false);
     const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -297,6 +300,27 @@ const StoreDashboardContent = () => {
     // Admin user selection state
 
     const [allUsers, setAllUsers] = useState<User[]>([]);
+
+    // Function to get current tab from URL
+    const getCurrentTab = () => {
+        const path = location.pathname;
+        if (path.includes('/overview')) return 'overview';
+        if (path.includes('/analytics')) return 'analytics';
+        if (path.includes('/vehicle-tracking')) return 'vehicle-tracking';
+        if (path.includes('/store-staffs')) return 'store-staffs';
+        return 'overview'; // default tab
+    };
+
+    // Handle tab changes
+    const handleTabChange = (value: string) => {
+        const tabRoutes: Record<string, string> = {
+            overview: '/store-manager/overview',
+            analytics: '/store-manager/analytics',
+            'vehicle-tracking': '/store-manager/vehicle-tracking',
+            'store-staffs': '/store-manager/store-staffs'
+        };
+        navigate(tabRoutes[value]);
+    };
 
     const [inventory, setInventory] = useState<any[]>([]);
     const [stockData, setStockData] = useState<any[]>([]);
@@ -1248,7 +1272,8 @@ const StoreDashboardContent = () => {
           
 
             <Tabs
-                defaultValue="overview"
+                value={getCurrentTab()}
+                onValueChange={handleTabChange}
                 className="space-y-6"
             >
                 <TabsList className="grid w-full grid-cols-4">

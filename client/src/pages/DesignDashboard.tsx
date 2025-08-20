@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -188,6 +189,8 @@ const designColumns: ColumnDef<any>[] = [
 
 const DesignDashboardContent = () => {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [designStats, setDesignStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [approvalTrendData, setApprovalTrendData] = useState([]);
   const [turnaroundData, setTurnaroundData] = useState([]);
@@ -237,6 +240,23 @@ const DesignDashboardContent = () => {
       } = useUserFilter();
   
     const userID = targetUserId || user?.id;
+
+    // Function to get current tab from URL
+    const getCurrentTab = () => {
+      const path = location.pathname;
+      if (path.includes('/overview')) return 'overview';
+      if (path.includes('/queue')) return 'queue';
+      return 'overview'; // default tab
+    };
+
+    // Handle tab changes
+    const handleTabChange = (value: string) => {
+      const tabRoutes: Record<string, string> = {
+        overview: '/design-dashboard/overview',
+        queue: '/design-dashboard/queue'
+      };
+      navigate(tabRoutes[value]);
+    };
 
     const fetchDesigns = async () => {
       
@@ -598,7 +618,7 @@ const DesignDashboardContent = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Design Overview</TabsTrigger>
           {/* <TabsTrigger value="analytics">Approval Analytics</TabsTrigger> */}

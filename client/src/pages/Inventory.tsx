@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -252,6 +253,8 @@ const transferColumns = [
 ];
 
 const InventoryContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [inventoryTrends, setInventoryTrends] = useState([]);
   const [warehouseUtilization, setWarehouseUtilization] = useState([]);
   const [grnData, setGrnData] = useState([]);
@@ -268,6 +271,30 @@ const InventoryContent = () => {
   } = useUserFilter();
   
   const userID = targetUserId || user?.id || ""
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/inventory')) return 'inventory';
+    if (path.includes('/material-forecast')) return 'material-forecast';
+    if (path.includes('/issue-tracking')) return 'issue-tracking';
+    if (path.includes('/transfers')) return 'transfers';
+    if (path.includes('/warehouse')) return 'warehouse';
+    return 'inventory'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      inventory: '/inventory/inventory',
+      'material-forecast': '/inventory/material-forecast',
+      'issue-tracking': '/inventory/issue-tracking',
+      transfers: '/inventory/transfers',
+      warehouse: '/inventory/warehouse'
+    };
+    navigate(tabRoutes[value]);
+  };
+
   // Add new state variables for quick action dialogs
   const [isResolveIssuesOpen, setIsResolveIssuesOpen] = useState(false);
   const [isTrackMaterialsOpen, setIsTrackMaterialsOpen] = useState(false);
@@ -1579,7 +1606,7 @@ const InventoryContent = () => {
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="inventory" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           {/* <TabsTrigger value="project-overview">Project Overview</TabsTrigger> */}
           <TabsTrigger value="inventory">Inventory</TabsTrigger>

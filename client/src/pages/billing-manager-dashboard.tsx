@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
   FileText,
@@ -122,6 +123,8 @@ interface ProgressInvoice {
 }
 
 const BillingManagerDashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentEntryModal, setShowPaymentEntryModal] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
@@ -158,6 +161,25 @@ const BillingManagerDashboard = () => {
   const [generatingInvoice, setGeneratingInvoice] = useState<{
     [key: string]: boolean;
   }>({});
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/overview')) return 'overview';
+    if (path.includes('/invoices')) return 'invoices';
+    if (path.includes('/payments')) return 'payments';
+    return 'overview'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      overview: '/billing-management/overview',
+      invoices: '/billing-management/invoices',
+      payments: '/billing-management/payments'
+    };
+    navigate(tabRoutes[value]);
+  };
 
   useEffect(() => {
     const token =
@@ -920,7 +942,7 @@ File Size: ${doc.size}`;
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>

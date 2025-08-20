@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -141,6 +142,8 @@ const userColumns: ColumnDef<User>[] = [
 ];
 
 const ITDashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isSchemaModalOpen, setIsSchemaModalOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
@@ -188,6 +191,29 @@ const ITDashboard = () => {
     const userStatus = user.status?.toLowerCase();
     return userStatus === 'active';
   }).length;
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes('/monitoring')) return 'monitoring';
+    if (path.includes('/users')) return 'users';
+    if (path.includes('/modules')) return 'modules';
+    if (path.includes('/security')) return 'security';
+    if (path.includes('/logs')) return 'logs';
+    return 'monitoring'; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      monitoring: '/admin-dashboard/monitoring',
+      users: '/admin-dashboard/users',
+      modules: '/admin-dashboard/modules',
+      security: '/admin-dashboard/security',
+      logs: '/admin-dashboard/logs'
+    };
+    navigate(tabRoutes[value]);
+  };
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -410,7 +436,7 @@ const ITDashboard = () => {
         </Button> */}
       </div>
 
-      <Tabs defaultValue="monitoring" className="space-y-6">
+      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="monitoring">System Monitoring</TabsTrigger>
           <TabsTrigger value="users">User Management</TabsTrigger>
