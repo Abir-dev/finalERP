@@ -87,7 +87,7 @@ const ClientManagerDashboardContent = () => {
       isAdminUser 
     } = useUserFilter();
 
-  const userID = targetUserId || user?.id || "";
+  const userID = targetUserId || user?.id;
 
   useEffect(() => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
@@ -103,14 +103,14 @@ const ClientManagerDashboardContent = () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
         ? `${API_URL}/clients`
-        : `${API_URL}/clients?userId=${userID}`;
+        : `${API_URL}/clients/${userID}`;
     
     console.log("Fetching clients for user:", userID, "Endpoint:", endpoint);
     
     const response = await axios.get(endpoint, { headers });
     
     // Map API clients to table format with contact fields
-    const mapped: ClientRow[] = (response.data || []).map((c: any) => ({
+    const mapped: ClientRow[] = (response.data).map((c: any) => ({
       id: c.id,
       name: c.name,
       totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
@@ -125,6 +125,7 @@ const ClientManagerDashboardContent = () => {
     }));
     
     setClients(mapped);
+    console.log(clients)
     
   } catch (err: any) {
     console.log(err.message); // Handle error appropriately
