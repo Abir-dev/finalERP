@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BarChart3, Building2, Users, DollarSign, Calendar, TrendingUp } from "lucide-react"
+import { BarChart3, Building2, Users, DollarSign, Calendar, TrendingUp, FileText, CreditCard, ShoppingCart, Package } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useUser } from "@/contexts/UserContext"
 
@@ -64,6 +64,37 @@ const Index = () => {
     }
   ]
 
+  const managementModules = [
+    {
+      title: "Tender Management",
+      description: "BOQ generation, tender submissions and tracking",
+      icon: FileText,
+      link: "/tender-management",
+      color: "bg-cyan-500"
+    },
+    {
+      title: "Billing Management", 
+      description: "Invoice generation and payment tracking",
+      icon: CreditCard,
+      link: "/billing-management",
+      color: "bg-emerald-500"
+    },
+    {
+      title: "Purchase Management",
+      description: "Smart procurement and vendor management",
+      icon: ShoppingCart,
+      link: "/purchase-management",
+      color: "bg-violet-500"
+    },
+    {
+      title: "Inventory",
+      description: "Inventory tracking and warehouse management",
+      icon: Package,
+      link: "/inventory",
+      color: "bg-amber-500"
+    }
+  ]
+
   const { user } = useUser();
   const hasAccess = user?.role === "admin" || user?.role === "md";
   console.log("Current user role:", user?.role);
@@ -80,6 +111,7 @@ const Index = () => {
             </p>
           </div>
 
+          <h2 className="text-2xl font-bold mb-6">Dashboards</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {dashboards.map((dashboard) => (
               <Card key={dashboard.title} className="group hover:shadow-lg transition-all duration-300 hover:scale-105">
@@ -96,6 +128,30 @@ const Index = () => {
                   <Button asChild className="w-full group-hover:bg-primary/90">
                     <Link to={dashboard.link}>
                       Access Dashboard
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <h2 className="text-2xl font-bold mb-6 mt-12">Management Modules</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {managementModules.map((module) => (
+              <Card key={module.title} className="group hover:shadow-lg transition-all duration-300 hover:scale-105">
+                <CardHeader className="pb-3">
+                  <div className={`w-12 h-12 rounded-lg ${module.color} flex items-center justify-center mb-3`}>
+                    <module.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <CardTitle className="text-lg">{module.title}</CardTitle>
+                  <CardDescription className="text-sm">
+                    {module.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full group-hover:bg-primary/90">
+                    <Link to={module.link}>
+                      Access Module
                     </Link>
                   </Button>
                 </CardContent>

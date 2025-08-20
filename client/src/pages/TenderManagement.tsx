@@ -183,6 +183,7 @@ const TenderManagementContent = () => {
     if (path.includes('/dashboard')) return 'dashboard';
     if (path.includes('/preparation')) return 'preparation';
     if (path.includes('/tracking')) return 'tracking';
+    if (path.includes('/active-tenders')) return 'active-tenders';
     return 'dashboard'; // default tab
   };
 
@@ -191,7 +192,8 @@ const TenderManagementContent = () => {
     const tabRoutes: Record<string, string> = {
       dashboard: '/tender-management/dashboard',
       preparation: '/tender-management/preparation',
-      tracking: '/tender-management/tracking'
+      tracking: '/tender-management/tracking',
+      'active-tenders': '/tender-management/active-tenders'
     };
     navigate(tabRoutes[value]);
   };
@@ -1274,6 +1276,68 @@ const TenderManagementContent = () => {
         </TabsContent>
 
         <TabsContent value="active-tenders" className="space-y-6">
+          {/* Active Tenders Summary Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-green-600">
+                    {tenders.filter((t) => t.status === "ACTIVE").length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Active Tenders</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">
+                    ₹{(
+                      tenders
+                        .filter((t) => t.status === "ACTIVE")
+                        .reduce((sum, t) =>
+                          sum + (t.requirements?.reduce(
+                            (reqSum, req) => reqSum + (req.estimatedCost || 0),
+                            0
+                          ) || 0),
+                          0
+                        ) / 10000000
+                    ).toFixed(2)}Cr
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Value</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-orange-600">
+                    {tenders
+                      .filter((t) => t.status === "ACTIVE")
+                      .reduce((sum, t) => sum + (t.requirements?.length || 0), 0)
+                    }
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total Requirements</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-purple-600">
+                    {[...new Set(
+                      tenders
+                        .filter((t) => t.status === "ACTIVE")
+                        .map((t) => t.client?.name || t.client)
+                        .filter(Boolean)
+                    )].length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Active Clients</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Filter and Search Controls - Same as Dashboard */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex gap-2">
@@ -1282,7 +1346,7 @@ const TenderManagementContent = () => {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="submitted">Submitted</SelectItem>
@@ -1309,7 +1373,7 @@ const TenderManagementContent = () => {
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
-                Export All
+                Export Active
               </Button>
               <Button
                 onClick={() => {

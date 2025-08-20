@@ -202,8 +202,20 @@ const AppLayout = () => {
               
               {/* New ERP feature pages */}
               <Route path="/tender-management" element={<TenderManagement />} />
+              <Route path="/tender-management/dashboard" element={<TenderManagement />} />
+              <Route path="/tender-management/preparation" element={<TenderManagement />} />
+              <Route path="/tender-management/tracking" element={<TenderManagement />} />
+              <Route path="/tender-management/active-tenders" element={<TenderManagement />} />
+              
               <Route path="/billing-management" element={<BillingManagement />} />
+              <Route path="/billing-management/overview" element={<BillingManagement />} />
+              <Route path="/billing-management/invoices" element={<BillingManagement />} />
+              <Route path="/billing-management/payments" element={<BillingManagement />} />
+              
               <Route path="/purchase-management" element={<PurchaseManagement />} />
+              <Route path="/purchase-management/dashboard" element={<PurchaseManagement />} />
+              <Route path="/purchase-management/procurement" element={<PurchaseManagement />} />
+              <Route path="/purchase-management/vendors" element={<PurchaseManagement />} />
             </Routes>
           </div>
         </main>
