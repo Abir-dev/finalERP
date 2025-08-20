@@ -81,7 +81,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       site: "/site-manager",
       inventory: "/inventory",
       projects: "/projects",
-      documents: "/documents",
+      // documents: "/documents",
     };
     const next: Record<string, boolean> = {};
     Object.entries(baseMap).forEach(([id, base]) => {
@@ -158,12 +158,12 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       icon: HardHat,
       allowedRoles: ["admin", "md", "site"],
     },
-    {
-      title: "Client Portal",
-      url: "/client-portal",
-      icon: Building2,
-      allowedRoles: ["admin", "client"],
-    },
+    // {
+    //   title: "Client Portal",
+    //   url: "/client-portal",
+    //   icon: Building2,
+    //   allowedRoles: ["admin", "client"],
+    // },
     {
       title: "Project Management",
       url: "/projects",
@@ -195,22 +195,22 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       icon: Warehouse,
       allowedRoles: ["admin", "md", "store", "site"],
     },
-    {
-      title: "Documents",
-      url: "/documents",
-      icon: FileText,
-      allowedRoles: [
-        "admin",
-        "md",
-        "client-manager",
-        "store",
-        "accounts",
-        "site",
-        "client",
-        "hr",
-        "project"
-      ],
-    },
+    // {
+    //   title: "Documents",
+    //   url: "/documents",
+    //   icon: FileText,
+    //   allowedRoles: [
+    //     "admin",
+    //     "md",
+    //     "client-manager",
+    //     "store",
+    //     "accounts",
+    //     "site",
+    //     "client",
+    //     "hr",
+    //     "project"
+    //   ],
+    // },
     {
       title: "Calendar",
       url: "/calendar",
@@ -227,12 +227,12 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
         "project"
       ],
     },
-    {
-      title: "System Settings",
-      url: "/settings",
-      icon: Settings,
-      allowedRoles: ["admin"],
-    },
+    // {
+    //   title: "System Settings",
+    //   url: "/settings",
+    //   icon: Settings,
+    //   allowedRoles: ["admin"],
+    // },
   ];
 
   // HR menu items with subitems
