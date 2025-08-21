@@ -165,7 +165,88 @@ const EditableInvoiceTable = () => {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
+      {/* Mobile Layout */}
+      <div className="block lg:hidden space-y-3">
+        {invoices.map((invoice) => (
+          <div
+            key={invoice.id}
+            className={`border rounded-lg p-4 ${
+              isOverdue(invoice.dueDate, invoice.status) ? 'bg-red-50 border-red-200' : 'bg-white'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h4 className="font-mono text-sm font-medium">{invoice.invoiceNumber}</h4>
+                <p className="text-xs text-muted-foreground">{invoice.project?.name || 'N/A'}</p>
+                <p className="text-xs text-muted-foreground">{invoice.client?.name || 'N/A'}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-sm">₹{(invoice.total || 0).toLocaleString('en-IN')}</p>
+                <Badge className={`${getStatusColor(invoice.status)} text-xs`}>
+                  {invoice.status}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
+              <div>
+                <span className="text-muted-foreground">Due Date:</span>
+                <p className={`font-medium ${
+                  isOverdue(invoice.dueDate, invoice.status) ? 'text-red-600' : ''
+                }`}>
+                  {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Created:</span>
+                <p className="font-medium">
+                  {invoice.date ? new Date(invoice.date).toLocaleDateString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {/* <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEdit(invoice)}
+                className="flex-1 h-8 text-xs"
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                Edit
+              </Button> */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleView(invoice)}
+                className="flex-1 h-8 text-xs"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                View
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleEmailInvoice(invoice)}
+                className="h-8 px-2"
+              >
+                <Mail className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadInvoice(invoice)}
+                className="h-8 px-2"
+              >
+                <Download className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Layout */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-50">
@@ -181,8 +262,8 @@ const EditableInvoiceTable = () => {
           </thead>
           <tbody>
             {invoices.map((invoice) => (
-              <tr 
-                key={invoice.id} 
+              <tr
+                key={invoice.id}
                 className={`hover:bg-gray-50 ${
                   isOverdue(invoice.dueDate, invoice.status) ? 'bg-red-50' : ''
                 }`}
@@ -190,7 +271,7 @@ const EditableInvoiceTable = () => {
                 <td className="border border-gray-300 p-3">
                   <span className="font-mono text-[16px]">{invoice.invoiceNumber}</span>
                 </td>
-                
+
                 <td className="border border-gray-300 p-3">
                   <span className="text-[16px]">{invoice.project?.name || 'N/A'}</span>
                 </td>
@@ -225,28 +306,28 @@ const EditableInvoiceTable = () => {
 
                 <td className="border border-gray-300 p-3">
                   <div className="flex space-x-1">
-                    <Button 
+                    {/* <Button
                       variant="outline"
                       onClick={() => handleEdit(invoice)}
                       className="h-8 w-8 p-0 [touch-action:manipulation]"
                     >
                       <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
+                    </Button> */}
+                    <Button
                       variant="outline"
                       onClick={() => handleView(invoice)}
                       className="h-8 w-8 p-0 [touch-action:manipulation]"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => handleEmailInvoice(invoice)}
                       className="h-8 w-8 p-0 [touch-action:manipulation]"
                     >
                       <Mail className="h-4 w-4" />
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => handleDownloadInvoice(invoice)}
                       className="h-8 w-8 p-0 [touch-action:manipulation]"
@@ -283,4 +364,4 @@ const EditableInvoiceTable = () => {
   );
 };
 
-export default EditableInvoiceTable; 
+export default EditableInvoiceTable;

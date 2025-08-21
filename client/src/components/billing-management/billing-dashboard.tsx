@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { DollarSign, Calendar, FileText, TrendingUp, AlertTriangle, Clock, CheckCircle, Plus } from "lucide-react";
+import { DollarSign, Calendar, FileText, TrendingUp, AlertTriangle, Clock, CheckCircle, Plus, Eye, Edit } from "lucide-react";
 
 interface Bill {
   id: string;
@@ -117,59 +116,73 @@ export function BillingDashboard() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          {/* Hide tabs on mobile - navigation is handled by sidebar */}
+          <TabsList className="hidden md:grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="invoices">Invoices</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
+          {/* Mobile-specific section header */}
+          <div className="md:hidden mb-4">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="text-lg font-semibold">Billing Management</h2>
+                  <p className="text-xs text-muted-foreground">Invoice generation & payment tracking</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <TabsContent value="overview" className="space-y-4 mt-0">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               <Card>
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-blue-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Billed</p>
-                      <p className="text-2xl font-bold">₹{(totalAmount / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Total Billed</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold">₹{(totalAmount / 10000000).toFixed(1)}Cr</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
               <Card>
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Collected</p>
-                      <p className="text-2xl font-bold">₹{(paidAmount / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Collected</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold">₹{(paidAmount / 10000000).toFixed(1)}Cr</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
               <Card>
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-orange-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold">₹{(pendingAmount / 10000000).toFixed(1)}Cr</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold">₹{(pendingAmount / 10000000).toFixed(1)}Cr</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
               <Card>
-                <CardContent className="p-4">
+                <CardContent className="p-3 md:p-4">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-red-600" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Overdue</p>
-                      <p className="text-2xl font-bold">{overdueCount}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Overdue</p>
+                      <p className="text-lg sm:text-xl md:text-2xl font-bold">{overdueCount}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -234,11 +247,11 @@ export function BillingDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="invoices" className="space-y-4">
+          <TabsContent value="invoices" className="space-y-4 mt-0">
             {/* Filters */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -252,7 +265,7 @@ export function BillingDashboard() {
               </Select>
               
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filter by type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -270,18 +283,59 @@ export function BillingDashboard() {
               {filteredBills.map((bill) => (
                 <Card key={bill.id}>
                   <CardContent className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                      <div className="md:col-span-2">
-                        <h4 className="font-medium">{bill.billNumber}</h4>
-                        <p className="text-sm text-muted-foreground">{bill.projectName}</p>
-                        <p className="text-sm text-muted-foreground">{bill.client}</p>
+                    {/* Mobile Layout */}
+                    <div className="block lg:hidden space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{bill.billNumber}</h4>
+                          <p className="text-xs text-muted-foreground">{bill.projectName}</p>
+                          <p className="text-xs text-muted-foreground">{bill.client}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">₹{(bill.amount / 100000).toFixed(1)}L</p>
+                          <Badge variant={getStatusColor(bill.status)} className="text-xs">{bill.status}</Badge>
+                        </div>
                       </div>
-                      
+
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Progress</p>
+                          <div className="flex items-center gap-2">
+                            <Progress value={bill.workProgress} className="flex-1 h-2" />
+                            <span className="text-xs">{bill.workProgress}%</span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Due Date</p>
+                            <p className="text-sm font-medium">{bill.dueDate}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="outline" size="sm" className="h-8 px-2">
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-8 px-2">
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desktop Layout */}
+                    <div className="hidden lg:grid lg:grid-cols-6 gap-4">
+                      <div className="lg:col-span-2">
+                        <h4 className="font-medium text-sm sm:text-base">{bill.billNumber}</h4>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{bill.projectName}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">{bill.client}</p>
+                      </div>
+
                       <div>
                         <p className="text-sm text-muted-foreground">Amount</p>
                         <p className="font-medium">₹{(bill.amount / 100000).toFixed(1)}L</p>
                       </div>
-                      
+
                       <div>
                         <p className="text-sm text-muted-foreground">Progress</p>
                         <div className="flex items-center gap-2">
@@ -289,21 +343,23 @@ export function BillingDashboard() {
                           <span className="text-sm">{bill.workProgress}%</span>
                         </div>
                       </div>
-                      
+
                       <div>
-                        <p className="text-sm text-muted-foreground">Due Date</p>
-                        <p className="font-medium">{bill.dueDate}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Due Date</p>
+                        <p className="font-medium text-sm sm:text-base">{bill.dueDate}</p>
                         <div className="flex gap-1 mt-1">
                           <Badge variant={getStatusColor(bill.status)}>{bill.status}</Badge>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          View
+                        <Button variant="outline" size="sm" className="text-xs px-2 py-1 sm:text-sm sm:px-3 sm:py-2">
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">View</span>
                         </Button>
-                        <Button variant="outline" size="sm">
-                          Edit
+                        <Button variant="outline" size="sm" className="text-xs px-2 py-1 sm:text-sm sm:px-3 sm:py-2">
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Edit</span>
                         </Button>
                       </div>
                     </div>
@@ -313,7 +369,7 @@ export function BillingDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="payments" className="space-y-4">
+          <TabsContent value="payments" className="space-y-4 mt-0">
             <Card>
               <CardHeader>
                 <CardTitle>Payment Tracking</CardTitle>
@@ -352,8 +408,8 @@ export function BillingDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="reports" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TabsContent value="reports" className="space-y-4 mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Monthly Collections</CardTitle>

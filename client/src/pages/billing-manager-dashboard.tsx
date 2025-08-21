@@ -943,7 +943,8 @@ File Size: ${doc.size}`;
       </div>
 
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        {/* Hide tabs on mobile - navigation is handled by sidebar */}
+        <TabsList className="hidden md:grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
@@ -953,66 +954,85 @@ File Size: ${doc.size}`;
           {/* <TabsTrigger value="documents">Documents</TabsTrigger> */}
         </TabsList>
 
+        {/* Mobile-specific section header */}
+        <div className="md:hidden mb-4">
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <DollarSign className="h-5 w-5 text-primary" />
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {getCurrentTab() === "overview" ? "Overview" :
+                   getCurrentTab() === "invoices" ? "Invoices" : "Payments"}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Billing › {getCurrentTab() === "overview" ? "Overview" :
+                            getCurrentTab() === "invoices" ? "Invoices" : "Payments"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <TabsContent value="overview">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">
                       Total Invoices
                     </p>
-                    <p className="text-2xl font-bold">{invoices.length}</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold">{invoices.length}</p>
                   </div>
-                  <FileText className="h-8 w-8 text-blue-500" />
+                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">All invoices created</p>
+                <p className="text-xs text-gray-500 mt-1 md:mt-2">All invoices created</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">
                       Total Payments
                     </p>
-                    <p className="text-2xl font-bold">{payments.filter(p => p.paymentType === "RECEIVE").length}</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold">{payments.filter(p => p.paymentType === "RECEIVE").length}</p>
                   </div>
-                  <CreditCard className="h-8 w-8 text-green-500" />
+                  <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Received payments</p>
+                <p className="text-xs text-gray-500 mt-1 md:mt-2">Received payments</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">
                       Outstanding Amount
                     </p>
-                    <p className="text-2xl font-bold">{paymentSummary.overdue.amount}</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold">{paymentSummary.overdue.amount}</p>
                   </div>
-                  <Clock className="h-8 w-8 text-red-500" />
+                  <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-red-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{paymentSummary.overdue.count} overdue invoices</p>
+                <p className="text-xs text-gray-500 mt-1 md:mt-2">{paymentSummary.overdue.count} overdue invoices</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-6">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600">
                       Revenue Collected
                     </p>
-                    <p className="text-2xl font-bold">{paymentSummary.paid.amount}</p>
+                    <p className="text-lg sm:text-xl md:text-2xl font-bold">{paymentSummary.paid.amount}</p>
                   </div>
-                  <DollarSign className="h-8 w-8 text-green-500" />
+                  <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{paymentSummary.paid.count} paid invoices</p>
+                <p className="text-xs text-gray-500 mt-1 md:mt-2">{paymentSummary.paid.count} paid invoices</p>
               </CardContent>
             </Card>
           </div>
@@ -1170,10 +1190,10 @@ File Size: ${doc.size}`;
           </div>
         </TabsContent>
 
-        <TabsContent value="invoices">
-          <div className="space-y-6">
+        <TabsContent value="invoices" className="mt-0">
+          <div className="space-y-4 md:space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
                   <CardTitle>Invoice Management</CardTitle>
                 </div>
@@ -1181,6 +1201,7 @@ File Size: ${doc.size}`;
                   variant="outline"
                   size="sm"
                   onClick={handleExportStatement}
+                  className="w-full sm:w-auto"
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Export Statement
@@ -1196,20 +1217,20 @@ File Size: ${doc.size}`;
                 <CardTitle>Recent Invoices</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3 md:space-y-4">
                   {invoices.map((invoice) => (
                     <div
                       key={invoice.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 md:p-4 border rounded-lg gap-3 sm:gap-0"
                     >
-                      <div>
-                        <p className="font-medium">{invoice.invoiceNumber}</p>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm md:text-base">{invoice.invoiceNumber}</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">
                           {invoice.project.name}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">₹ {invoice.total}</p>
+                      <div className="flex justify-between sm:block sm:text-right">
+                        <p className="font-medium text-sm md:text-base">₹ {invoice.total?.toLocaleString('en-IN')}</p>
                         <Badge
                           variant={
                             invoice.status === "Sent"
@@ -1218,6 +1239,7 @@ File Size: ${doc.size}`;
                               ? "secondary"
                               : "outline"
                           }
+                          className="text-xs"
                         >
                           {invoice.status}
                         </Badge>
