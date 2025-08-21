@@ -10,7 +10,65 @@ export const getStoreOverview = async (req: Request, res: Response) => {
     const { userId } = req.query;
     
     if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+      // Get inventory KPIs
+    const totalItems = await prisma.inventory.count();
+
+    // Get low stock items by comparing quantity with reorderLevel
+    const lowStockItemsData = await prisma.inventory.findMany({
+      // where: { createdById: userId as string },
+      select: {
+        quantity: true,
+        reorderLevel: true
+      }
+    });
+    
+    const lowStockItems = lowStockItemsData.filter(item => item.quantity <= item.reorderLevel).length;
+
+    const totalValue = await prisma.inventory.aggregate({
+      // where: { createdById: userId as string },
+      _sum: {
+        unitCost: true
+      }
+    });
+
+    // Get transfer statistics
+    const activeTransfers = await prisma.materialTransfer.count({
+      where: {
+        // createdById: userId as string,
+        status: { in: ['PENDING', 'IN_TRANSIT'] }
+      }
+    });
+
+    const completedTransfers = await prisma.materialTransfer.count({
+      where: {
+        // createdById: userId as string,
+        status: 'DELIVERED'
+      }
+    });
+
+    // Get recent transactions
+    const recentTransactions = await prisma.materialTransfer.findMany({
+      // where: { createdById: userId as string },
+      include: {
+        items: true,
+        vehicle: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    });
+
+    const overview = {
+      kpis: {
+        totalItems,
+        lowStockItems,
+        totalValue: totalValue._sum.unitCost || 0,
+        activeTransfers,
+        completedTransfers
+      },
+      recentTransactions
+    };
+
+    res.json(overview);
     }
 
     // Get inventory KPIs
@@ -86,7 +144,15 @@ export const getInventoryData = async (req: Request, res: Response) => {
     const { userId, category, location } = req.query;
     
     if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+      const inventoryItems = await prisma.inventory.findMany({
+      include: {
+        primarySupplier: true,
+        // secondarySupplier: true
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    res.json(inventoryItems);
     }
 
     const whereClause: any = {
@@ -174,7 +240,20 @@ export const getTransfers = async (req: Request, res: Response) => {
     const { userId, status, priority } = req.query;
     
     if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+      const transfers = await prisma.materialTransfer.findMany({
+      include: {
+        items: {
+          include: {
+            inventory: true
+          }
+        },
+        vehicle: true,
+        approvedBy: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(transfers);
     }
 
     const whereClause: any = {
@@ -384,7 +463,66 @@ export const getCostAnalysis = async (req: Request, res: Response) => {
     const { userId, period = '6months' } = req.query;
     
     if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
+          const monthsBack = period === '6months' ? 6 : period === '12months' ? 12 : 3;
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - monthsBack);
+
+    // Get purchase orders for cost analysis
+    const purchaseOrders = await prisma.purchaseOrder.findMany({
+      where: {
+        // userId: userId as string,
+        createdAt: { gte: startDate }
+      },
+      include: {
+        items: true,
+        Vendor: true
+      }
+    });
+
+    // Calculate cost trends by month
+    const costByMonth = purchaseOrders.reduce((acc: any, po) => {
+      const month = po.createdAt.toISOString().slice(0, 7);
+      if (!acc[month]) {
+        acc[month] = {
+          totalCost: 0,
+          orderCount: 0,
+          avgOrderValue: 0
+        };
+      }
+      
+      acc[month].totalCost += Number(po.total);
+      acc[month].orderCount++;
+      acc[month].avgOrderValue = acc[month].totalCost / acc[month].orderCount;
+      
+      return acc;
+    }, {});
+
+    // Calculate cost by category from inventory
+    const inventoryCosts = await prisma.inventory.findMany({
+      // where: { createdById: userId as string },
+      select: {
+        category: true,
+        unitCost: true,
+        quantity: true
+      }
+    });
+
+    const costByCategory = inventoryCosts.reduce((acc: any, item) => {
+      const category = item.category;
+      if (!acc[category]) {
+        acc[category] = 0;
+      }
+      acc[category] += Number(item.unitCost) * item.quantity;
+      return acc;
+    }, {});
+
+    res.json({
+      costByMonth,
+      costByCategory,
+      totalSpend: Object.values(costByMonth).reduce((sum: number, month: any) => sum + month.totalCost, 0),
+      avgMonthlySpend: Object.values(costByMonth).length > 0 ? 
+        Object.values(costByMonth).reduce((sum: number, month: any) => sum + month.totalCost, 0) / Object.values(costByMonth).length : 0
+    });
     }
 
     const monthsBack = period === '6months' ? 6 : period === '12months' ? 12 : 3;
