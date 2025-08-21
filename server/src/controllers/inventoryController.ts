@@ -79,21 +79,37 @@ export const inventoryController = {
       res.status(400).json({ error: (err as Error).message });
     }
   },
-  async listItems(req: Request, res: Response) {
+   async listItems(req: Request, res: Response) {
     try {
       const {userId} = req.query
-      const items = await prisma.inventory.findMany({
-        where:{
-          createdById:userId as string
-        },
-        include: { 
-          createdBy: { select: { id: true, name: true, email: true } },
-          primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
-        }
-      });
-      res.json(items);
+      if(userId){
+        const items = await prisma.inventory.findMany({
+          where:{
+            createdById:userId as string
+          },
+          include: { 
+            createdBy: { select: { id: true, name: true, email: true } },
+            primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+            secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+            requests: true 
+          }
+        });
+        res.json(items);
+      }else{
+        const items = await prisma.inventory.findMany({
+          where:{
+            // createdById:userId as string
+          },
+          include: { 
+            createdBy: { select: { id: true, name: true, email: true } },
+            primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+            secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+            requests: true 
+          }
+        });
+        res.json(items);
+      }
+     
     } catch (error) {
       logger.error("Error fetching inventory items:", error);
       res.status(500).json({
@@ -455,14 +471,24 @@ export const inventoryController = {
     }
   },
 
-  async listMaterialTransfers(req: Request, res: Response) {
+ async listMaterialTransfers(req: Request, res: Response) {
     try {
       const { userId } = req.query;
-      if (!userId) {
-        return res.status(400).json({ error: "userId query param is required" });
-      }
+      if (userId) {
+        const transfers = await (prisma as any).materialTransfer.findMany({
+          where: { createdById: userId as string },
+          include: {
+            items: true,
+            vehicle: true,
+            approvedBy: { select: { id: true, name: true, email: true } },
+            createdBy: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        res.json(transfers);
+      }else{
       const transfers = await (prisma as any).materialTransfer.findMany({
-        where: { createdById: userId as string },
+        // where: { createdById: userId as string },
         include: {
           items: true,
           vehicle: true,
@@ -472,6 +498,7 @@ export const inventoryController = {
         orderBy: { createdAt: 'desc' },
       });
       res.json(transfers);
+    }
     } catch (error) {
       logger.error("Error fetching material transfers:", error);
       res.status(500).json({
@@ -480,7 +507,6 @@ export const inventoryController = {
       });
     }
   },
-
   async getMaterialTransfer(req: Request, res: Response) {
     try {
       const { id } = req.params;
