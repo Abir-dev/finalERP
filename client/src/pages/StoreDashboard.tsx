@@ -1290,7 +1290,7 @@ const StoreDashboardContent = () => {
           onValueChange={handleTabChange}
           className="space-y-2 sm:space-y-6 w-full overflow-x-auto"
         >
-          {/* Hide tabs on mobile - navigation is handled by sidebar */}
+          {/* Desktop tabs - visible only on desktop */}
           <TabsList className="hidden md:grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             {/* <TabsTrigger value="warehouse">Warehouse</TabsTrigger> */}
@@ -1298,26 +1298,6 @@ const StoreDashboardContent = () => {
             <TabsTrigger value="vehicle-tracking">Vehicle Tracking</TabsTrigger>
             <TabsTrigger value="store-staffs">Store Staff</TabsTrigger>
           </TabsList>
-
-          {/* Mobile tab navigation */}
-          <div className="md:hidden mb-4">
-            <TabsList className="w-full grid grid-cols-2 gap-1 h-auto p-1">
-              <TabsTrigger value="overview" className="text-xs">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs">
-                Analytics
-              </TabsTrigger>
-            </TabsList>
-            <TabsList className="w-full grid grid-cols-2 gap-1 h-auto p-1 mt-2">
-              <TabsTrigger value="vehicle-tracking" className="text-xs">
-                Vehicles
-              </TabsTrigger>
-              <TabsTrigger value="store-staffs" className="text-xs">
-                Staff
-              </TabsTrigger>
-            </TabsList>
-          </div>
 
           {/* Mobile-specific section header */}
           <div className="md:hidden mb-4">
@@ -1558,7 +1538,7 @@ const StoreDashboardContent = () => {
                                     {transfer.items?.length || 0} item(s)
                                   </span>
                                   <span className="text-sm text-gray-500">
-                                    {transfer.fromLocation} →{" "}
+                                    {transfer.fromLocation} ��{" "}
                                     {transfer.toLocation}
                                   </span>
                                 </div>

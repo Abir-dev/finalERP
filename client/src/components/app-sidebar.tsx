@@ -90,13 +90,17 @@ export function AppSidebar() {
     setOpenSections(next);
   }, [location.pathname]);
 
-  const items = [
+  // Split items into different categories for better organization
+  const topItems = [
     {
       title: "Home",
       url: "/",
       icon: Home,
       allowedRoles: ["admin", "md"],
     },
+  ];
+
+  const mainItems = [
     {
       title: "Managing Director",
       url: "/md-dashboard",
@@ -192,6 +196,9 @@ export function AppSidebar() {
     //     "project"
     //   ],
     // },
+  ];
+
+  const bottomItems = [
     {
       title: "Calendar",
       url: "/calendar",
@@ -420,21 +427,31 @@ export function AppSidebar() {
     },
   ];
 
-  const filteredItems = user
-    ? items.filter((item) => item.allowedRoles.includes(user.role))
+  const filteredTopItems = user
+    ? topItems.filter((item) => item.allowedRoles.includes(user.role))
+    : [];
+
+  const filteredMainItems = user
+    ? mainItems.filter((item) => item.allowedRoles.includes(user.role))
+    : [];
+
+  const filteredBottomItems = user
+    ? bottomItems.filter((item) => item.allowedRoles.includes(user.role))
     : [];
 
   const sectionBases = sections.map((s) => s.base);
-  const filteredItemsNoSections = filteredItems.filter((i) => !sectionBases.includes(i.url));
-  
+  const filteredTopItemsNoSections = filteredTopItems.filter((i) => !sectionBases.includes(i.url));
+  const filteredMainItemsNoSections = filteredMainItems.filter((i) => !sectionBases.includes(i.url));
+  const filteredBottomItemsNoSections = filteredBottomItems.filter((i) => !sectionBases.includes(i.url));
+
   const showHR = user && hrItems.allowedRoles.includes(user.role);
 
   const handleMenuItemClick = (url: string) => {
     setActiveItem(url);
     navigate(url);
-    
-    // Auto-open HR dropdown if navigating to HR pages
-    if (url.startsWith("/hr")) {
+
+    // Auto-open HR dropdown if navigating to HR pages (but not just "/hr")
+    if (url.startsWith("/hr") && url !== "/hr") {
       setIsHROpen(true);
     }
   };
@@ -498,66 +515,37 @@ export function AppSidebar() {
           {!isCollapsed && <SidebarGroupLabel>ERP Modules</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* HR Dropdown Menu - Show at top only for HR role users */}
-              {showHR && user?.role === "hr" && (
-                <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
+              {/* Top items (Home) */}
+              {filteredTopItemsNoSections.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    className={cn(
+                      activeItem === item.url ? "bg-accent" : "",
+                      isCollapsed && "justify-center px-0"
+                    )}
+                    onClick={() => handleMenuItemClick(item.url)}
+                    tooltip={isCollapsed ? item.title : undefined}
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center gap-2",
+                        isCollapsed && "justify-center"
+                      )}
+                    >
+                      <item.icon
                         className={cn(
-                          activeItem.startsWith("/hr") ? "bg-accent" : "",
-                          isCollapsed && "justify-center px-0"
+                          "flex-shrink-0",
+                          isCollapsed ? "h-4 w-4" : "h-4 w-4"
                         )}
-                        tooltip={isCollapsed ? `${hrItems.title} - Click to expand` : undefined}
-                        onClick={() => handleMenuItemClick("/hr")}
-                      >
-                        <div
-                          className={cn(
-                            "flex items-center gap-2 w-full",
-                            isCollapsed && "justify-center"
-                          )}
-                        >
-                          <hrItems.icon
-                            className={cn(
-                              "flex-shrink-0",
-                              isCollapsed ? "h-4 w-4" : "h-4 w-4"
-                            )}
-                          />
-                          {!isCollapsed && (
-                            <>
-                              <span className="truncate text-base flex-1">{hrItems.title}</span>
-                              {isHROpen ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {hrItems.subitems.map((subitem) => (
-                          <SidebarMenuSubItem key={subitem.title}>
-                            <SidebarMenuSubButton
-                              asChild
-                              isActive={activeItem === subitem.url}
-                            >
-                              <button
-                                onClick={() => handleMenuItemClick(subitem.url)}
-                                className="w-full text-left"
-                              >
-                                <span>{subitem.title}</span>
-                              </button>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
-              )}
+                      />
+                      {!isCollapsed && (
+                        <span className="truncate text-base">{item.title}</span>
+                      )}
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
               
               {/* Dropdown sections with subitems */}
               {sections
@@ -621,7 +609,7 @@ export function AppSidebar() {
                 ))}
 
               {/* Keep other single links that aren’t part of dropdown sections */}
-              {filteredItemsNoSections.map((item) => (
+              {filteredMainItemsNoSections.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     className={cn(
@@ -651,7 +639,7 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* HR Dropdown Menu - placed at end */}
+              {/* HR Dropdown Menu - positioned before Calendar */}
               {showHR && (
                 <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                   <SidebarMenuItem>
@@ -662,7 +650,6 @@ export function AppSidebar() {
                           isCollapsed && "justify-center px-0"
                         )}
                         tooltip={isCollapsed ? `${hrItems.title} - Click to expand` : undefined}
-                        onClick={() => handleMenuItemClick("/hr")}
                       >
                         <div
                           className={cn(
@@ -705,6 +692,37 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 </Collapsible>
               )}
+
+              {/* Bottom items (Calendar) */}
+              {filteredBottomItemsNoSections.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    className={cn(
+                      activeItem === item.url ? "bg-accent" : "",
+                      isCollapsed && "justify-center px-0"
+                    )}
+                    onClick={() => handleMenuItemClick(item.url)}
+                    tooltip={isCollapsed ? item.title : undefined}
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center gap-2",
+                        isCollapsed && "justify-center"
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "flex-shrink-0",
+                          isCollapsed ? "h-4 w-4" : "h-4 w-4"
+                        )}
+                      />
+                      {!isCollapsed && (
+                        <span className="truncate text-base">{item.title}</span>
+                      )}
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

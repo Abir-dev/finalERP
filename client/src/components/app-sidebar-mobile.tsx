@@ -109,13 +109,17 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     };
   }, [isOpen]);
 
-  const items = [
+  // Split items into different categories for better organization
+  const topItems = [
     {
       title: "Home",
       url: "/",
       icon: Home,
       allowedRoles: ["admin", "md"],
     },
+  ];
+
+  const mainItems = [
     {
       title: "Managing Director",
       url: "/md-dashboard",
@@ -211,6 +215,9 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     //     "project"
     //   ],
     // },
+  ];
+
+  const bottomItems = [
     {
       title: "Calendar",
       url: "/calendar",
@@ -377,12 +384,22 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     },
   ];
 
-  const filteredItems = user
-    ? items.filter((item) => item.allowedRoles.includes(user.role))
+  const filteredTopItems = user
+    ? topItems.filter((item) => item.allowedRoles.includes(user.role))
+    : [];
+
+  const filteredMainItems = user
+    ? mainItems.filter((item) => item.allowedRoles.includes(user.role))
+    : [];
+
+  const filteredBottomItems = user
+    ? bottomItems.filter((item) => item.allowedRoles.includes(user.role))
     : [];
 
   const sectionBases = sections.map((s) => s.base);
-  const filteredItemsNoSections = filteredItems.filter((i) => !sectionBases.includes(i.url));
+  const filteredTopItemsNoSections = filteredTopItems.filter((i) => !sectionBases.includes(i.url));
+  const filteredMainItemsNoSections = filteredMainItems.filter((i) => !sectionBases.includes(i.url));
+  const filteredBottomItemsNoSections = filteredBottomItems.filter((i) => !sectionBases.includes(i.url));
 
   const showHR = user && hrItems.allowedRoles.includes(user.role);
 
@@ -390,9 +407,9 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     setActiveItem(url);
     navigate(url);
     setIsOpen(false); // Close the sheet after navigation
-    
-    // Auto-open HR dropdown if navigating to HR pages
-    if (url.startsWith("/hr")) {
+
+    // Auto-open HR dropdown if navigating to HR pages (but not just "/hr")
+    if (url.startsWith("/hr") && url !== "/hr") {
       setIsHROpen(true);
     }
   };
@@ -464,6 +481,27 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                 ERP Modules
               </h3>
               <div className="space-y-1">
+                {/* Top items (Home) */}
+                {filteredTopItemsNoSections.map((item) => (
+                  <Button
+                    key={item.title}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start gap-3 h-12 px-3 text-left",
+                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "active:scale-95 transition-all duration-150",
+                      "touch-manipulation text-sidebar-foreground",
+                      activeItem === item.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    )}
+                    onClick={() => handleMenuItemClick(item.url)}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      {item.title}
+                    </span>
+                  </Button>
+                ))}
+
                 {/* Collapsible dropdown sections */}
                 {sections
                   .filter((section) => user && section.allowedRoles.includes(user.role))
@@ -522,7 +560,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                   ))}
 
                 {/* Keep other single links not part of dropdown */}
-                {filteredItemsNoSections.map((item) => (
+                {filteredMainItemsNoSections.map((item) => (
                   <Button
                     key={item.title}
                     variant="ghost"
@@ -542,7 +580,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                   </Button>
                 ))}
 
-                {/* HR Dropdown */}
+                {/* HR Dropdown - positioned before Calendar */}
                 {showHR && (
                   <Collapsible open={isHROpen} onOpenChange={setIsHROpen}>
                     <CollapsibleTrigger asChild>
@@ -555,7 +593,6 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                           "touch-manipulation text-sidebar-foreground",
                           activeItem.startsWith("/hr") && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                         )}
-                        onClick={() => handleMenuItemClick("/hr")}
                       >
                         <hrItems.icon className="h-5 w-5 flex-shrink-0" />
                         <span className="text-sm font-medium truncate flex-1">
@@ -592,6 +629,27 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
                     </CollapsibleContent>
                   </Collapsible>
                 )}
+
+                {/* Bottom items (Calendar) */}
+                {filteredBottomItemsNoSections.map((item) => (
+                  <Button
+                    key={item.title}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start gap-3 h-12 px-3 text-left",
+                      "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                      "active:scale-95 transition-all duration-150",
+                      "touch-manipulation text-sidebar-foreground",
+                      activeItem === item.url && "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    )}
+                    onClick={() => handleMenuItemClick(item.url)}
+                  >
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-sm font-medium truncate">
+                      {item.title}
+                    </span>
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
