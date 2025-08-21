@@ -42,14 +42,29 @@ const clientColumns: ColumnDef<ClientRow>[] = [
   {
     accessorKey: "contactNo",
     header: "Contact No",
+    cell: ({ row }) => (
+      <div className="hidden sm:table-cell">
+        {row.getValue("contactNo")}
+      </div>
+    )
   },
   {
     accessorKey: "email",
     header: "Email",
+    cell: ({ row }) => (
+      <div className="hidden md:table-cell">
+        {row.getValue("email")}
+      </div>
+    )
   },
   {
     accessorKey: "address",
     header: "Address",
+    cell: ({ row }) => (
+      <div className="hidden lg:table-cell">
+        {row.getValue("address")}
+      </div>
+    )
   },
 ]
 
@@ -81,14 +96,14 @@ const ClientManagerDashboardContent = () => {
   const totalActiveProjects = clients.reduce((sum, c) => sum + c.activeProjects, 0);
   const totalValue = clients.reduce((sum, c) => sum + c.totalValue, 0);
 
-    const { 
-      targetUserId, 
-      selectedUser, 
-      currentUser,
-      selectedUserId,
-      setSelectedUserId,
-      isAdminUser 
-    } = useUserFilter();
+  const { 
+    targetUserId, 
+    selectedUser, 
+    currentUser,
+    selectedUserId,
+    setSelectedUserId,
+    isAdminUser 
+  } = useUserFilter();
 
   const userID = targetUserId || user?.id;
 
@@ -121,40 +136,41 @@ const ClientManagerDashboardContent = () => {
       .catch(() => {});
   }, [userID]);
   
-    const fetchClients = async () => {
-      try {
-        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
-        ? `${API_URL}/clients`
-        : `${API_URL}/clients/${userID}`;
-        
-        console.log("Fetching clients for user:", userID, "Endpoint:", endpoint);
-        
-        const response = await axios.get(endpoint, { headers });
-        
-        // Map API clients to table format with contact fields
-        const mapped: ClientRow[] = (response.data).map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
-          // Treat projects without endDate as active
-          activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
-          totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
-          lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
-          contactNo: c.contactNo,
-          email: c.email,
-          address: c.address,
-          projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
-        }));
-        
-        setClients(mapped);
-        console.log(clients)
-        
-  } catch (err: any) {
-    console.log(err.message); // Handle error appropriately
-  }
-};
+  const fetchClients = async () => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+      ? `${API_URL}/clients`
+      : `${API_URL}/clients/${userID}`;
+      
+      console.log("Fetching clients for user:", userID, "Endpoint:", endpoint);
+      
+      const response = await axios.get(endpoint, { headers });
+      
+      // Map API clients to table format with contact fields
+      const mapped: ClientRow[] = (response.data).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
+        // Treat projects without endDate as active
+        activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
+        totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
+        lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
+        contactNo: c.contactNo,
+        email: c.email,
+        address: c.address,
+        projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
+      }));
+      
+      setClients(mapped);
+      console.log(clients)
+      
+    } catch (err: any) {
+      console.log(err.message); // Handle error appropriately
+    }
+  };
+
   const handleAddInteraction = (client: Client) => {
     setSelectedClient(client)
     setIsInteractionModalOpen(true)
@@ -164,8 +180,6 @@ const ClientManagerDashboardContent = () => {
     setSelectedClient(client)
     setIsEscalationModalOpen(true)
   }
-
-
 
   const handleSaveInteraction = () => {
     toast.success("Interaction logged successfully!")
@@ -243,28 +257,153 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
     }
   }
 
+  // Mobile responsive client columns
+  const mobileClientColumns: ColumnDef<ClientRow>[] = [
+    {
+      accessorKey: "name",
+      header: "Client",
+      cell: ({ row }) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{row.getValue("name")}</span>
+          <div className="flex flex-wrap gap-1 mt-1">
+            <span className="text-xs text-muted-foreground sm:hidden">
+              {row.original.contactNo}
+            </span>
+            <Badge variant="secondary" className="text-xs">
+              {row.original.activeProjects} active
+            </Badge>
+          </div>
+        </div>
+      )
+    },
+    {
+      accessorKey: "contactNo",
+      header: "Contact No",
+      cell: ({ row }) => (
+        <div className="hidden sm:table-cell">
+          {row.getValue("contactNo")}
+        </div>
+      )
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => (
+        <div className="hidden md:table-cell">
+          {row.getValue("email")}
+        </div>
+      )
+    },
+    {
+      accessorKey: "address",
+      header: "Address",
+      cell: ({ row }) => (
+        <div className="hidden lg:table-cell">
+          {row.getValue("address")}
+        </div>
+      )
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleViewProfile(row.original)}
+            className="h-8 w-8 p-0"
+            title="View Profile"
+          >
+            <FileText className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleEditClient(row.original)}
+            className="h-8 w-8 p-0"
+            title="Edit Client"
+          >
+            <Pencil className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleDeleteClient(row.original)}
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            title="Delete Client"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  // Get current tab name for display
+  const getCurrentTabName = () => {
+    const tab = getCurrentTab();
+    switch (tab) {
+      case 'engagement': return 'Client Engagement';
+      case 'billing': return 'Billing Insights';
+      default: return 'Client Engagement';
+    }
+  };
+
+  // Get icon for current tab
+  const getCurrentTabIcon = () => {
+    const tab = getCurrentTab();
+    switch (tab) {
+      case 'engagement': return Users;
+      case 'billing': return DollarSign;
+      default: return Users;
+    }
+  };
+
+  const CurrentTabIcon = getCurrentTabIcon();
+  const currentTabName = getCurrentTabName();
+
   return (
     <div className="space-y-6">
       <UserFilterComponent/>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Client Dashboard</h1>
-          <p className="text-muted-foreground">Client engagement and relationship management</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Client Dashboard</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Client engagement and relationship management</p>
         </div>
-        <Button onClick={() => setIsAddClientOpen(true)} className="gap-2">
+        <Button onClick={() => setIsAddClientOpen(true)} className="gap-2" size="sm">
           <Plus className="h-4 w-4" />
-          Add Client
+          <span className="hidden md:inline">Add Client</span>
         </Button>
       </div>
 
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        {/* Hide tabs on mobile - show only on desktop */}
+        <TabsList className="hidden md:grid w-full grid-cols-2">
           <TabsTrigger value="engagement">Client Engagement</TabsTrigger>
-          {/* <TabsTrigger value="approvals">Approvals & Escalations</TabsTrigger> */}
           <TabsTrigger value="billing">Billing Insights</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="engagement" className="space-y-6">
+        {/* Mobile-specific section header */}
+        <div className="md:hidden mb-4">
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              <CurrentTabIcon className="h-5 w-5 text-primary" />
+              <div>
+                <h2 className="text-lg font-semibold">{currentTabName}</h2>
+                <p className="text-xs text-muted-foreground">
+                  Client Manager › {currentTabName}
+                </p>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {getCurrentTab() === 'engagement' && `${clients.length} clients`}
+              {getCurrentTab() === 'billing' && `${invoices.length} invoices`}
+            </div>
+          </div>
+        </div>
+
+        <TabsContent value="engagement" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Clients"
@@ -303,39 +442,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
             </CardHeader>
             <CardContent>
               <DataTable
-                columns={[
-                  ...clientColumns,
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    cell: ({ row }) => (
-                      <div className="flex gap-2">
-                          <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewProfile(row.original)}
-                        >
-                          View Profile
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditClient(row.original)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                      
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClient(row.original)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ),
-                  },
-                ]}
+                columns={mobileClientColumns}
                 data={clients}
                 searchKey="name"
               />
@@ -343,7 +450,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
           </Card>
         </TabsContent>
 
-        <TabsContent value="approvals" className="space-y-6">
+        <TabsContent value="approvals" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               title="Pending Approvals"
@@ -436,7 +543,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
           </Card>
         </TabsContent>
 
-        <TabsContent value="billing" className="space-y-6">
+        <TabsContent value="billing" className="mt-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <StatCard
               title="Outstanding Amount"
@@ -965,7 +1072,6 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
     </div>
   )
 }
-
 
 const ClientManagerDashboard = () => {
   return (
