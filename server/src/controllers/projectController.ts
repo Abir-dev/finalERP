@@ -65,7 +65,8 @@ export const projectController = {
           invoices: true,
           materialRequests: true,
           nonBillables: true,
-          Tender: true
+          Tender: true,
+          milestones: true
         },
         orderBy: {
           createdAt: 'desc'
