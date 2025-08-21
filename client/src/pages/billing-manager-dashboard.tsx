@@ -926,7 +926,7 @@ File Size: ${doc.size}`;
             Invoice generation and payment tracking
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button onClick={() => setShowInvoiceModal(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             New Invoice
