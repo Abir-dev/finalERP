@@ -588,13 +588,16 @@ const StoreDashboardContent = () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     try {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/staff/store-staff`
+          : `${API_URL}/staff/store-staff/${userID}`;
       const response = await axios.get(
-        `${API_URL}/staff/store-staff?userId=${userID}`,
+        endpoint,
         {
           headers,
         }
       );
-      setStoreStaff(response.data || []);
+      setStoreStaff(response.data);
     } catch (error) {
       console.error("Error fetching store staff:", error);
       toast({
