@@ -3296,13 +3296,13 @@ const SiteDashboardContent = () => {
                       Current and pending material requirements
                     </CardDescription>
                   </div>
-                  <Button
+                  {/* <Button
                     onClick={() => setIsMaterialRequestModalOpen(true)}
                     className="gap-2"
                   >
                     <Plus className="h-4 w-4" />
                     Raise Request
-                  </Button>
+                  </Button> */}
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
