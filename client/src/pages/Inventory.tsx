@@ -535,7 +535,11 @@ const InventoryContent = () => {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const response = await axios.get(`${API_URL}/schedule-maintenance`, {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/schedule-maintenances-global`
+          : `${API_URL}/schedule-maintenance?userId=${userID}`;
+          console.log("Fetching schedule maintenances from:", endpoint);
+      const response = await axios.get(endpoint, {
         headers,
       });
       setScheduleMaintenances(response.data);
@@ -641,9 +645,11 @@ const InventoryContent = () => {
   }, [userID]); // Refetch when target user changes
 
   useEffect(() => {
+    if(userID){
     fetchVendors();
     fetchScheduleMaintenances();
-  }, []);
+    }
+  }, [userID]);
 
   // Add action handlers
   const handleInventoryAction = (
