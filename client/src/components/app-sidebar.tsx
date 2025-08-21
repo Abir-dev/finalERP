@@ -328,18 +328,7 @@ export function AppSidebar() {
         { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
       ],
     },
-    {
-      id: "projects",
-      title: "Project Management",
-      base: "/projects",
-      icon: ClipboardList,
-      allowedRoles: ["admin", "md", "project"],
-      subitems: [
-        { title: "Overview", url: "/projects/overview" },
-        { title: "List", url: "/projects/list" },
-        { title: "Milestone", url: "/projects/milestone" },
-      ],
-    },
+
     {
       id: "inventory",
       title: "Inventory",

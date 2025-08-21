@@ -90,10 +90,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     setOpenSections(next);
   }, [location.pathname]);
 
-  // Close sidebar when route changes (mobile UX improvement)
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
+
 
   // Prevent body scroll when sidebar is open (mobile UX improvement)
   useEffect(() => {
@@ -347,18 +344,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
         { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
       ],
     },
-    {
-      id: "projects",
-      title: "Project Management",
-      base: "/projects",
-      icon: ClipboardList,
-      allowedRoles: ["admin", "md", "project"],
-      subitems: [
-        { title: "Overview", url: "/projects/overview" },
-        { title: "List", url: "/projects/list" },
-        { title: "Milestone", url: "/projects/milestone" },
-      ],
-    },
+
     {
       id: "inventory",
       title: "Inventory",

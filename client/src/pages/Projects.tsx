@@ -1487,11 +1487,11 @@ Add any additional notes here...
             </div>
 
             <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
+                {/* <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="list">List</TabsTrigger>
                     <TabsTrigger value="milestone">Milestone</TabsTrigger>
-                </TabsList>
+                </TabsList> */}
 
                 <TabsContent value="overview" className="space-y-6">
                     {subview === 'main' && (

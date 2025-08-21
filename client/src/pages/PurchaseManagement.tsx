@@ -909,11 +909,11 @@ const handleNewContractSubmit = async () => {
       </div>
 
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        {/* <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="procurement">Smart Procurement</TabsTrigger>
           <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
-        </TabsList>
+        </TabsList> */}
 
        
           {/* <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
