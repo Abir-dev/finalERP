@@ -11,6 +11,8 @@ import { AlertTriangle, Users, Clock, Plus, CheckCircle, TrendingUp, Loader2, Tr
 import { toast } from "sonner";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
 import { useUser } from "@/contexts/UserContext";
+import axios from 'axios';
+import { useUserFilter } from '@/contexts/UserFilterContext';
 
 interface IssueReport {
   id: string;
@@ -83,7 +85,14 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
   const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
   const { user } = useUser();
-  const userID: string = user?.id || "";  
+   const { 
+     targetUserId, 
+     selectedUser, 
+     currentUser,
+     setSelectedUserId 
+   } = useUserFilter();
+   
+   const userID = targetUserId || user?.id || "" 
   const [issues, setIssues] = useState<IssueReport[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -121,11 +130,15 @@ export function IssueReportingFunctional({ projectId, siteId}: IssueReportingPro
 
   const fetchIssues = async () => {
     try {
-      const url = userID ? `${API_URL}/site-ops/issue-report?userId=${userID}` : `${API_URL}/site-ops/issue-report`;
-      const response = await fetch(url,{headers:headers});
-      if (!response.ok) throw new Error('Failed to fetch issues');
-      const data = await response.json();
-      setIssues(data);
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/site-ops/issue-report`
+          : `${API_URL}/site-ops/issue-report?userId=${userID}`;
+        console.log("Fetching tasks from:", endpoint);
+          const response = await axios.get(endpoint, {
+        headers,
+      });
+      if (!response) throw new Error('Failed to fetch issues');
+      setIssues(response.data);
     } catch (error) {
       console.error('Error fetching issues:', error);
       toast.error('Failed to fetch issues');
