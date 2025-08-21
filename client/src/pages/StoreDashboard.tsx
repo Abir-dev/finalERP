@@ -619,7 +619,10 @@ const StoreDashboardContent = () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     try {
-      const response = await axios.get(`${API_URL}/vendors/user/${userID}`, {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/vendors`
+          : `${API_URL}/vendors/user/${userID}`;
+      const response = await axios.get(endpoint, {
         headers,
       });
       setVendors(response.data || []);
@@ -642,8 +645,12 @@ const StoreDashboardContent = () => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
     try {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/store/transfers`
+          : `${API_URL}/store/transfers?userId=${userID}`;
+          console.log("Fetching schedule maintenances from:", endpoint);
       const response = await axios.get(
-        `${API_URL}/store/transfers?userId=${userID}`,
+        endpoint,
         { headers }
       );
       setTransfers(response.data || []);
@@ -1119,10 +1126,13 @@ const StoreDashboardContent = () => {
         { headers }
       );
       setSupplierPerformance(supplierRes.data);
-
+const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+            ? `${API_URL}/store/analytics/cost-analysis`
+            : `${API_URL}/store/analytics/cost-analysis?userId=${userID}`;
+            console.log("Fetching inventory data from:", endpoint);
       // Fetch cost analysis
       const costRes = await axios.get(
-        `${API_URL}/store/analytics/cost-analysis?userId=${userID}`,
+        endpoint,
         { headers }
       );
       setCostAnalysis(costRes.data);
@@ -1131,6 +1141,27 @@ const StoreDashboardContent = () => {
     }
   };
 
+  const fetchInventoryData = async () => {
+    try{
+      const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+            ? `${API_URL}/store/inventory-data`
+            : `${API_URL}/store/inventory-data?userId=${userID}`;
+            console.log("Fetching inventory data from:", endpoint);
+      const response = await axios.get(endpoint, { headers })
+setInventory(response.data);
+    } catch (error) {   
+      console.error("Error fetching inventory data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch inventory data",
+        variant: "destructive",
+      });
+    }
+  }
   // Fetch all users if current user is admin
   useEffect(() => {
     if (user?.role === "admin" || user?.role === "md") {
@@ -1156,10 +1187,13 @@ const StoreDashboardContent = () => {
       sessionStorage.getItem("jwt_token") ||
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
+  const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+            ? `${API_URL}/store/overview`
+            : `${API_URL}/store/overview?userId=${userID}`;
+            console.log("Fetching inventory data from:", endpoint);
     // Store Overview Data
     axios
-      .get(`${API_URL}/store/overview?userId=${userID}`, { headers })
+      .get(endpoint, { headers })
       .then((res) => {
         setStoreOverview(res.data);
         setRecentTransactions(res.data.recentTransactions || []);
@@ -1167,10 +1201,7 @@ const StoreDashboardContent = () => {
       .catch((error) => console.error("Error fetching store overview:", error));
 
     // Store Inventory Data
-    axios
-      .get(`${API_URL}/store/inventory-data?userId=${userID}`, { headers })
-      .then((res) => setInventory(res.data || []))
-      .catch((error) => console.error("Error fetching inventory data:", error));
+     fetchInventoryData();
 
     // Store Stock Levels
     axios
@@ -1239,8 +1270,12 @@ const StoreDashboardContent = () => {
     fetchStoreStaffData();
 
     // Fetch material requests data
+    const endpoint2 = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+            ? `${API_URL}/material/material-requests`
+            : `${API_URL}/material/material-requests/user/${userID}`;
+            console.log("Fetching inventory data from:", endpoint);
     axios
-      .get(`${API_URL}/material/material-requests/user/${userID}`, {
+      .get(endpoint2, {
         headers,
       })
       .then((res) => setMaterialRequests(res.data || []))
