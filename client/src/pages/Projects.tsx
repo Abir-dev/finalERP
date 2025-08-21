@@ -1576,43 +1576,129 @@ Add any additional notes here...
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {view === "list" && (
-                            <div className="rounded-md border">
-                                <div className="w-full overflow-auto">
-                                    <table className="w-full caption-bottom text-sm">
-                                        <thead>
-                                            <tr className="border-b transition-colors hover:bg-muted/50">
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Client</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Manager</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Start Date</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Deadline</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Budget</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Spent</th>
-                                                <th className="h-12 px-4 text-left align-middle font-medium">Location</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredProjects.map((project) => (
-                                                <tr
-                                                    key={project.id}
-                                                    className="border-b transition-colors hover:bg-muted/50"
-                                                >
-                                                    <td className="p-4 align-middle font-medium">{project.name}</td>
-                                                    <td className="p-4 align-middle">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</td>
-                                                    <td className="p-4 align-middle">{typeof project.managers === 'object' ? project.managers?.name || 'Unknown managers' : project.managers}</td>
-                                                    <td className="p-4 align-middle">{new Date(project.startDate).toLocaleDateString('en-IN')}</td>
-                                                    <td className="p-4 align-middle">{new Date(project.deadline).toLocaleDateString('en-IN')}</td>
-                                                    <td className="p-4 align-middle">₹{(project.budget || 0).toLocaleString()}</td>
-                                                    <td className="p-4 align-middle">₹{(project.totalSpend || 0).toLocaleString()}</td>
-                                                    <td className="p-4 align-middle">{project.location}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                       
+
+{view === "list" && (
+    <div className="space-y-4">
+        {/* Mobile Cards View */}
+        <div className="block md:hidden space-y-4">
+            {filteredProjects.map((project) => (
+                <Card key={project.id} className="p-4">
+                    <div className="space-y-3">
+                        {/* Project Name and Client */}
+                        <div>
+                            <h3 className="font-semibold text-lg">{project.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                                {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}
+                            </p>
+                        </div>
+                        
+                        {/* Key Info Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span className="text-muted-foreground">Manager:</span>
+                                <p className="font-medium truncate">
+                                    {typeof project.managers === 'object' ? project.managers?.name || 'Unassigned' : project.managers || 'Unassigned'}
+                                </p>
                             </div>
-                        )}
+                            <div>
+                                <span className="text-muted-foreground">Location:</span>
+                                <p className="font-medium truncate">{project.location}</p>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Start Date:</span>
+                                <p className="font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</p>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground">Deadline:</span>
+                                <p className="font-medium">{new Date(project.deadline).toLocaleDateString('en-IN')}</p>
+                            </div>
+                        </div>
+                        
+                        {/* Budget Info */}
+                        <div className="flex justify-between items-center pt-2 border-t">
+                            <div>
+                                <span className="text-xs text-muted-foreground">Budget:</span>
+                                <p className="font-semibold">₹{(project.budget || 0).toLocaleString()}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xs text-muted-foreground">Spent:</span>
+                                <p className="font-semibold">₹{(project.totalSpend || 0).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden md:block rounded-md border overflow-x-auto">
+            <table className="w-full caption-bottom text-sm">
+                <thead>
+                    <tr className="border-b transition-colors hover:bg-muted/50">
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Name</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Client</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden lg:table-cell">Manager</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Start Date</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Deadline</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Budget</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden xl:table-cell">Spent</th>
+                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden lg:table-cell">Location</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {filteredProjects.map((project) => (
+                        <tr
+                            key={project.id}
+                            className="border-b transition-colors hover:bg-muted/50"
+                        >
+                            <td className="p-4 align-middle font-medium max-w-[200px]">
+                                <div className="truncate" title={project.name}>
+                                    {project.name}
+                                </div>
+                            </td>
+                            <td className="p-4 align-middle max-w-[150px]">
+                                <div className="truncate" title={typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}>
+                                    {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}
+                                </div>
+                            </td>
+                            <td className="p-4 align-middle hidden lg:table-cell max-w-[150px]">
+                                <div className="truncate" title={typeof project.managers === 'object' ? project.managers?.name || 'Unknown managers' : project.managers}>
+                                    {typeof project.managers === 'object' ? project.managers?.name || 'Unassigned' : project.managers || 'Unassigned'}
+                                </div>
+                            </td>
+                            <td className="p-4 align-middle whitespace-nowrap">
+                                {new Date(project.startDate).toLocaleDateString('en-IN')}
+                            </td>
+                            <td className="p-4 align-middle whitespace-nowrap">
+                                {new Date(project.deadline).toLocaleDateString('en-IN')}
+                            </td>
+                            <td className="p-4 align-middle whitespace-nowrap">
+                                ₹{((project.budget || 0) / 100000).toFixed(1)}L
+                            </td>
+                            <td className="p-4 align-middle hidden xl:table-cell whitespace-nowrap">
+                                ₹{((project.totalSpend || 0) / 100000).toFixed(1)}L
+                            </td>
+                            <td className="p-4 align-middle hidden lg:table-cell max-w-[120px]">
+                                <div className="truncate" title={project.location}>
+                                    {project.location}
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+
+        {/* Empty State */}
+        {filteredProjects.length === 0 && (
+            <div className="text-center py-12">
+                <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
+                <p className="text-gray-500">No projects found matching your search criteria</p>
+            </div>
+        )}
+    </div>
+)}
 
                         {view === "milestone" && (
                             <div className="mt-6 space-y-6">
@@ -1632,15 +1718,15 @@ Add any additional notes here...
                                             {project.milestones && project.milestones.length > 0 ? (
                                                 <div className="divide-y">
                                                     {project.milestones.map((milestone, index) => (
-                                                        <div 
-                                                            key={milestone.id || index} 
+                                                        <div
+                                                            key={milestone.id || index}
                                                             className="p-4 hover:bg-gray-50 transition-colors"
                                                         >
                                                             <div className="flex items-start gap-4">
                                                                 <div className={`mt-1 flex-shrink-0 w-3 h-3 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
                                                                 <div className="flex-1 space-y-3">
                                                                     <h4 className="font-medium text-base">{milestone.name}</h4>
-                                                                    
+                                                                   
                                                                     <div className="grid grid-cols-2 gap-4 justify-centre">
                                                                         <div className="space-y-1">
                                                                             <p className="text-sm text-muted-foreground">Start Date</p>
@@ -1655,12 +1741,12 @@ Add any additional notes here...
                                                                         <div className="space-y-1">
                                                                             <p className="text-sm text-muted-foreground">End Date</p>
                                                                             <p className="font-medium">
-                                                                                {milestone.endDate ? 
+                                                                                {milestone.endDate ?
                                                                                     new Date(milestone.endDate).toLocaleDateString('en-IN', {
                                                                                         day: 'numeric',
                                                                                         month: 'short',
                                                                                         year: 'numeric'
-                                                                                    }) : 
+                                                                                    }) :
                                                                                     <span className="text-muted-foreground">Pending</span>
                                                                                 }
                                                                             </p>
