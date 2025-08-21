@@ -120,36 +120,37 @@ const ClientManagerDashboardContent = () => {
       .then(res => setInvoices(res.data))
       .catch(() => {});
   }, [userID]);
+  
     const fetchClients = async () => {
-    try {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
         ? `${API_URL}/clients`
         : `${API_URL}/clients/${userID}`;
-    
-    console.log("Fetching clients for user:", userID, "Endpoint:", endpoint);
-    
-    const response = await axios.get(endpoint, { headers });
-    
-    // Map API clients to table format with contact fields
-    const mapped: ClientRow[] = (response.data).map((c: any) => ({
-      id: c.id,
-      name: c.name,
-      totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
-      // Treat projects without endDate as active
-      activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
-      totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
-      lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
-      contactNo: c.contactNo,
-      email: c.email,
-      address: c.address,
-      projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
-    }));
-    
-    setClients(mapped);
-    console.log(clients)
-    
+        
+        console.log("Fetching clients for user:", userID, "Endpoint:", endpoint);
+        
+        const response = await axios.get(endpoint, { headers });
+        
+        // Map API clients to table format with contact fields
+        const mapped: ClientRow[] = (response.data).map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          totalProjects: Array.isArray(c.Project) ? c.Project.length : 0,
+          // Treat projects without endDate as active
+          activeProjects: Array.isArray(c.Project) ? c.Project.filter((p: any) => !p.endDate).length : 0,
+          totalValue: (Array.isArray(c.Project) ? c.Project : []).reduce((sum: number, p: any) => sum + (p.budget || 0), 0),
+          lastContact: new Date(c.updatedAt || c.createdAt).toISOString().slice(0, 10),
+          contactNo: c.contactNo,
+          email: c.email,
+          address: c.address,
+          projects: Array.isArray(c.Project) ? c.Project.map((p: any) => ({ id: p.id, name: p.name })) : [],
+        }));
+        
+        setClients(mapped);
+        console.log(clients)
+        
   } catch (err: any) {
     console.log(err.message); // Handle error appropriately
   }

@@ -9,6 +9,7 @@ const router = Router();
 // Invoice CRUD
 router.post('/invoices', authenticateUser, checkRole('accounts'), validateInvoice, billingController.createInvoice);
 router.get('/invoices', authenticateUser, billingController.listInvoices);
+router.get('/invoices/:userId', authenticateUser, billingController.listInvoicesByClient);
 router.get('/invoices/:id', authenticateUser, billingController.getInvoice);
 router.put('/invoices/:id', authenticateUser, validateInvoice, billingController.updateInvoice);
 router.delete('/invoices/:id', authenticateUser, checkRole('admin'), billingController.deleteInvoice);

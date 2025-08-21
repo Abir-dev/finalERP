@@ -66,6 +66,35 @@ export const billingController = {
       });
     }
   },
+  async listInvoicesByClient(req: Request, res: Response) {
+    try {
+      const {userId} = req.params
+      const invoices = await prisma.invoice.findMany({
+        where:{
+          client: {
+            createdById: userId // This links to clients created by this user
+          }
+        },
+        include: {
+          user: true,
+          project: true,
+          client: true,
+          items: true,
+          Payment: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+      res.json(invoices);
+    } catch (error) {
+      logger.error("Error:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
 
   async getInvoice(req: Request, res: Response) {
     try {
