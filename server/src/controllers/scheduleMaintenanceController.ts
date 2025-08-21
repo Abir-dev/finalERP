@@ -38,23 +38,12 @@ export const scheduleMaintenanceController = {
 
   async listScheduleMaintenances(req: Request, res: Response) {
     try {
-      const user = (req as any).user;
-      if (!user?.id) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
       // Get userId from query params or fall back to authenticated user
       const { userId } = req.query;
-      const targetUserId = userId ? userId as string : user.id;
-
-      // Only allow users to access their own schedule maintenances unless they're admin
-      if (targetUserId !== user.id && user.role !== 'admin') {
-        return res.status(403).json({ error: 'Access denied' });
-      }
-
-      const scheduleMaintenances = await prisma.scheduleMaintenance.findMany({
+      if(userId){
+        const scheduleMaintenances = await prisma.scheduleMaintenance.findMany({
         where: {
-          createdById: targetUserId
+          createdById: userId as string 
         },
         include: {
           createdBy: {
@@ -71,9 +60,54 @@ export const scheduleMaintenanceController = {
       });
       
       res.json(scheduleMaintenances);
+      }else {
+        const scheduleMaintenances = await prisma.scheduleMaintenance.findMany({
+        where: {
+          // createdById: userId as string 
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          scheduledDate: 'asc'
+        }
+      });
+      
+      res.json(scheduleMaintenances);
+      }
+      // Only allow users to access their own schedule maintenances unless they're admin
+      
     } catch (error) {
       logger.error("Error listing schedule maintenances:", error);
       res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+  async globalListScheduleMaintenances(req:Request , res:Response){
+    try {
+      const scheduleMaintenances = await prisma.scheduleMaintenance.findMany({
+        include:{
+          createdBy:{
+            select:{
+              id:true,
+              name:true,
+              email:true
+            }
+          }
+        }
+      })
+      res.json(scheduleMaintenances)
+    } catch (error) {
+       logger.error("Error getting schedule maintenance:", error);
+        res.status(500).json({
         message: "Internal server error",
         error: error instanceof Error ? error.message : "Unknown error",
       });

@@ -7,6 +7,7 @@ const router = Router();
 // Schedule Maintenance CRUD routes
 router.post('/schedule-maintenance', authenticateUser, scheduleMaintenanceController.createScheduleMaintenance);
 router.get('/schedule-maintenance', authenticateUser, scheduleMaintenanceController.listScheduleMaintenances);
+router.get('/schedule-maintenances-global', authenticateUser, scheduleMaintenanceController.globalListScheduleMaintenances)
 router.get('/schedule-maintenance/range', authenticateUser, scheduleMaintenanceController.getScheduleMaintenancesByDateRange);
 router.get('/schedule-maintenance/priority/:priority', authenticateUser, scheduleMaintenanceController.getScheduleMaintenancesByPriority);
 router.get('/schedule-maintenance/type/:type', authenticateUser, scheduleMaintenanceController.getScheduleMaintenancesByType);
