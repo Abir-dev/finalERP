@@ -410,8 +410,8 @@ export function AppSidebar() {
       allowedRoles: ["admin", "md", "store", "accounts"],
       subitems: [
         { title: "Dashboard", url: "/purchase-management/dashboard" },
-        { title: "Smart Procurement", url: "/purchase-management/procurement" },
-        { title: "Vendor Management", url: "/purchase-management/vendors" },
+        // { title: "Smart Procurement", url: "/purchase-management/procurement" },
+        // { title: "Vendor Management", url: "/purchase-management/vendors" },
       ],
     },
   ];
