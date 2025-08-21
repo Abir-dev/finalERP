@@ -124,7 +124,7 @@ export const storeStaffController = {
 
   async listStoreStaff(req: Request, res: Response) {
     try {
-      const userId = req.query.userId as string;
+      const {userId} = req.params;
 
       if (!userId) {
         logger.error('ListStoreStaff failed: Missing userId in query');
@@ -153,6 +153,50 @@ export const storeStaffController = {
       });
 
       logger.info(`Retrieved ${storeStaff.length} store staff records for user: ${userId}`);
+      res.json(storeStaff);
+    } catch (error) {
+      logger.error('Error fetching StoreStaff list:', error);
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: "Failed to fetch store staff", 
+          error: error.message 
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to fetch store staff", 
+          error: 'Unknown error occurred' 
+        });
+      }
+    }
+  },
+  async getAllStoreStaff(req: Request, res: Response) {
+    try {
+      // const userId = req.query.userId as string;
+
+      // if (!userId) {
+      //   logger.error('ListStoreStaff failed: Missing userId in query');
+      //   return res.status(400).json({
+      //     message: "Missing userId parameter",
+      //     error: "userId query parameter is required"
+      //   });
+      // }
+
+      const storeStaff = await prismaClient.storeStaff.findMany({
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      logger.info(`Retrieved ${storeStaff.length} store staff records for all users`);
       res.json(storeStaff);
     } catch (error) {
       logger.error('Error fetching StoreStaff list:', error);

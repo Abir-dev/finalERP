@@ -390,7 +390,11 @@ const InventoryContent = () => {
       console.log("Fetching inventory items for user:", userID);
 
       // Fetch inventory items
-      const itemsResponse = await axios.get(`${API_URL}/inventory/items?userId=${userID}`, {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/inventory/items`
+          : `${API_URL}/inventory/items?userId=${userID}`;
+        console.log("Fetching tasks from:", endpoint);
+      const itemsResponse = await axios.get(endpoint, {
         headers,
       });
       console.log("Raw inventory data:", itemsResponse.data);
@@ -444,8 +448,12 @@ const InventoryContent = () => {
 
       // Fetch other data
       try {
+        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/inventory/transfers`
+          : `${API_URL}/inventory/transfers?userId=${userID}`;
+        console.log("Fetching tasks from:", endpoint);
         const transfersResponse = await axios.get(
-          `${API_URL}/inventory/transfers?userId=${userID}`,
+          endpoint,
           { headers }
         );
         const mappedTransfers: Transfer[] = (Array.isArray(transfersResponse.data) ? transfersResponse.data : []).map((t: any) => ({
@@ -1804,72 +1812,85 @@ const InventoryContent = () => {
             </div>
           </div>
 
-          <TabsContent value="material-forecast" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <EnhancedStatCard
-                title="Estimated Cost"
-                value={`₹${inventoryItems
-                  .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
-                  .reduce(
-                    (total, item) =>
-                      total +
-                      (item.unitCost || 0) *
-                        ((item.reorderLevel || 50) - item.quantity),
-                    0
-                  )
-                  .toLocaleString()}`}
-                icon={TrendingUp}
-                description="Total procurement value"
-                trend={{ value: 12, label: "vs last forecast" }}
-                threshold={{
-                  status: "good",
-                  message: "Within budget parameters",
-                }}
-              />
-              <EnhancedStatCard
-                title="Critical Items"
-                value={inventoryItems
-                  .filter((item) => item.quantity <= (item.safetyStock || 20))
-                  .length.toString()}
-                icon={AlertTriangle}
-                description="Below safety stock"
-                trend={{ value: -25, label: "reduction" }}
-                threshold={{
-                  status:
-                    inventoryItems.filter(
-                      (item) => item.quantity <= (item.safetyStock || 20)
-                    ).length === 0
-                      ? "good"
-                      : "critical",
-                  message:
-                    inventoryItems.filter(
-                      (item) => item.quantity <= (item.safetyStock || 20)
-                    ).length === 0
-                      ? "No critical shortages"
-                      : "Immediate attention required",
-                }}
-              />
-              <EnhancedStatCard
-                title="Avg Unit Cost"
-                value={`₹${
-                  inventoryItems.length > 0
-                    ? Math.round(
-                        inventoryItems.reduce(
-                          (total, item) => total + (item.unitCost || 0),
-                          0
-                        ) / inventoryItems.length
-                      )
-                    : 0
-                }`}
-                icon={Calendar}
-                description="Average cost per item"
-                trend={{ value: -5, label: "cost optimization" }}
-                threshold={{
-                  status: "good",
-                  message: "Cost management effective",
-                }}
-              />
-            </div>
+        <TabsContent value="material-forecast" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* <EnhancedStatCard
+              title="Forecasted Items"
+              value={inventoryItems
+                .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
+                .length.toString()}
+              icon={Package}
+              description="Items needing procurement"
+              trend={{ value: 8, label: "vs last forecast" }}
+              threshold={{
+                status: "good",
+                message: "Active forecasting in place",
+              }}
+            /> */}
+            <EnhancedStatCard
+              title="Estimated Cost"
+              value={`₹${inventoryItems
+                .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
+                .reduce(
+                  (total, item) =>
+                    total +
+                    (item.unitCost || 0) *
+                      ((item.reorderLevel || 50) - item.quantity),
+                  0
+                )
+                .toLocaleString()}`}
+              icon={TrendingUp}
+              description="Total procurement value"
+              trend={{ value: 12, label: "vs last forecast" }}
+              threshold={{
+                status: "good",
+                message: "Within budget parameters",
+              }}
+            />
+            <EnhancedStatCard
+              title="Critical Items"
+              value={inventoryItems
+                .filter((item) => item.quantity <= (item.safetyStock || 20))
+                .length.toString()}
+              icon={AlertTriangle}
+              description="Below safety stock"
+              trend={{ value: -25, label: "reduction" }}
+              threshold={{
+                status:
+                  inventoryItems.filter(
+                    (item) => item.quantity <= (item.safetyStock || 20)
+                  ).length === 0
+                    ? "good"
+                    : "critical",
+                message:
+                  inventoryItems.filter(
+                    (item) => item.quantity <= (item.safetyStock || 20)
+                  ).length === 0
+                    ? "No critical shortages"
+                    : "Immediate attention required",
+              }}
+            />
+            <EnhancedStatCard
+              title="Avg Unit Cost"
+              value={`₹${
+                inventoryItems.length > 0
+                  ? Math.round(
+                      inventoryItems.reduce(
+                        (total, item) => total + (item.unitCost || 0),
+                        0
+                      ) / inventoryItems.length
+                    )
+                  : 0
+              }`}
+              icon={Calendar}
+              description="Average cost per item"
+              trend={{ value: -5, label: "cost optimization" }}
+              threshold={{
+                status: "good",
+                message: "Cost management effective",
+              }}
+            />
+          </div>
 
             <MaterialForecast projectId="PROJ001" timeframe="1-month" inventoryData={inventoryItems} />
           </TabsContent>
