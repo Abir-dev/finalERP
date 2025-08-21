@@ -113,7 +113,10 @@ const ClientManagerDashboardContent = () => {
     const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     fetchClients();
-    axios.get(`${API_URL}/billing/invoices`, { headers })
+    const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+        ? `${API_URL}/billing/invoices`
+        : `${API_URL}/billing/invoices/${userID}`;
+    axios.get(endpoint, { headers })
       .then(res => setInvoices(res.data))
       .catch(() => {});
   }, [userID]);
