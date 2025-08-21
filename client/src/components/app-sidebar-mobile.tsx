@@ -276,6 +276,18 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       ],
     },
     {
+          id: "md",
+          title: "Managing Director",
+          base: "/md-dashboard",
+          icon: BarChart3,
+          allowedRoles: ["admin", "md"],
+          subitems: [
+            { title: "Executive Overview", url: "/md-dashboard/executive" },
+            { title: "Project Performance", url: "/md-dashboard/projects" },
+            { title: "Financial Insights", url: "/md-dashboard/financials" },
+          ],
+        },
+    {
       id: "design",
       title: "Design Dashboard",
       base: "/design-dashboard",
@@ -361,6 +373,43 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
         { title: "Warehouse", url: "/inventory/warehouse" },
       ],
     },
+    {
+          id: "tender",
+          title: "Tender Management",
+          base: "/tender-management",
+          icon: FileText,
+          allowedRoles: ["admin", "md", "client-manager"],
+          subitems: [
+            { title: "Dashboard", url: "/tender-management/dashboard" },
+            { title: "BOQ Generation", url: "/tender-management/preparation" },
+            { title: "Submission Tracking", url: "/tender-management/tracking" },
+            { title: "Active Tenders", url: "/tender-management/active-tenders" },
+          ],
+        },
+        {
+          id: "billing",
+          title: "Billing Management",
+          base: "/billing-management",
+          icon: DollarSign,
+          allowedRoles: ["admin", "md", "accounts"],
+          subitems: [
+            { title: "Overview", url: "/billing-management/overview" },
+            { title: "Invoices", url: "/billing-management/invoices" },
+            { title: "Payments", url: "/billing-management/payments" },
+          ],
+        },
+        {
+          id: "purchase",
+          title: "Purchase Management",
+          base: "/purchase-management",
+          icon: Package,
+          allowedRoles: ["admin", "md", "store", "accounts"],
+          subitems: [
+            { title: "Dashboard", url: "/purchase-management/dashboard" },
+            { title: "Smart Procurement", url: "/purchase-management/procurement" },
+            { title: "Vendor Management", url: "/purchase-management/vendors" },
+          ],
+        },
     {
       id: "documents",
       title: "Documents",
