@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie } from 'recharts'
-import { PaintBucket, FileText, Clock, AlertTriangle, Upload,Pencil, CheckCircle, Eye, Plus, Trash2 } from "lucide-react"
+import { PaintBucket, FileText, Clock, AlertTriangle, Upload,Pencil, CheckCircle, Eye, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react"
 import { designsData } from "@/lib/dummy-data"
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
@@ -108,7 +108,84 @@ const bottlenecks: Bottleneck[] = [
   }
 ]
 
-const designColumns: ColumnDef<any>[] = [
+// Mobile-optimized columns - only name and actions
+const mobileDesignColumns: ColumnDef<any>[] = [
+  {
+    accessorKey: "name",
+    header: "Design Name",
+    cell: ({ row }) => {
+      const design = row.original
+      const [isExpanded, setIsExpanded] = useState(false)
+      
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="font-medium">{design.name}</div>
+              <div className="text-sm text-muted-foreground">
+                {design.client?.name || 'N/A'} • {design.project?.name || 'N/A'}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="md:hidden"
+            >
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          {isExpanded && (
+            <div className="md:hidden space-y-2 p-3 bg-muted/50 rounded-lg">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="font-medium">Created By:</span>
+                  <div className="text-muted-foreground">{design.createdBy?.name || 'N/A'}</div>
+                </div>
+                <div>
+                  <span className="font-medium">Status:</span>
+                  <div>
+                    <Badge variant={
+                      design.status === "APPROVED" ? "default" : 
+                      design.status === "UNDER_REVIEW" ? "secondary" : 
+                      design.status === "REJECTED" ? "destructive" : "outline"
+                    }>
+                      {design.status === "UNDER_REVIEW" ? "Under Review" : 
+                       design.status === "APPROVED" ? "Approved" : 
+                       design.status === "REJECTED" ? "Rejected" : design.status}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium">Files:</span>
+                  <div className="text-muted-foreground flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    {design.files ? design.files.length : 0}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium">Images:</span>
+                  <div className="text-muted-foreground flex items-center gap-1">
+                    <PaintBucket className="h-3 w-3" />
+                    {design.images ? design.images.length : 0}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <span className="font-medium">Created:</span>
+                  <div className="text-muted-foreground">{new Date(design.createdAt).toLocaleDateString()}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    },
+  },
+]
+
+// Desktop columns - all original columns
+const desktopDesignColumns: ColumnDef<any>[] = [
   {
     accessorKey: "name",
     header: "Design Name",
@@ -209,6 +286,7 @@ const DesignDashboardContent = () => {
   const [selectedAnalytic, setSelectedAnalytic] = useState<string | null>(null)
   const [selectedBottleneck, setSelectedBottleneck] = useState<any | null>(null)
   const [selectedEscalation, setSelectedEscalation] = useState<any | null>(null)
+  const [expandedQueueItems, setExpandedQueueItems] = useState<Record<string, boolean>>({})
   
   // New design form state
   const [newDesignForm, setNewDesignForm] = useState({
@@ -619,7 +697,21 @@ const DesignDashboardContent = () => {
       </div>
 
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        {/* Mobile Tab Navigation */}
+        <div className="md:hidden">
+          <Select value={getCurrentTab()} onValueChange={handleTabChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select view" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="overview">Design Overview</SelectItem>
+              <SelectItem value="queue">Review Queue</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Desktop Tab Navigation */}
+        <TabsList className="hidden md:grid w-full grid-cols-2">
           <TabsTrigger value="overview">Design Overview</TabsTrigger>
           {/* <TabsTrigger value="analytics">Approval Analytics</TabsTrigger> */}
           <TabsTrigger value="queue">Review Queue</TabsTrigger>
@@ -705,51 +797,110 @@ const DesignDashboardContent = () => {
               <CardDescription>Recent design submissions and their status</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable 
-                columns={[
-                  ...designColumns,
-                  {
-                    id: "actions",
-                    header: "Actions",
-                    cell: ({ row }) => (
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewDetails(row.original)}
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditDesign(row.original)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDeleteDesign(row.original)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                        {row.original.status !== "UNDER_REVIEW" && row.original.status !== "APPROVED" && (
+              {/* Mobile View */}
+              <div className="md:hidden">
+                <DataTable 
+                  columns={[
+                    ...mobileDesignColumns,
+                    {
+                      id: "actions",
+                      header: "Actions",
+                      cell: ({ row }) => (
+                        <div className="flex flex-col gap-1">
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleSendToReview(row.original)}
+                            onClick={() => handleViewDetails(row.original)}
+                            className="w-full justify-start"
                           >
-                            Send to Review
+                            <Eye className="h-3 w-3 mr-2" />
+                            View
                           </Button>
-                        )}
-                      </div>
-                    ),
-                  },
-                ]}
-                data={designs} 
-                searchKey="name" 
-              />
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditDesign(row.original)}
+                            className="w-full justify-start"
+                          >
+                            <Pencil className="h-3 w-3 mr-2" />
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteDesign(row.original)}
+                            className="w-full justify-start"
+                          >
+                            <Trash2 className="h-3 w-3 mr-2" />
+                            Delete
+                          </Button>
+                          {row.original.status !== "UNDER_REVIEW" && row.original.status !== "APPROVED" && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleSendToReview(row.original)}
+                              className="w-full justify-start"
+                            >
+                              Send to Review
+                            </Button>
+                          )}
+                        </div>
+                      ),
+                    },
+                  ]}
+                  data={designs} 
+                  searchKey="name" 
+                />
+              </div>
+
+              {/* Desktop View */}
+              <div className="hidden md:block">
+                <DataTable 
+                  columns={[
+                    ...desktopDesignColumns,
+                    {
+                      id: "actions",
+                      header: "Actions",
+                      cell: ({ row }) => (
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewDetails(row.original)}
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditDesign(row.original)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDeleteDesign(row.original)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                          {row.original.status !== "UNDER_REVIEW" && row.original.status !== "APPROVED" && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleSendToReview(row.original)}
+                            >
+                              Send to Review
+                            </Button>
+                          )}
+                        </div>
+                      ),
+                    },
+                  ]}
+                  data={designs} 
+                  searchKey="name" 
+                />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -861,54 +1012,142 @@ const DesignDashboardContent = () => {
                     <p className="mt-1 text-sm text-gray-500">All designs have been reviewed!</p>
                   </div>
                 ) : (
-                  designs.filter(d => d.status === "UNDER_REVIEW").map((design, index) => (
-                    <div key={design.id || index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h3 className="font-medium">{design.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Client: {design.client?.name || 'N/A'} • Project: {design.project?.name || 'N/A'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Created by: {design.createdBy?.name || 'N/A'} • 
-                          Created: {new Date(design.createdAt).toLocaleDateString()}
-                        </p>
-                        <div className="flex gap-2 mt-2">
-                          <Badge variant="secondary">Under Review</Badge>
-                          {design.files && design.files.length > 0 && (
-                            <Badge variant="outline">
-                              <FileText className="h-3 w-3 mr-1" />
-                              {design.files.length} Files
-                            </Badge>
-                          )}
-                          {design.images && design.images.length > 0 && (
-                            <Badge variant="outline">
-                              <PaintBucket className="h-3 w-3 mr-1" />
-                              {design.images.length} Images
-                            </Badge>
-                          )}
+                  designs.filter(d => d.status === "UNDER_REVIEW").map((design, index) => {
+                    const isExpanded = expandedQueueItems[design.id] || false;
+                    
+                    const toggleExpanded = () => {
+                      setExpandedQueueItems(prev => ({
+                        ...prev,
+                        [design.id]: !prev[design.id]
+                      }));
+                    };
+                    
+                    return (
+                      <div key={design.id || index} className="border rounded-lg">
+                        {/* Mobile Layout */}
+                        <div className="md:hidden">
+                          <div className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex-1">
+                                <h3 className="font-medium">{design.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {design.client?.name || 'N/A'} • {design.project?.name || 'N/A'}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={toggleExpanded}
+                              >
+                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </div>
+
+                            {isExpanded && (
+                              <div className="space-y-3 p-3 bg-muted/50 rounded-lg mb-3">
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div>
+                                    <span className="font-medium">Created by:</span>
+                                    <div className="text-muted-foreground">{design.createdBy?.name || 'N/A'}</div>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Created:</span>
+                                    <div className="text-muted-foreground">{new Date(design.createdAt).toLocaleDateString()}</div>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Files:</span>
+                                    <div className="text-muted-foreground flex items-center gap-1">
+                                      <FileText className="h-3 w-3" />
+                                      {design.files ? design.files.length : 0}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Images:</span>
+                                    <div className="text-muted-foreground flex items-center gap-1">
+                                      <PaintBucket className="h-3 w-3" />
+                                      {design.images ? design.images.length : 0}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div>
+                                  <Badge variant="secondary">Under Review</Badge>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button variant="outline" size="sm" onClick={() => handleAddComment(design)} className="w-full">
+                                Comment
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)} className="w-full">
+                                <Eye className="h-3 w-3 mr-1" />
+                                View Details
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                onClick={() => handleRejectDesign(design)}
+                                className="w-full"
+                              >
+                                Reject
+                              </Button>
+                              <Button size="sm" onClick={() => handleApproveDesign(design)} className="w-full">
+                                Approve
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden md:flex items-center justify-between p-4">
+                          <div>
+                            <h3 className="font-medium">{design.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              Client: {design.client?.name || 'N/A'} • Project: {design.project?.name || 'N/A'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Created by: {design.createdBy?.name || 'N/A'} • 
+                              Created: {new Date(design.createdAt).toLocaleDateString()}
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <Badge variant="secondary">Under Review</Badge>
+                              {design.files && design.files.length > 0 && (
+                                <Badge variant="outline">
+                                  <FileText className="h-3 w-3 mr-1" />
+                                  {design.files.length} Files
+                                </Badge>
+                              )}
+                              {design.images && design.images.length > 0 && (
+                                <Badge variant="outline">
+                                  <PaintBucket className="h-3 w-3 mr-1" />
+                                  {design.images.length} Images
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleAddComment(design)}>
+                              Comment
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)}>
+                              <Eye className="h-3 w-3 mr-1" />
+                              View Details
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => handleRejectDesign(design)}
+                            >
+                              Reject
+                            </Button>
+                            <Button size="sm" onClick={() => handleApproveDesign(design)}>
+                              Approve
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleAddComment(design)}>
-                          Comment
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)}>
-                          <Eye className="h-3 w-3 mr-1" />
-                          View Details
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => handleRejectDesign(design)}
-                        >
-                          Reject
-                        </Button>
-                        <Button size="sm" onClick={() => handleApproveDesign(design)}>
-                          Approve
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </CardContent>
