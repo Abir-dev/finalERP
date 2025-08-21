@@ -390,7 +390,11 @@ const InventoryContent = () => {
       console.log("Fetching inventory items for user:", userID);
 
       // Fetch inventory items
-      const itemsResponse = await axios.get(`${API_URL}/inventory/items?userId=${userID}`, {
+      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/inventory/items`
+          : `${API_URL}/inventory/items?userId=${userID}`;
+        console.log("Fetching tasks from:", endpoint);
+      const itemsResponse = await axios.get(endpoint, {
         headers,
       });
       console.log("Raw inventory data:", itemsResponse.data);
@@ -444,8 +448,12 @@ const InventoryContent = () => {
 
       // Fetch other data
       try {
+        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+          ? `${API_URL}/inventory/transfers`
+          : `${API_URL}/inventory/transfers?userId=${userID}`;
+        console.log("Fetching tasks from:", endpoint);
         const transfersResponse = await axios.get(
-          `${API_URL}/inventory/transfers?userId=${userID}`,
+          endpoint,
           { headers }
         );
         const mappedTransfers: Transfer[] = (Array.isArray(transfersResponse.data) ? transfersResponse.data : []).map((t: any) => ({
@@ -1736,15 +1744,15 @@ const InventoryContent = () => {
                 message: "Active forecasting in place",
               }}
             /> */}
-            <EnhancedStatCard
+           <EnhancedStatCard
               title="Estimated Cost"
               value={`₹${inventoryItems
-                .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
+                .filter((item) => item.quantity < (item.reorderLevel) * 2)
                 .reduce(
                   (total, item) =>
                     total +
                     (item.unitCost || 0) *
-                      ((item.reorderLevel || 50) - item.quantity),
+                      ((item.reorderLevel ) - item.quantity),
                   0
                 )
                 .toLocaleString()}`}
