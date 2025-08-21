@@ -45,7 +45,7 @@ export const UserFilterComponent: React.FC<UserFilterComponentProps> = ({
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          <Label className="text-sm sm:hidden flex font-medium">View data for:</Label>
+          <Label className="text-sm hidden md:block font-medium">View data for:</Label>
         </div>
         
         <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export const UserFilterComponent: React.FC<UserFilterComponentProps> = ({
       </div>
 
       {selectedUser && (
-        <div className="text-sm sm:hidden flex text-muted-foreground">
+        <div className="text-sm hidden md:block text-muted-foreground">
           Currently viewing: {selectedUser.name}
           {selectedUserId && ` (${selectedUser.role})`}
         </div>
