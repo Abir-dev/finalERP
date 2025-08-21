@@ -98,6 +98,12 @@ export function AppSidebar() {
       icon: Home,
       allowedRoles: ["admin", "md"],
     },
+    {
+      title: "Admin & IT",
+      url: "/admin-dashboard",
+      icon: Monitor,
+      allowedRoles: ["admin"],
+    }
   ];
 
   const mainItems = [
@@ -107,12 +113,12 @@ export function AppSidebar() {
       icon: BarChart3,
       allowedRoles: ["admin", "md"],
     },
-    {
-      title: "Admin & IT",
-      url: "/admin-dashboard",
-      icon: Monitor,
-      allowedRoles: ["admin"],
-    },
+    // {
+    //   title: "Admin & IT",
+    //   url: "/admin-dashboard",
+    //   icon: Monitor,
+    //   allowedRoles: ["admin"],
+    // },
     {
       title: "Design Dashboard",
       url: "/design-dashboard",
@@ -242,20 +248,20 @@ export function AppSidebar() {
 
   // Sections with dropdown subitems (deep links)
   const sections = [
-    {
-      id: "admin",
-      title: "Admin & IT",
-      base: "/admin-dashboard",
-      icon: Monitor,
-      allowedRoles: ["admin"],
-      subitems: [
-        { title: "System Monitoring", url: "/admin-dashboard/monitoring" },
-        { title: "User Management", url: "/admin-dashboard/users" },
-        { title: "Modules & API", url: "/admin-dashboard/modules" },
-        { title: "Security", url: "/admin-dashboard/security" },
-        { title: "Logs & Audit", url: "/admin-dashboard/logs" },
-      ],
-    },
+    // {
+    //   id: "admin",
+    //   title: "Admin & IT",
+    //   base: "/admin-dashboard",
+    //   icon: Monitor,
+    //   allowedRoles: ["admin"],
+    //   subitems: [
+    //     { title: "System Monitoring", url: "/admin-dashboard/monitoring" },
+    //     { title: "User Management", url: "/admin-dashboard/users" },
+    //     { title: "Modules & API", url: "/admin-dashboard/modules" },
+    //     { title: "Security", url: "/admin-dashboard/security" },
+    //     { title: "Logs & Audit", url: "/admin-dashboard/logs" },
+    //   ],
+    // },
     {
       id: "md",
       title: "Managing Director",
@@ -407,7 +413,7 @@ export function AppSidebar() {
       title: "Purchase Management",
       base: "/purchase-management",
       icon: Package,
-      allowedRoles: ["admin", "md", "store", "accounts"],
+      allowedRoles: ["admin", "md", "site", "store", "accounts"],
       subitems: [
         { title: "Dashboard", url: "/purchase-management/dashboard" },
         // { title: "Smart Procurement", url: "/purchase-management/procurement" },

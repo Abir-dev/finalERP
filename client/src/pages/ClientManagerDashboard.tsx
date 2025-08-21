@@ -404,7 +404,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
         </div>
 
         <TabsContent value="engagement" className="mt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-5">
             <StatCard
               title="Total Clients"
               value={totalClients.toString()}
@@ -544,7 +544,7 @@ Work Completed: ${invoice.workCompletedPercent || 0}%
         </TabsContent>
 
         <TabsContent value="billing" className="mt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-5">
             <StatCard
               title="Outstanding Amount"
               value="₹8.2M"

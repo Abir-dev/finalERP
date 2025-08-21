@@ -200,7 +200,7 @@ const ITDashboard = () => {
     if (path.includes('/modules')) return 'modules';
     if (path.includes('/security')) return 'security';
     if (path.includes('/logs')) return 'logs';
-    return 'monitoring'; // default tab
+    return 'users'; // default tab
   };
 
   // Handle tab changes
@@ -437,14 +437,14 @@ const ITDashboard = () => {
       </div>
 
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="monitoring">System Monitoring</TabsTrigger>
-          <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="modules">Modules & API</TabsTrigger>
+        {/* <TabsList className="grid w-full grid-cols-5"> */}
+          {/* <TabsTrigger value="monitoring">System Monitoring</TabsTrigger> */}
+          {/* <TabsTrigger value="users">User Management</TabsTrigger> */}
+          {/* <TabsTrigger value="modules">Modules & API</TabsTrigger> */}
           {/* <TabsTrigger value="workflows">Workflows</TabsTrigger> */}
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="logs">Logs & Audit</TabsTrigger>
-        </TabsList>
+          {/* <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="logs">Logs & Audit</TabsTrigger> */}
+        {/* </TabsList> */}
 
         <TabsContent value="monitoring" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
