@@ -73,7 +73,9 @@ import {
   ChevronDown,
   ChevronUp,
   Trash2,
-  Pencil
+  Pencil,
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 import { issuesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
@@ -2606,20 +2608,20 @@ const SiteDashboardContent = () => {
             On-site operations and progress tracking
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsDPRModalOpen(true)} className="gap-2">
-            <Upload className="h-4 w-4" />
-            Upload DPR
-          </Button>
-          <Button
-            onClick={() => setIsWPRModalOpen(true)}
-            variant="outline"
-            className="gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            Upload WPR
-          </Button>
-        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+  <Button onClick={() => setIsDPRModalOpen(true)} className="gap-2">
+    <Upload className="h-4 w-4" />
+    Upload DPR
+  </Button>
+  <Button
+    onClick={() => setIsWPRModalOpen(true)}
+    variant="outline"
+    className="gap-2"
+  >
+    <FileText className="h-4 w-4" />
+    Upload WPR
+  </Button>
+</div>
       </div>
       {/* Admin User Selection */}
       {/* {(user?.role === "admin" || user?.role === "md") && (
@@ -2666,6 +2668,44 @@ const SiteDashboardContent = () => {
           {/* <TabsTrigger value="store-manager">Store Manager</TabsTrigger>
           <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger> */}
         </TabsList>
+
+        <div className="md:hidden mb-4">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+              <div className="flex items-center gap-3">
+                {getCurrentTab() === "timeline" ? (
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                ) : getCurrentTab() === "reports" ? (
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                ) : (
+                  <Users className="h-5 w-5 text-primary" />
+                )}
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {getCurrentTab() === "timeline"
+                      ? "Execution Timeline"
+                      : getCurrentTab() === "reports"
+                      ? "Daily & Weekly Reports"
+                      :""}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Store ›{" "}
+                    {getCurrentTab() === "timeline"
+                      ? "Execution Timeline"
+                      : getCurrentTab() === "reports"
+                      ? "Daily & Weekly Reports"
+                      : "Store Staff"}
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {getCurrentTab() === "timeline"
+                  ? `${progressStats.pendingTasks} items`
+                  : getCurrentTab() === "reports"
+                  ? `${progressStats.activeTasks} reports`
+                  : ""}
+              </div>
+            </div>
+          </div>
 
         <TabsContent value="timeline" className="space-y-6">
           {timelineSubview === "main" && (
