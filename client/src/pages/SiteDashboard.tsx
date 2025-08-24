@@ -2659,14 +2659,14 @@ const SiteDashboardContent = () => {
         </div>
       )} */}
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="hidden md:grid w-full grid-cols-2">
+        <TabsList className="hidden md:grid w-full grid-cols-3">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
           {/* <TabsTrigger value="materials">Material Flow</TabsTrigger>
           <TabsTrigger value="issues">Issue Tracker</TabsTrigger> */}
           {/* <TabsTrigger value="cost">Cost Analysis</TabsTrigger> */}
-          {/* <TabsTrigger value="store-manager">Store Manager</TabsTrigger>
-          <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger> */}
+          {/* <TabsTrigger value="store-manager">Store Manager</TabsTrigger> */}
+          <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger>
         </TabsList>
 
         <div className="md:hidden mb-4">
