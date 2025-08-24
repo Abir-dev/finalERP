@@ -209,7 +209,7 @@ export function AppSidebar() {
       title: "Warehouse Management",
       url: "/warehouse-management",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site"],
+      allowedRoles: ["admin", "md", "warehouse"],
     },
     {
       title: "Calendar",
@@ -346,7 +346,7 @@ export function AppSidebar() {
       title: "Inventory",
       base: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site"],
+      allowedRoles: ["admin", "md", "store", "site", "warehouse"],
       subitems: [
         { title: "Inventory", url: "/inventory/inventory" },
         { title: "Material Forecast", url: "/inventory/material-forecast" },

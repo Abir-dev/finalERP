@@ -7,7 +7,8 @@ export const ROLES = {
   SITE: 'site',
   CLIENT: 'client',
   HR: 'hr',
-  PROJECT: 'project'
+  PROJECT: 'project',
+  WAREHOUSE: 'warehouse'
 } as const;
 
 export type UserRole = typeof ROLES[keyof typeof ROLES];
@@ -21,5 +22,6 @@ export const ROLE_PERMISSIONS = {
   [ROLES.SITE]: ['read:projects', 'write:reports', 'read:inventory'],
   [ROLES.CLIENT]: ['read:own-projects', 'write:comments'],
   [ROLES.HR]: ['read:hr', 'write:hr'],
-  [ROLES.PROJECT]: ['read:projects', 'write:projects']
+  [ROLES.PROJECT]: ['read:projects', 'write:projects'],
+  [ROLES.WAREHOUSE]: ['read:inventory', 'write:inventory', 'manage:shipments']
 }; 

@@ -200,7 +200,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Inventory",
       url: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site"],
+      allowedRoles: ["admin", "md", "store", "site", "warehouse"],
     },
     // {
     //   title: "Documents",
@@ -225,7 +225,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Warehouse Management",
       url: "/warehouse-management",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site"],
+      allowedRoles: ["admin", "md", "warehouse"],
     },
     {
       title: "Calendar",

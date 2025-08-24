@@ -705,6 +705,7 @@ const ITDashboard = () => {
                       {/* <SelectItem value="client">Client</SelectItem> */}
                       <SelectItem value="hr">HR</SelectItem>
                       <SelectItem value="project">Project Manager</SelectItem>
+                      <SelectItem value="warehouse">Warehouse Manager</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>{" "}

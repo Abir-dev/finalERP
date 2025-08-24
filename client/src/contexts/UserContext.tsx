@@ -21,7 +21,8 @@ export type UserRole =
   | "site"
   | "client"
   | "hr"
-  | "project";
+  | "project"
+  | "warehouse";
 
 interface User {
   id: string;
@@ -109,7 +110,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         site: "/site-manager",
         client: "/client-portal",
         hr: "/hr",
-        project: "/projects"
+        project: "/projects",
+        warehouse: "/warehouse-management",
       };
       navigate(roleRoutes[role] || "/");
     },
