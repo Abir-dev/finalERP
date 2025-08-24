@@ -390,7 +390,8 @@ const InventoryContent = () => {
       console.log("Fetching inventory items for user:", userID);
 
       // Fetch inventory items
-      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+      const endpoint = ((user?.role==="admin"|| user?.role==="md" || user?.role==="warehouse") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md" || user?.role==="warehouse"))
+
           ? `${API_URL}/inventory/items`
           : `${API_URL}/inventory/items?userId=${userID}`;
         console.log("Fetching tasks from:", endpoint);
@@ -448,7 +449,7 @@ const InventoryContent = () => {
 
       // Fetch other data
       try {
-        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+        const endpoint = ((user?.role==="admin"|| user?.role==="md" || user?.role==="warehouse") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md" || user?.role==="warehouse"))
           ? `${API_URL}/inventory/transfers`
           : `${API_URL}/inventory/transfers?userId=${userID}`;
         console.log("Fetching tasks from:", endpoint);
@@ -535,7 +536,7 @@ const InventoryContent = () => {
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+      const endpoint = ((user?.role==="admin"|| user?.role==="md" || user?.role==="warehouse") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md" || user?.role==="warehouse"))
           ? `${API_URL}/schedule-maintenances-global`
           : `${API_URL}/schedule-maintenance?userId=${userID}`;
           console.log("Fetching schedule maintenances from:", endpoint);
