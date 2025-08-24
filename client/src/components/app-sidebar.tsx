@@ -409,13 +409,13 @@ export function AppSidebar() {
       ],
     },
     {
-      id: "purchase",
+      // id: "purchase",
       title: "Purchase Management",
       base: "/purchase-management",
       icon: Package,
       allowedRoles: ["admin", "md", "site", "store", "accounts"],
       subitems: [
-        { title: "Dashboard", url: "/purchase-management/dashboard" },
+        // { title: "Dashboard", url: "/purchase-management/dashboard" },
         // { title: "Smart Procurement", url: "/purchase-management/procurement" },
         // { title: "Vendor Management", url: "/purchase-management/vendors" },
       ],
