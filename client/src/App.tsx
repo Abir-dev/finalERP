@@ -214,8 +214,9 @@ const AppLayout = () => {
               <Route path="/billing-management/payments" element={<BillingManagement />} />
               
               <Route path="/purchase-management" element={<PurchaseManagement />} />
-              <Route path="/purchase-management/dashboard" element={<PurchaseManagement />} />
-              <Route path="/purchase-management/procurement" element={<PurchaseManagement />} />
+              <Route path="/purchase-management/overview" element={<PurchaseManagement />} />
+              <Route path="/purchase-management/material-requests" element={<PurchaseManagement />} />
+              <Route path="/purchase-management/purchase-orders" element={<PurchaseManagement />} />
               <Route path="/purchase-management/vendors" element={<PurchaseManagement />} />
 
               <Route path="/warehouse-management" element={<WarehouseDashboard />} />
