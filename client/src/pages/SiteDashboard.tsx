@@ -75,7 +75,7 @@ import {
   Trash2,
   Pencil,
   BarChart3,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 import { issuesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
@@ -527,37 +527,39 @@ const SiteDashboardContent = () => {
   const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState(false);
-  const [selectedDeleteTask, setSelectedDeleteTask] = useState<Task | null>(null);
+  const [selectedDeleteTask, setSelectedDeleteTask] = useState<Task | null>(
+    null
+  );
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   // const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const { user } = useUser()
-  const { 
-    targetUserId, 
-    selectedUser, 
+  const { user } = useUser();
+  const {
+    targetUserId,
+    selectedUser,
     currentUser,
     selectedUserId,
     setSelectedUserId,
-    isAdminUser 
+    isAdminUser,
   } = useUserFilter();
   const userID = targetUserId || user?.id || "";
 
   // Function to get current tab from URL
   const getCurrentTab = () => {
     const path = location.pathname;
-    if (path.includes('/timeline')) return 'timeline';
-    if (path.includes('/reports')) return 'reports';
-    return 'timeline'; // default tab
+    if (path.includes("/timeline")) return "timeline";
+    if (path.includes("/reports")) return "reports";
+    return "timeline"; // default tab
   };
 
   // Handle tab changes
   const handleTabChange = (value: string) => {
     const tabRoutes: Record<string, string> = {
-      timeline: '/site-manager/timeline',
-      reports: '/site-manager/reports'
+      timeline: "/site-manager/timeline",
+      reports: "/site-manager/reports",
     };
-    
+
     // Only navigate if the tab has a route, otherwise it's a local tab
     if (tabRoutes[value]) {
       navigate(tabRoutes[value]);
@@ -588,9 +590,10 @@ const SiteDashboardContent = () => {
       fetchUsers();
       // fetchUsers();
       fetchProjects();
-        fetchAllUsers();
+      fetchAllUsers();
       fetchProgressReports();
       fetchTasks();
+      fetchInventoryItems();
     }
   }, [userID]);
 
@@ -670,6 +673,27 @@ const SiteDashboardContent = () => {
     } catch (error) {
       console.error("Error fetching projects:", error);
       setProjects([]);
+    }
+  };
+
+  const fetchInventoryItems = async () => {
+    try {
+      setIsInventoryLoading(true);
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      const response = await axios.get(
+        `${API_URL}/inventory/items?userId=${userID}`,
+        { headers }
+      );
+      setAllInventoryItems(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Error fetching inventory items:", error);
+      setAllInventoryItems([]);
+    } finally {
+      setIsInventoryLoading(false);
     }
   };
 
@@ -902,6 +926,10 @@ const SiteDashboardContent = () => {
   });
   const [materialUsage, setMaterialUsage] = useState([]);
 
+  // Inventory state for Central Warehouse
+  const [allInventoryItems, setAllInventoryItems] = useState<any[]>([]);
+  const [isInventoryLoading, setIsInventoryLoading] = useState(true);
+
   const [isTaskViewModalOpen, setIsTaskViewModalOpen] = useState(false);
   const [selectedTaskView, setSelectedTaskView] = useState<Task | null>(null);
 
@@ -1107,27 +1135,31 @@ const SiteDashboardContent = () => {
         localStorage.getItem("jwt_token_backup");
 
       // Fetch DPRs
-       const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
-          ? `${API_URL}/progress-reports/dpr`
-          : `${API_URL}/progress-reports/dpr/${userID}`;
-      const dprResponse = await axios.get(endpoint,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const endpoint = (
+        user?.role === "admin" || user?.role === "md"
+          ? selectedUser?.id == currentUser?.id
+          : user?.role === "admin" || user?.role === "md"
+      )
+        ? `${API_URL}/progress-reports/dpr`
+        : `${API_URL}/progress-reports/dpr/${userID}`;
+      const dprResponse = await axios.get(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setDprs(dprResponse.data);
       console.log("DPRs fetched:", dprResponse.data);
 
       // Fetch WPRs
-      const endpoint2 = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
-          ? `${API_URL}/progress-reports/wpr`
-          : `${API_URL}/progress-reports/wpr/${userID}`;
-          console.log("Fetching WPRs from:", endpoint2);
-      const wprResponse = await axios.get(endpoint2,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const endpoint2 = (
+        user?.role === "admin" || user?.role === "md"
+          ? selectedUser?.id == currentUser?.id
+          : user?.role === "admin" || user?.role === "md"
+      )
+        ? `${API_URL}/progress-reports/wpr`
+        : `${API_URL}/progress-reports/wpr/${userID}`;
+      console.log("Fetching WPRs from:", endpoint2);
+      const wprResponse = await axios.get(endpoint2, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setWprs(wprResponse.data);
       console.log("WPRs fetched:", wprResponse.data);
 
@@ -1251,27 +1283,31 @@ const SiteDashboardContent = () => {
 
       // Fetch tasks for all projects the user has access to
       // const allTasks: Task[] = [];
-      
+
       // const response = await axios.get(
       //   `${API_URL}/projects/${userID}/tasks`,
       //   {
       //     headers: { Authorization: `Bearer ${token}` },
       //   }
       // )
-        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
-          ? `${API_URL}/tasks`
-          : `${API_URL}/projects/${userID}/tasks`;
-        console.log("Fetching tasks from:", endpoint);
+      const endpoint = (
+        user?.role === "admin" || user?.role === "md"
+          ? selectedUser?.id == currentUser?.id
+          : user?.role === "admin" || user?.role === "md"
+      )
+        ? `${API_URL}/tasks`
+        : `${API_URL}/projects/${userID}/tasks`;
+      console.log("Fetching tasks from:", endpoint);
       if (user?.role !== "admin") {
         console.log("Admin");
-      }else {
+      } else {
         console.log("Not Admin");
       }
-        const response = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+      const response = await axios.get(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-              // console.log(response.data);
+      // console.log(response.data);
       // Add project name and assigned user name to each task for display
       await fetchUsers();
       const token2 =
@@ -2499,95 +2535,95 @@ const SiteDashboardContent = () => {
       localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     // Fetch purchase orders
-    if(userID){
-    axios
-      .get(`${API_URL}/purchase-orders`, { headers })
-      .then((res) => setPurchaseOrders(res.data))
-      .catch(() => {});
-    // Fetch equipment
-    axios
-      .get(`${API_URL}/site-ops/equipment-maintenance`, { headers })
-      .then((res) => setEquipmentList(res.data))
-      .catch(() => {});
-    // Fetch staff (employees)
-    axios
-      .get(`${API_URL}/hr/employees`, { headers })
-      .then((res) => setStoreStaff(res.data))
-      .catch(() => {});
-    // Fetch issues
-    axios
-      .get(`${API_URL}/site-ops/issue-reports`, { headers })
-      .then((res) => setIssues(res.data))
-      .catch(() => {});
-    // Fetch equipment logs
-    axios
-      .get(`${API_URL}/site-ops/equipment-logs`, { headers })
-      .then((res) => setEquipmentLogs(res.data))
-      .catch(() => {});
-    // Fetch equipment locations
-    axios
-      .get(`${API_URL}/site-ops/equipment-locations`, { headers })
-      .then((res) => setEquipmentLocations(res.data))
-      .catch(() => {});
-    // Fetch stock alerts
-    axios
-      .get(`${API_URL}/inventory/stock-alerts`, { headers })
-      .then((res) => setStockAlerts(res.data))
-      .catch(() => {});
-    // Fetch material movements
-    axios
-      .get(`${API_URL}/inventory/material-movements`, { headers })
-      .then((res) => setMaterialMovements(res.data))
-      .catch(() => {});
-    // Fetch storage sections
-    axios
-      .get(`${API_URL}/inventory/storage-sections`, { headers })
-      .then((res) => setStorageSections(res.data))
-      .catch(() => {});
-    // Fetch labor hours
-    axios
-      .get(`${API_URL}/site-ops/labor-logs`, { headers })
-      .then((res) => setLaborHours(res.data))
-      .catch(() => {});
-    // Fetch budget
-    axios
-      .get(`${API_URL}/site-ops/budget-adjustments`, { headers })
-      .then((res) => setBudget(res.data))
-      .catch(() => {});
-    // Fetch tasks
-    // axios
-    //   .get(`${API_URL}/project/${user.id}/tasks`, { headers })
-    //   .then((res) => setTasks(res.data))
-    //   .catch(() => {});
-    // Fetch material requests
-    axios
-      .get(`${API_URL}/inventory/material-requests`, { headers })
-      .then((res) => setMaterialRequests(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/site/progress`, { headers })
-      .then((res) => setProgressStats(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/site/material-usage`, { headers })
-      .then((res) => setMaterialUsage(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/site/cost`, { headers })
-      .then((res) => setCostData(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/site/labor`, { headers })
-      .then((res) => setLaborHours(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/purchase-orders`, { headers })
-      .then((res) => setPurchaseOrders(res.data))
-      .catch(() => {});
-    axios
-      .get(`${API_URL}/equipment`, { headers })
-      .then((res) => setEquipmentList(res.data))
-      .catch(() => {});
+    if (userID) {
+      axios
+        .get(`${API_URL}/purchase-orders`, { headers })
+        .then((res) => setPurchaseOrders(res.data))
+        .catch(() => {});
+      // Fetch equipment
+      axios
+        .get(`${API_URL}/site-ops/equipment-maintenance`, { headers })
+        .then((res) => setEquipmentList(res.data))
+        .catch(() => {});
+      // Fetch staff (employees)
+      axios
+        .get(`${API_URL}/hr/employees`, { headers })
+        .then((res) => setStoreStaff(res.data))
+        .catch(() => {});
+      // Fetch issues
+      axios
+        .get(`${API_URL}/site-ops/issue-reports`, { headers })
+        .then((res) => setIssues(res.data))
+        .catch(() => {});
+      // Fetch equipment logs
+      axios
+        .get(`${API_URL}/site-ops/equipment-logs`, { headers })
+        .then((res) => setEquipmentLogs(res.data))
+        .catch(() => {});
+      // Fetch equipment locations
+      axios
+        .get(`${API_URL}/site-ops/equipment-locations`, { headers })
+        .then((res) => setEquipmentLocations(res.data))
+        .catch(() => {});
+      // Fetch stock alerts
+      axios
+        .get(`${API_URL}/inventory/stock-alerts`, { headers })
+        .then((res) => setStockAlerts(res.data))
+        .catch(() => {});
+      // Fetch material movements
+      axios
+        .get(`${API_URL}/inventory/material-movements`, { headers })
+        .then((res) => setMaterialMovements(res.data))
+        .catch(() => {});
+      // Fetch storage sections
+      axios
+        .get(`${API_URL}/inventory/storage-sections`, { headers })
+        .then((res) => setStorageSections(res.data))
+        .catch(() => {});
+      // Fetch labor hours
+      axios
+        .get(`${API_URL}/site-ops/labor-logs`, { headers })
+        .then((res) => setLaborHours(res.data))
+        .catch(() => {});
+      // Fetch budget
+      axios
+        .get(`${API_URL}/site-ops/budget-adjustments`, { headers })
+        .then((res) => setBudget(res.data))
+        .catch(() => {});
+      // Fetch tasks
+      // axios
+      //   .get(`${API_URL}/project/${user.id}/tasks`, { headers })
+      //   .then((res) => setTasks(res.data))
+      //   .catch(() => {});
+      // Fetch material requests
+      axios
+        .get(`${API_URL}/inventory/material-requests`, { headers })
+        .then((res) => setMaterialRequests(res.data))
+        .catch(() => {});
+      axios
+        .get(`${API_URL}/site/progress`, { headers })
+        .then((res) => setProgressStats(res.data))
+        .catch(() => {});
+      axios
+        .get(`${API_URL}/site/material-usage`, { headers })
+        .then((res) => setMaterialUsage(res.data))
+        .catch(() => {});
+      axios
+        .get(`${API_URL}/site/cost`, { headers })
+        .then((res) => setCostData(res.data))
+        .catch(() => {});
+      axios
+        .get(`${API_URL}/site/labor`, { headers })
+        .then((res) => setLaborHours(res.data))
+        .catch(() => {});
+      axios
+        .get(`${API_URL}/purchase-orders`, { headers })
+        .then((res) => setPurchaseOrders(res.data))
+        .catch(() => {});
+      axios
+        .get(`${API_URL}/equipment`, { headers })
+        .then((res) => setEquipmentList(res.data))
+        .catch(() => {});
     }
   }, [userID]);
 
@@ -2597,7 +2633,7 @@ const SiteDashboardContent = () => {
 
   return (
     <div className="space-y-6">
-       <UserFilterComponent/>
+      <UserFilterComponent />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -2613,19 +2649,19 @@ const SiteDashboardContent = () => {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-  <Button onClick={() => setIsDPRModalOpen(true)} className="gap-2">
-    <Upload className="h-4 w-4" />
-    Upload DPR
-  </Button>
-  <Button
-    onClick={() => setIsWPRModalOpen(true)}
-    variant="outline"
-    className="gap-2"
-  >
-    <FileText className="h-4 w-4" />
-    Upload WPR
-  </Button>
-</div>
+          <Button onClick={() => setIsDPRModalOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload DPR
+          </Button>
+          <Button
+            onClick={() => setIsWPRModalOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Upload WPR
+          </Button>
+        </div>
       </div>
       {/* Admin User Selection */}
       {/* {(user?.role === "admin" || user?.role === "md") && (
@@ -2662,7 +2698,11 @@ const SiteDashboardContent = () => {
           )}
         </div>
       )} */}
-      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
+      <Tabs
+        value={getCurrentTab()}
+        onValueChange={handleTabChange}
+        className="space-y-6"
+      >
         <TabsList className="hidden md:grid w-full grid-cols-3">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
@@ -2674,42 +2714,42 @@ const SiteDashboardContent = () => {
         </TabsList>
 
         <div className="md:hidden mb-4">
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-              <div className="flex items-center gap-3">
-                {getCurrentTab() === "timeline" ? (
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                ) : getCurrentTab() === "reports" ? (
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                ) : (
-                  <Users className="h-5 w-5 text-primary" />
-                )}
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    {getCurrentTab() === "timeline"
-                      ? "Execution Timeline"
-                      : getCurrentTab() === "reports"
-                      ? "Daily & Weekly Reports"
-                      :""}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Store ›{" "}
-                    {getCurrentTab() === "timeline"
-                      ? "Execution Timeline"
-                      : getCurrentTab() === "reports"
-                      ? "Daily & Weekly Reports"
-                      : "Store Staff"}
-                  </p>
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {getCurrentTab() === "timeline"
-                  ? `${progressStats.pendingTasks} items`
-                  : getCurrentTab() === "reports"
-                  ? `${progressStats.activeTasks} reports`
-                  : ""}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+            <div className="flex items-center gap-3">
+              {getCurrentTab() === "timeline" ? (
+                <BarChart3 className="h-5 w-5 text-primary" />
+              ) : getCurrentTab() === "reports" ? (
+                <TrendingUp className="h-5 w-5 text-primary" />
+              ) : (
+                <Users className="h-5 w-5 text-primary" />
+              )}
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {getCurrentTab() === "timeline"
+                    ? "Execution Timeline"
+                    : getCurrentTab() === "reports"
+                    ? "Daily & Weekly Reports"
+                    : ""}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Store ›{" "}
+                  {getCurrentTab() === "timeline"
+                    ? "Execution Timeline"
+                    : getCurrentTab() === "reports"
+                    ? "Daily & Weekly Reports"
+                    : "Store Staff"}
+                </p>
               </div>
             </div>
+            <div className="text-xs text-muted-foreground">
+              {getCurrentTab() === "timeline"
+                ? `${progressStats.pendingTasks} items`
+                : getCurrentTab() === "reports"
+                ? `${progressStats.activeTasks} reports`
+                : ""}
+            </div>
           </div>
+        </div>
 
         <TabsContent value="timeline" className="space-y-6">
           {timelineSubview === "main" && (
@@ -2814,30 +2854,49 @@ const SiteDashboardContent = () => {
                     <CardContent>
                       <div className="overflow-x-auto">
                         <table className="min-w-full">
-                        <thead>
-                        <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium w-12"></th>
-                        <th className="text-left py-3 px-4 font-medium">Task Name</th>
-                        <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">Project</th>
-                        <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">Assigned To</th>
-                        <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Start Date</th>
-                        <th className="text-left py-3 px-4 font-medium hidden md:table-cell">Due Date</th>
-                        <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">Status</th>
-                          <th className="text-left py-3 px-4 font-medium">Actions</th>
-                          </tr>
-                            </thead>
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-3 px-4 font-medium w-12"></th>
+                              <th className="text-left py-3 px-4 font-medium">
+                                Task Name
+                              </th>
+                              <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">
+                                Project
+                              </th>
+                              <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">
+                                Assigned To
+                              </th>
+                              <th className="text-left py-3 px-4 font-medium hidden md:table-cell">
+                                Start Date
+                              </th>
+                              <th className="text-left py-3 px-4 font-medium hidden md:table-cell">
+                                Due Date
+                              </th>
+                              <th className="text-left py-3 px-4 font-medium hidden sm:table-cell">
+                                Status
+                              </th>
+                              <th className="text-left py-3 px-4 font-medium">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
                           <tbody>
                             {tasks.length > 0 ? (
                               tasks.map((task) => (
                                 <>
-                                  <tr key={task.id} className="border-b hover:bg-muted/50">
+                                  <tr
+                                    key={task.id}
+                                    className="border-b hover:bg-muted/50"
+                                  >
                                     <td className="py-3 px-4">
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() =>
                                           setExpandedTaskId(
-                                            expandedTaskId === task.id ? null : task.id
+                                            expandedTaskId === task.id
+                                              ? null
+                                              : task.id
                                           )
                                         }
                                         className="p-1 h-6 w-6"
@@ -2851,225 +2910,260 @@ const SiteDashboardContent = () => {
                                     </td>
                                     <td className="py-3 px-4">
                                       <div className="min-w-0 flex-1">
-                                        <p className="font-medium text-sm sm:text-base truncate">{task.name}</p>
-                                        <p className="text-xs text-muted-foreground truncate sm:hidden">{task.projectName}</p>
-                                      <p className="text-xs text-muted-foreground truncate sm:hidden">{task.assignedTo || "Unassigned"}</p>
-                                    <div className="sm:hidden mt-1">
-                                      <Badge
+                                        <p className="font-medium text-sm sm:text-base truncate">
+                                          {task.name}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate sm:hidden">
+                                          {task.projectName}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate sm:hidden">
+                                          {task.assignedTo || "Unassigned"}
+                                        </p>
+                                        <div className="sm:hidden mt-1">
+                                          <Badge
                                             variant={
                                               task.status === "completed"
-                                              ? "default"
-                                            : task.status === "in_progress"
-                                            ? "secondary"
+                                                ? "default"
+                                                : task.status === "in_progress"
+                                                ? "secondary"
                                                 : "outline"
                                             }
-                                          className="text-xs"
-                                      >
-                                      {task.status === "in_progress"
-                                      ? "In Progress"
-                                      : task.status.charAt(0).toUpperCase() +
-                                        task.status.slice(1)}
-                                    </Badge>
-                                    </div>
-                                    </div>
-                                    </td>
-                                    <td className="py-3 px-4 hidden sm:table-cell">{task.projectName}</td>
-                                    <td className="py-3 px-4 hidden sm:table-cell">{task.assignedTo || "Unassigned"}</td>
-                                    <td className="py-3 px-4 hidden md:table-cell">
-                                    {task.startDate 
-                                        ? new Date(task.startDate).toLocaleDateString()
-                                         : "Not set"}
-                                     </td>
-                                     <td className="py-3 px-4 hidden md:table-cell">
-                                       {task.dueDate 
-                                         ? new Date(task.dueDate).toLocaleDateString()
-                                         : "Not set"}
-                                     </td>
-                                     <td className="py-3 px-4 hidden sm:table-cell">
-                                       <Badge
-                                         variant={
-                                           task.status === "completed"
-                                             ? "default"
-                                             : task.status === "in_progress"
-                                             ? "secondary"
-                                             : "outline"
-                                         }
-                                       >
-                                         {task.status === "in_progress"
-                                           ? "In Progress"
-                                           : task.status.charAt(0).toUpperCase() +
-                                             task.status.slice(1)}
-                                       </Badge>
-                                     </td>
-                                    <td className="py-3 px-4">
-                                    <div className="flex gap-1 sm:gap-2">
-                                    <Button
-                                    variant="outline"
-                                    size="sm"
-                                      className="h-8 w-8 sm:w-auto"
-                                    onClick={() => {
-                                    setSelectedEditTask(task);
-                                    setIsEditTaskModalOpen(true);
-                                        }}
-                                    >
-                                    <Pencil className="h-4 w-4" />
-                                    <span className="hidden sm:inline ml-1">Update</span>
-                                    </Button>
-                                    <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-8 w-8 sm:w-auto text-destructive hover:text-destructive"
-                                    onClick={() => {
-                                      setSelectedDeleteTask(task);
-                                      setIsDeleteTaskDialogOpen(true);
-                                      }}
-                                    >
-                                    <Trash2 className="h-4 w-4" />
-                                      <span className="hidden sm:inline ml-1">Delete</span>
-                                      </Button>
+                                            className="text-xs"
+                                          >
+                                            {task.status === "in_progress"
+                                              ? "In Progress"
+                                              : task.status
+                                                  .charAt(0)
+                                                  .toUpperCase() +
+                                                task.status.slice(1)}
+                                          </Badge>
+                                        </div>
                                       </div>
-                                      </td>
-                                  </tr>
-                                  {expandedTaskId === task.id && (
-                                  <tr className="bg-muted/30">
-                                  <td colSpan={8} className="p-6">
-                                        <div className="bg-background rounded-lg shadow-sm border p-6 space-y-6">
-                                        <div className="flex items-center gap-3 mb-4">
-                                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold">
-                                        Task Details
-                                        </h3>
-                                        </div>
-                                          
-                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                            <Briefcase className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="text-sm font-semibold text-muted-foreground">
-                                            Task Name
-                                            </Label>
-                                            </div>
-                                            <div className="bg-muted/50 p-3 rounded-lg border">
-                                            <p className="text-sm font-medium">{task.name}</p>
-                                            </div>
-                                            </div>
-                                            
-                                            <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="text-sm font-semibold text-muted-foreground">
-                                            Project
-                                            </Label>
-                                            </div>
-                                            <div className="bg-muted/50 p-3 rounded-lg border">
-                                            <p className="text-sm font-medium">{task.projectName}</p>
-                                            </div>
-                                            </div>
-                                            
-                                            <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                            <Users className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="text-sm font-semibold text-muted-foreground">
-                                            Assigned To
-                                            </Label>
-                                            </div>
-                                            <div className="bg-muted/50 p-3 rounded-lg border">
-                                            <p className="text-sm font-medium">{task.assignedTo || "Unassigned"}</p>
-                                            </div>
-                                            </div>
-                                            
-                                            <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="text-sm font-semibold text-muted-foreground">
-                                            Start Date
-                                            </Label>
-                                            </div>
-                                            <div className="bg-muted/50 p-3 rounded-lg border">
-                                            <p className="text-sm font-medium">
-                                            {task.startDate 
-                                            ? new Date(task.startDate).toLocaleDateString()
-                                            : "Not set"}
-                                            </p>
-                                            </div>
-                                            </div>
-                                            
-                                            <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                            <Clock className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="text-sm font-semibold text-muted-foreground">
-                                            Due Date
-                                            </Label>
-                                            </div>
-                                            <div className="bg-muted/50 p-3 rounded-lg border">
-                                            <p className="text-sm font-medium">
-                                            {task.dueDate 
-                                            ? new Date(task.dueDate).toLocaleDateString()
-                                            : "Not set"}
-                                            </p>
-                                            </div>
-                                            </div>
-                                            
-                                            <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                                            <Label className="text-sm font-semibold text-muted-foreground">
-                                            Current Status
-                                            </Label>
-                                            </div>
-                                            <div className="bg-muted/50 p-3 rounded-lg border">
-                                            <Badge
-                                            variant={
-                                            task.status === "completed"
+                                    </td>
+                                    <td className="py-3 px-4 hidden sm:table-cell">
+                                      {task.projectName}
+                                    </td>
+                                    <td className="py-3 px-4 hidden sm:table-cell">
+                                      {task.assignedTo || "Unassigned"}
+                                    </td>
+                                    <td className="py-3 px-4 hidden md:table-cell">
+                                      {task.startDate
+                                        ? new Date(
+                                            task.startDate
+                                          ).toLocaleDateString()
+                                        : "Not set"}
+                                    </td>
+                                    <td className="py-3 px-4 hidden md:table-cell">
+                                      {task.dueDate
+                                        ? new Date(
+                                            task.dueDate
+                                          ).toLocaleDateString()
+                                        : "Not set"}
+                                    </td>
+                                    <td className="py-3 px-4 hidden sm:table-cell">
+                                      <Badge
+                                        variant={
+                                          task.status === "completed"
                                             ? "default"
                                             : task.status === "in_progress"
                                             ? "secondary"
                                             : "outline"
-                                            }
-                                            className="text-sm"
-                                            >
-                                            {task.status === "in_progress"
-                                            ? "In Progress"
-                                            : task.status.charAt(0).toUpperCase() +
+                                        }
+                                      >
+                                        {task.status === "in_progress"
+                                          ? "In Progress"
+                                          : task.status
+                                              .charAt(0)
+                                              .toUpperCase() +
                                             task.status.slice(1)}
-                                            </Badge>
+                                      </Badge>
+                                    </td>
+                                    <td className="py-3 px-4">
+                                      <div className="flex gap-1 sm:gap-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 w-8 sm:w-auto"
+                                          onClick={() => {
+                                            setSelectedEditTask(task);
+                                            setIsEditTaskModalOpen(true);
+                                          }}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                          <span className="hidden sm:inline ml-1">
+                                            Update
+                                          </span>
+                                        </Button>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-8 w-8 sm:w-auto text-destructive hover:text-destructive"
+                                          onClick={() => {
+                                            setSelectedDeleteTask(task);
+                                            setIsDeleteTaskDialogOpen(true);
+                                          }}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          <span className="hidden sm:inline ml-1">
+                                            Delete
+                                          </span>
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                  {expandedTaskId === task.id && (
+                                    <tr className="bg-muted/30">
+                                      <td colSpan={8} className="p-6">
+                                        <div className="bg-background rounded-lg shadow-sm border p-6 space-y-6">
+                                          <div className="flex items-center gap-3 mb-4">
+                                            <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                              <Briefcase className="h-4 w-4 text-muted-foreground" />
                                             </div>
+                                            <h3 className="text-lg font-semibold">
+                                              Task Details
+                                            </h3>
+                                          </div>
+
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Task Name
+                                                </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-3 rounded-lg border">
+                                                <p className="text-sm font-medium">
+                                                  {task.name}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Project
+                                                </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-3 rounded-lg border">
+                                                <p className="text-sm font-medium">
+                                                  {task.projectName}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <Users className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Assigned To
+                                                </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-3 rounded-lg border">
+                                                <p className="text-sm font-medium">
+                                                  {task.assignedTo ||
+                                                    "Unassigned"}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Start Date
+                                                </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-3 rounded-lg border">
+                                                <p className="text-sm font-medium">
+                                                  {task.startDate
+                                                    ? new Date(
+                                                        task.startDate
+                                                      ).toLocaleDateString()
+                                                    : "Not set"}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Due Date
+                                                </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-3 rounded-lg border">
+                                                <p className="text-sm font-medium">
+                                                  {task.dueDate
+                                                    ? new Date(
+                                                        task.dueDate
+                                                      ).toLocaleDateString()
+                                                    : "Not set"}
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                              <div className="flex items-center gap-2">
+                                                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Current Status
+                                                </Label>
+                                              </div>
+                                              <div className="bg-muted/50 p-3 rounded-lg border">
+                                                <Badge
+                                                  variant={
+                                                    task.status === "completed"
+                                                      ? "default"
+                                                      : task.status ===
+                                                        "in_progress"
+                                                      ? "secondary"
+                                                      : "outline"
+                                                  }
+                                                  className="text-sm"
+                                                >
+                                                  {task.status === "in_progress"
+                                                    ? "In Progress"
+                                                    : task.status
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                      task.status.slice(1)}
+                                                </Badge>
+                                              </div>
                                             </div>
                                           </div>
-                                          
+
                                           {task.description && (
                                             <div className="space-y-3">
                                               <div className="flex items-center gap-2">
-                                              <FileText className="h-4 w-4 text-muted-foreground" />
-                                              <Label className="text-sm font-semibold text-muted-foreground">
-                                              Description
-                                              </Label>
+                                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                                <Label className="text-sm font-semibold text-muted-foreground">
+                                                  Description
+                                                </Label>
                                               </div>
                                               <div className="bg-muted/50 p-4 rounded-lg border">
-                                              <p className="text-sm leading-relaxed">
-                                              {task.description}
-                                              </p>
+                                                <p className="text-sm leading-relaxed">
+                                                  {task.description}
+                                                </p>
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           <div className="flex justify-between items-center pt-4 border-t">
-                                          <div className="text-xs text-muted-foreground">
-                                          </div>
-                                          <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => {
-                                          setSelectedEditTask(task);
-                                          setIsEditTaskModalOpen(true);
-                                            setExpandedTaskId(null);
-                                          }}
-                                          >
-                                          <Edit className="h-4 w-4 mr-2" />
-                                          Edit Task
-                                          </Button>
+                                            <div className="text-xs text-muted-foreground"></div>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() => {
+                                                setSelectedEditTask(task);
+                                                setIsEditTaskModalOpen(true);
+                                                setExpandedTaskId(null);
+                                              }}
+                                            >
+                                              <Edit className="h-4 w-4 mr-2" />
+                                              Edit Task
+                                            </Button>
                                           </div>
                                         </div>
                                       </td>
@@ -3079,7 +3173,10 @@ const SiteDashboardContent = () => {
                               ))
                             ) : (
                               <tr>
-                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                                <td
+                                  colSpan={8}
+                                  className="py-8 text-center text-muted-foreground"
+                                >
                                   No tasks found. Add a new task to get started.
                                 </td>
                               </tr>
@@ -5593,7 +5690,195 @@ const SiteDashboardContent = () => {
         </TabsContent>
         <TabsContent value="central-warehouse" className="space-y-6">
           <div>
-            Central Warehouse
+            <h2 className="text-2xl font-bold tracking-tight mb-4">
+              Central Warehouse
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Items
+                  </CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {allInventoryItems.length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Items in inventory
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Value
+                  </CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    ₹
+                    {allInventoryItems
+                      .reduce(
+                        (sum, item) =>
+                          sum + (item.unitCost || 0) * (item.quantity || 0),
+                        0
+                      )
+                      .toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Total inventory value
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Low Stock Items
+                  </CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {
+                      allInventoryItems.filter(
+                        (item) =>
+                          (item.quantity || 0) <= (item.reorderLevel || 50)
+                      ).length
+                    }
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Below reorder level
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Categories
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {
+                      new Set(
+                        allInventoryItems
+                          .flatMap((item) =>
+                            Array.isArray(item.category)
+                              ? item.category
+                              : [item.category]
+                          )
+                          .filter(Boolean)
+                      ).size
+                    }
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Unique categories
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>All Inventory Items</CardTitle>
+                <CardDescription>
+                  Complete list of items across all warehouses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isInventoryLoading ? (
+                  <div className="flex items-center justify-center p-8">
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <span>Loading inventory items...</span>
+                    </div>
+                  </div>
+                ) : allInventoryItems.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground">
+                    No inventory items found.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left p-3">Item Name</th>
+                          <th className="text-left p-3">Category</th>
+                          <th className="text-left p-3">Quantity</th>
+                          <th className="text-left p-3">Location</th>
+                          <th className="text-left p-3">Unit Cost</th>
+                          <th className="text-left p-3">Total Value</th>
+                          <th className="text-left p-3">Stock Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allInventoryItems.map((item) => (
+                          <tr
+                            key={item.id}
+                            className="border-t hover:bg-muted/20"
+                          >
+                            <td className="p-3 font-medium">{item.name}</td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1">
+                                {Array.isArray(item.category) ? (
+                                  item.category.map((cat) => (
+                                    <Badge
+                                      key={cat}
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {cat}
+                                    </Badge>
+                                  ))
+                                ) : (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {item.category}
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              {item.quantity} {item.unit}
+                            </td>
+                            <td className="p-3">{item.location}</td>
+                            <td className="p-3">₹{item.unitCost || 0}</td>
+                            <td className="p-3">
+                              ₹
+                              {(
+                                (item.unitCost || 0) * (item.quantity || 0)
+                              ).toLocaleString()}
+                            </td>
+                            <td className="p-3">
+                              <Badge
+                                variant={
+                                  (item.quantity || 0) >
+                                  (item.reorderLevel || 50)
+                                    ? "default"
+                                    : "destructive"
+                                }
+                                className="text-xs"
+                              >
+                                {(item.quantity || 0) >
+                                (item.reorderLevel || 50)
+                                  ? "In Stock"
+                                  : "Low Stock"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
       </Tabs>
@@ -8906,15 +9191,18 @@ const SiteDashboardContent = () => {
           )}
         </DialogContent>
       </Dialog>
-
       {/* Delete Task Confirmation Dialog */}
-      <AlertDialog open={isDeleteTaskDialogOpen} onOpenChange={setIsDeleteTaskDialogOpen}>
+      <AlertDialog
+        open={isDeleteTaskDialogOpen}
+        onOpenChange={setIsDeleteTaskDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the task "{selectedDeleteTask?.name}"? 
-              This action cannot be undone and will permanently remove the task from the project.
+              Are you sure you want to delete the task "
+              {selectedDeleteTask?.name}"? This action cannot be undone and will
+              permanently remove the task from the project.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -8939,13 +9227,13 @@ const SiteDashboardContent = () => {
   );
 };
 
-const SiteDashboard = () =>{
+const SiteDashboard = () => {
   return (
     <PageUserFilterProvider allowedRoles={["site"]}>
-    <SiteDashboardContent/>
+      <SiteDashboardContent />
     </PageUserFilterProvider>
-  )
-}
+  );
+};
 export default SiteDashboard;
 
 // Add this component above the SiteDashboard export
