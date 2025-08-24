@@ -550,6 +550,7 @@ const SiteDashboardContent = () => {
     const path = location.pathname;
     if (path.includes("/timeline")) return "timeline";
     if (path.includes("/reports")) return "reports";
+    if(path.includes('/central-warehouse')) return "central-warehouse"
     return "timeline"; // default tab
   };
 
@@ -558,6 +559,7 @@ const SiteDashboardContent = () => {
     const tabRoutes: Record<string, string> = {
       timeline: "/site-manager/timeline",
       reports: "/site-manager/reports",
+      centralWarehouse:"/site-manager/central-warehouse",
     };
 
     // Only navigate if the tab has a route, otherwise it's a local tab
@@ -697,6 +699,15 @@ const SiteDashboardContent = () => {
     }
   };
 
+  const fetchWarehouseItems = async () =>{
+    const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(
+        `${API_URL}/warehouse`,
+        { headers });
+  }
   const [storeStaff, setStoreStaff] = useState([
     {
       name: "John Doe",
