@@ -184,7 +184,7 @@ export function AppSidebar() {
       title: "Inventory",
       url: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site"],
+      allowedRoles: ["admin", "md", "store", "site", "warehouse"],
     },
     // {
     //   title: "Documents",
@@ -224,7 +224,8 @@ export function AppSidebar() {
         "site",
         "client",
         "hr",
-        "project"
+        "project",
+        "warehouse"
       ],
     },
     // {

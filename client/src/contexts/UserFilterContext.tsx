@@ -74,7 +74,7 @@ export const UserFilterProvider: React.FC<UserFilterProviderProps> = ({
 
   // Helper function to check if user has admin privileges
   const isAdminUser = () => {
-    return currentUser?.role === 'admin' || currentUser?.role === 'md';
+    return currentUser?.role === 'admin' || currentUser?.role === 'md' || currentUser?.role === 'warehouse';
   };
 
   // Helper function to check if current user can access another user's data
