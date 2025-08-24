@@ -619,7 +619,7 @@ const BidPreparationModal: React.FC<BidPreparationModalProps> = ({ onClose, edit
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Special Requirements</label>
+                  <label className="text-sm font-medium">Terms & Condition :</label>
                   <Textarea 
                     placeholder="Any special requirements or conditions..."
                     rows={3}

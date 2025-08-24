@@ -1,8 +1,624 @@
+import { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { Package, TrendingUp, AlertTriangle, Clock, Plus } from "lucide-react";
+import { EnhancedStatCard } from "@/components/enhanced-stat-card";
+import { ExpandableDataTable } from "@/components/expandable-data-table";
+import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
 
-const WarehouseDashboard = () => {
-  return (
-    <div>WarehouseDashboard</div>
-  )
+const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+
+// Local type to be safe if fields differ
+interface InventoryItem {
+  id: string;
+  name: string;
+  category: string | string[];
+  quantity: number;
+  unit: string;
+  location: string;
+  lastUpdated: string;
+  reorderLevel?: number;
+  maxStock?: number;
+  safetyStock?: number;
+  unitCost?: number;
 }
 
-export default WarehouseDashboard
+// Very loose shape for material requests to keep UI resilient to backend changes
+interface MaterialRequest {
+  id: string;
+  status?: string;
+  createdAt?: string;
+  targetWarehouse?: string;
+  requestedBy?: { id?: string; name?: string } | string;
+  items?: Array<{ id?: string; name?: string; quantity?: number; uom?: string }>;
+}
+
+const WarehouseDashboard = () => {
+  const { user } = useUser();
+  const userID = user?.id || "";
+
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
+  const [isReqLoading, setIsReqLoading] = useState(true);
+
+  // Add Item Modal State
+  const [isAddItemOpen, setIsAddItemOpen] = useState(false);
+
+  // Form setup similar to Inventory page to keep fields consistent with backend
+  const form = useForm<{ 
+    name: string;
+    category: string;
+    quantity: number;
+    unit: string;
+    location: string;
+    reorderLevel: number;
+    maxStock: number;
+    safetyStock: number;
+    primarySupplier: string;
+    secondarySupplier?: string;
+    unitCost: number;
+  }>({
+    defaultValues: {
+      name: "",
+      category: "",
+      quantity: 0,
+      unit: "",
+      location: "",
+      reorderLevel: 0,
+      maxStock: 0,
+      safetyStock: 0,
+      primarySupplier: "",
+      secondarySupplier: "",
+      unitCost: 0,
+    },
+  });
+
+  useEffect(() => {
+    const fetchInventoryData = async () => {
+      if (!userID) return;
+      setIsLoading(true);
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const endpoint = `${API_URL}/inventory/items?userId=${userID}`;
+        const itemsResponse = await axios.get(endpoint, { headers });
+        setInventoryItems(Array.isArray(itemsResponse.data) ? itemsResponse.data : []);
+      } catch (err) {
+        console.error("Failed to fetch inventory items", err);
+        setInventoryItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const fetchMaterialRequests = async () => {
+      if (!userID) return;
+      setIsReqLoading(true);
+      try {
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const isAdmin = user?.role === "admin" || user?.role === "md";
+        const endpoint = isAdmin
+          ? `${API_URL}/material/material-requests`
+          : `${API_URL}/material/material-requests/user/${userID}`;
+        const res = await axios.get(endpoint, { headers });
+        setMaterialRequests(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error("Failed to fetch material requests", err);
+        setMaterialRequests([]);
+      } finally {
+        setIsReqLoading(false);
+      }
+    };
+
+    fetchInventoryData();
+    fetchMaterialRequests();
+  }, [userID]);
+
+  // Derived stats
+  const totalItems = inventoryItems.length;
+  const totalValue = useMemo(
+    () => inventoryItems.reduce((sum, it) => sum + (it.unitCost || 0) * (it.quantity || 0), 0),
+    [inventoryItems]
+  );
+  const lowStockCount = useMemo(
+    () => inventoryItems.filter((it) => (it.quantity || 0) <= (it.reorderLevel || 50)).length,
+    [inventoryItems]
+  );
+  const uniqueCategoryCount = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of inventoryItems) {
+      if (Array.isArray(it.category)) it.category.forEach((c) => set.add(String(c)));
+      else if (it.category) set.add(String(it.category));
+    }
+    return set.size;
+  }, [inventoryItems]);
+
+  // Dynamic filters
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of inventoryItems) {
+      if (Array.isArray(it.category)) it.category.forEach((c) => set.add(String(c)));
+      else if (it.category) set.add(String(it.category));
+    }
+    return Array.from(set);
+  }, [inventoryItems]);
+
+  const locationOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of inventoryItems) if (it.location) set.add(it.location);
+    return Array.from(set);
+  }, [inventoryItems]);
+
+  // Submit handler to create a new inventory item
+  const onSubmitAddItem = async (values: any) => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+
+      // Map UI fields to backend expected payload
+      const payload = {
+        itemName: values.name,
+        category: values.category, // should be enum value like in Inventory page
+        quantity: Number(values.quantity) || 0,
+        unit: values.unit, // enum
+        location: values.location,
+        reorderLevel: Number(values.reorderLevel) || 0,
+        maximumStock: Number(values.maxStock) || 0,
+        safetyStock: Number(values.safetyStock) || 0,
+        primarySupplierName: values.primarySupplier,
+        vendorId: "", // optional for now unless you want to select a vendor ID
+        secondarySupplierName: values.secondarySupplier || undefined,
+        unitCost: Math.round((Number(values.unitCost) || 0) * 100), // cents
+        createdById: userID,
+      };
+
+      const res = await axios.post(`${API_URL}/inventory/items`, payload, { headers });
+
+      // Refresh items list with the new item structure already returned by backend
+      await (async () => {
+        const endpoint = `${API_URL}/inventory/items?userId=${userID}`;
+        const itemsResponse = await axios.get(endpoint, { headers });
+        setInventoryItems(Array.isArray(itemsResponse.data) ? itemsResponse.data : []);
+      })();
+
+      toast.success("Item added successfully");
+      setIsAddItemOpen(false);
+      form.reset();
+    } catch (error: any) {
+      console.error("Failed to add item:", error);
+      const msg = error?.response?.data?.error || error?.message || "Failed to add item";
+      toast.error(msg);
+    }
+  };
+
+  // Columns similar to Inventory tab
+  const columns = [
+    {
+      key: "name",
+      label: "Item Name",
+      type: "text" as const,
+      render: (value: any, row: InventoryItem) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{value}</span>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {Array.isArray(row.category) ? (
+              row.category.map((cat) => (
+                <Badge key={cat} variant="secondary" className="text-xs">
+                  {cat}
+                </Badge>
+              ))
+            ) : (
+              <Badge variant="secondary" className="text-xs">{row.category}</Badge>
+            )}
+            <Badge
+              variant={(row.quantity || 0) > (row.reorderLevel || 50) ? "default" : "destructive"}
+              className="text-xs"
+            >
+              {row.quantity} {row.unit}
+            </Badge>
+          </div>
+        </div>
+      ),
+    },
+    { key: "location", label: "Location", type: "text" as const, className: "hidden sm:table-cell" },
+    { key: "lastUpdated", label: "Last Updated", type: "text" as const, className: "hidden md:table-cell" },
+  ];
+
+  // Expandable row content (simplified)
+  const expandableContent = (row: InventoryItem) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div>
+        <h4 className="font-medium mb-2">Stock Details</h4>
+        <div className="space-y-1">
+          <div>Reorder Level: {row.reorderLevel || 50}</div>
+          <div>Max Stock: {row.maxStock || 500}</div>
+          <div>Safety Stock: {row.safetyStock || 20}</div>
+          <div>Unit Cost: ₹{row.unitCost || 0}</div>
+          <div>
+            Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
+          </div>
+        </div>
+      </div>
+      <div>
+        <h4 className="font-medium mb-2">Identification</h4>
+        <div className="space-y-1">
+          <div>Item ID: {row.id}</div>
+          <div>Last Updated: {row.lastUpdated || "N/A"}</div>
+          <div>Location: {row.location}</div>
+        </div>
+      </div>
+      <div>
+        <h4 className="font-medium mb-2">Category</h4>
+        <div className="flex flex-wrap gap-1">
+          {Array.isArray(row.category) ? (
+            row.category.map((cat) => (
+              <Badge key={cat} variant="secondary" className="text-xs">{cat}</Badge>
+            ))
+          ) : (
+            <Badge variant="secondary" className="text-xs">{row.category}</Badge>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Helper to get item count from a request
+  const getRequestItemCount = (req: MaterialRequest) => (Array.isArray(req.items) ? req.items.length : 0);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Warehouse Management</h1>
+        <p className="text-muted-foreground">Comprehensive Warehouse Dashboard for Inventory Insights</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <EnhancedStatCard
+          title="Total Items"
+          value={totalItems.toString()}
+          icon={Package}
+          description="Items in warehouse"
+          trend={{ value: totalItems > 0 ? 12 : 0, label: "vs last month" }}
+          threshold={{
+            status: totalItems > 10 ? "good" : totalItems > 5 ? "warning" : "critical",
+            message:
+              totalItems > 10 ? "Good inventory diversity" : totalItems > 5 ? "Consider expanding inventory" : "Low inventory count",
+          }}
+        />
+        <EnhancedStatCard
+          title="Total Value"
+          value={`₹${totalValue.toLocaleString()}`}
+          icon={TrendingUp}
+          description="Total inventory value"
+          trend={{ value: 8, label: "vs last month" }}
+          threshold={{ status: "good", message: "Healthy inventory value" }}
+        />
+        <EnhancedStatCard
+          title="Low Stock Items"
+          value={lowStockCount.toString()}
+          icon={AlertTriangle}
+          description="Below reorder level"
+          threshold={{
+            status: lowStockCount === 0 ? "good" : lowStockCount <= 2 ? "warning" : "critical",
+            message:
+              lowStockCount === 0
+                ? "All items well stocked"
+                : lowStockCount <= 2
+                ? "Few items need restocking"
+                : "Multiple items critically low",
+          }}
+        />
+        <EnhancedStatCard
+          title="Categories"
+          value={uniqueCategoryCount.toString()}
+          icon={Clock}
+          description="Unique categories"
+          threshold={{ status: "good", message: "Good category diversity" }}
+        />
+      </div>
+
+      {/* Tabs below the cards */}
+      <Tabs defaultValue="items" className="w-full">
+        <TabsList className="mb-4 grid grid-cols-2 items-center justify-between w-full">
+            <TabsTrigger value="items">Items</TabsTrigger>
+            <TabsTrigger value="requests">Requests</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="items">
+          {isLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span>Loading warehouse items...</span>
+              </div>
+            </div>
+          ) : (
+            <ExpandableDataTable
+              title="Warehouse Inventory Items"
+              description="Warehouse-focused view of inventory with quick insights"
+              data={inventoryItems as any[]}
+              columns={columns as any}
+              expandableContent={expandableContent as any}
+              searchKey="name"
+              filters={[
+                { key: "category", label: "Category", options: categoryOptions },
+                { key: "location", label: "Location", options: locationOptions },
+              ]}
+              rowActions={["view"]}
+            />
+          )}
+
+          {/* Add Item Dialog */}
+          <Dialog
+            open={isAddItemOpen}
+            onOpenChange={(open) => {
+              setIsAddItemOpen(open);
+              if (!open) form.reset();
+            }}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Inventory Item</DialogTitle>
+                <DialogDescription>Fill in the details to add a new item.</DialogDescription>
+              </DialogHeader>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmitAddItem)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Item Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter item name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {/* Keep enum-like values to match backend */}
+                              <SelectItem value="CONSTRUCTION_MATERIALS">Construction Materials</SelectItem>
+                              <SelectItem value="TOOLS_AND_EQUIPMENT">Tools & Equipment</SelectItem>
+                              <SelectItem value="ELECTRICAL_COMPONENTS">Electrical Components</SelectItem>
+                              <SelectItem value="PLUMBING_MATERIALS">Plumbing Materials</SelectItem>
+                              <SelectItem value="SAFETY_EQUIPMENT">Safety Equipment</SelectItem>
+                              <SelectItem value="OTHER">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="unit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unit</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select unit" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="PIECE">Pieces</SelectItem>
+                              <SelectItem value="KILOGRAM">Kilograms</SelectItem>
+                              <SelectItem value="LITER">Liters</SelectItem>
+                              <SelectItem value="METER">Meters</SelectItem>
+                              <SelectItem value="BAG">Bags</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter location" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="reorderLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reorder Level</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="maxStock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Maximum Stock</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="safetyStock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Safety Stock</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="primarySupplier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Supplier</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Supplier name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="secondarySupplier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Secondary Supplier (optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Supplier name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="unitCost"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unit Cost (₹)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => { setIsAddItemOpen(false); form.reset(); }}>Cancel</Button>
+                    <Button type="submit">Add Item</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
+        <TabsContent value="requests">
+          {isReqLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span>Loading requests...</span>
+              </div>
+            </div>
+          ) : materialRequests.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground border rounded-lg">No material requests found.</div>
+          ) : (
+            <div className="overflow-x-auto border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-3">Request ID</th>
+                    <th className="text-left p-3">Status</th>
+                    <th className="text-left p-3">Created</th>
+                    <th className="text-left p-3">Target Warehouse</th>
+                    <th className="text-left p-3">Items</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {materialRequests.map((req) => (
+                    <tr key={req.id} className="border-t">
+                      <td className="p-3 font-medium">{req.id}</td>
+                      <td className="p-3">
+                        <Badge variant={
+                          req.status === "COMPLETED"
+                            ? "default"
+                            : req.status === "APPROVED"
+                            ? "secondary"
+                            : req.status === "REJECTED"
+                            ? "destructive"
+                            : "outline"
+                        }>
+                          {req.status || "PENDING"}
+                        </Badge>
+                      </td>
+                      <td className="p-3">{req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "—"}</td>
+                      <td className="p-3">{req.targetWarehouse || "—"}</td>
+                      <td className="p-3">{getRequestItemCount(req)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default WarehouseDashboard;
