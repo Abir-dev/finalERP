@@ -206,6 +206,12 @@ export function AppSidebar() {
 
   const bottomItems = [
     {
+      title: "Warehouse Management",
+      url: "/warehouse-management",
+      icon: Warehouse,
+      allowedRoles: ["admin", "md", "store", "site"],
+    },
+    {
       title: "Calendar",
       url: "/calendar",
       icon: Calendar,

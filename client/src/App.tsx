@@ -44,6 +44,7 @@ import Notifications from "./pages/Notifications";
 import TenderManagement from "./pages/TenderManagement";
 import BillingManagement from "./pages/BillingManagement";
 import PurchaseManagement from "./pages/PurchaseManagement";
+import WarehouseDashboard from "./pages/WarehouseDashboard";
 import { UserFilterProvider } from "./contexts/UserFilterContext";
 
 
@@ -216,6 +217,8 @@ const AppLayout = () => {
               <Route path="/purchase-management/dashboard" element={<PurchaseManagement />} />
               <Route path="/purchase-management/procurement" element={<PurchaseManagement />} />
               <Route path="/purchase-management/vendors" element={<PurchaseManagement />} />
+
+              <Route path="/warehouse-management" element={<WarehouseDashboard />} />
             </Routes>
           </div>
         </main>
