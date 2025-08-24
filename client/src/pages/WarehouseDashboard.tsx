@@ -19,6 +19,8 @@ const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender
 
 // Local type to be safe if fields differ
 interface InventoryItem {
+  maximumStock: number;
+  itemQuality: string;
   id: string;
   name: string;
   category: string | string[];
@@ -55,6 +57,9 @@ const WarehouseDashboard = () => {
   // Add Item Modal State
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
 
+  // Add Warehouse Item Modal State
+  const [isAddWarehouseOpen, setIsAddWarehouseOpen] = useState(false);
+
   // Form setup similar to Inventory page to keep fields consistent with backend
   const form = useForm<{ 
     name: string;
@@ -84,14 +89,124 @@ const WarehouseDashboard = () => {
     },
   });
 
+  // Warehouse form for Warehouse model schema
+  const warehouseForm = useForm<{
+    itemName: string;
+    category: string; // InventoryCategory enum value
+    quantity: number;
+    unit: string; // Unit enum value
+    location: string;
+    reorderLevel: number;
+    maximumStock: number;
+    safetyStock: number;
+    unitCost: number;
+    itemQuality: string; // ItemQuality enum value
+  }>({
+    defaultValues: {
+      itemName: "",
+      category: "",
+      quantity: 0,
+      unit: "",
+      location: "",
+      reorderLevel: 0,
+      maximumStock: 0,
+      safetyStock: 0,
+      unitCost: 0,
+      itemQuality: "GOOD",
+    },
+  });
+
+  // Edit Warehouse Modal State
+  const [isEditWarehouseOpen, setIsEditWarehouseOpen] = useState(false);
+  const [editingWarehouseId, setEditingWarehouseId] = useState<string | null>(null);
+
+  // Refresh helper
+  const refreshWarehouses = async () => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const endpoint = `${API_URL}/warehouse`;
+      const itemsResponse = await axios.get(endpoint, { headers });
+      setInventoryItems(Array.isArray(itemsResponse.data) ? itemsResponse.data : []);
+    } catch (err) {
+      console.error("Failed to refresh inventory items", err);
+    }
+  };
+
+  // Open edit with row data prefilled
+  const handleEdit = (row: any) => {
+    setEditingWarehouseId(row.id);
+    warehouseForm.reset({
+      itemName: row.itemName || row.name || "",
+      category: Array.isArray(row.category) ? (row.category[0] || "") : (row.category || ""),
+      quantity: Number(row.quantity) || 0,
+      unit: row.unit || "",
+      location: row.location || "",
+      reorderLevel: Number(row.reorderLevel) || 0,
+      maximumStock: Number(row.maximumStock ?? row.maxStock ?? 0),
+      safetyStock: Number(row.safetyStock) || 0,
+      unitCost: Number(row.unitCost) || 0,
+      itemQuality: row.itemQuality || "GOOD",
+    });
+    setIsEditWarehouseOpen(true);
+  };
+
+  // Delete warehouse item
+  const handleDelete = async (id: string) => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await axios.delete(`${API_URL}/warehouse/${id}`, { headers });
+      toast.success("Item deleted");
+      await refreshWarehouses();
+    } catch (error: any) {
+      console.error("Failed to delete item:", error);
+      const msg = error?.response?.data?.error || error?.message || "Failed to delete";
+      toast.error(msg);
+    }
+  };
+
+  // Update submit
+  const onSubmitUpdateWarehouse = async (values: any) => {
+    if (!editingWarehouseId) return;
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+
+      const payload = {
+        itemName: values.itemName,
+        category: values.category,
+        quantity: Number(values.quantity) || 0,
+        unit: values.unit,
+        location: values.location,
+        reorderLevel: Number(values.reorderLevel) || 0,
+        maximumStock: Number(values.maximumStock) || 0,
+        safetyStock: Number(values.safetyStock) || 0,
+        unitCost: Number(values.unitCost) || 0,
+        itemQuality: values.itemQuality,
+      };
+
+      await axios.put(`${API_URL}/warehouse/${editingWarehouseId}`, payload, { headers });
+
+      toast.success("Item updated successfully");
+      setIsEditWarehouseOpen(false);
+      setEditingWarehouseId(null);
+      await refreshWarehouses();
+    } catch (error: any) {
+      console.error("Failed to update item:", error);
+      const msg = error?.response?.data?.error || error?.message || "Failed to update item";
+      toast.error(msg);
+    }
+  };
+
   useEffect(() => {
-    const fetchInventoryData = async () => {
+    const fetchWarehouseData = async () => {
       if (!userID) return;
       setIsLoading(true);
       try {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const endpoint = `${API_URL}/inventory/items?userId=${userID}`;
+        const endpoint = `${API_URL}/warehouse`;
         const itemsResponse = await axios.get(endpoint, { headers });
         setInventoryItems(Array.isArray(itemsResponse.data) ? itemsResponse.data : []);
       } catch (err) {
@@ -122,7 +237,7 @@ const WarehouseDashboard = () => {
       }
     };
 
-    fetchInventoryData();
+    fetchWarehouseData();
     fetchMaterialRequests();
   }, [userID]);
 
@@ -188,7 +303,7 @@ const WarehouseDashboard = () => {
 
       // Refresh items list with the new item structure already returned by backend
       await (async () => {
-        const endpoint = `${API_URL}/inventory/items?userId=${userID}`;
+        const endpoint = `${API_URL}/warehouse`;
         const itemsResponse = await axios.get(endpoint, { headers });
         setInventoryItems(Array.isArray(itemsResponse.data) ? itemsResponse.data : []);
       })();
@@ -203,10 +318,45 @@ const WarehouseDashboard = () => {
     }
   };
 
+  // Submit handler to create a new warehouse entry per Warehouse schema
+  const onSubmitAddWarehouse = async (values: any) => {
+    try {
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
+
+      const payload = {
+        itemName: values.itemName,
+        category: values.category,
+        quantity: Number(values.quantity) || 0,
+        unit: values.unit,
+        location: values.location,
+        reorderLevel: Number(values.reorderLevel) || 0,
+        maximumStock: Number(values.maximumStock) || 0,
+        safetyStock: Number(values.safetyStock) || 0,
+        unitCost: Number(values.unitCost) || 0,
+        itemQuality: values.itemQuality,
+      };
+
+      // POST to warehouse API; createdById is set from query by backend
+      await axios.post(`${API_URL}/warehouse?userId=${userID}`, payload, { headers });
+
+      toast.success("Warehouse item added successfully");
+      setIsAddWarehouseOpen(false);
+      warehouseForm.reset();
+
+      // Optionally refresh inventoryItems if you want to reflect immediately
+      // You may fetch warehouses here or keep separate state for warehouse list
+    } catch (error: any) {
+      console.error("Failed to add warehouse item:", error);
+      const msg = error?.response?.data?.error || error?.message || "Failed to add warehouse item";
+      toast.error(msg);
+    }
+  };
+
   // Columns similar to Inventory tab
   const columns = [
     {
-      key: "name",
+      key: "itemName",
       label: "Item Name",
       type: "text" as const,
       render: (value: any, row: InventoryItem) => (
@@ -233,42 +383,42 @@ const WarehouseDashboard = () => {
       ),
     },
     { key: "location", label: "Location", type: "text" as const, className: "hidden sm:table-cell" },
-    { key: "lastUpdated", label: "Last Updated", type: "text" as const, className: "hidden md:table-cell" },
+    { key: "itemQuality", label: "Status", type: "text" as const, className: "hidden md:table-cell" },
+    {
+      key: "actions",
+      label: "Actions",
+      type: "custom" as const,
+      render: (_: any, row: any) => (
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => handleEdit(row)}>Edit</Button>
+          <Button size="sm" variant="destructive" onClick={() => handleDelete(row.id)}>Delete</Button>
+        </div>
+      ),
+    },
   ];
 
   // Expandable row content (simplified)
   const expandableContent = (row: InventoryItem) => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
       <div>
-        <h4 className="font-medium mb-2">Stock Details</h4>
         <div className="space-y-1">
           <div>Reorder Level: {row.reorderLevel || 50}</div>
-          <div>Max Stock: {row.maxStock || 500}</div>
+          <div>Max Stock: {row.maximumStock || 500}</div>
+        </div>
+      </div>
+      <div>
+        <div className="space-y-1">
           <div>Safety Stock: {row.safetyStock || 20}</div>
           <div>Unit Cost: ₹{row.unitCost || 0}</div>
+          
+        </div>
+      </div>
+      <div>
+        <div className="space-y-1">
           <div>
             Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
           </div>
-        </div>
-      </div>
-      <div>
-        <h4 className="font-medium mb-2">Identification</h4>
-        <div className="space-y-1">
-          <div>Item ID: {row.id}</div>
-          <div>Last Updated: {row.lastUpdated || "N/A"}</div>
           <div>Location: {row.location}</div>
-        </div>
-      </div>
-      <div>
-        <h4 className="font-medium mb-2">Category</h4>
-        <div className="flex flex-wrap gap-1">
-          {Array.isArray(row.category) ? (
-            row.category.map((cat) => (
-              <Badge key={cat} variant="secondary" className="text-xs">{cat}</Badge>
-            ))
-          ) : (
-            <Badge variant="secondary" className="text-xs">{row.category}</Badge>
-          )}
         </div>
       </div>
     </div>
@@ -279,9 +429,14 @@ const WarehouseDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Warehouse Management</h1>
-        <p className="text-muted-foreground">Comprehensive Warehouse Dashboard for Inventory Insights</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Warehouse Management</h1>
+          <p className="text-muted-foreground">Comprehensive Warehouse Dashboard for Inventory Insights</p>
+        </div>
+        <Button onClick={() => setIsAddWarehouseOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Items
+        </Button>
       </div>
 
       {/* Stats */}
@@ -346,41 +501,45 @@ const WarehouseDashboard = () => {
               </div>
             </div>
           ) : (
-            <ExpandableDataTable
-              title="Warehouse Inventory Items"
-              description="Warehouse-focused view of inventory with quick insights"
-              data={inventoryItems as any[]}
-              columns={columns as any}
-              expandableContent={expandableContent as any}
-              searchKey="name"
-              filters={[
-                { key: "category", label: "Category", options: categoryOptions },
-                { key: "location", label: "Location", options: locationOptions },
-              ]}
-              rowActions={["view"]}
-            />
+            <div className="space-y-4">
+              <div className="flex justify-end">
+              </div>
+              <ExpandableDataTable
+                title="Warehouse Inventory Items"
+                description="Warehouse-focused view of inventory with quick insights"
+                data={inventoryItems as any[]}
+                columns={columns as any}
+                expandableContent={expandableContent as any}
+                searchKey="name"
+                filters={[
+                  { key: "category", label: "Category", options: categoryOptions },
+                  { key: "location", label: "Location", options: locationOptions },
+                ]}
+                rowActions={["view"]}
+              />
+            </div>
           )}
 
-          {/* Add Item Dialog */}
+          {/* Add Warehouse Item Dialog (Warehouse schema) */}
           <Dialog
-            open={isAddItemOpen}
+            open={isAddWarehouseOpen}
             onOpenChange={(open) => {
-              setIsAddItemOpen(open);
-              if (!open) form.reset();
+              setIsAddWarehouseOpen(open);
+              if (!open) warehouseForm.reset();
             }}
           >
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Add New Inventory Item</DialogTitle>
-                <DialogDescription>Fill in the details to add a new item.</DialogDescription>
+                <DialogTitle>Add Warehouse Item</DialogTitle>
+                <DialogDescription>Fill in the details to add a new warehouse item.</DialogDescription>
               </DialogHeader>
 
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmitAddItem)} className="space-y-6">
+              <Form {...warehouseForm}>
+                <form onSubmit={warehouseForm.handleSubmit(onSubmitAddWarehouse)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
-                      control={form.control}
-                      name="name"
+                      control={warehouseForm.control}
+                      name="itemName"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Item Name</FormLabel>
@@ -393,7 +552,7 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="category"
                       render={({ field }) => (
                         <FormItem>
@@ -405,13 +564,14 @@ const WarehouseDashboard = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {/* Keep enum-like values to match backend */}
                               <SelectItem value="CONSTRUCTION_MATERIALS">Construction Materials</SelectItem>
                               <SelectItem value="TOOLS_AND_EQUIPMENT">Tools & Equipment</SelectItem>
+                              <SelectItem value="SAFETY_EQUIPMENT">Safety Equipment</SelectItem>
                               <SelectItem value="ELECTRICAL_COMPONENTS">Electrical Components</SelectItem>
                               <SelectItem value="PLUMBING_MATERIALS">Plumbing Materials</SelectItem>
-                              <SelectItem value="SAFETY_EQUIPMENT">Safety Equipment</SelectItem>
-                              <SelectItem value="OTHER">Other</SelectItem>
+                              <SelectItem value="HVAC_EQUIPMENT">HVAC Equipment</SelectItem>
+                              <SelectItem value="FINISHING_MATERIALS">Finishing Materials</SelectItem>
+                              <SelectItem value="HARDWARE_AND_FASTENERS">Hardware & Fasteners</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -420,7 +580,7 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="quantity"
                       render={({ field }) => (
                         <FormItem>
@@ -434,7 +594,7 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="unit"
                       render={({ field }) => (
                         <FormItem>
@@ -446,11 +606,18 @@ const WarehouseDashboard = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="PIECE">Pieces</SelectItem>
-                              <SelectItem value="KILOGRAM">Kilograms</SelectItem>
-                              <SelectItem value="LITER">Liters</SelectItem>
-                              <SelectItem value="METER">Meters</SelectItem>
-                              <SelectItem value="BAG">Bags</SelectItem>
+                              <SelectItem value="CUBIC_METRE">Cubic Metre</SelectItem>
+                              <SelectItem value="TONNE">Tonne</SelectItem>
+                              <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
+                              <SelectItem value="PIECE">Piece</SelectItem>
+                              <SelectItem value="LITRE">Litre</SelectItem>
+                              <SelectItem value="KILOGRAM">Kilogram</SelectItem>
+                              <SelectItem value="BOX">Box</SelectItem>
+                              <SelectItem value="ROLL">Roll</SelectItem>
+                              <SelectItem value="SHEET">Sheet</SelectItem>
+                              <SelectItem value="HOURS">Hours</SelectItem>
+                              <SelectItem value="DAYS">Days</SelectItem>
+                              <SelectItem value="LUMPSUM">Lumpsum</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -459,7 +626,7 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="location"
                       render={({ field }) => (
                         <FormItem>
@@ -473,7 +640,7 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="reorderLevel"
                       render={({ field }) => (
                         <FormItem>
@@ -487,8 +654,8 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
-                      name="maxStock"
+                      control={warehouseForm.control}
+                      name="maximumStock"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Maximum Stock</FormLabel>
@@ -501,7 +668,7 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="safetyStock"
                       render={({ field }) => (
                         <FormItem>
@@ -515,39 +682,11 @@ const WarehouseDashboard = () => {
                     />
 
                     <FormField
-                      control={form.control}
-                      name="primarySupplier"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Primary Supplier</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Supplier name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="secondarySupplier"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Secondary Supplier (optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Supplier name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
+                      control={warehouseForm.control}
                       name="unitCost"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Unit Cost (₹)</FormLabel>
+                          <FormLabel>Unit Cost</FormLabel>
                           <FormControl>
                             <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
                           </FormControl>
@@ -555,11 +694,240 @@ const WarehouseDashboard = () => {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="itemQuality"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Item Quality</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select quality" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="GOOD">Good</SelectItem>
+                              <SelectItem value="BAD">Bad</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
 
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => { setIsAddItemOpen(false); form.reset(); }}>Cancel</Button>
+                    <Button type="button" variant="outline" onClick={() => { setIsAddWarehouseOpen(false); warehouseForm.reset(); }}>Cancel</Button>
                     <Button type="submit">Add Item</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Warehouse Item Dialog */}
+          <Dialog
+            open={isEditWarehouseOpen}
+            onOpenChange={(open) => {
+              setIsEditWarehouseOpen(open);
+              if (!open) setEditingWarehouseId(null);
+            }}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Warehouse Item</DialogTitle>
+                <DialogDescription>Update the fields and save changes.</DialogDescription>
+              </DialogHeader>
+
+              <Form {...warehouseForm}>
+                <form onSubmit={warehouseForm.handleSubmit(onSubmitUpdateWarehouse)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={warehouseForm.control}
+                      name="itemName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Item Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter item name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="CONSTRUCTION_MATERIALS">Construction Materials</SelectItem>
+                              <SelectItem value="TOOLS_AND_EQUIPMENT">Tools & Equipment</SelectItem>
+                              <SelectItem value="SAFETY_EQUIPMENT">Safety Equipment</SelectItem>
+                              <SelectItem value="ELECTRICAL_COMPONENTS">Electrical Components</SelectItem>
+                              <SelectItem value="PLUMBING_MATERIALS">Plumbing Materials</SelectItem>
+                              <SelectItem value="HVAC_EQUIPMENT">HVAC Equipment</SelectItem>
+                              <SelectItem value="FINISHING_MATERIALS">Finishing Materials</SelectItem>
+                              <SelectItem value="HARDWARE_AND_FASTENERS">Hardware & Fasteners</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="unit"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unit</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select unit" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="CUBIC_METRE">Cubic Metre</SelectItem>
+                              <SelectItem value="TONNE">Tonne</SelectItem>
+                              <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
+                              <SelectItem value="PIECE">Piece</SelectItem>
+                              <SelectItem value="LITRE">Litre</SelectItem>
+                              <SelectItem value="KILOGRAM">Kilogram</SelectItem>
+                              <SelectItem value="BOX">Box</SelectItem>
+                              <SelectItem value="ROLL">Roll</SelectItem>
+                              <SelectItem value="SHEET">Sheet</SelectItem>
+                              <SelectItem value="HOURS">Hours</SelectItem>
+                              <SelectItem value="DAYS">Days</SelectItem>
+                              <SelectItem value="LUMPSUM">Lumpsum</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter location" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="reorderLevel"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reorder Level</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="maximumStock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Maximum Stock</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="safetyStock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Safety Stock</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="unitCost"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unit Cost</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="itemQuality"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Item Quality</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select quality" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="GOOD">Good</SelectItem>
+                              <SelectItem value="BAD">Bad</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => { setIsEditWarehouseOpen(false); setEditingWarehouseId(null); }}>Cancel</Button>
+                    <Button type="submit">Save Changes</Button>
                   </DialogFooter>
                 </form>
               </Form>

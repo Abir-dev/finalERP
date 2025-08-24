@@ -422,7 +422,11 @@ export function AppSidebar() {
       icon: Package,
       allowedRoles: ["admin", "md", "site", "store", "accounts"],
       subitems: [
-        // { title: "Dashboard", url: "/purchase-management/dashboard" },
+        { title: "Overview", url: "/purchase-management/overview" },
+        { title: "Material Requests", url: "/purchase-management/material-requests" },
+        { title: "Purchase Orders", url: "/purchase-management/purchase-orders" },
+        { title: "Vendor Management", url: "/purchase-management/vendors" },
+
         // { title: "Smart Procurement", url: "/purchase-management/procurement" },
         // { title: "Vendor Management", url: "/purchase-management/vendors" },
       ],
