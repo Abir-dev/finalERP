@@ -200,6 +200,7 @@ const AppLayout = () => {
 
               <Route path="/site-manager/timeline" element={<SiteDashboard />} />
               <Route path="/site-manager/reports" element={<SiteDashboard />} />
+              <Route path="/site-manager/central-warehouse" element={<SiteDashboard />} />
               
               {/* New ERP feature pages */}
               <Route path="/tender-management" element={<TenderManagement />} />
