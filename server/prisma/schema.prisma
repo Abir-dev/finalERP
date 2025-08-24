@@ -66,9 +66,9 @@ model User {
   BOQ                  BOQ[]                  @relation("BOQCreator")
   Design               Design[]               @relation("DesignCreator")
   Client               Client[]               @relation("ClientCreator")
+  Warehouse            Warehouse[]            @relation("WarehouseCreator")
 
   @@map("users")
-  Warehouse Warehouse[] @relation("WarehouseCreator")
 }
 
 model UserInvitation {
@@ -273,21 +273,23 @@ model Inventory {
   requests              MaterialRequest[]
   transferItems         MaterialTransferItem[]
 }
+
 model Warehouse {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  itemName              String
-  category              InventoryCategory
-  quantity              Int
-  unit                  Unit
-  location              String
-  reorderLevel          Int
-  maximumStock          Int
-  safetyStock           Int
-  unitCost              Int
-  createdById           String                 @map("created_by_id") @db.Uuid
-  createdBy             User                   @relation("WarehouseCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String            @id @default(uuid()) @db.Uuid
+  itemName     String
+  category     InventoryCategory
+  quantity     Int
+  unit         Unit
+  location     String
+  reorderLevel Int
+  maximumStock Int
+  safetyStock  Int
+  unitCost     Int
+  itemQuality  ItemQuality
+  createdById  String            @map("created_by_id") @db.Uuid
+  createdBy    User              @relation("WarehouseCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 }
 
 model MaterialRequest {
@@ -1164,4 +1166,9 @@ enum PriorityLevel {
   LOW
   MEDIUM
   HIGH
+}
+
+enum ItemQuality {
+  GOOD
+  BAD
 }
