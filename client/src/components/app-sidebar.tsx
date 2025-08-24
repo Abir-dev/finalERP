@@ -339,6 +339,7 @@ export function AppSidebar() {
       subitems: [
         { title: "Execution Timeline", url: "/site-manager/timeline" },
         { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
+        { title: "Central Warehouse", url: "/site-manager/central-warehouse" },
       ],
     },
 
