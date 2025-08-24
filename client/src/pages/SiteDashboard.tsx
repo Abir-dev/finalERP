@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Card,
@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ExpandableDataTable } from "@/components/expandable-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -136,6 +139,21 @@ interface MaterialMovement {
   site: string;
 }
 
+interface InventoryItem {
+  maximumStock: number;
+  itemQuality: string;
+  id: string;
+  name: string;
+  category: string | string[];
+  quantity: number;
+  unit: string;
+  location: string;
+  lastUpdated: string;
+  reorderLevel?: number;
+  maxStock?: number;
+  safetyStock?: number;
+  unitCost?: number;
+}
 interface StorageSection {
   id: number;
   zone: string;
@@ -471,6 +489,8 @@ const SiteDashboardContent = () => {
   const [selectedLabor, setSelectedLabor] = useState<
     (typeof laborHours)[0] | null
   >(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [isBudgetAdjustModalOpen, setIsBudgetAdjustModalOpen] = useState(false);
   const [selectedBudgetCategory, setSelectedBudgetCategory] = useState("");
   const [isPOViewModalOpen, setIsPOViewModalOpen] = useState(false);
@@ -527,6 +547,8 @@ const SiteDashboardContent = () => {
   const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState(false);
+    const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
+  
   const [selectedDeleteTask, setSelectedDeleteTask] = useState<Task | null>(
     null
   );
@@ -559,7 +581,7 @@ const SiteDashboardContent = () => {
     const tabRoutes: Record<string, string> = {
       timeline: "/site-manager/timeline",
       reports: "/site-manager/reports",
-      centralWarehouse:"/site-manager/central-warehouse",
+      "central-warehouse":"/site-manager/central-warehouse",
     };
 
     // Only navigate if the tab has a route, otherwise it's a local tab
@@ -576,6 +598,21 @@ const SiteDashboardContent = () => {
     wprsCompleted: 0,
     averageScore: "0/5",
   });
+
+    const categoryOptions = useMemo(() => {
+      const set = new Set<string>();
+      for (const it of inventoryItems) {
+        if (Array.isArray(it.category)) it.category.forEach((c) => set.add(String(c)));
+        else if (it.category) set.add(String(it.category));
+      }
+      return Array.from(set);
+    }, [inventoryItems]);
+  
+    const locationOptions = useMemo(() => {
+      const set = new Set<string>();
+      for (const it of inventoryItems) if (it.location) set.add(it.location);
+      return Array.from(set);
+    }, [inventoryItems]);
 
   // Fetch users and projects on component mount
   // useEffect(() => {
@@ -595,7 +632,8 @@ const SiteDashboardContent = () => {
       fetchAllUsers();
       fetchProgressReports();
       fetchTasks();
-      fetchInventoryItems();
+      // fetchInventoryItems();
+      fetchWarehouseItems();
     }
   }, [userID]);
 
@@ -678,36 +716,48 @@ const SiteDashboardContent = () => {
     }
   };
 
-  const fetchInventoryItems = async () => {
+  const fetchWarehouseItems = async () => {
     try {
-      setIsInventoryLoading(true);
+      setIsLoading(true);
       const token =
         sessionStorage.getItem("jwt_token") ||
         localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       const response = await axios.get(
-        `${API_URL}/inventory/items?userId=${userID}`,
+        `${API_URL}/warehouse`,
         { headers }
       );
-      setAllInventoryItems(Array.isArray(response.data) ? response.data : []);
+      setInventoryItems(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error("Error fetching inventory items:", error);
-      setAllInventoryItems([]);
+      setInventoryItems([]);
     } finally {
-      setIsInventoryLoading(false);
+      setIsLoading(false);
     }
   };
+  // const fetchInventoryItems = async () => {
+  //   try {
+  //     setIsInventoryLoading(true);
+  //     const token =
+  //       sessionStorage.getItem("jwt_token") ||
+  //       localStorage.getItem("jwt_token_backup");
+  //     const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const fetchWarehouseItems = async () =>{
-    const token =
-        sessionStorage.getItem("jwt_token") ||
-        localStorage.getItem("jwt_token_backup");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const response = await axios.get(
-        `${API_URL}/warehouse`,
-        { headers });
-  }
+  //     const response = await axios.get(
+  //       `${API_URL}/inventory/items?userId=${userID}`,
+  //       { headers }
+  //     );
+  //     setAllInventoryItems(Array.isArray(response.data) ? response.data : []);
+  //   } catch (error) {
+  //     console.error("Error fetching inventory items:", error);
+  //     setAllInventoryItems([]);
+  //   } finally {
+  //     setIsInventoryLoading(false);
+  //   }
+  // };
+
+ 
   const [storeStaff, setStoreStaff] = useState([
     {
       name: "John Doe",
@@ -1371,6 +1421,75 @@ const SiteDashboardContent = () => {
   // } catch (error) {
   //   console.error("Error fetching tasks:", error);
   // }
+   const columns = [
+      {
+        key: "itemName",
+        label: "Item Name",
+        type: "text" as const,
+        render: (value: any, row: InventoryItem) => (
+          <div className="flex flex-col">
+            <span className="font-medium">{value}</span>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {Array.isArray(row.category) ? (
+                row.category.map((cat) => (
+                  <Badge key={cat} variant="secondary" className="text-xs">
+                    {cat}
+                  </Badge>
+                ))
+              ) : (
+                <Badge variant="secondary" className="text-xs">{row.category}</Badge>
+              )}
+              <Badge
+                variant={(row.quantity || 0) > (row.reorderLevel || 50) ? "default" : "destructive"}
+                className="text-xs"
+              >
+                {row.quantity} {row.unit}
+              </Badge>
+            </div>
+          </div>
+        ),
+      },
+      { key: "location", label: "Location", type: "text" as const, className: "hidden sm:table-cell" },
+      { key: "itemQuality", label: "Status", type: "text" as const, className: "hidden md:table-cell" },
+      // {
+      //   key: "actions",
+      //   label: "Actions",
+      //   type: "custom" as const,
+      //   // render: (_: any, row: any) => (
+      //   //   <div className="flex items-center gap-2">
+      //   //     <Button size="sm" variant="outline" onClick={() => handleEdit(row)}>Edit</Button>
+      //   //     <Button size="sm" variant="destructive" onClick={() => handleDelete(row.id)}>Delete</Button>
+      //   //   </div>
+      //   // ),
+      // },
+    ];
+  
+    // Expandable row content (simplified)
+    const expandableContent = (row: InventoryItem) => (
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div>
+          <div className="space-y-1">
+            <div>Reorder Level: {row.reorderLevel || 50}</div>
+            <div>Max Stock: {row.maximumStock || 500}</div>
+          </div>
+        </div>
+        <div>
+          <div className="space-y-1">
+            <div>Safety Stock: {row.safetyStock || 20}</div>
+            <div>Unit Cost: ₹{row.unitCost || 0}</div>
+            
+          </div>
+        </div>
+        <div>
+          <div className="space-y-1">
+            <div>
+              Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
+            </div>
+            <div>Location: {row.location}</div>
+          </div>
+        </div>
+      </div>
+    );
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
@@ -5700,197 +5819,32 @@ const SiteDashboardContent = () => {
           )}
         </TabsContent>
         <TabsContent value="central-warehouse" className="space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">
-              Central Warehouse
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Items
-                  </CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {allInventoryItems.length}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Items in inventory
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Value
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ₹
-                    {allInventoryItems
-                      .reduce(
-                        (sum, item) =>
-                          sum + (item.unitCost || 0) * (item.quantity || 0),
-                        0
-                      )
-                      .toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Total inventory value
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Low Stock Items
-                  </CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {
-                      allInventoryItems.filter(
-                        (item) =>
-                          (item.quantity || 0) <= (item.reorderLevel || 50)
-                      ).length
-                    }
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Below reorder level
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Categories
-                  </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {
-                      new Set(
-                        allInventoryItems
-                          .flatMap((item) =>
-                            Array.isArray(item.category)
-                              ? item.category
-                              : [item.category]
-                          )
-                          .filter(Boolean)
-                      ).size
-                    }
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Unique categories
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>All Inventory Items</CardTitle>
-                <CardDescription>
-                  Complete list of items across all warehouses
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isInventoryLoading ? (
-                  <div className="flex items-center justify-center p-8">
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <span>Loading inventory items...</span>
-                    </div>
-                  </div>
-                ) : allInventoryItems.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground">
-                    No inventory items found.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left p-3">Item Name</th>
-                          <th className="text-left p-3">Category</th>
-                          <th className="text-left p-3">Quantity</th>
-                          <th className="text-left p-3">Location</th>
-                          <th className="text-left p-3">Unit Cost</th>
-                          <th className="text-left p-3">Total Value</th>
-                          <th className="text-left p-3">Stock Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allInventoryItems.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="border-t hover:bg-muted/20"
-                          >
-                            <td className="p-3 font-medium">{item.name}</td>
-                            <td className="p-3">
-                              <div className="flex flex-wrap gap-1">
-                                {Array.isArray(item.category) ? (
-                                  item.category.map((cat) => (
-                                    <Badge
-                                      key={cat}
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
-                                      {cat}
-                                    </Badge>
-                                  ))
-                                ) : (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    {item.category}
-                                  </Badge>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              {item.quantity} {item.unit}
-                            </td>
-                            <td className="p-3">{item.location}</td>
-                            <td className="p-3">₹{item.unitCost || 0}</td>
-                            <td className="p-3">
-                              ₹
-                              {(
-                                (item.unitCost || 0) * (item.quantity || 0)
-                              ).toLocaleString()}
-                            </td>
-                            <td className="p-3">
-                              <Badge
-                                variant={
-                                  (item.quantity || 0) >
-                                  (item.reorderLevel || 50)
-                                    ? "default"
-                                    : "destructive"
-                                }
-                                className="text-xs"
-                              >
-                                {(item.quantity || 0) >
-                                (item.reorderLevel || 50)
-                                  ? "In Stock"
-                                  : "Low Stock"}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          {isLoading ? (
+                      <div className="flex items-center justify-center p-8">
+                        <div className="flex items-center space-x-2">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                          <span>Loading warehouse items...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex justify-end">
+                        </div>
+                        <ExpandableDataTable
+                          title="Warehouse Inventory Items"
+                          description="Warehouse-focused view of inventory with quick insights"
+                          data={inventoryItems as any[]}
+                          columns={columns as any}
+                          expandableContent={expandableContent as any}
+                          searchKey="name"
+                          filters={[
+                            { key: "category", label: "Category", options: categoryOptions },
+                            { key: "location", label: "Location", options: locationOptions },
+                          ]}
+                          rowActions={["view"]}
+                        />
+                      </div>
+                    )}
         </TabsContent>
       </Tabs>
       {/* DPR Upload Modal */}

@@ -47,9 +47,9 @@ export const warehouseController = {
         res.json(warehouses);
       } else {
         const warehouses = await prisma.warehouse.findMany({
-          include: {
-            createdBy: true
-          },
+          // include: {
+          //   createdBy: true
+          // },
           orderBy: {
             createdAt: 'desc'
           }
