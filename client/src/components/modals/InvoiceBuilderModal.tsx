@@ -24,6 +24,7 @@ const API_URL =
 interface InvoiceBuilderModalProps {
   onClose: () => void;
   showRetentionOptions?: boolean;
+  showWorkCompleted?: boolean;
 }
 
 interface LineItem {
@@ -90,6 +91,7 @@ const UNITS = [
 const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   onClose,
   showRetentionOptions = false,
+  showWorkCompleted = true,
 }) => {
   const { toast } = useToast();
   const { user } = useUser();
@@ -929,24 +931,26 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                   <CardTitle>Additional Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Work Completed (%)
-                    </label>
-                    <Input
-                      type="number"
-                      placeholder="65"
-                      min="0"
-                      max="100"
-                      value={formData.workCompletedPercent}
-                      onChange={(e) =>
-                        handleFormChange(
-                          "workCompletedPercent",
-                          Number(e.target.value)
-                        )
-                      }
-                    />
-                  </div>
+                  {showWorkCompleted && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Work Completed (%)
+                      </label>
+                      <Input
+                        type="number"
+                        placeholder="65"
+                        min="0"
+                        max="100"
+                        value={formData.workCompletedPercent}
+                        onChange={(e) =>
+                          handleFormChange(
+                            "workCompletedPercent",
+                            Number(e.target.value)
+                          )
+                        }
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">

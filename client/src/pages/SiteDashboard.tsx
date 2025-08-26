@@ -5897,6 +5897,7 @@ const SiteDashboardContent = () => {
             <div className="-mt-4">
               <InvoiceBuilderModal
                 showRetentionOptions={true}
+                showWorkCompleted={false}
                 onClose={() => setIsInvoiceModalOpen(false)}
               />
             </div>
