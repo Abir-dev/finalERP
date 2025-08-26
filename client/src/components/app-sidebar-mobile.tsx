@@ -181,7 +181,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Tender Management",
       url: "/tender-management",
       icon: FileText,
-      allowedRoles: ["admin", "md", "client-manager"],
+      allowedRoles: ["admin", "md", "tender"],
     },
     {
       title: "Billing Management",

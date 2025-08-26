@@ -28,7 +28,8 @@ export const ProtectedRoute = ({ allowedRoles, redirectPath }: ProtectedRoutePro
       "client": "/client-portal",
       "hr": "/hr",
       "project": "/projects",
-      "warehouse": "/warehouse-management"
+      "warehouse": "/warehouse-management",
+      "tender": "/tender-management"
     };
     
     return <Navigate to={roleDashboardMap[user.role]} replace />;

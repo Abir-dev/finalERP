@@ -19,6 +19,7 @@ enum UserRole {
   hr
   project
   warehouse
+  tender
 }
 
 model User {
