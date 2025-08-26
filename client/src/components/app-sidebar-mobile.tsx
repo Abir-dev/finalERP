@@ -225,7 +225,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Warehouse Management",
       url: "/warehouse-management",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "warehouse"],
+      allowedRoles: ["admin", "md", "warehouse", "store", "site"],
     },
     {
       title: "Calendar",
@@ -255,7 +255,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
   const hrItems = {
     title: "Human Resources",
     icon: Users,
-    allowedRoles: ["admin", "md", "hr"],
+    allowedRoles: ["admin", "md", "hr", "accounts"],
     subitems: [
       {
         title: "Employees",

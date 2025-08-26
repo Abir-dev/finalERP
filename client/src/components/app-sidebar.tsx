@@ -209,7 +209,7 @@ export function AppSidebar() {
       title: "Warehouse Management",
       url: "/warehouse-management",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "warehouse"],
+      allowedRoles: ["admin", "md", "warehouse", "site", "store"],
     },
     {
       title: "Calendar",
@@ -240,7 +240,7 @@ export function AppSidebar() {
   const hrItems = {
     title: "Human Resources",
     icon: Users,
-    allowedRoles: ["admin", "md", "hr"],
+    allowedRoles: ["admin", "md", "hr", "accounts"],
     subitems: [
       {
         title: "Employees",
