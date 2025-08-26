@@ -23,6 +23,7 @@ const API_URL =
 
 interface InvoiceBuilderModalProps {
   onClose: () => void;
+  showRetentionOptions?: boolean;
 }
 
 interface LineItem {
@@ -88,6 +89,7 @@ const UNITS = [
 
 const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
   onClose,
+  showRetentionOptions = false,
 }) => {
   const { toast } = useToast();
   const { user } = useUser();
@@ -139,6 +141,12 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
 
   // State to control retention (5% deduction)
   const [applyRetention, setApplyRetention] = useState<boolean>(false);
+  // If retention options are hidden, force retention off
+  useEffect(() => {
+    if (!showRetentionOptions) {
+      setApplyRetention(false);
+    }
+  }, [showRetentionOptions]);
 
   // Fetch users and projects on component mount
   useEffect(() => {
@@ -614,39 +622,41 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
                     </RadioGroup>
                   </div>
 
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Retention Options
-                    </label>
-                    <RadioGroup
-                      defaultValue={
-                        applyRetention ? "with-retention" : "without-retention"
-                      }
-                      className="flex space-x-4"
-                      onValueChange={(value) =>
-                        setApplyRetention(value === "with-retention")
-                      }
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem
-                          value="with-retention"
-                          id="with-retention"
-                        />
-                        <Label htmlFor="with-retention">
-                          With Retention (5%)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem
-                          value="without-retention"
-                          id="without-retention"
-                        />
-                        <Label htmlFor="without-retention">
-                          Without Retention
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                  {showRetentionOptions && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Retention Options
+                      </label>
+                      <RadioGroup
+                        defaultValue={
+                          applyRetention ? "with-retention" : "without-retention"
+                        }
+                        className="flex space-x-4"
+                        onValueChange={(value) =>
+                          setApplyRetention(value === "with-retention")
+                        }
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value="with-retention"
+                            id="with-retention"
+                          />
+                          <Label htmlFor="with-retention">
+                            With Retention (5%)
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem
+                            value="without-retention"
+                            id="without-retention"
+                          />
+                          <Label htmlFor="without-retention">
+                            Without Retention
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

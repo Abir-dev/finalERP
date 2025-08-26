@@ -2068,7 +2068,7 @@ File Size: ${doc.size}`;
       {/* Invoice Builder Modal */}
       {showInvoiceModal && (
         <div className="-top-10 ">
-          <InvoiceBuilderModal onClose={() => setShowInvoiceModal(false)} />
+          <InvoiceBuilderModal showRetentionOptions={false} onClose={() => setShowInvoiceModal(false)} />
         </div>
       )}
       {showPaymentEntryModal && (

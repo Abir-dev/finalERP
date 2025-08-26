@@ -95,6 +95,7 @@ import { useUser } from "@/contexts/UserContext";
 import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import { UserFilterComponent } from "@/components/UserFilterComponent";
 import { useUserFilter } from "@/contexts/UserFilterContext";
+import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -478,6 +479,7 @@ const SiteDashboardContent = () => {
   // Modal states
   const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
   const [isWPRModalOpen, setIsWPRModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isMaterialRequestModalOpen, setIsMaterialRequestModalOpen] =
     useState(false);
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
@@ -2779,6 +2781,10 @@ const SiteDashboardContent = () => {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={() => setIsInvoiceModalOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Purchase Invoice
+          </Button>
           <Button onClick={() => setIsDPRModalOpen(true)} className="gap-2">
             <Upload className="h-4 w-4" />
             Upload DPR
@@ -5883,6 +5889,18 @@ const SiteDashboardContent = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice Builder Modal - Site Dashboard */}
+
+      {isInvoiceModalOpen && (
+
+            <div className="-mt-4">
+              <InvoiceBuilderModal
+                showRetentionOptions={true}
+                onClose={() => setIsInvoiceModalOpen(false)}
+              />
+            </div>
+      )}
       {/* Material Request Modal */}
       <Dialog
         open={isMaterialRequestModalOpen}
