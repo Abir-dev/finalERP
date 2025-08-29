@@ -881,6 +881,7 @@ const InventoryContent = () => {
           {
             itemName: data.name,
             category: data.category[0],
+            type: data.type || "OLD",
             quantity: data.quantity,
             unit: data.unit,
             location: data.location,
@@ -1165,10 +1166,21 @@ const InventoryContent = () => {
         return unitMap ? unitMap.value : label;
       };
 
+      const getItemEnum = (itemLabel: string) => {
+        const itemMap = ITEM_OPTIONS.find((opt) => opt.label === itemLabel);
+        return itemMap ? itemMap.value : itemLabel;
+      };
+
+      const getTypeEnum = (typeLabel: string) => {
+        const typeMap = INVENTORY_TYPE_OPTIONS.find((opt) => opt.label === typeLabel);
+        return typeMap ? typeMap.value : typeLabel;
+      }
+
       // Populate edit form with current item data
       editForm.reset({
-        name: item.name,
+        name: getItemEnum(item.name),
         category: [getCategoryEnum(item.category || "")],
+        type: getTypeEnum(item.type || "OLD"),
         quantity: item.quantity,
         unit: getUnitEnum(item.unit || ""),
         location: item.location || "",
@@ -2411,51 +2423,96 @@ const InventoryContent = () => {
                     className="space-y-6"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={editForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Item Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter item name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+          {/* Item Name as Select Dropdown */}
+          <FormField
+            control={editForm.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Item</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Item" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {ITEM_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                      <FormField
-                        control={editForm.control}
-                        name="category"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Category</FormLabel>
-                            <Select
-                              value={field.value?.[0] || ""}
-                              onValueChange={(value) => field.onChange([value])}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {CATEGORY_OPTIONS.map((category) => (
-                                  <SelectItem
-                                    key={category.value}
-                                    value={category.value}
-                                  >
-                                    {category.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+          <FormField
+            control={editForm.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <Select
+                  value={field.value?.[0] || ""}
+                  onValueChange={(value) => field.onChange([value])}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {CATEGORY_OPTIONS.map((category) => (
+                      <SelectItem
+                        key={category.value}
+                        value={category.value}
+                      >
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Add Type Field */}
+          <FormField
+            control={editForm.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {INVENTORY_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <FormField
