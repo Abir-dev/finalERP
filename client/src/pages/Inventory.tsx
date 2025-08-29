@@ -103,6 +103,7 @@ const API_URL =
 const addItemFormSchema = z.object({
   name: z.string().min(2, "Item name must be at least 2 characters"),
   category: z.array(z.string()).min(1, "Please select at least one category"),
+  type: z.string().min(1, "Please select a type"),
   quantity: z.number().min(0, "Quantity must be 0 or greater"),
   unit: z.string().min(1, "Please select a unit"),
   location: z.string().min(1, "Please select a location"),
@@ -168,6 +169,7 @@ interface InventoryItem {
   category: string[];
   quantity: number;
   unit: string;
+  type: string;
   location: string;
   lastUpdated: string;
   reorderLevel?: number;
@@ -223,6 +225,28 @@ const UNIT_OPTIONS = [
   { value: "ROLL", label: "Rolls" },
   { value: "SHEET", label: "Sheets" },
 ];
+
+const ITEM_OPTIONS = [
+  { value: "CEMENT", label: "Cement" },
+  { value: "SAND", label: "Sand" },
+  { value: "BRICKS", label: "Bricks" },
+  { value: "STEEL", label: "Steel" },
+  { value: "AGGREGATE", label: "Aggregate" },
+  { value: "WOOD", label: "Wood" },
+  { value: "GLASS", label: "Glass" },
+  { value: "PAINT", label: "Paint" },
+  { value: "ELECTRICAL", label: "Electrical" },
+  { value: "PLUMBING", label: "Plumbing" },
+  { value: "FIXTURES", label: "Fixtures" },
+  { value: "TOOLS", label: "Tools" },
+  { value: "OTHER", label: "Other" },
+];
+
+const INVENTORY_TYPE_OPTIONS = [
+  { value: "OLD", label: "Old" },
+  { value: "NEW", label: "New" },
+];
+
 
 // Column definitions
 const inventoryColumns = [
@@ -419,6 +443,7 @@ const InventoryContent = () => {
         id: item.id,
         name: item.itemName || item.name,
         category: getCategoryLabel(item.category),
+        type: item.type || "OLD",
         quantity: item.quantity,
         unit: getUnitLabel(item.unit),
         location: item.location,
@@ -790,6 +815,7 @@ const InventoryContent = () => {
           itemName: data.name,
           category: data.category[0], // Backend expects single category enum value
           quantity: data.quantity,
+          type: data.type || "OLD",
           unit: data.unit,
           location: data.location,
           reorderLevel: data.reorderLevel,
@@ -1313,6 +1339,12 @@ const InventoryContent = () => {
         )
       },
       {
+        key: "type",
+        label: "Type",
+        type: "text" as const,
+        className: "hidden sm:table-cell"
+      },
+      {
         key: "location",
         label: "Location",
         type: "text" as const,
@@ -1529,10 +1561,24 @@ const InventoryContent = () => {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Item Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter item name" {...field} />
-                        </FormControl>
+                        <FormLabel>Item</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Item" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {ITEM_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1565,6 +1611,36 @@ const InventoryContent = () => {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Type</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select Type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {INVENTORY_TYPE_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  
 
                   <FormField
                     control={form.control}
