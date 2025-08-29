@@ -2,12 +2,13 @@ import { Request, Response } from 'express';
 import { prismaNotificationService } from '../services/prismaNotificationService';
 import prisma from '../config/prisma';
 import logger from '../logger/logger';
-import { InventoryCategory, Unit,MaterialRequestStatus } from '@prisma/client';
+import { InventoryCategory, Unit,MaterialRequestStatus, InventoryType, Item } from '@prisma/client';
 
 interface CreateInventoryItemRequest {
-  itemName: string;
+  itemName: Item;
   category: InventoryCategory;
   quantity: number;
+  type: InventoryType;
   unit: Unit;
   location: string;
   reorderLevel: number;
@@ -28,6 +29,7 @@ export const inventoryController = {
         itemName,
         category,
         quantity,
+        type,
         unit,
         location,
         reorderLevel,
@@ -45,6 +47,7 @@ export const inventoryController = {
         itemName,
         category,
         quantity,
+        type,
         unit,
         location,
         reorderLevel,
@@ -235,7 +238,7 @@ export const inventoryController = {
       const items = await prisma.inventory.findMany({
         where: {
           OR: [
-            { itemName: { contains: search as string, mode: 'insensitive' } },
+            // { itemName: { contains: search as Item, mode: 'insensitive' } },
             { primarySupplierName: { contains: search as string, mode: 'insensitive' } },
             { location: { contains: search as string, mode: 'insensitive' } }
           ]
