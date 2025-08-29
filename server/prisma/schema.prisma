@@ -250,11 +250,32 @@ model Payment {
   invoiceId String   @db.Uuid
 }
 
+enum Item{
+  CEMENT
+  SAND
+  BRICKS
+  STEEL
+  AGGREGATE
+  WOOD
+  GLASS
+  PAINT
+  ELECTRICAL
+  PLUMBING
+  FIXTURES
+  TOOLS
+  OTHER
+}
+enum InventoryType{
+  OLD
+  NEW
+}
+
 model Inventory {
   id                    String                 @id @default(uuid()) @db.Uuid
-  itemName              String
+  itemName              Item
   category              InventoryCategory
   quantity              Int
+  type                 InventoryType
   unit                  Unit
   location              String
   reorderLevel          Int
