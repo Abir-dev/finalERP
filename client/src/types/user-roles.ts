@@ -5,7 +5,7 @@ export type UserRole =
   | 'client-manager' 
   | 'store' 
   | 'accounts' 
-  | 'site'
+  // | 'site'
   | 'client'
   | 'hr'
   | 'project';
@@ -56,17 +56,17 @@ export const rolePermissions: Record<UserRole, RolePermissions> = {
     centralStoreAccess: false,
     approvalAuthority: ['material-request', 'stock-update']
   },
-  site: {
-    projectManagement: true,
-    tenderManagement: false,
-    billingModule: true,
-    assetsAndMachinery: true,
-    purchaseManagement: false,
-    accountsModule: false,
-    qualityAssurance: true,
-    centralStoreAccess: false,
-    approvalAuthority: ['project-milestone', 'labor-approval']
-  },
+  // site: {
+  //   projectManagement: true,
+  //   tenderManagement: false,
+  //   billingModule: true,
+  //   assetsAndMachinery: true,
+  //   purchaseManagement: false,
+  //   accountsModule: false,
+  //   qualityAssurance: true,
+  //   centralStoreAccess: false,
+  //   approvalAuthority: ['project-milestone', 'labor-approval']
+  // },
   accounts: {
     projectManagement: false,
     tenderManagement: false,

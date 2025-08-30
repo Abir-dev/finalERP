@@ -24,7 +24,7 @@ export const ProtectedRoute = ({ allowedRoles, redirectPath }: ProtectedRoutePro
       "client-manager": "/client-manager",
       "store": "/store-manager",
       "accounts": "/accounts-manager",
-      "site": "/site-manager",
+      // "site": "/site-manager",
       "client": "/client-portal",
       "hr": "/hr",
       "project": "/projects",

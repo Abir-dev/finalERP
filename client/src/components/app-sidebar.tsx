@@ -78,7 +78,7 @@ export function AppSidebar() {
       client: "/client-manager",
       store: "/store-manager",
       accounts: "/accounts-manager",
-      site: "/site-manager",
+      // site: "/site-manager",
       inventory: "/inventory",
       projects: "/projects",
       documents: "/documents",
@@ -123,7 +123,7 @@ export function AppSidebar() {
       title: "Design Dashboard",
       url: "/design-dashboard",
       icon: PaintBucket,
-      allowedRoles: ["admin", "md", "client-manager", "site"],
+      allowedRoles: ["admin", "md", "client-manager", "project"],
     },
     {
       title: "Client Dashboard",
@@ -147,7 +147,7 @@ export function AppSidebar() {
       title: "Site Dashboard",
       url: "/site-manager",
       icon: HardHat,
-      allowedRoles: ["admin", "md", "site"],
+      allowedRoles: ["admin", "md", "project"],
     },
     // {
     //   title: "Client Portal",
@@ -177,14 +177,14 @@ export function AppSidebar() {
       title: "Purchase Management",
       url: "/purchase-management",
       icon: ShoppingCart,
-      allowedRoles: ["admin", "md", "site", "store", "accounts"],
+      allowedRoles: ["admin", "md", "project", "store", "accounts"],
     },
 
     {
       title: "Inventory",
       url: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site", "warehouse"],
+      allowedRoles: ["admin", "md", "store", "project", "warehouse"],
     },
     // {
     //   title: "Documents",
@@ -209,7 +209,7 @@ export function AppSidebar() {
       title: "Warehouse Management",
       url: "/warehouse-management",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "warehouse", "site", "store"],
+      allowedRoles: ["admin", "md", "warehouse", "project", "store"],
     },
     {
       title: "Calendar",
@@ -221,7 +221,7 @@ export function AppSidebar() {
         "client-manager",
         "store",
         "accounts",
-        "site",
+        // "site",
         "client",
         "hr",
         "project",
@@ -286,7 +286,7 @@ export function AppSidebar() {
       title: "Design Dashboard",
       base: "/design-dashboard",
       icon: PaintBucket,
-      allowedRoles: ["admin", "md", "client-manager", "site"],
+      allowedRoles: ["admin", "md", "client-manager", "project"],
       subitems: [
         { title: "Design Overview", url: "/design-dashboard/overview" },
         { title: "Review Queue", url: "/design-dashboard/queue" },
@@ -335,7 +335,7 @@ export function AppSidebar() {
       title: "Site Dashboard",
       base: "/site-manager",
       icon: HardHat,
-      allowedRoles: ["admin", "md", "site"],
+      allowedRoles: ["admin", "md", "project"],
       subitems: [
         { title: "Execution Timeline", url: "/site-manager/timeline" },
         { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
@@ -348,7 +348,7 @@ export function AppSidebar() {
       title: "Inventory",
       base: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site", "warehouse"],
+      allowedRoles: ["admin", "md", "store", "project", "warehouse"],
       subitems: [
         { title: "Inventory", url: "/inventory/inventory" },
         { title: "Material Forecast", url: "/inventory/material-forecast" },
@@ -421,7 +421,7 @@ export function AppSidebar() {
       title: "Purchase Management",
       base: "/purchase-management",
       icon: Package,
-      allowedRoles: ["admin", "md", "site", "store", "accounts"],
+      allowedRoles: ["admin", "md", "project", "store", "accounts"],
       subitems: [
         { title: "Overview", url: "/purchase-management/overview" },
         { title: "Material Requests", url: "/purchase-management/material-requests" },
