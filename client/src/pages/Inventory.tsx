@@ -2021,21 +2021,33 @@ const InventoryContent = () => {
                 <StatCard
                   title="Old Items"
                   value={(
-                    inventoryItems.filter((item) => item.type === 'OLD').length || 0
-                  ).toString()}
+                  inventoryItems
+                    .filter((item) => item.type === 'OLD')
+                    .filter((item, index, self) => 
+                      index === self.findIndex(t => t.name === item.name && t.type === item.type)
+                    )
+                    .length || 0
+                    ).toString()}
                   icon={Package}
                   description="Items marked as OLD"
                   onClick={() => { setTypeFilter('OLD'); setInventorySubview('old'); }}
                 />
+
                 <StatCard
                   title="New Items"
                   value={(
-                    inventoryItems.filter((item) => item.type === 'NEW').length || 0
-                  ).toString()}
-                  icon={TrendingUp}
+                  inventoryItems
+                    .filter((item) => item.type === 'NEW')
+                    .filter((item, index, self) => 
+                      index === self.findIndex(t => t.name === item.name && t.type === item.type)
+                    )
+                    .length || 0
+                    ).toString()}
+                  icon={Package}
                   description="Items marked as NEW"
                   onClick={() => { setTypeFilter('NEW'); setInventorySubview('new'); }}
                 />
+
                 <StatCard
                   title="Total Items"
                   value={(inventoryItems.length || 0).toString()}

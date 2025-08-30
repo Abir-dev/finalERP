@@ -13,17 +13,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUser } from "@/contexts/UserContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 // Local type to be safe if fields differ
 interface InventoryItem {
+  itemName: string;
   maximumStock: number;
   itemQuality: string;
   id: string;
   name: string;
   category: string | string[];
+  type: string;
   quantity: number;
   unit: string;
   location: string;
@@ -43,6 +46,50 @@ interface MaterialRequest {
   requestedBy?: { id?: string; name?: string } | string;
   items?: Array<{ id?: string; name?: string; quantity?: number; uom?: string }>;
 }
+
+const CATEGORY_OPTIONS = [
+  { value: "CONSTRUCTION_MATERIALS", label: "Construction Materials" },
+  { value: "TOOLS_AND_EQUIPMENT", label: "Tools & Equipment" },
+  { value: "SAFETY_EQUIPMENT", label: "Safety Equipment" },
+  { value: "ELECTRICAL_COMPONENTS", label: "Electrical Components" },
+  { value: "PLUMBING_MATERIALS", label: "Plumbing Materials" },
+  { value: "HVAC_EQUIPMENT", label: "HVAC Equipment" },
+  { value: "FINISHING_MATERIALS", label: "Finishing Materials" },
+  { value: "HARDWARE_AND_FASTENERS", label: "Hardware & Fasteners" },
+];
+
+const UNIT_OPTIONS = [
+  { value: "PIECE", label: "Pieces" },
+  { value: "KILOGRAM", label: "Kilograms" },
+  { value: "TONNE", label: "Tonnes" },
+  { value: "CUBIC_METRE", label: "Cubic Metres" },
+  { value: "SQUARE_METRE", label: "Square Metres" },
+  { value: "LITRE", label: "Litres" },
+  { value: "BOX", label: "Boxes" },
+  { value: "ROLL", label: "Rolls" },
+  { value: "SHEET", label: "Sheets" },
+];
+
+const ITEM_OPTIONS = [
+  { value: "CEMENT", label: "Cement" },
+  { value: "SAND", label: "Sand" },
+  { value: "BRICKS", label: "Bricks" },
+  { value: "STEEL", label: "Steel" },
+  { value: "AGGREGATE", label: "Aggregate" },
+  { value: "WOOD", label: "Wood" },
+  { value: "GLASS", label: "Glass" },
+  { value: "PAINT", label: "Paint" },
+  { value: "ELECTRICAL", label: "Electrical" },
+  { value: "PLUMBING", label: "Plumbing" },
+  { value: "FIXTURES", label: "Fixtures" },
+  { value: "TOOLS", label: "Tools" },
+  { value: "OTHER", label: "Other" },
+];
+
+const INVENTORY_TYPE_OPTIONS = [
+  { value: "OLD", label: "Old" },
+  { value: "NEW", label: "New" },
+];
 
 const WarehouseDashboard = () => {
   const { user } = useUser();
@@ -64,6 +111,7 @@ const WarehouseDashboard = () => {
   const form = useForm<{ 
     name: string;
     category: string;
+    type: string;
     quantity: number;
     unit: string;
     location: string;
@@ -77,6 +125,7 @@ const WarehouseDashboard = () => {
     defaultValues: {
       name: "",
       category: "",
+      type: "",
       quantity: 0,
       unit: "",
       location: "",
@@ -93,6 +142,7 @@ const WarehouseDashboard = () => {
   const warehouseForm = useForm<{
     itemName: string;
     category: string; // InventoryCategory enum value
+    type: string;
     quantity: number;
     unit: string; // Unit enum value
     location: string;
@@ -105,6 +155,7 @@ const WarehouseDashboard = () => {
     defaultValues: {
       itemName: "",
       category: "",
+      type: "",
       quantity: 0,
       unit: "",
       location: "",
@@ -115,6 +166,10 @@ const WarehouseDashboard = () => {
       itemQuality: "GOOD",
     },
   });
+
+  // Delete confirmation dialog state
+  const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Edit Warehouse Modal State
   const [isEditWarehouseOpen, setIsEditWarehouseOpen] = useState(false);
@@ -139,6 +194,7 @@ const WarehouseDashboard = () => {
     warehouseForm.reset({
       itemName: row.itemName || row.name || "",
       category: Array.isArray(row.category) ? (row.category[0] || "") : (row.category || ""),
+      type: row.type || "OLD",
       quantity: Number(row.quantity) || 0,
       unit: row.unit || "",
       location: row.location || "",
@@ -152,19 +208,23 @@ const WarehouseDashboard = () => {
   };
 
   // Delete warehouse item
-  const handleDelete = async (id: string) => {
-    try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.delete(`${API_URL}/warehouse/${id}`, { headers });
-      toast.success("Item deleted");
-      await refreshWarehouses();
-    } catch (error: any) {
-      console.error("Failed to delete item:", error);
-      const msg = error?.response?.data?.error || error?.message || "Failed to delete";
-      toast.error(msg);
-    }
-  };
+const handleDeleteItem = async (item: InventoryItem) => {
+  setIsDeleting(true);
+  try {
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    await axios.delete(`${API_URL}/warehouse/${item.id}`, { headers });
+    toast.success("Item deleted successfully");
+    setItemToDelete(null);
+    await refreshWarehouses();
+  } catch (error: any) {
+    console.error("Failed to delete item:", error);
+    const msg = error?.response?.data?.error || error?.message || "Failed to delete item";
+    toast.error(msg);
+  } finally {
+    setIsDeleting(false);
+  }
+};
 
   // Update submit
   const onSubmitUpdateWarehouse = async (values: any) => {
@@ -176,6 +236,7 @@ const WarehouseDashboard = () => {
       const payload = {
         itemName: values.itemName,
         category: values.category,
+        type: values.type,
         quantity: Number(values.quantity) || 0,
         unit: values.unit,
         location: values.location,
@@ -286,6 +347,7 @@ const WarehouseDashboard = () => {
       const payload = {
         itemName: values.name,
         category: values.category, // should be enum value like in Inventory page
+        type: values.type, // should be enum value like in Inventory page
         quantity: Number(values.quantity) || 0,
         unit: values.unit, // enum
         location: values.location,
@@ -327,6 +389,7 @@ const WarehouseDashboard = () => {
       const payload = {
         itemName: values.itemName,
         category: values.category,
+        type: values.type,
         quantity: Number(values.quantity) || 0,
         unit: values.unit,
         location: values.location,
@@ -391,7 +454,7 @@ const WarehouseDashboard = () => {
       render: (_: any, row: any) => (
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => handleEdit(row)}>Edit</Button>
-          <Button size="sm" variant="destructive" onClick={() => handleDelete(row.id)}>Delete</Button>
+          <Button size="sm" variant="destructive" onClick={() => setItemToDelete(row)}>Delete</Button>
         </div>
       ),
     },
@@ -410,14 +473,16 @@ const WarehouseDashboard = () => {
         <div className="space-y-1">
           <div>Safety Stock: {row.safetyStock || 20}</div>
           <div>Unit Cost: ₹{row.unitCost || 0}</div>
+          <div>Type: {row.type}</div>
           
         </div>
       </div>
       <div>
         <div className="space-y-1">
-          <div>
+          {/* <div>
             Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
-          </div>
+          </div> */}
+          <div>Type: {row.type}</div>
           <div>Location: {row.location}</div>
         </div>
       </div>
@@ -542,10 +607,24 @@ const WarehouseDashboard = () => {
                       name="itemName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Item Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter item name" {...field} />
-                          </FormControl>
+                          <FormLabel>Item</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Item" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {ITEM_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -557,21 +636,49 @@ const WarehouseDashboard = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Category</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select category" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="CONSTRUCTION_MATERIALS">Construction Materials</SelectItem>
-                              <SelectItem value="TOOLS_AND_EQUIPMENT">Tools & Equipment</SelectItem>
-                              <SelectItem value="SAFETY_EQUIPMENT">Safety Equipment</SelectItem>
-                              <SelectItem value="ELECTRICAL_COMPONENTS">Electrical Components</SelectItem>
-                              <SelectItem value="PLUMBING_MATERIALS">Plumbing Materials</SelectItem>
-                              <SelectItem value="HVAC_EQUIPMENT">HVAC Equipment</SelectItem>
-                              <SelectItem value="FINISHING_MATERIALS">Finishing Materials</SelectItem>
-                              <SelectItem value="HARDWARE_AND_FASTENERS">Hardware & Fasteners</SelectItem>
+                              {CATEGORY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {INVENTORY_TYPE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -599,31 +706,28 @@ const WarehouseDashboard = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Unit</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select unit" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="CUBIC_METRE">Cubic Metre</SelectItem>
-                              <SelectItem value="TONNE">Tonne</SelectItem>
-                              <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
-                              <SelectItem value="PIECE">Piece</SelectItem>
-                              <SelectItem value="LITRE">Litre</SelectItem>
-                              <SelectItem value="KILOGRAM">Kilogram</SelectItem>
-                              <SelectItem value="BOX">Box</SelectItem>
-                              <SelectItem value="ROLL">Roll</SelectItem>
-                              <SelectItem value="SHEET">Sheet</SelectItem>
-                              <SelectItem value="HOURS">Hours</SelectItem>
-                              <SelectItem value="DAYS">Days</SelectItem>
-                              <SelectItem value="LUMPSUM">Lumpsum</SelectItem>
+                              {UNIT_OPTIONS.map((unit) => (
+                                <SelectItem key={unit.value} value={unit.value}>
+                                  {unit.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    
 
                     <FormField
                       control={warehouseForm.control}
@@ -749,10 +853,24 @@ const WarehouseDashboard = () => {
                       name="itemName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Item Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter item name" {...field} />
-                          </FormControl>
+                          <FormLabel>Item</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Item" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {ITEM_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -764,21 +882,49 @@ const WarehouseDashboard = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Category</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select category" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="CONSTRUCTION_MATERIALS">Construction Materials</SelectItem>
-                              <SelectItem value="TOOLS_AND_EQUIPMENT">Tools & Equipment</SelectItem>
-                              <SelectItem value="SAFETY_EQUIPMENT">Safety Equipment</SelectItem>
-                              <SelectItem value="ELECTRICAL_COMPONENTS">Electrical Components</SelectItem>
-                              <SelectItem value="PLUMBING_MATERIALS">Plumbing Materials</SelectItem>
-                              <SelectItem value="HVAC_EQUIPMENT">HVAC Equipment</SelectItem>
-                              <SelectItem value="FINISHING_MATERIALS">Finishing Materials</SelectItem>
-                              <SelectItem value="HARDWARE_AND_FASTENERS">Hardware & Fasteners</SelectItem>
+                              {CATEGORY_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={warehouseForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {INVENTORY_TYPE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -806,25 +952,21 @@ const WarehouseDashboard = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Unit</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Select unit" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="CUBIC_METRE">Cubic Metre</SelectItem>
-                              <SelectItem value="TONNE">Tonne</SelectItem>
-                              <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
-                              <SelectItem value="PIECE">Piece</SelectItem>
-                              <SelectItem value="LITRE">Litre</SelectItem>
-                              <SelectItem value="KILOGRAM">Kilogram</SelectItem>
-                              <SelectItem value="BOX">Box</SelectItem>
-                              <SelectItem value="ROLL">Roll</SelectItem>
-                              <SelectItem value="SHEET">Sheet</SelectItem>
-                              <SelectItem value="HOURS">Hours</SelectItem>
-                              <SelectItem value="DAYS">Days</SelectItem>
-                              <SelectItem value="LUMPSUM">Lumpsum</SelectItem>
+                              {UNIT_OPTIONS.map((unit) => (
+                                <SelectItem key={unit.value} value={unit.value}>
+                                  {unit.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -933,8 +1075,35 @@ const WarehouseDashboard = () => {
               </Form>
             </DialogContent>
           </Dialog>
+          
         </TabsContent>
-
+        <AlertDialog
+  open={!!itemToDelete}
+  onOpenChange={() => setItemToDelete(null)}
+>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete Warehouse Item</AlertDialogTitle>
+      <AlertDialogDescription>
+        Are you sure you want to delete "{itemToDelete?.itemName || itemToDelete?.name}"? This
+        action cannot be undone. This will permanently remove the item
+        from your warehouse inventory.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel disabled={isDeleting}>
+        Cancel
+      </AlertDialogCancel>
+      <AlertDialogAction
+        onClick={() => itemToDelete && handleDeleteItem(itemToDelete)}
+        disabled={isDeleting}
+        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      >
+        {isDeleting ? "Deleting..." : "Delete"}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
         <TabsContent value="requests">
           {isReqLoading ? (
             <div className="flex items-center justify-center p-8">
