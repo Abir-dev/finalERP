@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useUser } from "@/contexts/UserContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -106,6 +107,32 @@ const WarehouseDashboard = () => {
 
   // Add Warehouse Item Modal State
   const [isAddWarehouseOpen, setIsAddWarehouseOpen] = useState(false);
+
+  const [currentView, setCurrentView] = useState<'all' | 'old' | 'new' | 'lowstock' | 'value'>('all');
+  const [filteredItems, setFilteredItems] = useState<InventoryItemType[]>([]);
+
+  useEffect(() => {
+  let filtered: InventoryItemType[] = inventoryItems;
+  
+  switch (currentView) {
+    case 'old':
+      filtered = inventoryItems.filter(item => item.type === 'OLD');
+      break;
+    case 'new':
+      filtered = inventoryItems.filter(item => item.type === 'NEW');
+      break;
+    case 'lowstock':
+      filtered = inventoryItems.filter(item => (item.quantity || 0) <= (item.reorderLevel || 50));
+      break;
+    case 'value':
+      filtered = [...inventoryItems].sort((a, b) => ((b.unitCost || 0) * (b.quantity || 0)) - ((a.unitCost || 0) * (a.quantity || 0)));
+      break;
+    default:
+      filtered = inventoryItems;
+  }
+  
+  setFilteredItems(filtered);
+}, [inventoryItems, currentView]);
 
   // Form setup similar to Inventory page to keep fields consistent with backend
   const form = useForm<{ 
@@ -504,50 +531,82 @@ const handleDeleteItem = async (item: InventoryItem) => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <EnhancedStatCard
-          title="Total Items"
-          value={totalItems.toString()}
-          icon={Package}
-          description="Items in warehouse"
-          trend={{ value: totalItems > 0 ? 12 : 0, label: "vs last month" }}
-          threshold={{
-            status: totalItems > 10 ? "good" : totalItems > 5 ? "warning" : "critical",
-            message:
-              totalItems > 10 ? "Good inventory diversity" : totalItems > 5 ? "Consider expanding inventory" : "Low inventory count",
-          }}
-        />
-        <EnhancedStatCard
-          title="Total Value"
-          value={`₹${totalValue.toLocaleString()}`}
-          icon={TrendingUp}
-          description="Total inventory value"
-          trend={{ value: 8, label: "vs last month" }}
-          threshold={{ status: "good", message: "Healthy inventory value" }}
-        />
-        <EnhancedStatCard
-          title="Low Stock Items"
-          value={lowStockCount.toString()}
-          icon={AlertTriangle}
-          description="Below reorder level"
-          threshold={{
-            status: lowStockCount === 0 ? "good" : lowStockCount <= 2 ? "warning" : "critical",
-            message:
-              lowStockCount === 0
-                ? "All items well stocked"
-                : lowStockCount <= 2
-                ? "Few items need restocking"
-                : "Multiple items critically low",
-          }}
-        />
-        <EnhancedStatCard
-          title="Categories"
-          value={uniqueCategoryCount.toString()}
-          icon={Clock}
-          description="Unique categories"
-          threshold={{ status: "good", message: "Good category diversity" }}
-        />
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <EnhancedStatCard
+      title="Total Items"
+      value={totalItems.toString()}
+      icon={Package}
+      description="Items in warehouse"
+      trend={{ value: totalItems > 0 ? 12 : 0, label: "vs last month" }}
+      threshold={{
+        status: totalItems > 10 ? "good" : totalItems > 5 ? "warning" : "critical",
+        message: totalItems > 10 ? "Good inventory diversity" : totalItems > 5 ? "Consider expanding inventory" : "Low inventory count",
+      }}
+      onClick={() => setCurrentView('all')}
+    />
+    
+    {/* <EnhancedStatCard
+      title="Total Value"
+      value={`₹${totalValue.toLocaleString()}`}
+      icon={TrendingUp}
+      description="Total inventory value"
+      trend={{ value: 8, label: "vs last month" }}
+      threshold={{ status: "good", message: "Healthy inventory value" }}
+      onClick={() => setCurrentView('value')}
+    /> */}
+    
+    <EnhancedStatCard
+      title="Low Stock Items"
+      value={lowStockCount.toString()}
+      icon={AlertTriangle}
+      description="Below reorder level"
+      threshold={{
+        status: lowStockCount === 0 ? "good" : lowStockCount <= 2 ? "warning" : "critical",
+        message: lowStockCount === 0 ? "All items well stocked" : lowStockCount <= 2 ? "Few items need restocking" : "Multiple items critically low",
+      }}
+      onClick={() => setCurrentView('lowstock')}
+    />
+
+    <EnhancedStatCard
+      title="Old Items"
+      value={(
+        inventoryItems
+          .filter((item) => item.type === 'OLD')
+          .filter((item, index, self) => 
+            index === self.findIndex(t => (t.itemName || t.name) === (item.itemName || item.name) && t.type === item.type)
+          )
+          .length || 0
+      ).toString()}
+      icon={Package}
+      description="Items marked as OLD"
+      trend={{ value: 3, label: "vs last month" }}
+      threshold={{
+        status: inventoryItems.filter((item) => item.type === 'OLD').length > 0 ? "good" : "warning",
+        message: inventoryItems.filter((item) => item.type === 'OLD').length > 0 ? "Old items in stock" : "No old items available"
+      }}
+      onClick={() => setCurrentView('old')}
+    />
+
+    <EnhancedStatCard
+      title="New Items"
+      value={(
+        inventoryItems
+          .filter((item) => item.type === 'NEW')
+          .filter((item, index, self) => 
+            index === self.findIndex(t => (t.itemName || t.name) === (item.itemName || item.name) && t.type === item.type)
+          )
+          .length || 0
+      ).toString()}
+      icon={Package}
+      description="Items marked as NEW"
+      trend={{ value: 5, label: "vs last month" }}
+      threshold={{
+        status: inventoryItems.filter((item) => item.type === 'NEW').length > 0 ? "good" : "warning",
+        message: inventoryItems.filter((item) => item.type === 'NEW').length > 0 ? "New items available" : "No new items in stock"
+      }}
+      onClick={() => setCurrentView('new')}
+    />
+  </div>
 
       {/* Tabs below the cards */}
       <Tabs defaultValue="items" className="w-full">
@@ -557,32 +616,73 @@ const handleDeleteItem = async (item: InventoryItem) => {
         </TabsList>
 
         <TabsContent value="items">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                <span>Loading warehouse items...</span>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-              </div>
-              <ExpandableDataTable
-                title="Warehouse Inventory Items"
-                description="Warehouse-focused view of inventory with quick insights"
-                data={inventoryItems as any[]}
-                columns={columns as any}
-                expandableContent={expandableContent as any}
-                searchKey="name"
-                filters={[
-                  { key: "category", label: "Category", options: categoryOptions },
-                  { key: "location", label: "Location", options: locationOptions },
-                ]}
-                rowActions={["view"]}
-              />
-            </div>
-          )}
+          {currentView !== 'all' && (
+    <Card className="shadow-lg">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
+        <div>
+          <CardTitle className="text-xl">
+            {currentView === 'old' && 'Old Items'}
+            {currentView === 'new' && 'New Items'}
+            {currentView === 'lowstock' && 'Low Stock Items'}
+            {currentView === 'value' && 'High Value Items'}
+          </CardTitle>
+          <CardDescription>
+            {currentView === 'old' && 'Showing items with type OLD'}
+            {currentView === 'new' && 'Showing items with type NEW'}
+            {currentView === 'lowstock' && 'Showing items below reorder level'}
+            {currentView === 'value' && 'Showing items sorted by total value'}
+          </CardDescription>
+        </div>
+        <Button variant="outline" onClick={() => setCurrentView('all')}>
+          Back to All Items
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <ExpandableDataTable
+          title="Warehouse Inventory Items"
+          description="Filtered view"
+          data={filteredItems as any[]}
+          columns={columns as any}
+          expandableContent={expandableContent as any}
+          searchKey="name"
+          filters={[
+            { key: "category", label: "Category", options: categoryOptions },
+            { key: "location", label: "Location", options: locationOptions },
+          ]}
+          rowActions={["view"]}
+        />
+      </CardContent>
+    </Card>
+  )}
+
+  {currentView === 'all' && (
+    <>
+      {isLoading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="flex items-center space-x-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span>Loading warehouse items...</span>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <ExpandableDataTable
+            title="Warehouse Inventory Items"
+            description="Warehouse-focused view of inventory with quick insights"
+            data={inventoryItems as any[]}
+            columns={columns as any}
+            expandableContent={expandableContent as any}
+            searchKey="name"
+            filters={[
+              { key: "category", label: "Category", options: categoryOptions },
+              { key: "location", label: "Location", options: locationOptions },
+            ]}
+            rowActions={["view"]}
+          />
+        </div>
+      )}
+    </>
+  )}
 
           {/* Add Warehouse Item Dialog (Warehouse schema) */}
           <Dialog
