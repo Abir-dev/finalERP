@@ -473,7 +473,6 @@ const handleDeleteItem = async (item: InventoryItem) => {
         <div className="space-y-1">
           <div>Safety Stock: {row.safetyStock || 20}</div>
           <div>Unit Cost: ₹{row.unitCost || 0}</div>
-          <div>Type: {row.type}</div>
           
         </div>
       </div>
@@ -482,8 +481,8 @@ const handleDeleteItem = async (item: InventoryItem) => {
           {/* <div>
             Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
           </div> */}
-          <div>Type: {row.type}</div>
           <div>Location: {row.location}</div>
+          <div>Status: {row.itemQuality}</div>
         </div>
       </div>
     </div>
