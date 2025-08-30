@@ -284,9 +284,9 @@ model Inventory {
   safetyStock           Int
   primarySupplierName   String
   vendorId              String                 @db.Uuid
-  primarySupplier       Vendor                 @relation("PrimaryVendor", fields: [vendorId], references: [id])
+  primarySupplier       Vendor                 @relation("PrimaryVendor", fields: [vendorId], references: [id], onDelete: Cascade)
   secondarySupplierName String?
-  secondarySupplier     Vendor?                @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id])
+  secondarySupplier     Vendor?                @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id], onDelete: Cascade)
   secondaryVendorId     String?                @db.Uuid
   unitCost              Int
   createdById           String                 @map("created_by_id") @db.Uuid
@@ -690,7 +690,7 @@ model Vendor {
 
   // Relationships
   createdBy String @db.Uuid
-  creator   User   @relation("VendorCreator", fields: [createdBy], references: [id])
+  creator   User   @relation("VendorCreator", fields: [createdBy], references: [id], onDelete: Cascade)
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
