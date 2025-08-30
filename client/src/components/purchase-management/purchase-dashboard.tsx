@@ -549,10 +549,12 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
         className="space-y-4"
         onValueChange={setActiveTab}
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={`grid w-full ${(user.role === "project" || user.role === "store") ? "grid-cols-3" : "grid-cols-4"}`}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="requests">Material Requests</TabsTrigger>
-          <TabsTrigger value="orders">Purchase Orders</TabsTrigger>
+          {(user.role === "project" || user.role === "store" )? null : (
+            <TabsTrigger value="orders">Purchase Orders</TabsTrigger>            
+          )}
           {/* <TabsTrigger value="vendors">Vendors</TabsTrigger> */}
           {/* <TabsTrigger value="analytics">Analytics</TabsTrigger> */}
           <TabsTrigger value="vendors">Vendor Management</TabsTrigger>
