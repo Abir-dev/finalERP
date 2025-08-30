@@ -14,7 +14,7 @@ enum UserRole {
   client_manager @map("client-manager")
   store
   accounts
-  site
+  // site
   client
   hr
   project
