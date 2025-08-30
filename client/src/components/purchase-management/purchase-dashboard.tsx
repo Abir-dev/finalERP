@@ -73,6 +73,7 @@ import { NewMaterialRequestModal } from "@/components/modals/NewMaterialRequestM
 import { EditMaterialRequestModal } from "@/components/modals/EditMaterialRequestModal";
 import { VendorManagement } from "@/components/vendor-management/VendorManagement";
 import { MaterialRequest, MaterialRequestItem } from "@/types/material-request";
+import { useLocation, useNavigate } from "react-router-dom";
 const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -115,6 +116,8 @@ interface PurchaseOrder {
 
 export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string }) {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
@@ -541,14 +544,37 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
 
   console.log("Current paymentSummary state:", paymentSummary);
 
+  // Sync active tab with URL on mount and when path changes
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes("/purchase-management/material-requests")) {
+      setActiveTab("requests");
+    } else if (path.includes("/purchase-management/purchase-orders")) {
+      setActiveTab("orders");
+    } else if (path.includes("/purchase-management/vendors")) {
+      setActiveTab("vendors");
+    } else {
+      setActiveTab("overview");
+    }
+  }, [location.pathname]);
+
   return (
     <div>
       {/* <CardHeader></CardHeader> */}
       {/* <CardContent className="mt-6"> */}
       <Tabs
-        defaultValue="overview"
+        value={activeTab}
         className="space-y-4"
-        onValueChange={setActiveTab}
+        onValueChange={(val) => {
+          setActiveTab(val);
+          const routes: Record<string, string> = {
+            overview: "/purchase-management/overview",
+            requests: "/purchase-management/material-requests",
+            orders: "/purchase-management/purchase-orders",
+            vendors: "/purchase-management/vendors",
+          };
+          navigate(routes[val] || "/purchase-management/overview");
+        }}
       >
         <TabsList className={`grid w-full ${(user.role === "project" || user.role === "store") ? "grid-cols-3" : "grid-cols-4"}`}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
