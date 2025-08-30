@@ -1371,12 +1371,12 @@ const InventoryContent = () => {
           </div>
         )
       },
-      {
-        key: "type",
-        label: "Type",
-        type: "text" as const,
-        className: "hidden sm:table-cell"
-      },
+      // {
+      //   key: "type",
+      //   label: "Type",
+      //   type: "text" as const,
+      //   className: "hidden sm:table-cell"
+      // },
       {
         key: "location",
         label: "Location",
