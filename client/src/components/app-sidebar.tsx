@@ -425,7 +425,8 @@ export function AppSidebar() {
       subitems: [
         { title: "Overview", url: "/purchase-management/overview" },
         { title: "Material Requests", url: "/purchase-management/material-requests" },
-        { title: "Purchase Orders", url: "/purchase-management/purchase-orders" },
+        ...(user?.role === "project" || user?.role === "store" ? [] : 
+          [{ title: "Purchase Orders", url: "/purchase-management/purchase-orders" }]),
         { title: "Vendor Management", url: "/purchase-management/vendors" },
 
         // { title: "Smart Procurement", url: "/purchase-management/procurement" },

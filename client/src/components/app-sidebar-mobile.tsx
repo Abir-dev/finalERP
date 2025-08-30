@@ -405,10 +405,15 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
           icon: Package,
           allowedRoles: ["admin", "md", "project", "store", "accounts"],
           subitems: [
-            // { title: "Dashboard", url: "/purchase-management/dashboard" },
-            // { title: "Smart Procurement", url: "/purchase-management/procurement" },
-            // { title: "Vendor Management", url: "/purchase-management/vendors" },
-          ],
+        { title: "Overview", url: "/purchase-management/overview" },
+        { title: "Material Requests", url: "/purchase-management/material-requests" },
+        ...(user?.role === "project" || user?.role === "store" ? [] : 
+          [{ title: "Purchase Orders", url: "/purchase-management/purchase-orders" }]),
+        { title: "Vendor Management", url: "/purchase-management/vendors" },
+
+        // { title: "Smart Procurement", url: "/purchase-management/procurement" },
+        // { title: "Vendor Management", url: "/purchase-management/vendors" },
+      ],
         },
     {
       id: "documents",
