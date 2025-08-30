@@ -230,9 +230,7 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
     (sum, po) => sum + po.grandTotal,
     0
   );
-  const completedOrders = purchaseOrders.filter(
-    (po) => po.advancePaid > 0
-  ).length;
+ 
 
   // Filter purchase orders based on search query
   const filteredPurchaseOrders = purchaseOrders.filter((order) => {
@@ -359,6 +357,9 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>(
     []
   );
+   const completedRequests = materialRequests.filter(
+    (mr) => mr.status === "COMPLETED"
+  ).length;
 
   const fetchMaterialRequests = async () => {
     try {
@@ -562,7 +563,10 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
 
         <TabsContent value="overview" className="space-y-4">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className={`grid grid-cols-1 ${user?.role==="admin" || user?.role==="md" || user?.role==="accounts" ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>
+            {(user?.role==="admin" || user?.role==="md" || user?.role==="accounts") && (
+
+
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
@@ -572,20 +576,21 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
                       Total Orders
                     </p>
                     <p className="text-2xl font-bold">
-                      ₹{(totalOrderValue / 100000).toFixed(1)}L
+                      ₹{(totalOrderValue / 100000).toFixed(2)}L
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
+            )}
 
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold">{completedOrders}</p>
+                    <p className="text-sm text-muted-foreground">Completed Requests</p>
+                    <p className="text-2xl font-bold">{completedRequests}</p>
                   </div>
                 </div>
               </CardContent>
@@ -802,7 +807,8 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {materialRequests.slice(0, 10).map((mr) => (
+                  {materialRequests.filter(req=> req.status!=="COMPLETED").map((mr) => (
+
                     <div key={mr.id} className="border rounded-lg">
                       <div className="flex items-center justify-between p-4">
                         <div className="flex items-center gap-4">
