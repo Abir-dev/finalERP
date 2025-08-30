@@ -750,7 +750,7 @@ const InventoryContent = () => {
   };
 
   // Filter items based on search and filters
-  const filteredItems = inventoryItems.filter((item) => {
+  const basicFilteredItems = inventoryItems.filter((item) => {
     if (!item || !item.name) return false; // Skip items without required fields
 
     const categoryValue =
@@ -771,6 +771,21 @@ const InventoryContent = () => {
     const matchesType = !typeFilter || item.type === typeFilter;
     return matchesSearch && matchesLocation && matchesCategory && matchesType;
   });
+
+  // Group items by name and sum quantities
+  const filteredItems = Object.values(
+    basicFilteredItems.reduce((acc, item) => {
+      const existingItem = acc[item.name];
+      if (existingItem) {
+        // Sum the quantities
+        existingItem.quantity += item.quantity;
+      } else {
+        // Use the first occurrence with its data
+        acc[item.name] = { ...item };
+      }
+      return acc;
+    }, {} as Record<string, InventoryItemType>)
+  );
 
   const form = useForm<AddItemFormValues>({
     resolver: zodResolver(addItemFormSchema),
