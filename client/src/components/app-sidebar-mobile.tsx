@@ -78,7 +78,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       client: "/client-manager",
       store: "/store-manager",
       accounts: "/accounts-manager",
-      site: "/site-manager",
+      // site: "/site-manager",
       inventory: "/inventory",
       projects: "/projects",
       // documents: "/documents",
@@ -139,7 +139,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Design Dashboard",
       url: "/design-dashboard",
       icon: PaintBucket,
-      allowedRoles: ["admin", "md", "client-manager", "site"],
+      allowedRoles: ["admin", "md", "client-manager", "project"],
     },
     {
       title: "Client Dashboard",
@@ -163,7 +163,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Site Dashboard",
       url: "/site-manager",
       icon: HardHat,
-      allowedRoles: ["admin", "md", "site"],
+      allowedRoles: ["admin", "md", "project"],
     },
     // {
     //   title: "Client Portal",
@@ -193,14 +193,14 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Purchase Management",
       url: "/purchase-management",
       icon: ShoppingCart,
-      allowedRoles: ["admin", "md", "site", "store", "accounts"],
+      allowedRoles: ["admin", "md", "project", "store", "accounts"],
     },
 
     {
       title: "Inventory",
       url: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site", "warehouse"],
+      allowedRoles: ["admin", "md", "store", "project", "warehouse"],
     },
     // {
     //   title: "Documents",
@@ -225,7 +225,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Warehouse Management",
       url: "/warehouse-management",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "warehouse", "store", "site"],
+      allowedRoles: ["admin", "md", "warehouse", "store", "project"],
     },
     {
       title: "Calendar",
@@ -237,7 +237,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
         "client-manager",
         "store",
         "accounts",
-        "site",
+        // "site",
         "client",
         "hr",
         "project"
@@ -301,7 +301,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Design Dashboard",
       base: "/design-dashboard",
       icon: PaintBucket,
-      allowedRoles: ["admin", "md", "client-manager", "site"],
+      allowedRoles: ["admin", "md", "client-manager", "project"],
       subitems: [
         { title: "Design Overview", url: "/design-dashboard/overview" },
         { title: "Review Queue", url: "/design-dashboard/queue" },
@@ -350,7 +350,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Site Dashboard",
       base: "/site-manager",
       icon: HardHat,
-      allowedRoles: ["admin", "md", "site"],
+      allowedRoles: ["admin", "md", "project"],
       subitems: [
         { title: "Execution Timeline", url: "/site-manager/timeline" },
         { title: "Daily & Weekly Reports", url: "/site-manager/reports" },
@@ -364,7 +364,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
       title: "Inventory",
       base: "/inventory",
       icon: Warehouse,
-      allowedRoles: ["admin", "md", "store", "site"],
+      allowedRoles: ["admin", "md", "store", "project"],
       subitems: [
         { title: "Inventory", url: "/inventory/inventory" },
         { title: "Material Forecast", url: "/inventory/material-forecast" },
@@ -403,7 +403,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
           title: "Purchase Management",
           base: "/purchase-management",
           icon: Package,
-          allowedRoles: ["admin", "md", "site", "store", "accounts"],
+          allowedRoles: ["admin", "md", "project", "store", "accounts"],
           subitems: [
             // { title: "Dashboard", url: "/purchase-management/dashboard" },
             // { title: "Smart Procurement", url: "/purchase-management/procurement" },
@@ -421,7 +421,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
         "client-manager",
         "store",
         "accounts",
-        "site",
+        // "site",
         "client",
         "hr",
         "project",

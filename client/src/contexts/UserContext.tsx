@@ -18,7 +18,7 @@ export type UserRole =
   | "client-manager"
   | "store"
   | "accounts"
-  | "site"
+  // | "site"
   | "client"
   | "hr"
   | "project"
