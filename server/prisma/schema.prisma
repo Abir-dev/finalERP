@@ -250,7 +250,7 @@ model Payment {
   invoiceId String   @db.Uuid
 }
 
-enum Item{
+enum Item {
   CEMENT
   SAND
   BRICKS
@@ -265,7 +265,8 @@ enum Item{
   TOOLS
   OTHER
 }
-enum InventoryType{
+
+enum InventoryType {
   OLD
   NEW
 }
@@ -275,7 +276,7 @@ model Inventory {
   itemName              Item
   category              InventoryCategory
   quantity              Int
-  type                 InventoryType
+  type                  InventoryType
   unit                  Unit
   location              String
   reorderLevel          Int
@@ -298,10 +299,11 @@ model Inventory {
 
 model Warehouse {
   id           String            @id @default(uuid()) @db.Uuid
-  itemName     String
+  itemName     Item
   category     InventoryCategory
   quantity     Int
   unit         Unit
+  type         InventoryType
   location     String
   reorderLevel Int
   maximumStock Int
