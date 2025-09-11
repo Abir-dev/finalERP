@@ -289,6 +289,7 @@ model Inventory {
   secondarySupplier     Vendor?                @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id], onDelete: Cascade)
   secondaryVendorId     String?                @db.Uuid
   unitCost              Int
+  imageUrl              String?
   createdById           String                 @map("created_by_id") @db.Uuid
   createdBy             User                   @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)

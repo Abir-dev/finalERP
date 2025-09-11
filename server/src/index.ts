@@ -49,6 +49,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 // Request logging middleware
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.info(`Request received: ${req.method} ${req.url}`);

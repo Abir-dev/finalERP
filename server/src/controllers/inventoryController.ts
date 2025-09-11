@@ -19,12 +19,14 @@ interface CreateInventoryItemRequest {
   secondarySupplierName?: string;
   secondaryVendorId?: string;
   unitCost: number;
+  imageUrl?: string;
   createdById: string;
 }
 
 export const inventoryController = {
   async createItem(req: Request, res: Response) {
     try {
+      // Handle both JSON and FormData requests
       const {
         itemName,
         category,
@@ -40,22 +42,31 @@ export const inventoryController = {
         secondarySupplierName,
         secondaryVendorId,
         unitCost,
+        imageUrl,
         createdById
-      }: CreateInventoryItemRequest = req.body;
+      } = req.body;
+
+      // Handle file upload if present
+      let finalImageUrl = imageUrl;
+      if (req.file) {
+        // If a file was uploaded, use the file path
+        finalImageUrl = `/uploads/${req.file.filename}`;
+      }
 
       const createData: any = {
         itemName,
         category,
-        quantity,
+        quantity: parseInt(quantity) || 0,
         type,
         unit,
         location,
-        reorderLevel,
-        maximumStock,
-        safetyStock,
+        reorderLevel: parseInt(reorderLevel) || 0,
+        maximumStock: parseInt(maximumStock) || 0,
+        safetyStock: parseInt(safetyStock) || 0,
         primarySupplierName,
         vendorId,
-        unitCost,
+        unitCost: parseInt(unitCost) || 0,
+        imageUrl: finalImageUrl,
         createdById
       };
 
@@ -147,6 +158,18 @@ export const inventoryController = {
     try {
       const { id } = req.params;
       const updateData = req.body;
+      
+      // Handle file upload if present
+      if (req.file) {
+        updateData.imageUrl = `/uploads/${req.file.filename}`;
+      }
+      
+      // Convert string values to numbers for numeric fields
+      if (updateData.quantity) updateData.quantity = parseInt(updateData.quantity) || 0;
+      if (updateData.reorderLevel) updateData.reorderLevel = parseInt(updateData.reorderLevel) || 0;
+      if (updateData.maximumStock) updateData.maximumStock = parseInt(updateData.maximumStock) || 0;
+      if (updateData.safetyStock) updateData.safetyStock = parseInt(updateData.safetyStock) || 0;
+      if (updateData.unitCost) updateData.unitCost = parseInt(updateData.unitCost) || 0;
       
       // Remove undefined values and createdById/createdAt/updatedAt from update
       const { createdById, createdAt, updatedAt, ...cleanUpdateData } = updateData;

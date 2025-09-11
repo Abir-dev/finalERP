@@ -3,14 +3,15 @@ import { inventoryController } from '../controllers/inventoryController';
 import { authenticateUser } from '../middleware/auth';
 import { validateInventoryItem, validateMaterialRequest } from '../middleware/validation';
 import { checkRole } from '../middleware/rbac';
+import upload from '../config/multer';
 
 const router = Router();
 
 // Inventory CRUD
-router.post('/items', authenticateUser,  validateInventoryItem, inventoryController.createItem);
+router.post('/items', authenticateUser, upload.single('image'), validateInventoryItem, inventoryController.createItem);
 router.get('/items', authenticateUser, inventoryController.listItems);
 router.get('/items/:id', authenticateUser, inventoryController.getItem);
-router.put('/items/:id', authenticateUser, validateInventoryItem, inventoryController.updateItem);
+router.put('/items/:id', authenticateUser, upload.single('image'), validateInventoryItem, inventoryController.updateItem);
 router.delete('/items/:id', authenticateUser,  inventoryController.deleteItem);
 
 // Additional inventory management routes
