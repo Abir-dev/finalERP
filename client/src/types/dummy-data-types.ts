@@ -50,6 +50,7 @@ export type InventoryItem = {
   qualityScore?: number;
   photos?: string[];
   notes?: string;
+  imageUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 };
