@@ -327,10 +327,12 @@ export function VendorManagement({ selectedUserId }: { selectedUserId?: string }
             Manage and track vendor information and performance
           </p>
         </div>
-        <Button onClick={() => setShowNewVendorModal(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Vendor
-        </Button>
+        {user?.role === 'project' && (
+          <Button onClick={() => setShowNewVendorModal(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Vendor
+          </Button>
+        )}
       </div>
       {/* Filters and Search */}
       <Card>
