@@ -1993,11 +1993,13 @@ const InventoryContent = () => {
                             <Input
                               placeholder="Search suppliers..."
                               value={primarySupplierSearch}
-                              onChange={(e) =>
-                                setPrimarySupplierSearch(e.target.value)
-                              }
+                              onChange={(e) => setPrimarySupplierSearch(e.target.value)}
                               className="h-8"
                               onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => {
+                                // Prevent the Select component from handling keyboard events
+                                e.stopPropagation();
+                              }}
                             />
                           </div>
                           {filteredPrimaryVendors.length > 0 ? (
@@ -2039,11 +2041,13 @@ const InventoryContent = () => {
                             <Input
                               placeholder="Search suppliers..."
                               value={secondarySupplierSearch}
-                              onChange={(e) =>
-                                setSecondarySupplierSearch(e.target.value)
-                              }
+                              onChange={(e) => setSecondarySupplierSearch(e.target.value)}
                               className="h-8"
                               onClick={(e) => e.stopPropagation()}
+                              onKeyDown={(e) => {
+                                // Prevent the Select component from handling keyboard events
+                                e.stopPropagation();
+                              }}
                             />
                           </div>
                           <SelectItem value="none">None</SelectItem>
@@ -3007,19 +3011,18 @@ const InventoryContent = () => {
                                 <Input
                                   placeholder="Search suppliers..."
                                   value={editPrimarySupplierSearch}
-                                  onChange={(e) =>
-                                    setEditPrimarySupplierSearch(e.target.value)
-                                  }
+                                  onChange={(e) => setEditPrimarySupplierSearch(e.target.value)}
                                   className="h-8"
                                   onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => {
+                                    // Prevent the Select component from handling keyboard events
+                                    e.stopPropagation();
+                                  }}
                                 />
                               </div>
                               {filteredEditPrimaryVendors.length > 0 ? (
                                 filteredEditPrimaryVendors.map((vendor) => (
-                                  <SelectItem
-                                    key={vendor.id}
-                                    value={vendor.name}
-                                  >
+                                  <SelectItem key={vendor.id} value={vendor.name}>
                                     {vendor.name}
                                   </SelectItem>
                                 ))
@@ -3055,22 +3058,19 @@ const InventoryContent = () => {
                                 <Input
                                   placeholder="Search suppliers..."
                                   value={editSecondarySupplierSearch}
-                                  onChange={(e) =>
-                                    setEditSecondarySupplierSearch(
-                                      e.target.value
-                                    )
-                                  }
+                                  onChange={(e) => setEditSecondarySupplierSearch(e.target.value)}
                                   className="h-8"
                                   onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => {
+                                    // Prevent the Select component from handling keyboard events
+                                    e.stopPropagation();
+                                  }}
                                 />
                               </div>
                               <SelectItem value="none">None</SelectItem>
                               {filteredEditSecondaryVendors.length > 0 ? (
                                 filteredEditSecondaryVendors.map((vendor) => (
-                                  <SelectItem
-                                    key={vendor.id}
-                                    value={vendor.name}
-                                  >
+                                  <SelectItem key={vendor.id} value={vendor.name}>
                                     {vendor.name}
                                   </SelectItem>
                                 ))
