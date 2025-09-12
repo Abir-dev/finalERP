@@ -1042,9 +1042,9 @@ enum InvoiceType {
 }
 
 enum Unit {
-  CUBIC_METRE
+  CUBIC_FEET
+  SQUARE_FEET
   TONNE
-  SQUARE_METRE
   PIECE
   LITRE
   KILOGRAM

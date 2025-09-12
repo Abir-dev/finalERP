@@ -16,9 +16,9 @@ type TransferStatus = "PENDING" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
 type TransferPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 type Unit =
-  | "CUBIC_METRE"
+  | "CUBIC_FEET"
   | "TONNE"
-  | "SQUARE_METRE"
+  | "SQUARE_FEET"
   | "PIECE"
   | "LITRE"
   | "KILOGRAM"
@@ -60,9 +60,9 @@ interface MaterialTransferModalProps {
 }
 
 const UNITS: { value: Unit; label: string }[] = [
-  { value: "CUBIC_METRE", label: "Cubic Metre" },
+  { value: "CUBIC_FEET", label: "Cubic Feet" },
+  { value: "SQUARE_FEET", label: "Square Feet" },
   { value: "TONNE", label: "Tonne" },
-  { value: "SQUARE_METRE", label: "Square Metre" },
   { value: "PIECE", label: "Piece" },
   { value: "LITRE", label: "Litre" },
   { value: "KILOGRAM", label: "Kilogram" },

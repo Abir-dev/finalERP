@@ -75,7 +75,8 @@ const CONSTRUCTION_ITEMS = [
 
 const UNITS = [
   { value: "SQUARE_METRE", label: "Square Meter" },
-  { value: "CUBIC_METRE", label: "Cubic Metre" },
+  { value: "CUBIC_FEET", label: "Cubic Feet" },
+  { value: "SQUARE_FEET", label: "Square Feet" },
   { value: "TONNE", label: "Tonne" },
   { value: "KILOGRAM", label: "Kilogram" },
   { value: "PIECE", label: "Piece" },
@@ -121,7 +122,7 @@ const InvoiceBuilderModal: React.FC<InvoiceBuilderModalProps> = ({
       serialNumber: "001",
       description: "Foundation Work - Phase 1",
       item: "concrete",
-      unit: "CUBIC_METRE",
+      unit: "CUBIC_FEET",
       quantity: 1,
       rate: 500000,
       amount: 500000,
