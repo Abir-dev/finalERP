@@ -1257,6 +1257,8 @@ const filteredEditSecondaryVendors = vendors.filter(vendor =>
   // Add edit item handler
   const handleEditItem = (item: InventoryItemType) => {
     setEditingItem(item);
+    setEditPrimarySupplierSearch("");
+    setEditSecondarySupplierSearch("");
 
     // Find the backend enum value for the category
     const getCategoryEnum = (categoryLabel: string | string[]) => {
