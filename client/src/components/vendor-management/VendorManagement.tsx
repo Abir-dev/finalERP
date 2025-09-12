@@ -318,7 +318,7 @@ export function VendorManagement({ selectedUserId }: { selectedUserId?: string }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -327,7 +327,7 @@ export function VendorManagement({ selectedUserId }: { selectedUserId?: string }
             Manage and track vendor information and performance
           </p>
         </div>
-        {user?.role === 'project' && (
+        {(user?.role === 'project' || user?.role === 'admin' || user?.role === 'md') && (
           <Button onClick={() => setShowNewVendorModal(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add New Vendor
