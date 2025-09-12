@@ -373,9 +373,10 @@ const InventoryContent = () => {
   const [secondarySupplierSearch, setSecondarySupplierSearch] = useState("");
 
   // Add these state variables near your other state declarations
-  const [editPrimarySupplierSearch, setEditPrimarySupplierSearch] = useState("");
-  const [editSecondarySupplierSearch, setEditSecondarySupplierSearch] = useState("");
-
+  const [editPrimarySupplierSearch, setEditPrimarySupplierSearch] =
+    useState("");
+  const [editSecondarySupplierSearch, setEditSecondarySupplierSearch] =
+    useState("");
 
   // Add image preview states
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -809,22 +810,24 @@ const InventoryContent = () => {
   };
 
   // Filter vendors based on search
-const filteredPrimaryVendors = vendors.filter(vendor =>
-  vendor.name?.toLowerCase().includes(primarySupplierSearch.toLowerCase())
-);
+  const filteredPrimaryVendors = vendors.filter((vendor) =>
+    vendor.name?.toLowerCase().includes(primarySupplierSearch.toLowerCase())
+  );
 
-const filteredSecondaryVendors = vendors.filter(vendor =>
-  vendor.name?.toLowerCase().includes(secondarySupplierSearch.toLowerCase())
-);
+  const filteredSecondaryVendors = vendors.filter((vendor) =>
+    vendor.name?.toLowerCase().includes(secondarySupplierSearch.toLowerCase())
+  );
 
-// Add these filtered vendor arrays for the edit form
-const filteredEditPrimaryVendors = vendors.filter(vendor =>
-  vendor.name?.toLowerCase().includes(editPrimarySupplierSearch.toLowerCase())
-);
+  // Add these filtered vendor arrays for the edit form
+  const filteredEditPrimaryVendors = vendors.filter((vendor) =>
+    vendor.name?.toLowerCase().includes(editPrimarySupplierSearch.toLowerCase())
+  );
 
-const filteredEditSecondaryVendors = vendors.filter(vendor =>
-  vendor.name?.toLowerCase().includes(editSecondarySupplierSearch.toLowerCase())
-);
+  const filteredEditSecondaryVendors = vendors.filter((vendor) =>
+    vendor.name
+      ?.toLowerCase()
+      .includes(editSecondarySupplierSearch.toLowerCase())
+  );
 
   // Filter items based on search and filters
   const basicFilteredItems = inventoryItems.filter((item) => {
@@ -920,10 +923,21 @@ const filteredEditSecondaryVendors = vendors.filter(vendor =>
       formData.append("safetyStock", data.safetyStock.toString());
       formData.append("primarySupplierName", data.primarySupplier);
       formData.append("vendorId", primaryVendor.id);
-      if (secondaryVendor) {
-        formData.append("secondarySupplierName", data.secondarySupplier || "");
+
+      // Handle secondary supplier - explicitly set to null if "none" or empty
+      if (
+        data.secondarySupplier &&
+        data.secondarySupplier !== "none" &&
+        secondaryVendor
+      ) {
+        formData.append("secondarySupplierName", data.secondarySupplier);
         formData.append("secondaryVendorId", secondaryVendor.id);
+      } else {
+        // Explicitly set secondary supplier to null when "none" is selected
+        formData.append("secondarySupplierName", "");
+        formData.append("secondaryVendorId", "");
       }
+
       formData.append("unitCost", Math.round(data.unitCost * 100).toString()); // Backend expects cents
       formData.append("createdById", user.id);
 
@@ -993,10 +1007,21 @@ const filteredEditSecondaryVendors = vendors.filter(vendor =>
       formData.append("safetyStock", data.safetyStock.toString());
       formData.append("primarySupplierName", data.primarySupplier);
       formData.append("vendorId", primaryVendor.id);
-      if (secondaryVendor) {
-        formData.append("secondarySupplierName", data.secondarySupplier || "");
+
+      // Handle secondary supplier - explicitly set to null if "none" or empty
+      if (
+        data.secondarySupplier &&
+        data.secondarySupplier !== "none" &&
+        secondaryVendor
+      ) {
+        formData.append("secondarySupplierName", data.secondarySupplier);
         formData.append("secondaryVendorId", secondaryVendor.id);
+      } else {
+        // Explicitly set secondary supplier to null when "none" is selected
+        formData.append("secondarySupplierName", "");
+        formData.append("secondaryVendorId", "");
       }
+
       formData.append("unitCost", Math.round(data.unitCost * 100).toString());
       formData.append("createdById", user.id);
 
@@ -1947,49 +1972,51 @@ const filteredEditSecondaryVendors = vendors.filter(vendor =>
                   )}
                 />
 
-                  <FormField
-                    control={form.control}
-                    name="primarySupplier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Supplier</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select primary supplier" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {/* Search input for primary supplier */}
-                            <div className="p-2">
-                              <Input
-                                placeholder="Search suppliers..."
-                                value={primarySupplierSearch}
-                                onChange={(e) => setPrimarySupplierSearch(e.target.value)}
-                                className="h-8"
-                                onClick={(e) => e.stopPropagation()}
-                              />
+                <FormField
+                  control={form.control}
+                  name="primarySupplier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Primary Supplier</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select primary supplier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {/* Search input for primary supplier */}
+                          <div className="p-2">
+                            <Input
+                              placeholder="Search suppliers..."
+                              value={primarySupplierSearch}
+                              onChange={(e) =>
+                                setPrimarySupplierSearch(e.target.value)
+                              }
+                              className="h-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          {filteredPrimaryVendors.length > 0 ? (
+                            filteredPrimaryVendors.map((vendor) => (
+                              <SelectItem key={vendor.id} value={vendor.name}>
+                                {vendor.name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="p-2 text-sm text-muted-foreground text-center">
+                              No suppliers found
                             </div>
-                            {filteredPrimaryVendors.length > 0 ? (
-                              filteredPrimaryVendors.map((vendor) => (
-                                <SelectItem key={vendor.id} value={vendor.name}>
-                                  {vendor.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="p-2 text-sm text-muted-foreground text-center">
-                                No suppliers found
-                              </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -2012,7 +2039,9 @@ const filteredEditSecondaryVendors = vendors.filter(vendor =>
                             <Input
                               placeholder="Search suppliers..."
                               value={secondarySupplierSearch}
-                              onChange={(e) => setSecondarySupplierSearch(e.target.value)}
+                              onChange={(e) =>
+                                setSecondarySupplierSearch(e.target.value)
+                              }
                               className="h-8"
                               onClick={(e) => e.stopPropagation()}
                             />
@@ -2958,92 +2987,104 @@ const filteredEditSecondaryVendors = vendors.filter(vendor =>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
-                    control={editForm.control}
-                    name="primarySupplier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Primary Supplier</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select primary supplier" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {/* Search input for primary supplier */}
-                            <div className="p-2">
-                              <Input
-                                placeholder="Search suppliers..."
-                                value={editPrimarySupplierSearch}
-                                onChange={(e) => setEditPrimarySupplierSearch(e.target.value)}
-                                className="h-8"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                            {filteredEditPrimaryVendors.length > 0 ? (
-                              filteredEditPrimaryVendors.map((vendor) => (
-                                <SelectItem key={vendor.id} value={vendor.name}>
-                                  {vendor.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="p-2 text-sm text-muted-foreground text-center">
-                                No suppliers found
+                      control={editForm.control}
+                      name="primarySupplier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Supplier</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select primary supplier" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {/* Search input for primary supplier */}
+                              <div className="p-2">
+                                <Input
+                                  placeholder="Search suppliers..."
+                                  value={editPrimarySupplierSearch}
+                                  onChange={(e) =>
+                                    setEditPrimarySupplierSearch(e.target.value)
+                                  }
+                                  className="h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
                               </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              {filteredEditPrimaryVendors.length > 0 ? (
+                                filteredEditPrimaryVendors.map((vendor) => (
+                                  <SelectItem
+                                    key={vendor.id}
+                                    value={vendor.name}
+                                  >
+                                    {vendor.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                  No suppliers found
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField
-                    control={editForm.control}
-                    name="secondarySupplier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Secondary Supplier (Optional)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select secondary supplier" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {/* Search input for secondary supplier */}
-                            <div className="p-2">
-                              <Input
-                                placeholder="Search suppliers..."
-                                value={editSecondarySupplierSearch}
-                                onChange={(e) => setEditSecondarySupplierSearch(e.target.value)}
-                                className="h-8"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                            <SelectItem value="none">None</SelectItem>
-                            {filteredEditSecondaryVendors.length > 0 ? (
-                              filteredEditSecondaryVendors.map((vendor) => (
-                                <SelectItem key={vendor.id} value={vendor.name}>
-                                  {vendor.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <div className="p-2 text-sm text-muted-foreground text-center">
-                                No suppliers found
+                      control={editForm.control}
+                      name="secondarySupplier"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Secondary Supplier (Optional)</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select secondary supplier" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {/* Search input for secondary supplier */}
+                              <div className="p-2">
+                                <Input
+                                  placeholder="Search suppliers..."
+                                  value={editSecondarySupplierSearch}
+                                  onChange={(e) =>
+                                    setEditSecondarySupplierSearch(
+                                      e.target.value
+                                    )
+                                  }
+                                  className="h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
                               </div>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              <SelectItem value="none">None</SelectItem>
+                              {filteredEditSecondaryVendors.length > 0 ? (
+                                filteredEditSecondaryVendors.map((vendor) => (
+                                  <SelectItem
+                                    key={vendor.id}
+                                    value={vendor.name}
+                                  >
+                                    {vendor.name}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                  No suppliers found
+                                </div>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={editForm.control}

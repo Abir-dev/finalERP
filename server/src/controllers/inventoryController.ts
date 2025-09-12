@@ -171,6 +171,14 @@ export const inventoryController = {
       if (updateData.safetyStock) updateData.safetyStock = parseInt(updateData.safetyStock) || 0;
       if (updateData.unitCost) updateData.unitCost = parseInt(updateData.unitCost) || 0;
       
+      // Handle secondary supplier fields - set to null if empty strings are provided
+      if (updateData.secondarySupplierName === "") {
+        updateData.secondarySupplierName = null;
+      }
+      if (updateData.secondaryVendorId === "") {
+        updateData.secondaryVendorId = null;
+      }
+      
       // Remove undefined values and createdById/createdAt/updatedAt from update
       const { createdById, createdAt, updatedAt, ...cleanUpdateData } = updateData;
       
