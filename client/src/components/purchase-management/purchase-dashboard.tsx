@@ -1791,7 +1791,7 @@ export function PurchaseDashboard({ selectedUserId }: { selectedUserId?: string 
           </Card>
         </TabsContent>
 
-        <TabsContent value="vendors" className="space-y-6">
+        <TabsContent value="vendors" className="space-y-4">
           <VendorManagement selectedUserId={selectedUserId}/>
         </TabsContent>
       </Tabs>
