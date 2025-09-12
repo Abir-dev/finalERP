@@ -36,6 +36,9 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
   const [vehicleStatus, setVehicleStatus] = useState('ACTIVE');
   const [lastServiced, setLastServiced] = useState('');
   const [nextDue, setNextDue] = useState('');
+  const [length, setLength] = useState('');
+  const [width, setWidth] = useState('');
+  const [height, setHeight] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { toast } = useToast();
@@ -78,6 +81,9 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
         licensePlate,
         driverName,
         createdById: currentUserId,
+        length: length ? parseFloat(length) : null,
+        width: width ? parseFloat(width) : null,
+        height: height ? parseFloat(height) : null,
       };
 
       const maintenanceData = {
@@ -183,6 +189,46 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
               onChange={e => setDriverName(e.target.value)} 
               placeholder="e.g. John Doe" 
             />
+          </div>
+          
+          {/* New dimensions fields */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="length">Length (m)</Label>
+              <Input 
+                id="length" 
+                type="number"
+                step="0.01"
+                min="0"
+                value={length} 
+                onChange={e => setLength(e.target.value)} 
+                placeholder="e.g. 5.2" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="width">Width (m)</Label>
+              <Input 
+                id="width" 
+                type="number"
+                step="0.01"
+                min="0"
+                value={width} 
+                onChange={e => setWidth(e.target.value)} 
+                placeholder="e.g. 2.1" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="height">Height (m)</Label>
+              <Input 
+                id="height" 
+                type="number"
+                step="0.01"
+                min="0"
+                value={height} 
+                onChange={e => setHeight(e.target.value)} 
+                placeholder="e.g. 2.5" 
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
