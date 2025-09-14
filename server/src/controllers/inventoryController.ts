@@ -39,6 +39,7 @@ export const inventoryController = {
       // Handle both JSON and FormData requests
       const {
         itemName,
+        itemCode,
         category,
         quantity,
         type,
@@ -65,6 +66,7 @@ export const inventoryController = {
 
       const createData: any = {
         itemName,
+        itemCode,
         category,
         quantity: parseInt(quantity) || 0,
         type,
