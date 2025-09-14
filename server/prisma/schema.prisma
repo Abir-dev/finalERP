@@ -273,6 +273,7 @@ enum InventoryType {
 
 model Inventory {
   id                    String                 @id @default(uuid()) @db.Uuid
+  itemCode              String?
   itemName              Item
   category              InventoryCategory
   quantity              Int
@@ -748,6 +749,7 @@ model MaterialRequestItem {
   materialRequestId String          @db.Uuid
   materialRequest   MaterialRequest @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
   itemCode          String
+  itemName          Item?
   requiredBy        String? // Date as string for flexibility
   quantity          Float           @default(0)
   targetWarehouse   String?
@@ -805,6 +807,7 @@ model MaterialTransfer {
   status        TransferStatus @default(PENDING)
   driverName    String?
   etaMinutes    Int?           @map("eta_minutes")
+  inventoryType InventoryType?
 
   // Approvals
   approvedById String? @db.Uuid
