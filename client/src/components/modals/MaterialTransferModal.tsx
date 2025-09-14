@@ -251,7 +251,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
             itemName: i.itemName,
             quantity: i.quantity,
             unit: i.unit || null,
-            itemType: i.itemType || null,
+            type: i.itemType || null,
           })),
         notes: notes.trim() || null,
       };

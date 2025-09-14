@@ -501,7 +501,7 @@ export const inventoryController = {
       const itemValidations: ItemValidation[] = [];
 
       for (const item of items) {
-        const { itemCode, itemName, type, quantity } = item;
+        const { itemCode, itemName, type, quantity, unit } = item;
 
         if (!itemCode || !itemName || !type || !quantity) {
           return res.status(400).json({ 
