@@ -76,6 +76,7 @@ const CONSTRUCTION_ITEMS = [
 const UNITS = [
   { value: "SQUARE_METRE", label: "Square Meter" },
   { value: "CUBIC_FEET", label: "Cubic Feet" },
+  { value: "M_CUBE", label: "Metre Cube" },
   { value: "SQUARE_FEET", label: "Square Feet" },
   { value: "TONNE", label: "Tonne" },
   { value: "KILOGRAM", label: "Kilogram" },

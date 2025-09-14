@@ -17,6 +17,7 @@ type TransferPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 type Unit =
   | "CUBIC_FEET"
+  | "M_CUBE"
   | "TONNE"
   | "SQUARE_FEET"
   | "PIECE"
@@ -61,6 +62,7 @@ interface MaterialTransferModalProps {
 
 const UNITS: { value: Unit; label: string }[] = [
   { value: "CUBIC_FEET", label: "Cubic Feet" },
+  { value: "M_CUBE", label: "Metre Cube" },
   { value: "SQUARE_FEET", label: "Square Feet" },
   { value: "TONNE", label: "Tonne" },
   { value: "PIECE", label: "Piece" },

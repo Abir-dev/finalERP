@@ -580,6 +580,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="CUBIC_FEET">Cubic Feet</SelectItem>
+                                <SelectItem value="M_CUBE">M Cube</SelectItem>
                                 <SelectItem value="SQUARE_FEET">Square Feet</SelectItem>
                                 <SelectItem value="TONNE">Tonne</SelectItem>
                                 <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>

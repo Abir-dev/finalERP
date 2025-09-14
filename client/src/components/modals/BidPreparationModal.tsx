@@ -54,6 +54,7 @@ const UNITS = [
   { value: "KILOGRAM", label: "Kilograms" },
   { value: "TONNE", label: "Tonnes" },
   { value: "CUBIC_FEET", label: "Cubic Feet" },
+  { value: "M_CUBE", label: "Metre Cube" },
   { value: "SQUARE_FEET", label: "Square Feet" },
   { value: "LITRE", label: "Litres" },
   { value: "BOX", label: "Boxes" },

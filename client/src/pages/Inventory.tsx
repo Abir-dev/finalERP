@@ -199,6 +199,7 @@ const UNIT_OPTIONS = [
   { value: "KILOGRAM", label: "Kilograms" },
   { value: "TONNE", label: "Tonnes" },
   { value: "CUBIC_FEET", label: "Cubic Feet" },
+  { value: "M_CUBE", label: "Metre Cube" },
   { value: "SQUARE_FEET", label: "Square Feet" },
   { value: "SQUARE_METRE", label: "Square Metres" },
   { value: "LITRE", label: "Litres" },
