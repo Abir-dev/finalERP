@@ -45,7 +45,7 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
   const { toast } = useToast();
 
   async function handleAdd() {
-    if (!vehicleName || !vehicleType || !registrationNumber || !licensePlate || !assignedSite || !driverName || !vehicleStatus || !lastServiced || !nextDue) {
+    if (!vehicleName || !vehicleType || !registrationNumber || !licensePlate || !assignedSite || !driverName || !vehicleStatus || !lastServiced || !nextDue || !length || !width || !height || !weight) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -85,6 +85,7 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
         length: length ? parseFloat(length) : null,
         width: width ? parseFloat(width) : null,
         height: height ? parseFloat(height) : null,
+        weight: weight ? parseFloat(weight) : null,
       };
 
       const maintenanceData = {
