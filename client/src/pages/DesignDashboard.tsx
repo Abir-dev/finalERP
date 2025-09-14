@@ -112,7 +112,7 @@ const bottlenecks: Bottleneck[] = [
 const mobileDesignColumns: ColumnDef<any>[] = [
   {
     accessorKey: "name",
-    header: "Design Name",
+    header: "Drawing Name",
     cell: ({ row }) => {
       const design = row.original
       const [isExpanded, setIsExpanded] = useState(false)
@@ -188,7 +188,7 @@ const mobileDesignColumns: ColumnDef<any>[] = [
 const desktopDesignColumns: ColumnDef<any>[] = [
   {
     accessorKey: "name",
-    header: "Design Name",
+    header: "Drawing Name",
   },
   {
     accessorKey: "client",
@@ -678,7 +678,7 @@ const DesignDashboardContent = () => {
         .catch(() => {});
     } catch (error) {
       console.error("Error submitting design:", error);
-      toast.error("Failed to submit design");
+      toast.error("Failed to submit drawing");
     }
   };
 
@@ -687,12 +687,12 @@ const DesignDashboardContent = () => {
       <UserFilterComponent/>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Design Dashboard</h1>
-          <p className="text-muted-foreground">Design approval workflow and analytics</p>
+          <h1 className="text-3xl font-bold tracking-tight">Drawing Dashboard</h1>
+          <p className="text-muted-foreground">Drawing approval workflow and analytics</p>
         </div>
         <Button onClick={() => setIsSubmitDesignModalOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
-          Submit New Design
+          Submit New Drawing
         </Button>
       </div>
 
@@ -704,7 +704,7 @@ const DesignDashboardContent = () => {
               <SelectValue placeholder="Select view" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="overview">Design Overview</SelectItem>
+              <SelectItem value="overview">Drawing Overview</SelectItem>
               <SelectItem value="queue">Review Queue</SelectItem>
             </SelectContent>
           </Select>
@@ -712,7 +712,7 @@ const DesignDashboardContent = () => {
 
         {/* Desktop Tab Navigation */}
         <TabsList className="hidden md:grid w-full grid-cols-2">
-          <TabsTrigger value="overview">Design Overview</TabsTrigger>
+          <TabsTrigger value="overview">Drawing Overview</TabsTrigger>
           {/* <TabsTrigger value="analytics">Approval Analytics</TabsTrigger> */}
           <TabsTrigger value="queue">Review Queue</TabsTrigger>
         </TabsList>
@@ -720,12 +720,12 @@ const DesignDashboardContent = () => {
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
-              title="Total Designs"
+              title="Total Drawings"
               value={designStats.total}
               icon={FileText}
-              description="All design submissions"
+              description="All drawing submissions"
               trend={{ value: 12, label: "this month" }}
-              onClick={() => toast.info("Viewing all designs")}
+              onClick={() => toast.info("Viewing all drawings")}
             />
             <StatCard
               title="Pending Approvals"
@@ -740,10 +740,10 @@ const DesignDashboardContent = () => {
               icon={CheckCircle}
               description="Successfully approved"
               trend={{ value: 8, label: "vs last month" }}
-              onClick={() => toast.info("Viewing approved designs")}
+              onClick={() => toast.info("Viewing approved drawings")}
             />
             <StatCard
-              title="Rejected Designs"
+              title="Rejected Drawings"
               value={designStats.rejected}
               icon={AlertTriangle}
               description="Requiring revisions"
@@ -954,7 +954,7 @@ const DesignDashboardContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>Bottleneck Analysis</CardTitle>
-              <CardDescription>Critical design process delays</CardDescription>
+              <CardDescription>Critical drawing process delays</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -987,7 +987,7 @@ const DesignDashboardContent = () => {
                           setIsEscalateModalOpen(true)
                         }}
                       >
-                        Escalate to Design Head
+                        Escalate to Drawing Head
                       </Button>
                     </div>
                   </div>
@@ -1001,15 +1001,15 @@ const DesignDashboardContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>Review Queue</CardTitle>
-              <CardDescription>Designs awaiting approval</CardDescription>
+              <CardDescription>Drawing awaiting approval</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {designs.filter(d => d.status === "UNDER_REVIEW").length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-semibold text-gray-900">No designs under review</h3>
-                    <p className="mt-1 text-sm text-gray-500">All designs have been reviewed!</p>
+                    <h3 className="mt-2 text-sm font-semibold text-gray-900">No drawing under review</h3>
+                    <p className="mt-1 text-sm text-gray-500">All drawing have been reviewed!</p>
                   </div>
                 ) : (
                   designs.filter(d => d.status === "UNDER_REVIEW").map((design, index) => {
@@ -1159,14 +1159,14 @@ const DesignDashboardContent = () => {
       <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upload Design Revision</DialogTitle>
+            <DialogTitle>Upload Drawing Revision</DialogTitle>
             <DialogDescription>
               Upload a new revision for {selectedDesign?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="file">Design File</Label>
+              <Label htmlFor="file">Drawing File</Label>
               <Input id="file" type="file" accept=".pdf,.dwg,.jpg,.png" />
             </div>
             <div>
@@ -1268,7 +1268,7 @@ const DesignDashboardContent = () => {
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold mb-2">Design Details</h4>
+                      <h4 className="text-sm font-bold mb-2">Drawing Details</h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Created Date:</span>
@@ -1468,7 +1468,7 @@ const DesignDashboardContent = () => {
       <Dialog open={isEscalateModalOpen} onOpenChange={setIsEscalateModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Escalate to Design Head</DialogTitle>
+            <DialogTitle>Escalate to Drawing Head</DialogTitle>
             <DialogDescription>
               Confirm escalation for {selectedEscalation?.project}
             </DialogDescription>
@@ -1500,19 +1500,19 @@ const DesignDashboardContent = () => {
       <Dialog open={isSubmitDesignModalOpen} onOpenChange={setIsSubmitDesignModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Submit New Design</DialogTitle>
+            <DialogTitle>Submit New Drawing</DialogTitle>
             <DialogDescription>
-              Submit a new design for review
+              Submit a new Drawing for review
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="design-name">Design Name *</Label>
+              <Label htmlFor="design-name">Drawing Name *</Label>
               <Input
                 id="design-name"
                 value={newDesignForm.name}
                 onChange={(e) => handleNewDesignInputChange("name", e.target.value)}
-                placeholder="Enter design name"
+                placeholder="Enter drawing name"
               />
             </div>
             
@@ -1555,7 +1555,7 @@ const DesignDashboardContent = () => {
             </div>
             
             <div>
-              <Label htmlFor="design-files">Design Files</Label>
+              <Label htmlFor="design-files">Drawing Files</Label>
               <Input
                 id="design-files"
                 type="file"
@@ -1566,7 +1566,7 @@ const DesignDashboardContent = () => {
             </div>
             
             <div>
-              <Label htmlFor="design-images">Design Images</Label>
+              <Label htmlFor="design-images">Drawing Images</Label>
               <Input
                 id="design-images"
                 type="file"
@@ -1582,7 +1582,7 @@ const DesignDashboardContent = () => {
               </Button>
               <Button onClick={handleSubmitNewDesign}>
                 <Plus className="h-4 w-4 mr-2" />
-                Submit Design
+                Submit Drawing
               </Button>
             </div>
           </div>
@@ -1593,19 +1593,19 @@ const DesignDashboardContent = () => {
       <Dialog open={isEditDesignModalOpen} onOpenChange={setIsEditDesignModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Design</DialogTitle>
+            <DialogTitle>Edit Drawing</DialogTitle>
             <DialogDescription>
-              Update design information
+              Update drawing information
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-design-name">Design Name *</Label>
+              <Label htmlFor="edit-design-name">Drawing Name *</Label>
               <Input
                 id="edit-design-name"
                 value={editDesignForm.name}
                 onChange={(e) => handleEditDesignInputChange("name", e.target.value)}
-                placeholder="Enter design name"
+                placeholder="Enter drawing name"
               />
             </div>
             
@@ -1670,7 +1670,7 @@ const DesignDashboardContent = () => {
               </Button>
               <Button onClick={handleUpdateDesign}>
                 <Pencil className="h-4 w-4 mr-2" />
-                Update Design
+                Update Drawing
               </Button>
             </div>
           </div>
