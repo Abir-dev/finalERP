@@ -74,7 +74,7 @@ export function AppSidebar() {
 
     const baseMap: Record<string, string> = {
       admin: "/admin-dashboard",
-      design: "/design-dashboard",
+      drawing: "/design-dashboard",
       client: "/client-manager",
       store: "/store-manager",
       accounts: "/accounts-manager",
@@ -120,7 +120,7 @@ export function AppSidebar() {
     //   allowedRoles: ["admin"],
     // },
     {
-      title: "Design Dashboard",
+      title: "Drawing Dashboard",
       url: "/design-dashboard",
       icon: PaintBucket,
       allowedRoles: ["admin", "md", "client-manager", "project"],
@@ -283,12 +283,12 @@ export function AppSidebar() {
     },
     {
       id: "design",
-      title: "Design Dashboard",
+      title: "Drawing Dashboard",
       base: "/design-dashboard",
       icon: PaintBucket,
       allowedRoles: ["admin", "md", "client-manager", "project"],
       subitems: [
-        { title: "Design Overview", url: "/design-dashboard/overview" },
+        { title: "Drawing Overview", url: "/design-dashboard/overview" },
         { title: "Review Queue", url: "/design-dashboard/queue" },
       ],
     },

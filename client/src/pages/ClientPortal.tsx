@@ -208,26 +208,26 @@ const ClientPortal = () => {
         <TabsContent value="designs" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
-              title="Total Designs"
+              title="Total Drawings"
               value="24"
               icon={FileText}
-              description="Submitted designs"
-              onClick={() => toast.info("Viewing all designs")}
+              description="Submitted drawings"
+              onClick={() => toast.info("Viewing all drawings")}
             />
             <StatCard
               title="Pending Review"
               value="3"
               icon={Clock}
               description="Awaiting your approval"
-              onClick={() => toast.info("Viewing pending designs")}
+              onClick={() => toast.info("Viewing pending drawings")}
             />
             <StatCard
               title="Approved"
               value="18"
               icon={CheckCircle}
-              description="Design approvals"
+              description="Drawing approvals"
               trend={{ value: 12, label: "this month" }}
-              onClick={() => toast.info("Viewing approved designs")}
+              onClick={() => toast.info("Viewing approved drawings")}
             />
             <StatCard
               title="Revisions"
@@ -240,8 +240,8 @@ const ClientPortal = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Design Gallery</CardTitle>
-              <CardDescription>Review and approve submitted designs</CardDescription>
+              <CardTitle>Drawing Gallery</CardTitle>
+              <CardDescription>Review and approve submitted drawings</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
