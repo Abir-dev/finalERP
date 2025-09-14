@@ -38,6 +38,7 @@ interface Vehicle {
 }
 
 interface UserOption {
+  role: string;
   id: string;
   name: string;
   email: string;
@@ -45,7 +46,8 @@ interface UserOption {
 
 interface ItemRow {
   id: number;
-  description: string;
+  itemCode: string;
+  itemName: string;
   quantity: number;
   unit: Unit | "";
   inventoryId?: string;
@@ -93,8 +95,12 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
   const [priority, setPriority] = useState<TransferPriority>("NORMAL");
   const [notes, setNotes] = useState("");
 
+  // From/To as user selections
+  const [fromUserId, setFromUserId] = useState<string>("");
+  const [toUserId, setToUserId] = useState<string>("");
+
   const [items, setItems] = useState<ItemRow[]>([
-    { id: 1, description: "", quantity: 0, unit: "" },
+    { id: 1, itemCode: "", itemName: "", quantity: 0, unit: "" },
   ]);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
 
@@ -118,12 +124,19 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       .then(async ([vehiclesRes, usersRes]) => {
         setVehicles(Array.isArray(vehiclesRes) ? vehiclesRes : []);
         const normalizedUsers: UserOption[] = Array.isArray(usersRes)
-          ? usersRes.map((u: any) => ({ id: u.id, name: u.name || u.email || "User", email: u.email }))
+          ? usersRes.map((u: any) => ({ id: u.id, name: u.name || u.email || "User", email: u.email, role: u.role }))
           : [];
         if (user && !normalizedUsers.some((u) => u.id === user.id)) {
-          normalizedUsers.push({ id: user.id, name: user.name || user.email || "Current User", email: user.email || "" });
+          normalizedUsers.push({ id: user.id, name: user.name || user.email || "Current User", email: user.email || "", role: user.role || "" });
         }
         setUsers(normalizedUsers);
+
+        // In create mode, default From to current user if available
+        if (mode === 'create' && user?.id) {
+          setFromUserId(user.id);
+          const me = normalizedUsers.find((u) => u.id === user.id);
+          if (me) setFromLocation(me.name || me.email || "");
+        }
 
         // If edit mode, fetch the transfer details
         if (mode === 'edit' && transferId && user?.id) {
@@ -134,6 +147,12 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
               setTransferID(t.transferID || "");
               setFromLocation(t.fromLocation || "");
               setToLocation(t.toLocation || "");
+              // Try to resolve from/to user IDs based on names/emails stored in locations
+              const fromMatch = normalizedUsers.find((u) => u.name === t.fromLocation || u.email === t.fromLocation);
+              const toMatch = normalizedUsers.find((u) => u.name === t.toLocation || u.email === t.toLocation);
+              setFromUserId(fromMatch ? fromMatch.id : "");
+              setToUserId(toMatch ? toMatch.id : "");
+
               setRequestedDate(t.requestedDate ? new Date(t.requestedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
               setStatus((t.status || 'PENDING') as TransferStatus);
               setDriverName(t.driverName || "");
@@ -144,12 +163,13 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
               const mappedItems: ItemRow[] = Array.isArray(t.items)
                 ? t.items.map((it: any, idx: number) => ({
                     id: idx + 1,
-                    description: it.description || "",
+                    itemCode: it.itemCode || "",
+                    itemName: it.itemName || "",
                     quantity: typeof it.quantity === 'number' ? it.quantity : 0,
                     unit: (it.unit || "") as Unit | "",
                     inventoryId: it.inventoryId || undefined,
                   }))
-                : [{ id: 1, description: "", quantity: 0, unit: "" }];
+                : [{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "" }];
               setItems(mappedItems);
               setNotes("");
             } else {
@@ -167,7 +187,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
 
   const addRow = () => {
     const newId = items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1;
-    setItems((prev) => [...prev, { id: newId, description: "", quantity: 0, unit: "" }]);
+    setItems((prev) => [...prev, { id: newId, itemCode: "", itemName: "", quantity: 0, unit: "" }]);
   };
 
   const removeSelectedRows = () => {
@@ -184,15 +204,15 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       toast({ title: "Validation Error", description: "Transfer ID is required", variant: "destructive" });
       return false;
     }
-    if (!fromLocation.trim() || !toLocation.trim()) {
-      toast({ title: "Validation Error", description: "From and To locations are required", variant: "destructive" });
+    if (!fromUserId || !toUserId) {
+      toast({ title: "Validation Error", description: "Please select both From and To users", variant: "destructive" });
       return false;
     }
     if (!requestedDate) {
       toast({ title: "Validation Error", description: "Requested date is required", variant: "destructive" });
       return false;
     }
-    const validItems = items.filter((i) => i.description.trim() && i.quantity > 0);
+    const validItems = items.filter((i) => i.itemCode.trim() && i.itemName.trim() && i.quantity > 0);
     if (validItems.length === 0) {
       toast({ title: "Validation Error", description: "At least one valid item is required", variant: "destructive" });
       return false;
@@ -205,10 +225,13 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     setLoading(true);
     try {
       const etaMinutesValue = etaMinutes ? Math.round(Number(etaMinutes) * 60) : null;
+      const fromUser = users.find((u) => u.id === fromUserId);
+      const toUser = users.find((u) => u.id === toUserId);
       const payload = {
         transferID: transferID.trim(),
-        fromLocation: fromLocation.trim(),
-        toLocation: toLocation.trim(),
+        // Persist names/emails for compatibility with backend expecting strings
+        fromLocation: fromUser ? (fromUser.name || fromUser.email) : fromLocation.trim(),
+        toLocation: toUser ? (toUser.name || toUser.email) : toLocation.trim(),
         requestedDate: new Date(requestedDate).toISOString(),
         status,
         driverName: driverName.trim() || null,
@@ -217,9 +240,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
         approvedById: approvedById || null,
         priority,
         items: items
-          .filter((i) => i.description.trim() && i.quantity > 0)
+          .filter((i) => i.itemCode.trim() && i.itemName.trim() && i.quantity > 0)
           .map((i) => ({
-            description: i.description.trim(),
+            itemCode: i.itemCode.trim(),
+            itemName: i.itemName.trim(),
             quantity: i.quantity,
             unit: i.unit || null,
             inventoryId: i.inventoryId || null,
@@ -304,7 +328,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       setVehicleId("");
       setApprovedById("");
       setPriority("NORMAL");
-      setItems([{ id: 1, description: "", quantity: 0, unit: "" }]);
+      setItems([{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "" }]);
       setNotes("");
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message || (mode === 'edit' ? 'Failed to update material transfer' : 'Failed to create material transfer'), variant: "destructive" });
@@ -333,11 +357,41 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
           </div>
           <div>
             <Label className="mb-1 block">From *</Label>
-            <Input value={fromLocation} onChange={(e) => setFromLocation(e.target.value)} placeholder="Warehouse A" />
+            <Select value={fromUserId} onValueChange={(v) => {
+              setFromUserId(v);
+              const u = users.filter((x) => x.role !== 'store').find((x) => x.id === v);
+              setFromLocation(u ? (u.name || u.email || "") : "");
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select from user" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.filter((u) => u.role === 'store').map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label className="mb-1 block">To *</Label>
-            <Input value={toLocation} onChange={(e) => setToLocation(e.target.value)} placeholder="Site 1" />
+            <Select value={toUserId} onValueChange={(v) => {
+              setToUserId(v);
+              const u = users.filter((x) => x.role !== 'store').find((x) => x.id === v);
+              setToLocation(u ? (u.name || u.email || "") : "");
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select destination user" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.filter((u) => u.role === 'store').map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name} ({u.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label className="mb-1 block">Status *</Label>
@@ -447,7 +501,8 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                       }}
                     /></TableHead>
                     <TableHead>No.</TableHead>
-                    <TableHead>Description *</TableHead>
+                    <TableHead>Item Code *</TableHead>
+                    <TableHead>Item Name *</TableHead>
                     <TableHead className="w-[120px]">Quantity *</TableHead>
                     <TableHead className="w-[180px]">Unit</TableHead>
                   </TableRow>
@@ -469,8 +524,15 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                       <TableCell>{idx + 1}</TableCell>
                       <TableCell>
                         <Input
-                          value={row.description}
-                          onChange={(e) => updateItem(row.id, "description", e.target.value)}
+                          value={row.itemCode}
+                          onChange={(e) => updateItem(row.id, "itemCode", e.target.value)}
+                          placeholder="e.g., CEM-001"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={row.itemName}
+                          onChange={(e) => updateItem(row.id, "itemName", e.target.value)}
                           placeholder="e.g., Cement bags"
                         />
                       </TableCell>
@@ -522,5 +584,3 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     </Dialog>
   );
 }
-
-
