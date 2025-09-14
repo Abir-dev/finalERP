@@ -82,6 +82,23 @@ const UNITS: { value: Unit; label: string }[] = [
   { value: "LUMPSUM", label: "Lump Sum" },
 ];
 
+// Match the item enum used in Inventory.tsx
+const ITEM_OPTIONS = [
+  { value: "CEMENT", label: "Cement" },
+  { value: "SAND", label: "Sand" },
+  { value: "BRICKS", label: "Bricks" },
+  { value: "STEEL", label: "Steel" },
+  { value: "AGGREGATE", label: "Aggregate" },
+  { value: "WOOD", label: "Wood" },
+  { value: "GLASS", label: "Glass" },
+  { value: "PAINT", label: "Paint" },
+  { value: "ELECTRICAL", label: "Electrical" },
+  { value: "PLUMBING", label: "Plumbing" },
+  { value: "FIXTURES", label: "Fixtures" },
+  { value: "TOOLS", label: "Tools" },
+  { value: "OTHER", label: "Other" },
+] as const;
+
 export default function MaterialTransferModal({ open, onOpenChange, onSave, mode = 'create', transferId, onRequestNew }: MaterialTransferModalProps) {
   const { toast } = useToast();
   const { user } = useUser();
@@ -536,11 +553,18 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          value={row.itemName}
-                          onChange={(e) => updateItem(row.id, "itemName", e.target.value)}
-                          placeholder="e.g., Cement bags"
-                        />
+                        <Select value={row.itemName} onValueChange={(v) => updateItem(row.id, "itemName", v)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Item" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ITEM_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Select value={row.itemType} onValueChange={(v: ItemType) => updateItem(row.id, "itemType", v)}>
