@@ -103,6 +103,7 @@ const API_URL =
 // Add the form schema
 const addItemFormSchema = z.object({
   name: z.string().min(2, "Item name must be at least 2 characters"),
+  itemCode: z.string().min(2, "Item code must be at least 2 characters"),
   category: z.array(z.string()).min(1, "Please select at least one category"),
   type: z.string().min(1, "Please select a type"),
   quantity: z.number().min(0, "Quantity must be 0 or greater"),
@@ -144,6 +145,7 @@ const defaultValues: Partial<AddItemFormValues> = {
   primarySupplier: "",
   secondarySupplier: "",
   image: undefined,
+  itemCode: "",
 };
 
 const maintenanceDefaultValues: Partial<MaintenanceFormValues> = {
@@ -915,6 +917,7 @@ const InventoryContent = () => {
       // Create FormData for file upload
       const formData = new FormData();
       formData.append("itemName", data.name);
+      formData.append("itemCode", data.itemCode);
       formData.append("category", data.category[0]); // Backend expects single category enum value
       formData.append("quantity", data.quantity.toString());
       formData.append("type", data.type || "OLD");
@@ -999,6 +1002,7 @@ const InventoryContent = () => {
       // Create FormData for file upload
       const formData = new FormData();
       formData.append("itemName", data.name);
+      formData.append("itemCode", data.itemCode);
       formData.append("category", data.category[0]);
       formData.append("type", data.type || "OLD");
       formData.append("quantity", data.quantity.toString());
@@ -1529,6 +1533,12 @@ const InventoryContent = () => {
     //   className: "hidden sm:table-cell"
     // },
     {
+      key: "itemCode",
+      label: "Item Code",
+      type: "text" as const,
+      className: "hidden sm:table-cell",
+    },
+    {
       key: "location",
       label: "Location",
       type: "text" as const,
@@ -1794,6 +1804,20 @@ const InventoryContent = () => {
 
                 <FormField
                   control={form.control}
+                  name="itemCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Item Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter Item Code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="category"
                   render={({ field }) => (
                     <FormItem>
@@ -1819,6 +1843,7 @@ const InventoryContent = () => {
                     </FormItem>
                   )}
                 />
+                
 
                 <FormField
                   control={form.control}
