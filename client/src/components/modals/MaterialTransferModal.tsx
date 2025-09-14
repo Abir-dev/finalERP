@@ -30,6 +30,9 @@ type Unit =
   | "DAYS"
   | "LUMPSUM";
 
+// Item type for material transfer rows
+type ItemType = "OLD" | "NEW";
+
 interface Vehicle {
   id: string;
   vehicleName: string;
@@ -50,6 +53,7 @@ interface ItemRow {
   itemName: string;
   quantity: number;
   unit: Unit | "";
+  itemType: ItemType | ""; // OLD or NEW
   inventoryId?: string;
 }
 
@@ -100,7 +104,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
   const [toUserId, setToUserId] = useState<string>("");
 
   const [items, setItems] = useState<ItemRow[]>([
-    { id: 1, itemCode: "", itemName: "", quantity: 0, unit: "" },
+    { id: 1, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" },
   ]);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
 
@@ -167,9 +171,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                     itemName: it.itemName || "",
                     quantity: typeof it.quantity === 'number' ? it.quantity : 0,
                     unit: (it.unit || "") as Unit | "",
+                    itemType: (it.itemType || "") as ItemType | "",
                     inventoryId: it.inventoryId || undefined,
                   }))
-                : [{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "" }];
+                : [{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }];
               setItems(mappedItems);
               setNotes("");
             } else {
@@ -187,7 +192,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
 
   const addRow = () => {
     const newId = items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1;
-    setItems((prev) => [...prev, { id: newId, itemCode: "", itemName: "", quantity: 0, unit: "" }]);
+    setItems((prev) => [...prev, { id: newId, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }]);
   };
 
   const removeSelectedRows = () => {
@@ -246,6 +251,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
             itemName: i.itemName.trim(),
             quantity: i.quantity,
             unit: i.unit || null,
+            itemType: i.itemType || null,
             inventoryId: i.inventoryId || null,
           })),
         notes: notes.trim() || null,
@@ -328,7 +334,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       setVehicleId("");
       setApprovedById("");
       setPriority("NORMAL");
-      setItems([{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "" }]);
+      setItems([{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }]);
       setNotes("");
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message || (mode === 'edit' ? 'Failed to update material transfer' : 'Failed to create material transfer'), variant: "destructive" });
@@ -503,6 +509,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                     <TableHead>No.</TableHead>
                     <TableHead>Item Code *</TableHead>
                     <TableHead>Item Name *</TableHead>
+                    <TableHead className="w-[140px]">Item Type *</TableHead>
                     <TableHead className="w-[120px]">Quantity *</TableHead>
                     <TableHead className="w-[180px]">Unit</TableHead>
                   </TableRow>
@@ -535,6 +542,17 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                           onChange={(e) => updateItem(row.id, "itemName", e.target.value)}
                           placeholder="e.g., Cement bags"
                         />
+                      </TableCell>
+                      <TableCell>
+                        <Select value={row.itemType} onValueChange={(v: ItemType) => updateItem(row.id, "itemType", v)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Item Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="OLD">Old</SelectItem>
+                            <SelectItem value="NEW">New</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Input
