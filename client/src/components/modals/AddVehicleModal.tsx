@@ -39,6 +39,7 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
   const [length, setLength] = useState('');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const { toast } = useToast();
@@ -192,7 +193,7 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
           </div>
           
           {/* New dimensions fields */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="length">Length (m)</Label>
               <Input 
@@ -227,6 +228,18 @@ const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onClose, onAdd, onSuc
                 value={height} 
                 onChange={e => setHeight(e.target.value)} 
                 placeholder="e.g. 2.5" 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="height">Weight (kg)</Label>
+              <Input 
+                id="weight" 
+                type="number"
+                step="1"
+                min="0"
+                value={weight} 
+                onChange={e => setWeight(e.target.value)} 
+                placeholder="e.g. 2500" 
               />
             </div>
           </div>

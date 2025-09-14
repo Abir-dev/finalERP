@@ -766,6 +766,10 @@ model Vehicle {
   assignedSite       String
   licensePlate       String
   driverName         String
+  length             Float?
+  width              Float?
+  height             Float?
+  weight             Float?
   movement           VehicleMovement[]
   maintenanceHistory Maintenance[]
   createdById        String             @map("created_by_id") @db.Uuid
