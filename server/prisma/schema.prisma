@@ -801,8 +801,8 @@ model Maintenance {
 model MaterialTransfer {
   id            String         @id @default(uuid()) @db.Uuid
   transferID    String         @unique
-  fromLocation  String
-  toLocation    String
+  // fromLocation  String
+  // toLocation    String
   requestedDate DateTime       @map("requested_date") @db.Timestamptz(6)
   status        TransferStatus @default(PENDING)
   driverName    String?
