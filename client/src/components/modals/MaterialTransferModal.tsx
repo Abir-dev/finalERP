@@ -228,10 +228,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       const fromUser = users.find((u) => u.id === fromUserId);
       const toUser = users.find((u) => u.id === toUserId);
       const payload = {
-        transferID: transferID.trim(),
+        transferID: transferID,
         // Persist names/emails for compatibility with backend expecting strings
-        fromLocation: fromUser ? (fromUser.name || fromUser.email) : fromLocation.trim(),
-        toLocation: toUser ? (toUser.name || toUser.email) : toLocation.trim(),
+        fromUserId: fromUser ? (fromUserId) : fromLocation.trim(),
+        toUserId: toUser ? (toUserId) : toLocation.trim(),
         requestedDate: new Date(requestedDate).toISOString(),
         status,
         driverName: driverName.trim() || null,

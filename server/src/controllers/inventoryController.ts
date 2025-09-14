@@ -2,6 +2,16 @@ import { Request, Response } from 'express';
 import { prismaNotificationService } from '../services/prismaNotificationService';
 import prisma from '../config/prisma';
 import logger from '../logger/logger';
+
+// Interface for material transfer item validation
+interface ItemValidation {
+  fromInventoryItem: any;
+  quantity: number;
+  itemCode: string;
+  itemName: Item;
+  type: InventoryType;
+  notes: string | null;
+}
 import { InventoryCategory, Unit,MaterialRequestStatus, InventoryType, Item } from '@prisma/client';
 
 interface CreateInventoryItemRequest {
@@ -455,6 +465,8 @@ export const inventoryController = {
         approvedById,
         priority,
         items,
+        fromUserId,
+        toUserId,
       } = req.body || {};
 
       if (!transferID || !fromLocation || !toLocation || !requestedDate) {
@@ -463,39 +475,140 @@ export const inventoryController = {
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "At least one item is required" });
       }
+      if (!fromUserId || !toUserId) {
+        return res.status(400).json({ error: "fromUserId and toUserId are required" });
+      }
 
-      const created = await (prisma as any).materialTransfer.create({
-        data: {
-          transferID,
-          fromLocation,
-          toLocation,
-          requestedDate: new Date(requestedDate),
-          status: status ?? undefined,
-          driverName: driverName || null,
-          etaMinutes: typeof etaMinutes === 'number' ? etaMinutes : null,
-          vehicleId: vehicleId || null,
-          approvedById: approvedById || null,
-          priority: priority ?? undefined,
-          createdById: (req.user as any)?.id,
-          items: {
-            create: items.map((i: any) => ({
-              description: i.description,
-              quantity: i.quantity,
-              unit: i.unit || null,
-              inventoryId: i.inventoryId || null,
-              notes: i.notes || null,
-            })),
+      // Validate that both users exist and have store role
+      const [fromUser, toUser] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: fromUserId },
+          select: { id: true, name: true, email: true, role: true }
+        }),
+        prisma.user.findUnique({
+          where: { id: toUserId },
+          select: { id: true, name: true, email: true, role: true }
+        })
+      ]);
+
+      if (!fromUser || !toUser) {
+        return res.status(404).json({ error: "One or both users not found" });
+      }
+
+      if (fromUser.role !== 'store' || toUser.role !== 'store') {
+        return res.status(400).json({ error: "Both users must have store role" });
+      }
+
+      // Validate each item and check inventory availability
+      const itemValidations: ItemValidation[] = [];
+
+      for (const item of items) {
+        const { itemCode, itemName, type, quantity } = item;
+
+        if (!itemCode || !itemName || !type || !quantity) {
+          return res.status(400).json({ 
+            error: `Missing required fields for item: itemCode, itemName, type, and quantity are required` 
+          });
+        }
+
+        // Validate quantity is a positive integer
+        const quantityInt = parseInt(quantity);
+        if (isNaN(quantityInt) || quantityInt <= 0) {
+          return res.status(400).json({ 
+            error: `Invalid quantity for item ${itemCode}: must be a positive integer` 
+          });
+        }
+
+        // Find the inventory item in the from user's inventory
+        const inventoryItem = await prisma.inventory.findFirst({
+          where: {
+            createdById: fromUserId,
+            itemCode: itemCode,
+            itemName: itemName, // itemName is an enum (Item)
+            type: type // type is an enum (InventoryType)
+          }
+        });
+
+        if (!inventoryItem) {
+          return res.status(404).json({ 
+            error: `Item not found in from user's inventory: ${itemCode} - ${itemName} (${type})` 
+          });
+        }
+
+        // Check if sufficient quantity is available
+        if (inventoryItem.quantity < quantityInt) {
+          return res.status(400).json({ 
+            error: `Insufficient quantity for item ${itemCode} - ${itemName}. Available: ${inventoryItem.quantity}, Requested: ${quantityInt}` 
+          });
+        }
+
+        itemValidations.push({
+          fromInventoryItem: inventoryItem,
+          quantity: quantityInt,
+          itemCode,
+          itemName: itemName as Item,
+          type: type as InventoryType,
+          notes: item.notes || null
+        });
+      }
+
+      // Use transaction to ensure all operations succeed or fail together
+      const result = await prisma.$transaction(async (tx) => {
+        const transferItems: any[] = [];
+
+        for (const validation of itemValidations) {
+          const { fromInventoryItem, quantity, itemCode, itemName, type, notes } = validation;
+
+          // Deduct from from user's inventory
+          await tx.inventory.update({
+            where: { id: fromInventoryItem.id },
+            data: { quantity: fromInventoryItem.quantity - quantity }
+          });
+
+          // Prepare transfer item data
+          transferItems.push({
+            description: `${itemCode} - ${itemName} (${type})`,
+            quantity: quantity,
+            unit: fromInventoryItem.unit,
+            inventoryId: fromInventoryItem.id,
+            notes: notes,
+          });
+        }
+
+        // Create the material transfer
+        const created = await tx.materialTransfer.create({
+          data: {
+            transferID,
+            fromLocation,
+            toLocation,
+            requestedDate: new Date(requestedDate),
+            status: status ?? 'PENDING',
+            driverName: driverName || null,
+            etaMinutes: typeof etaMinutes === 'number' ? etaMinutes : null,
+            vehicleId: vehicleId || null,
+            approvedById: approvedById || null,
+            priority: priority ?? 'NORMAL',
+            createdById: (req.user as any)?.id,
+            items: {
+              create: transferItems,
+            },
           },
-        },
-        include: {
-          items: true,
-          vehicle: true,
-          approvedBy: { select: { id: true, name: true, email: true } },
-          createdBy: { select: { id: true, name: true, email: true } },
-        },
+          include: {
+            items: true,
+            vehicle: true,
+            approvedBy: { select: { id: true, name: true, email: true } },
+            createdBy: { select: { id: true, name: true, email: true } },
+          },
+        });
+
+        return created;
       });
 
-      res.status(201).json(created);
+      res.status(201).json({
+        message: "Material transfer created successfully",
+        transfer: result,
+        itemsProcessed: itemValidations.length
+      });
     } catch (error) {
       logger.error("Error creating material transfer:", error);
       res.status(500).json({
