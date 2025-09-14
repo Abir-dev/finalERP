@@ -8,9 +8,9 @@ export const vehicleController = {
   // Vehicle CRUD Operations
   async createVehicle(req: Request, res: Response) {
     try {
-      const { vehicleName, vehicleType, registrationNumber, assignedSite, licensePlate, driverName, createdById } = req.body;
+      const { vehicleName, vehicleType, registrationNumber, assignedSite, licensePlate, driverName, createdById, length, width, height, weight } = req.body;
       
-      if (!vehicleName || !vehicleType || !registrationNumber || !assignedSite || !licensePlate || !driverName || !createdById) {
+      if (!vehicleName || !vehicleType || !registrationNumber || !assignedSite || !licensePlate || !driverName || !createdById || !length || !width || !height || !weight) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
@@ -29,6 +29,10 @@ export const vehicleController = {
           licensePlate,
           driverName,
           createdById,
+          length,
+          width,
+          height,
+          weight,
         },
         include: {
           createdBy: {
