@@ -455,8 +455,6 @@ export const inventoryController = {
     try {
       const {
         transferID,
-        fromLocation,
-        toLocation,
         requestedDate,
         status,
         driverName,
@@ -469,7 +467,7 @@ export const inventoryController = {
         toUserId,
       } = req.body || {};
 
-      if (!transferID || !fromLocation || !toLocation || !requestedDate) {
+      if (!transferID  || !requestedDate) {
         return res.status(400).json({ error: "transferID, fromLocation, toLocation, requestedDate are required" });
       }
       if (!Array.isArray(items) || items.length === 0) {
@@ -579,8 +577,6 @@ export const inventoryController = {
         const created = await tx.materialTransfer.create({
           data: {
             transferID,
-            fromLocation,
-            toLocation,
             requestedDate: new Date(requestedDate),
             status: status ?? 'PENDING',
             driverName: driverName || null,

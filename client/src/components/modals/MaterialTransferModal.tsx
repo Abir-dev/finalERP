@@ -245,14 +245,13 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
         approvedById: approvedById || null,
         priority,
         items: items
-          .filter((i) => i.itemCode.trim() && i.itemName.trim() && i.quantity > 0)
+          .filter((i) => i.itemCode && i.itemName && i.quantity > 0)
           .map((i) => ({
-            itemCode: i.itemCode.trim(),
-            itemName: i.itemName.trim(),
+            itemCode: i.itemCode,
+            itemName: i.itemName,
             quantity: i.quantity,
             unit: i.unit || null,
             itemType: i.itemType || null,
-            inventoryId: i.inventoryId || null,
           })),
         notes: notes.trim() || null,
       };
