@@ -139,6 +139,10 @@ const AppLayout = () => {
               <Route path="/store-manager" element={<StoreDashboard />} />
               <Route path="/accounts-manager" element={<AccountsDashboard />} />
               <Route path="/site-manager" element={<SiteDashboard />} />
+              <Route path="/site-manager/timeline" element={<SiteDashboard />} />
+              <Route path="/site-manager/reports" element={<SiteDashboard />} />
+              <Route path="/site-manager/central-warehouse" element={<SiteDashboard />} />
+              <Route path="/site-manager/invoices" element={<SiteDashboard />} />
               <Route path="/active-tasks" element={<ActiveTasksPage />} />
               <Route path="/active-tasks/:taskId" element={<TaskDetailPage />} />
 

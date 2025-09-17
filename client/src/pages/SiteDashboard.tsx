@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import type { InventoryItem as InventoryItemType } from "@/types/dummy-data-types";
+import { ServiceInvoiceList } from "@/components/service-invoice/ServiceInvoiceList";
+import { ServiceInvoice } from "@/types/service-invoice";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -556,6 +558,184 @@ const SiteDashboardContent = () => {
   );
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [serviceInvoices, setServiceInvoices] = useState<ServiceInvoice[]>([
+    {
+      id: "1",
+      header: {
+        invoiceNumber: "SI-2024-001",
+        invoiceDate: "2024-01-15",
+        state: "Maharashtra",
+        stateCode: "27",
+        workOrderDate: "2024-01-10",
+        raBillNumber: "RA-2024-001",
+        uniqueIdentifier: "UID-001"
+      },
+      receiver: {
+        name: "ABC Construction Ltd.",
+        address: "123 Business Park, Mumbai, Maharashtra 400001",
+        gstin: "27AABCU9603R1ZX",
+        state: "Maharashtra",
+        stateCode: "27"
+      },
+      project: {
+        serviceRenderedAt: "Site Office, Mumbai",
+        name: "Mumbai Metro Project",
+        address: "456 Construction Site, Mumbai, Maharashtra 400002",
+        gstin: "27AABCU9603R1ZX",
+        state: "Maharashtra",
+        stateCode: "27"
+      },
+      lineItems: [
+        {
+          siNo: "1",
+          description: "Civil Engineering Services - Foundation Work",
+          sacHsnCode: "9987",
+          unit: "Nos",
+          rate: 50000,
+          quantityPrevious: 0,
+          quantityPresent: 2,
+          quantityCumulative: 2,
+          amountPrevious: 0,
+          amountPresent: 100000,
+          amountCumulative: 100000,
+          category: "Civil Works"
+        },
+        {
+          siNo: "2",
+          description: "Structural Engineering Services - Beam Installation",
+          sacHsnCode: "9987",
+          unit: "Nos",
+          rate: 75000,
+          quantityPrevious: 0,
+          quantityPresent: 1,
+          quantityCumulative: 1,
+          amountPrevious: 0,
+          amountPresent: 75000,
+          amountCumulative: 75000,
+          category: "Structural Works"
+        }
+      ],
+      summary: {
+        totalAmount: 175000,
+        cgst: 15750,
+        sgst: 15750,
+        igst: 0,
+        totalTax: 31500,
+        grandTotal: 206500
+      },
+      status: "draft",
+      createdAt: "2024-01-15T10:00:00Z",
+      updatedAt: "2024-01-15T10:00:00Z"
+    },
+    {
+      id: "2",
+      header: {
+        invoiceNumber: "SI-2024-002",
+        invoiceDate: "2024-01-20",
+        state: "Karnataka",
+        stateCode: "29",
+        workOrderDate: "2024-01-18",
+        raBillNumber: "RA-2024-002",
+        uniqueIdentifier: "UID-002"
+      },
+      receiver: {
+        name: "XYZ Infrastructure Pvt Ltd",
+        address: "789 Tech Park, Bangalore, Karnataka 560001",
+        gstin: "29AABCU9603R1ZY",
+        state: "Karnataka",
+        stateCode: "29"
+      },
+      project: {
+        serviceRenderedAt: "Site Office, Bangalore",
+        name: "Bangalore Metro Extension",
+        address: "321 Construction Site, Bangalore, Karnataka 560002",
+        gstin: "29AABCU9603R1ZY",
+        state: "Karnataka",
+        stateCode: "29"
+      },
+      lineItems: [
+        {
+          siNo: "1",
+          description: "MEP Services - Electrical Installation",
+          sacHsnCode: "9987",
+          unit: "Nos",
+          rate: 30000,
+          quantityPrevious: 0,
+          quantityPresent: 3,
+          quantityCumulative: 3,
+          amountPrevious: 0,
+          amountPresent: 90000,
+          amountCumulative: 90000,
+          category: "MEP Works"
+        }
+      ],
+      summary: {
+        totalAmount: 90000,
+        cgst: 8100,
+        sgst: 8100,
+        igst: 0,
+        totalTax: 16200,
+        grandTotal: 106200
+      },
+      status: "sent",
+      createdAt: "2024-01-20T14:30:00Z",
+      updatedAt: "2024-01-20T14:30:00Z"
+    },
+    {
+      id: "3",
+      header: {
+        invoiceNumber: "SI-2024-003",
+        invoiceDate: "2024-01-25",
+        state: "Tamil Nadu",
+        stateCode: "33",
+        workOrderDate: "2024-01-22",
+        raBillNumber: "RA-2024-003",
+        uniqueIdentifier: "UID-003"
+      },
+      receiver: {
+        name: "DEF Engineering Solutions",
+        address: "456 Industrial Area, Chennai, Tamil Nadu 600001",
+        gstin: "33AABCU9603R1ZZ",
+        state: "Tamil Nadu",
+        stateCode: "33"
+      },
+      project: {
+        serviceRenderedAt: "Site Office, Chennai",
+        name: "Chennai Port Expansion",
+        address: "654 Port Area, Chennai, Tamil Nadu 600002",
+        gstin: "33AABCU9603R1ZZ",
+        state: "Tamil Nadu",
+        stateCode: "33"
+      },
+      lineItems: [
+        {
+          siNo: "1",
+          description: "Consulting Services - Project Management",
+          sacHsnCode: "9983",
+          unit: "Hours",
+          rate: 2500,
+          quantityPrevious: 0,
+          quantityPresent: 40,
+          quantityCumulative: 40,
+          amountPrevious: 0,
+          amountPresent: 100000,
+          amountCumulative: 100000,
+          category: "Consulting"
+        }
+      ],
+      summary: {
+        totalAmount: 100000,
+        cgst: 9000,
+        sgst: 9000,
+        igst: 0,
+        totalTax: 18000,
+        grandTotal: 118000
+      },
+      status: "paid",
+      createdAt: "2024-01-25T09:15:00Z",
+      updatedAt: "2024-01-25T09:15:00Z"
+    }
+  ]);
   // const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const { user } = useUser();
@@ -572,9 +752,10 @@ const SiteDashboardContent = () => {
   // Function to get current tab from URL
   const getCurrentTab = () => {
     const path = location.pathname;
+    if (path.includes("/invoices")) return "invoices";
     if (path.includes("/timeline")) return "timeline";
     if (path.includes("/reports")) return "reports";
-    if(path.includes('/central-warehouse')) return "central-warehouse"
+    if(path.includes('/central-warehouse')) return "central-warehouse";
     return "timeline"; // default tab
   };
 
@@ -584,12 +765,34 @@ const SiteDashboardContent = () => {
       timeline: "/site-manager/timeline",
       reports: "/site-manager/reports",
       "central-warehouse":"/site-manager/central-warehouse",
+      invoices: "/site-manager/invoices",
     };
 
     // Only navigate if the tab has a route, otherwise it's a local tab
     if (tabRoutes[value]) {
       navigate(tabRoutes[value]);
     }
+  };
+
+  // Service Invoice handlers
+  const handleServiceInvoiceCreate = (invoice: ServiceInvoice) => {
+    setServiceInvoices(prev => [...prev, invoice]);
+    toast({
+      title: "Success",
+      description: "Service invoice created successfully",
+    });
+  };
+
+  const handleServiceInvoiceUpdate = (updatedInvoice: ServiceInvoice) => {
+    setServiceInvoices(prev => 
+      prev.map(invoice => 
+        invoice.id === updatedInvoice.id ? updatedInvoice : invoice
+      )
+    );
+    toast({
+      title: "Success",
+      description: "Service invoice updated successfully",
+    });
   };
 
   // Progress Reports Data
@@ -2834,20 +3037,19 @@ const SiteDashboardContent = () => {
           )}
         </div>
       )} */}
+
       <Tabs
         value={getCurrentTab()}
         onValueChange={handleTabChange}
         className="space-y-6"
       >
-        <TabsList className="hidden md:grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="timeline">Execution Timeline</TabsTrigger>
           <TabsTrigger value="reports">Daily & Weekly Reports</TabsTrigger>
-          {/* <TabsTrigger value="materials">Material Flow</TabsTrigger>
-          <TabsTrigger value="issues">Issue Tracker</TabsTrigger> */}
-          {/* <TabsTrigger value="cost">Cost Analysis</TabsTrigger> */}
-          {/* <TabsTrigger value="store-manager">Store Manager</TabsTrigger> */}
           <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger>
+          <TabsTrigger value="invoices">Service Invoices</TabsTrigger>
         </TabsList>
+        
 
         <div className="md:hidden mb-4">
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
@@ -2856,6 +3058,10 @@ const SiteDashboardContent = () => {
                 <BarChart3 className="h-5 w-5 text-primary" />
               ) : getCurrentTab() === "reports" ? (
                 <TrendingUp className="h-5 w-5 text-primary" />
+              ) : getCurrentTab() === "central-warehouse" ? (
+                <Warehouse className="h-5 w-5 text-primary" />
+              ) : getCurrentTab() === "invoices" ? (
+                <Receipt className="h-5 w-5 text-primary" />
               ) : (
                 <Users className="h-5 w-5 text-primary" />
               )}
@@ -2865,6 +3071,10 @@ const SiteDashboardContent = () => {
                     ? "Execution Timeline"
                     : getCurrentTab() === "reports"
                     ? "Daily & Weekly Reports"
+                    : getCurrentTab() === "central-warehouse"
+                    ? "Central Warehouse"
+                    : getCurrentTab() === "invoices"
+                    ? "Service Invoices"
                     : ""}
                 </h2>
                 <p className="text-xs text-muted-foreground">
@@ -2873,6 +3083,10 @@ const SiteDashboardContent = () => {
                     ? "Execution Timeline"
                     : getCurrentTab() === "reports"
                     ? "Daily & Weekly Reports"
+                    : getCurrentTab() === "central-warehouse"
+                    ? "Central Warehouse"
+                    : getCurrentTab() === "invoices"
+                    ? "Service Invoices"
                     : "Store Staff"}
                 </p>
               </div>
@@ -2882,6 +3096,10 @@ const SiteDashboardContent = () => {
                 ? `${progressStats.pendingTasks} items`
                 : getCurrentTab() === "reports"
                 ? `${progressStats.activeTasks} reports`
+                : getCurrentTab() === "central-warehouse"
+                ? "Warehouse items"
+                : getCurrentTab() === "invoices"
+                ? `${serviceInvoices.length} invoices`
                 : ""}
             </div>
           </div>
@@ -5851,6 +6069,16 @@ const SiteDashboardContent = () => {
                         />
                       </div>
                     )}
+        </TabsContent>
+
+        <TabsContent value="invoices" className="space-y-6">
+          <ServiceInvoiceList
+            invoices={serviceInvoices}
+            onInvoiceCreate={handleServiceInvoiceCreate}
+            onInvoiceUpdate={handleServiceInvoiceUpdate}
+            projectId={projects[0]?.id?.toString()}
+            clientId={projects[0]?.clientId?.toString()}
+          />
         </TabsContent>
       </Tabs>
       {/* DPR Upload Modal */}
