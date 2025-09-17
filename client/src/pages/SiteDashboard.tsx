@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ExpandableDataTable } from "@/components/expandable-data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -3579,52 +3581,52 @@ const SiteDashboardContent = () => {
                   onClick={() => setReportsSubview("reportQuality")}
                 /> */}
               </div>
-              {/* <Card>
-                <CardHeader>
-                  <CardTitle>Report Upload Panel</CardTitle>
-                  <CardDescription>
-                    Submit daily and weekly progress reports
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-4">
-                        Daily Progress Report (DPR)
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="text-sm text-muted-foreground">
-                          Upload today's work progress, photos, and notes
-                        </div>
-                        <Button
-                          onClick={() => setIsDPRModalOpen(true)}
-                          className="w-full"
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload DPR
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="border rounded-lg p-4">
-                      <h3 className="font-medium mb-4">
-                        Weekly Progress Report (WPR)
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="text-sm text-muted-foreground">
-                          Submit weekly milestone progress and team performance
-                        </div>
-                        <Button
-                          onClick={() => setIsWPRModalOpen(true)}
-                          className="w-full"
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Upload WPR
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card> */}
+              <Card>
+              <CardHeader>
+              <CardTitle>Report Upload Panel</CardTitle>
+              <CardDescription>
+              Submit daily and weekly progress reports
+              </CardDescription>
+              </CardHeader>
+              <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-4">
+              Daily Progress Report (DPR)
+              </h3>
+              <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+              Upload today's work progress, photos, and notes
+              </div>
+              <Button
+              onClick={() => setIsDPRModalOpen(true)}
+              className="w-full"
+              >
+              <Upload className="h-4 w-4 mr-2" />
+              Upload DPR
+              </Button>
+              </div>
+              </div>
+              <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-4">
+              Weekly Progress Report (WPR)
+              </h3>
+              <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+              Submit weekly milestone progress and team performance
+              </div>
+              <Button
+              onClick={() => setIsWPRModalOpen(true)}
+              className="w-full"
+              >
+              <FileText className="h-4 w-4 mr-2" />
+              Upload WPR
+              </Button>
+              </div>
+              </div>
+              </div>
+              </CardContent>
+              </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Report History</CardTitle>
@@ -6083,7 +6085,7 @@ const SiteDashboardContent = () => {
       </Tabs>
       {/* DPR Upload Modal */}
       <Dialog open={isDPRModalOpen} onOpenChange={setIsDPRModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="max-w-7xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Upload Daily Progress Report (DPR)</DialogTitle>
             <DialogDescription>
@@ -6101,7 +6103,7 @@ const SiteDashboardContent = () => {
       </Dialog>
       {/* WPR Upload Modal */}
       <Dialog open={isWPRModalOpen} onOpenChange={setIsWPRModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="max-w-7xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Upload Weekly Progress Report (WPR)</DialogTitle>
             <DialogDescription>
@@ -9449,6 +9451,41 @@ const SiteDashboard = () => {
 export default SiteDashboard;
 
 // Add this component above the SiteDashboard export
+interface WorkItem {
+  id: string;
+  description: string;
+  boqQuantity: number;
+  alreadyExecuted: number;
+  todaysProgress: number;
+  yesterdayAchievement: number;
+  cumulativeQuantity: number;
+  balanceQuantity: number;
+  remarks: string;
+}
+
+interface ManpowerItem {
+  id: string;
+  dailyManpowerReport: string;
+  hoursWorked: number;
+  plannedManpower: number;
+  remarks: string;
+  equipmentMachineries: string;
+  nos: number;
+}
+
+interface StaffItem {
+  id: string;
+  position: string;
+  count: number;
+}
+
+interface HindranceItem {
+  id: string;
+  category: string;
+  actionTaken: string;
+  remarks: string;
+}
+
 function DPRManualForm({
   onSubmit,
   onCancel,
@@ -9458,242 +9495,560 @@ function DPRManualForm({
   onCancel: () => void;
   projects: Project[];
 }) {
-  const [materials, setMaterials] = useState([
-    { material: "", qty: "", remarks: "" },
+  const [formData, setFormData] = useState({
+    projectName: '',
+    developer: '',
+    contractor: '',
+    pmc: '',
+    bokNo: '',
+    date: new Date().toISOString().split('T')[0],
+    weatherCondition: 'Clear'
+  });
+
+  const [workItems, setWorkItems] = useState<WorkItem[]>([
+    {
+      id: '1',
+      description: '',
+      boqQuantity: 0,
+      alreadyExecuted: 0,
+      todaysProgress: 0,
+      yesterdayAchievement: 0,
+      cumulativeQuantity: 0,
+      balanceQuantity: 0,
+      remarks: ''
+    }
   ]);
 
-  const addMaterialRow = () =>
-    setMaterials([...materials, { material: "", qty: "", remarks: "" }]);
-  const removeMaterialRow = (idx: number) =>
-    setMaterials(materials.filter((_, i) => i !== idx));
-  const updateMaterial = (idx: number, field: string, value: string) => {
-    setMaterials(
-      materials.map((mat, i) => (i === idx ? { ...mat, [field]: value } : mat))
-    );
+  const [manpowerItems, setManpowerItems] = useState<ManpowerItem[]>([
+    {
+      id: '1',
+      dailyManpowerReport: '',
+      hoursWorked: 0,
+      plannedManpower: 0,
+      remarks: '',
+      equipmentMachineries: '',
+      nos: 0
+    }
+  ]);
+
+  const [staffItems, setStaffItems] = useState<StaffItem[]>([
+    { id: '1', position: 'PM', count: 0 },
+    { id: '2', position: 'Billing & Planning Eng.', count: 0 },
+    { id: '3', position: 'Quality Eng.', count: 0 },
+    { id: '4', position: 'Quality Helper', count: 0 },
+    { id: '5', position: 'Site Engineer', count: 0 },
+    { id: '6', position: 'Supervisor', count: 0 },
+    { id: '7', position: 'Store', count: 0 },
+    { id: '8', position: 'Surveyor', count: 0 },
+    { id: '9', position: 'Safety', count: 0 },
+    { id: '10', position: 'Electrician/Mechanic', count: 0 },
+    { id: '11', position: 'PUMP OPERATOR', count: 0 },
+    { id: '12', position: 'WELDER', count: 0 }
+  ]);
+
+  const [hindranceItems, setHindranceItems] = useState<HindranceItem[]>([
+    { id: '1', category: '', actionTaken: '', remarks: '' }
+  ]);
+
+  const addWorkItem = () => {
+    const newItem: WorkItem = {
+      id: Date.now().toString(),
+      description: '',
+      boqQuantity: 0,
+      alreadyExecuted: 0,
+      todaysProgress: 0,
+      yesterdayAchievement: 0,
+      cumulativeQuantity: 0,
+      balanceQuantity: 0,
+      remarks: ''
+    };
+    setWorkItems([...workItems, newItem]);
+  };
+
+  const removeWorkItem = (id: string) => {
+    if (workItems.length > 1) {
+      setWorkItems(workItems.filter(item => item.id !== id));
+    }
+  };
+
+  const updateWorkItem = (id: string, field: keyof WorkItem, value: string | number) => {
+    setWorkItems(workItems.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value };
+        
+        // Auto-calculate cumulative and balance quantities
+        if (field === 'alreadyExecuted' || field === 'todaysProgress') {
+          updatedItem.cumulativeQuantity = updatedItem.alreadyExecuted + updatedItem.todaysProgress;
+          updatedItem.balanceQuantity = updatedItem.boqQuantity - updatedItem.cumulativeQuantity;
+        } else if (field === 'boqQuantity') {
+          updatedItem.balanceQuantity = updatedItem.boqQuantity - updatedItem.cumulativeQuantity;
+        }
+        
+        return updatedItem;
+      }
+      return item;
+    }));
+  };
+
+  const addManpowerItem = () => {
+    const newItem: ManpowerItem = {
+      id: Date.now().toString(),
+      dailyManpowerReport: '',
+      hoursWorked: 0,
+      plannedManpower: 0,
+      remarks: '',
+      equipmentMachineries: '',
+      nos: 0
+    };
+    setManpowerItems([...manpowerItems, newItem]);
+  };
+
+  const removeManpowerItem = (id: string) => {
+    if (manpowerItems.length > 1) {
+      setManpowerItems(manpowerItems.filter(item => item.id !== id));
+    }
+  };
+
+  const updateManpowerItem = (id: string, field: keyof ManpowerItem, value: string | number) => {
+    setManpowerItems(manpowerItems.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const updateStaffItem = (id: string, count: number) => {
+    setStaffItems(staffItems.map(item => 
+      item.id === id ? { ...item, count } : item
+    ));
+  };
+
+  const addHindranceItem = () => {
+    const newItem: HindranceItem = {
+      id: Date.now().toString(),
+      category: '',
+      actionTaken: '',
+      remarks: ''
+    };
+    setHindranceItems([...hindranceItems, newItem]);
+  };
+
+  const removeHindranceItem = (id: string) => {
+    if (hindranceItems.length > 1) {
+      setHindranceItems(hindranceItems.filter(item => item.id !== id));
+    }
+  };
+
+  const updateHindranceItem = (id: string, field: 'category' | 'actionTaken' | 'remarks', value: string) => {
+    setHindranceItems(hindranceItems.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      formData,
+      workItems,
+      manpowerItems,
+      staffItems,
+      hindranceItems
+    });
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        onSubmit({
-          projectId: formData.get("projectId") as string,
-          workSections: formData.get("workSections") as string,
-          manpower: formData.get("manpower") as string,
-          manpowerRoles: formData.get("manpowerRoles") as string,
-          equipmentUsed: formData.get("equipmentUsed") as string,
-          safetyIncident: formData.get("safetyIncident") as string,
-          qualityCheck: formData.get("qualityCheck") as string,
-          delayIssue: formData.get("delayIssue") as string,
-          materials,
-          subcontractor: formData.get("subcontractor") as string,
-          workDone: formData.get("workDone") as string,
-          weather: formData.get("weather") as string,
-          photos: formData.get("photos") as unknown as FileList,
-          notes: formData.get("notes") as string,
-        });
-      }}
-      className="space-y-4"
-    >
-      <div>
-        <Label htmlFor="projectId">Project *</Label>
-        <Select name="projectId" required>
-          <SelectTrigger>
-            <SelectValue placeholder="Select project" />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div>
-        <Label htmlFor="workSections">Work Sections/Areas Covered</Label>
-        <Input
-          id="workSections"
-          name="workSections"
-          placeholder="e.g. Foundation, Structure, Roofing"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="manpower">Manpower Deployed</Label>
-          <Input
-            id="manpower"
-            name="manpower"
-            type="number"
-            min="0"
-            placeholder="Total number"
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="manpowerRoles">Roles (comma separated)</Label>
-          <Input
-            id="manpowerRoles"
-            name="manpowerRoles"
-            placeholder="e.g. Mason, Electrician, Supervisor"
-            required
-          />
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="equipmentUsed">Equipment Used</Label>
-        <Input
-          id="equipmentUsed"
-          name="equipmentUsed"
-          placeholder="e.g. Crane, Mixer, Scaffolding"
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="safetyIncident">Any Safety Incidents?</Label>
-        <Textarea
-          id="safetyIncident"
-          name="safetyIncident"
-          placeholder="Describe any safety incidents or write 'N/A' if none"
-          rows={3}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="qualityCheck">Quality Checks Performed?</Label>
-        <Textarea
-          id="qualityCheck"
-          name="qualityCheck"
-          placeholder="Describe quality checks performed or write 'N/A' if none"
-          rows={3}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="delayIssue">Any Delays/Issues?</Label>
-        <Textarea
-          id="delayIssue"
-          name="delayIssue"
-          placeholder="Describe any delays or issues or write 'N/A' if none"
-          rows={3}
-          required
-        />
-      </div>
-      <div>
-        <Label>Materials Consumed</Label>
+    <div className="space-y-6">
+      {/* Header Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border p-4 rounded-md">
         <div className="space-y-2">
-          {materials.map((mat, idx) => (
-            <div key={idx} className="flex gap-2 items-center">
-              <Input
-                name={`material${idx}`}
-                placeholder="Material"
-                className="text-xs"
-                value={mat.material}
-                onChange={(e) =>
-                  updateMaterial(idx, "material", e.target.value)
-                }
-                required
-              />
-              <Input
-                name={`materialQty${idx}`}
-                placeholder="Qty"
-                className="text-xs"
-                value={mat.qty}
-                onChange={(e) => updateMaterial(idx, "qty", e.target.value)}
-                required
-              />
-              <Input
-                name={`materialRemarks${idx}`}
-                placeholder="Remarks"
-                className="text-xs"
-                value={mat.remarks}
-                onChange={(e) => updateMaterial(idx, "remarks", e.target.value)}
-              />
-              {materials.length > 1 && (
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => removeMaterialRow(idx)}
-                >
-                  &times;
-                </Button>
-              )}
-            </div>
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addMaterialRow}
+          <Label htmlFor="projectName">NAME OF THE PROJECT:</Label>
+          <Select 
+            value={formData.projectName} 
+            onValueChange={(value) => setFormData({...formData, projectName: value})}
           >
-            Add Material Row
-          </Button>
+            <SelectTrigger>
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.name}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="developer">DEVELOPER:</Label>
+          <Input
+            id="developer"
+            value={formData.developer}
+            onChange={(e) => setFormData({...formData, developer: e.target.value})}
+            placeholder="Enter developer name"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="contractor">CONTRACTOR:</Label>
+          <Input
+            id="contractor"
+            value={formData.contractor}
+            onChange={(e) => setFormData({...formData, contractor: e.target.value})}
+            placeholder="Enter contractor name"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="pmc">PMC:</Label>
+          <Input
+            id="pmc"
+            value={formData.pmc}
+            onChange={(e) => setFormData({...formData, pmc: e.target.value})}
+            placeholder="Enter PMC"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="bokNo">BOK NO:</Label>
+          <Input
+            id="bokNo"
+            value={formData.bokNo}
+            onChange={(e) => setFormData({...formData, bokNo: e.target.value})}
+            placeholder="Enter BOK number"
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="date">DATE:</Label>
+          <Input
+            id="date"
+            type="date"
+            value={formData.date}
+            onChange={(e) => setFormData({...formData, date: e.target.value})}
+          />
+        </div>
+        
+        <div className="space-y-2 lg:col-span-3">
+          <Label>Weather Condition:</Label>
+          <div className="flex space-x-4 flex-wrap">
+            {['Clear', 'Cloudy', 'Other / Rainy Dry'].map(condition => (
+              <div key={condition} className="flex items-center space-x-2">
+                <Checkbox
+                  id={condition}
+                  checked={formData.weatherCondition === condition}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setFormData({...formData, weatherCondition: condition});
+                    }
+                  }}
+                />
+                <Label htmlFor={condition}>{condition}</Label>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div>
-        <Label htmlFor="subcontractor">Subcontractor Activities</Label>
-        <Textarea
-          id="subcontractor"
-          name="subcontractor"
-          placeholder="Describe any subcontractor work..."
-          rows={2}
-        />
-      </div>
-      <div>
-        <Label htmlFor="workDone">Work Done Today</Label>
-        <Textarea
-          id="workDone"
-          name="workDone"
-          placeholder="Describe today's work progress..."
-          rows={4}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="weather">Weather Conditions</Label>
-        <Select name="weather" required>
-          <SelectTrigger>
-            <SelectValue placeholder="Select weather" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="clear">Clear</SelectItem>
-            <SelectItem value="rain">Rain</SelectItem>
-            <SelectItem value="wind">Windy</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      {/* <div>
-        <Label htmlFor="photos">Upload Photos</Label>
-        <Input
-          id="photos"
-          name="photos"
-          type="file"
-          multiple
-          accept="image/*"
-          required
-        />
-      </div> */}
-      <div>
-        <Label htmlFor="notes">Site Engineer Notes</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          placeholder="Additional notes or concerns..."
-          rows={3}
-          required
-        />
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button variant="outline" type="button" onClick={onCancel}>
+      
+      {/* Work Progress Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Work Progress Details</CardTitle>
+            <Button type="button" onClick={addWorkItem} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Item
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">Sl. No</TableHead>
+                  <TableHead>Description of Work</TableHead>
+                  <TableHead>BOQ Quantity</TableHead>
+                  <TableHead>Already Executed Quantity</TableHead>
+                  <TableHead>Today's Progress</TableHead>
+                  <TableHead>Yesterday Achievement</TableHead>
+                  <TableHead>Cumulative Quantity</TableHead>
+                  <TableHead>Balance Quantity</TableHead>
+                  <TableHead>Remarks</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workItems.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      <Input
+                        value={item.description}
+                        onChange={(e) => updateWorkItem(item.id, 'description', e.target.value)}
+                        placeholder="Enter work description"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.boqQuantity}
+                        onChange={(e) => updateWorkItem(item.id, 'boqQuantity', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.alreadyExecuted}
+                        onChange={(e) => updateWorkItem(item.id, 'alreadyExecuted', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.todaysProgress}
+                        onChange={(e) => updateWorkItem(item.id, 'todaysProgress', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.yesterdayAchievement}
+                        onChange={(e) => updateWorkItem(item.id, 'yesterdayAchievement', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.cumulativeQuantity}
+                        readOnly
+                        className="bg-gray-100"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.balanceQuantity}
+                        readOnly
+                        className="bg-gray-100"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={item.remarks}
+                        onChange={(e) => updateWorkItem(item.id, 'remarks', e.target.value)}
+                        placeholder="Enter remarks"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeWorkItem(item.id)}
+                        disabled={workItems.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Labour & Machineries Details */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>LABOUR & MACHINERIES DETAILS</CardTitle>
+            <Button type="button" onClick={addManpowerItem} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Item
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">Sl. No</TableHead>
+                  <TableHead>Daily Manpower Report</TableHead>
+                  <TableHead>No. of Hours</TableHead>
+                  <TableHead>Planned Manpower</TableHead>
+                  <TableHead>Remarks</TableHead>
+                  <TableHead>Equipment & Machineries</TableHead>
+                  <TableHead>Nos.</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {manpowerItems.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      <Input
+                        value={item.dailyManpowerReport}
+                        onChange={(e) => updateManpowerItem(item.id, 'dailyManpowerReport', e.target.value)}
+                        placeholder="Enter manpower report"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.hoursWorked}
+                        onChange={(e) => updateManpowerItem(item.id, 'hoursWorked', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.plannedManpower}
+                        onChange={(e) => updateManpowerItem(item.id, 'plannedManpower', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={item.remarks}
+                        onChange={(e) => updateManpowerItem(item.id, 'remarks', e.target.value)}
+                        placeholder="Enter remarks"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        value={item.equipmentMachineries}
+                        onChange={(e) => updateManpowerItem(item.id, 'equipmentMachineries', e.target.value)}
+                        placeholder="Enter equipment details"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={item.nos}
+                        onChange={(e) => updateManpowerItem(item.id, 'nos', parseFloat(e.target.value) || 0)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeManpowerItem(item.id)}
+                        disabled={manpowerItems.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Staff Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Staff</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {staffItems.map((item) => (
+              <div key={item.id} className="space-y-2">
+                <Label htmlFor={`staff-${item.id}`}>{item.position}</Label>
+                <Input
+                  id={`staff-${item.id}`}
+                  type="number"
+                  value={item.count}
+                  onChange={(e) => updateStaffItem(item.id, parseInt(e.target.value) || 0)}
+                  min="0"
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Major Hindrances */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>MAJOR HINDRANCES</CardTitle>
+            <Button type="button" onClick={addHindranceItem} size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Item
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">Sl. No</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Action Taken</TableHead>
+                  <TableHead>Remarks</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {hindranceItems.map((item, index) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      <Input
+                        value={item.category}
+                        onChange={(e) => updateHindranceItem(item.id, 'category', e.target.value)}
+                        placeholder="Enter hindrance category"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        value={item.actionTaken}
+                        onChange={(e) => updateHindranceItem(item.id, 'actionTaken', e.target.value)}
+                        placeholder="Enter action taken"
+                        rows={2}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Textarea
+                        value={item.remarks}
+                        onChange={(e) => updateHindranceItem(item.id, 'remarks', e.target.value)}
+                        placeholder="Enter remarks"
+                        rows={2}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeHindranceItem(item.id)}
+                        disabled={hindranceItems.length === 1}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-center space-x-4">
+        <Button type="button" onClick={handleSubmit} className="px-8 py-2">
+          Save Report
+        </Button>
+        <Button type="button" variant="outline" className="px-8 py-2" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">Submit DPR</Button>
       </div>
-    </form>
+    </div>
   );
 }
 
