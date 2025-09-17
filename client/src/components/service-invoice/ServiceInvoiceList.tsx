@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ServiceInvoice } from "@/types/service-invoice";
 import { ServiceInvoiceModal } from "@/components/modals/ServiceInvoiceModal";
+import { ViewServiceInvoiceModal } from "@/components/modals/ViewServiceInvoiceModal";
 
 interface ServiceInvoiceListProps {
   invoices: ServiceInvoice[];
@@ -39,6 +40,8 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<ServiceInvoice | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState<ServiceInvoice | null>(null);
 
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = 
@@ -66,6 +69,11 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
     setIsModalOpen(true);
   };
 
+  const handleViewInvoice = (invoice: ServiceInvoice) => {
+    setViewingInvoice(invoice);
+    setIsViewModalOpen(true);
+  };
+
   const handleCreateInvoice = () => {
     setEditingInvoice(null);
     setIsModalOpen(true);
@@ -74,6 +82,11 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingInvoice(null);
+  };
+
+  const handleViewModalClose = () => {
+    setIsViewModalOpen(false);
+    setViewingInvoice(null);
   };
 
   const handleModalSave = (invoice: ServiceInvoice) => {
@@ -85,7 +98,10 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
     handleModalClose();
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount?: number) => {
+    if (!amount || isNaN(amount)) {
+      return '₹0';
+    }
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
@@ -202,19 +218,19 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
                           <div className="bg-gray-50 p-3 rounded">
                             <div className="font-medium">Previous Amount</div>
                             <div className="text-lg font-semibold">
-                              {formatCurrency(invoice.summary.taxableValuePrevious)}
+                              {formatCurrency(invoice.summary?.taxableValuePrevious)}
                             </div>
                           </div>
                           <div className="bg-gray-50 p-3 rounded">
                             <div className="font-medium">Present Amount</div>
                             <div className="text-lg font-semibold">
-                              {formatCurrency(invoice.summary.taxableValuePresent)}
+                              {formatCurrency(invoice.summary?.taxableValuePresent)}
                             </div>
                           </div>
                           <div className="bg-blue-50 p-3 rounded">
                             <div className="font-medium">Total Amount</div>
                             <div className="text-lg font-bold text-blue-600">
-                              {formatCurrency(invoice.summary.payableAmountRoundedCumulative)}
+                              {formatCurrency(invoice.summary?.payableAmountRoundedCumulative)}
                             </div>
                           </div>
                         </div>
@@ -238,19 +254,20 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
                         variant="outline"
                         size="sm"
                         className="flex-1"
+                        onClick={() => handleViewInvoice(invoice)}
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         View
                       </Button>
                     </div>
-                    <Button
+                    {/* <Button
                       variant="outline"
                       size="sm"
                       className="w-full"
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Download PDF
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               </CardContent>
@@ -278,7 +295,7 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
       <ServiceInvoiceModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
@@ -286,6 +303,12 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
         projectId={projectId}
         clientId={clientId}
         initialData={editingInvoice || undefined}
+      />
+
+      <ViewServiceInvoiceModal
+        isOpen={isViewModalOpen}
+        onClose={handleViewModalClose}
+        invoice={viewingInvoice}
       />
     </div>
   );
