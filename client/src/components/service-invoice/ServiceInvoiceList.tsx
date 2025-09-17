@@ -169,6 +169,11 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
                         <p className="text-sm text-muted-foreground">
                           {invoice.header.raBillNumber && `R/A Bill: ${invoice.header.raBillNumber}`}
                         </p>
+                        <div className="mt-2">
+                          <span className="text-2xl font-bold text-primary">
+                            {formatCurrency(invoice.summary?.payableAmountRoundedCumulative || 0)}
+                          </span>
+                        </div>
                       </div>
                       <Badge variant={getStatusColor(invoice.status)}>
                         {invoice.status.toUpperCase()}
@@ -218,19 +223,19 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
                           <div className="bg-gray-50 p-3 rounded">
                             <div className="font-medium">Previous Amount</div>
                             <div className="text-lg font-semibold">
-                              {formatCurrency(invoice.summary?.taxableValuePrevious)}
+                              {formatCurrency(invoice.summary?.taxableValuePrevious || 0)}
                             </div>
                           </div>
                           <div className="bg-gray-50 p-3 rounded">
                             <div className="font-medium">Present Amount</div>
                             <div className="text-lg font-semibold">
-                              {formatCurrency(invoice.summary?.taxableValuePresent)}
+                              {formatCurrency(invoice.summary?.taxableValuePresent || 0)}
                             </div>
                           </div>
                           <div className="bg-blue-50 p-3 rounded">
                             <div className="font-medium">Total Amount</div>
                             <div className="text-lg font-bold text-blue-600">
-                              {formatCurrency(invoice.summary?.payableAmountRoundedCumulative)}
+                              {formatCurrency(invoice.summary?.payableAmountRoundedCumulative || 0)}
                             </div>
                           </div>
                         </div>

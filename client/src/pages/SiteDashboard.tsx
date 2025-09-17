@@ -618,12 +618,19 @@ const SiteDashboardContent = () => {
         }
       ],
       summary: {
-        totalAmount: 175000,
-        cgst: 15750,
-        sgst: 15750,
-        igst: 0,
-        totalTax: 31500,
-        grandTotal: 206500
+        taxableValuePrevious: 0,
+        taxableValuePresent: 175000,
+        taxableValueCumulative: 175000,
+        deductionRate: 0.01,
+        deductionAmountPrevious: 0,
+        deductionAmountPresent: 1750,
+        deductionAmountCumulative: 1750,
+        totalAmountPrevious: 0,
+        totalAmountPresent: 175000,
+        totalAmountCumulative: 175000,
+        payableAmountRoundedPrevious: 0,
+        payableAmountRoundedPresent: 175000,
+        payableAmountRoundedCumulative: 175000
       },
       status: "draft",
       createdAt: "2024-01-15T10:00:00Z",
@@ -672,12 +679,19 @@ const SiteDashboardContent = () => {
         }
       ],
       summary: {
-        totalAmount: 90000,
-        cgst: 8100,
-        sgst: 8100,
-        igst: 0,
-        totalTax: 16200,
-        grandTotal: 106200
+        taxableValuePrevious: 0,
+        taxableValuePresent: 90000,
+        taxableValueCumulative: 90000,
+        deductionRate: 0.01,
+        deductionAmountPrevious: 0,
+        deductionAmountPresent: 900,
+        deductionAmountCumulative: 900,
+        totalAmountPrevious: 0,
+        totalAmountPresent: 90000,
+        totalAmountCumulative: 90000,
+        payableAmountRoundedPrevious: 0,
+        payableAmountRoundedPresent: 90000,
+        payableAmountRoundedCumulative: 90000
       },
       status: "sent",
       createdAt: "2024-01-20T14:30:00Z",
@@ -726,12 +740,19 @@ const SiteDashboardContent = () => {
         }
       ],
       summary: {
-        totalAmount: 100000,
-        cgst: 9000,
-        sgst: 9000,
-        igst: 0,
-        totalTax: 18000,
-        grandTotal: 118000
+        taxableValuePrevious: 0,
+        taxableValuePresent: 100000,
+        taxableValueCumulative: 100000,
+        deductionRate: 0.01,
+        deductionAmountPrevious: 0,
+        deductionAmountPresent: 1000,
+        deductionAmountCumulative: 1000,
+        totalAmountPrevious: 0,
+        totalAmountPresent: 100000,
+        totalAmountCumulative: 100000,
+        payableAmountRoundedPrevious: 0,
+        payableAmountRoundedPresent: 100000,
+        payableAmountRoundedCumulative: 100000
       },
       status: "paid",
       createdAt: "2024-01-25T09:15:00Z",
