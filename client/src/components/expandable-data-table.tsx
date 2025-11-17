@@ -81,9 +81,38 @@ export function ExpandableDataTable({
     ? rowActions
     : ['view', 'edit', 'flag']
 
+  const getSearchableValue = (row: any) => {
+    // If no specific key is provided, search across all simple fields
+    if (!searchKey) {
+      return Object.values(row)
+        .filter((value) => typeof value === "string" || typeof value === "number")
+        .join(" ")
+    }
+
+    // Primary value from the configured key
+    let primary = row[searchKey]
+
+    // If the primary key is missing/empty, try a couple of common fallbacks
+    if (
+      (primary === undefined || primary === null || primary === "") &&
+      searchKey === "name"
+    ) {
+      primary = row.itemName ?? row.title ?? null
+    }
+
+    if (primary !== undefined && primary !== null && primary !== "") {
+      return typeof primary === "string" ? primary : String(primary)
+    }
+
+    // As a last resort, search across all simple fields for this row
+    return Object.values(row)
+      .filter((value) => typeof value === "string" || typeof value === "number")
+      .join(" ")
+  };
+
   const filteredData = data.filter(row => {
-    const matchesSearch = !searchKey || !searchQuery ||
-      row[searchKey].toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = !searchQuery ||
+      getSearchableValue(row).toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesFilters = Object.entries(selectedFilters).every(([key, value]) =>
       !value || value === `all_${key}` || row[key] === value
