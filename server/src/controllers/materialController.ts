@@ -250,6 +250,41 @@ export const materialController = {
     }
   },
 
+  async completeMaterialRequest(req: Request, res: Response) {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const materialRequest = await prisma.materialRequest.update({
+        where: { id: req.params.id },
+        data: {
+          status: 'COMPLETED'
+        },
+        include: {
+          requester: true,
+          project: true,
+          items: true
+        }
+      });
+      
+      // Notify requester
+      await prismaNotificationService.createNotification({
+        to: materialRequest.requestedBy,
+        type: 'material_request_completed',
+        message: `Your material request (${materialRequest.id}) has been marked as completed.`,
+      });
+      
+      res.json(materialRequest);
+    } catch (error) {
+      logger.error("Error completing material request:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
   // MaterialRequestItem CRUD Operations
   async createMaterialRequestItem(req: Request, res: Response) {
     try {

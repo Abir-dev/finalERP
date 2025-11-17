@@ -17,6 +17,7 @@ router.delete('/material-requests/:id', authenticateUser,materialController.dele
 // Material Request Approval/Rejection
 router.post('/material-requests/:id/approve', authenticateUser, materialController.approveMaterialRequest);
 router.post('/material-requests/:id/reject', authenticateUser, materialController.rejectMaterialRequest);
+router.post('/material-requests/:id/complete', authenticateUser, materialController.completeMaterialRequest);
 
 // MaterialRequestItem CRUD
 router.post('/material-requests/:materialRequestId/items', authenticateUser,  validateMaterialRequestItem, materialController.createMaterialRequestItem);
