@@ -68,6 +68,7 @@ model User {
   Design               Design[]               @relation("DesignCreator")
   Client               Client[]               @relation("ClientCreator")
   Warehouse            Warehouse[]            @relation("WarehouseCreator")
+  ClientBill           ClientBill[]           @relation("ClientBillCreator")
 
   @@map("users")
 }
@@ -1206,4 +1207,130 @@ enum PriorityLevel {
 enum ItemQuality {
   GOOD
   BAD
+}
+
+model ClientBill {
+  id                  String   @id @default(uuid()) @db.Uuid
+  
+  // Invoice Details
+  invoiceNo           String   @unique
+  invoiceDate         DateTime @db.Timestamptz(6)
+  workOrderNo         String?
+  workOrderDate       DateTime? @db.Timestamptz(6)
+  raBillNo            String?
+  
+  // Reverse Charges
+  reverseCharges      Boolean  @default(false)
+  
+  // Billing Party Details
+  billingPartyName    String
+  billingPartyAddress String
+  billingPartyGSTIN   String
+  billingPartyState   String
+  billingPartyStateCode String
+  
+  // Service Provider Details
+  providerName        String
+  providerAddress     String
+  providerGSTIN       String
+  providerState       String
+  providerStateCode   String
+  
+  // Project Details
+  projectName         String?
+  projectLocation     String?
+  
+  // Contractor Details
+  contractorName      String?
+  contractorVillage   String?
+  contractorPost      String?
+  contractorDistrict  String?
+  contractorPin       String?
+  contractorPAN       String?
+  
+  // Financial Details
+  totalAmount         Decimal  @db.Decimal(15, 2)
+  tdsPercentage       Decimal  @db.Decimal(5, 2)
+  tdsAmount           Decimal  @db.Decimal(15, 2)
+  netBillAmount       Decimal  @db.Decimal(15, 2)
+  
+  // Debit/Adjust Values
+  debitAdjustValue    Decimal? @db.Decimal(15, 2)
+  
+  // Bank Details
+  bankName            String?
+  bankBranch          String?
+  accountNo           String?
+  ifscCode            String?
+  
+  // User relation
+  createdById         String   @map("created_by_id") @db.Uuid
+  createdBy           User     @relation("ClientBillCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  // Relations
+  categories          BillCategory[]
+  
+  @@index([invoiceNo])
+  @@index([invoiceDate])
+  @@index([contractorName])
+  @@index([createdById])
+}
+
+model BillCategory {
+  id                    String     @id @default(uuid()) @db.Uuid
+  clientBillId          String     @db.Uuid
+  clientBill            ClientBill @relation(fields: [clientBillId], references: [id], onDelete: Cascade)
+  
+  // Category Details
+  categoryCode          String
+  categoryName          String
+  tower                 String?
+  description           String?
+  sequence              Int
+  
+  // Relations
+  lineItems             BillLineItem[]
+  
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  @@index([clientBillId])
+  @@index([categoryCode])
+  @@unique([clientBillId, categoryCode])
+}
+
+model BillLineItem {
+  id                    String       @id @default(uuid()) @db.Uuid
+  categoryId            String       @db.Uuid
+  category              BillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  // Item Details
+  slNo                  Int
+  description           String
+  sacHsnCode            String?
+  unit                  String
+  unitRate              Decimal      @db.Decimal(10, 2)
+  
+  // Quantities
+  previousQuantity      Decimal      @db.Decimal(15, 3)
+  presentQuantity       Decimal      @db.Decimal(15, 3)
+  cumulativeQuantity    Decimal      @db.Decimal(15, 3)
+  
+  // Amounts
+  previousAmount        Decimal      @db.Decimal(15, 2)
+  presentAmount         Decimal      @db.Decimal(15, 2)
+  cumulativeAmount      Decimal      @db.Decimal(15, 2)
+  
+  // Flags
+  isDeduction           Boolean      @default(false)
+  isRevisedRate         Boolean      @default(false)
+    
+  createdAt             DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  @@index([categoryId])
 }

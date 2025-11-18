@@ -33,6 +33,7 @@ import boqRoutes from './routes/boq';
 import designRoutes from './routes/design';
 import clientRoutes from './routes/client';
 import warehouseRoutes from './routes/warehouse';
+import clientBillRoutes from './routes/clientBill';
 
 dotenv.config();
 
@@ -101,6 +102,7 @@ app.use('/api/boqs', boqRoutes);
 app.use('/api/designs', designRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/warehouse', warehouseRoutes);
+app.use('/api/client-bills', clientBillRoutes);
 
 // Basic health check route
 app.get('/health', (req, res) => {
