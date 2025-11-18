@@ -8,7 +8,10 @@ export interface MaterialRequestItem {
   estimatedCost: number;
   id: string;
   materialRequestId: string;
-  itemCode: string;
+  hsnCode: string;
+  rate?: number;
+  value?: number;
+  vehicleNo?: string;
   requiredBy?: string;
   quantity: number;
   targetWarehouse?: string;
