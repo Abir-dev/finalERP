@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, Fragment } from "react"
+import type { FormEvent } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,6 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
+import { Switch } from "@/components/ui/switch"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { DollarSign, FileText, Users, Calculator, CreditCard, AlertTriangle, Download, ArrowLeft, Plus, TrendingUp, PieChart, Check, Clock, ChevronDown, Trash2 } from "lucide-react"
 import axios from "axios";
@@ -145,6 +148,369 @@ const payrollColumns: ColumnDef<any>[] = [
     },
 ]
 
+type BillLineItemRecord = {
+    id: string
+    categoryId: string
+    slNo: number
+    description: string
+    sacHsnCode?: string
+    unit: string
+    unitRate: number
+    previousQuantity: number
+    presentQuantity: number
+    cumulativeQuantity: number
+    previousAmount: number
+    presentAmount: number
+    cumulativeAmount: number
+    isDeduction?: boolean
+    isRevisedRate?: boolean
+}
+
+type BillCategoryRecord = {
+    id: string
+    clientBillId: string
+    categoryCode: string
+    categoryName: string
+    tower?: string
+    description?: string
+    sequence: number
+    lineItems: BillLineItemRecord[]
+}
+
+type ClientBillRecord = {
+    id: string
+    invoiceNo: string
+    invoiceDate: string
+    workOrderNo?: string
+    workOrderDate?: string
+    raBillNo?: string
+    reverseCharges: boolean
+    billingPartyName: string
+    billingPartyAddress: string
+    billingPartyGSTIN: string
+    billingPartyState: string
+    billingPartyStateCode: string
+    providerName: string
+    providerAddress: string
+    providerGSTIN: string
+    providerState: string
+    providerStateCode: string
+    projectName?: string
+    projectLocation?: string
+    contractorName?: string
+    contractorVillage?: string
+    contractorPost?: string
+    contractorDistrict?: string
+    contractorPin?: string
+    contractorPAN?: string
+    totalAmount: number
+    tdsPercentage: number
+    tdsAmount: number
+    netBillAmount: number
+    debitAdjustValue?: number
+    bankName?: string
+    bankBranch?: string
+    accountNo?: string
+    ifscCode?: string
+    categories: BillCategoryRecord[]
+    createdAt?: string
+    updatedAt?: string
+}
+
+type ClientBillFormState = Omit<ClientBillRecord, "tdsAmount" | "netBillAmount"> & {
+    tdsAmount?: number
+    netBillAmount?: number
+}
+
+const formatINR = (value: number) =>
+    new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value ?? 0)
+
+const generateTempId = () => Math.random().toString(36).slice(2, 10)
+
+const createBlankLineItem = (slNo = 1): BillLineItemRecord => ({
+    id: generateTempId(),
+    categoryId: "",
+    slNo,
+    description: "",
+    sacHsnCode: "",
+    unit: "",
+    unitRate: 0,
+    previousQuantity: 0,
+    presentQuantity: 0,
+    cumulativeQuantity: 0,
+    previousAmount: 0,
+    presentAmount: 0,
+    cumulativeAmount: 0,
+    isDeduction: false,
+    isRevisedRate: false,
+})
+
+const createBlankCategory = (sequence = 1): BillCategoryRecord => ({
+    id: generateTempId(),
+    clientBillId: "",
+    categoryCode: "",
+    categoryName: "",
+    tower: "",
+    description: "",
+    sequence,
+    lineItems: [createBlankLineItem()],
+})
+
+const createBlankClientBill = (): ClientBillFormState => ({
+    id: "",
+    invoiceNo: "",
+    invoiceDate: "",
+    workOrderNo: "",
+    workOrderDate: "",
+    raBillNo: "",
+    reverseCharges: false,
+    billingPartyName: "",
+    billingPartyAddress: "",
+    billingPartyGSTIN: "",
+    billingPartyState: "",
+    billingPartyStateCode: "",
+    providerName: "",
+    providerAddress: "",
+    providerGSTIN: "",
+    providerState: "",
+    providerStateCode: "",
+    projectName: "",
+    projectLocation: "",
+    contractorName: "",
+    contractorVillage: "",
+    contractorPost: "",
+    contractorDistrict: "",
+    contractorPin: "",
+    contractorPAN: "",
+    totalAmount: 0,
+    tdsPercentage: 1,
+    debitAdjustValue: 0,
+    bankName: "",
+    bankBranch: "",
+    accountNo: "",
+    ifscCode: "",
+    categories: [createBlankCategory()],
+})
+
+const mockBillId = "client-bill-demo-001"
+const mockCategoryAId = "client-bill-demo-cat-a"
+const mockCategoryBId = "client-bill-demo-cat-b"
+const mockCategoryCId = "client-bill-demo-cat-c"
+
+const mockClientBill: ClientBillRecord = {
+    id: mockBillId,
+    invoiceNo: "INV/2025/08/001",
+    invoiceDate: "2025-08-01T00:00:00.000Z",
+    workOrderNo: "6th RA Work Order",
+    workOrderDate: "2025-07-20T00:00:00.000Z",
+    raBillNo: "6th RA",
+    reverseCharges: false,
+    billingPartyName: "RAJ TRIMITU INFRA PROJECTS PVT. LTD.",
+    billingPartyAddress: "South City Business Park, 770 Anandapur, Kolkata-700107, 7th Floor",
+    billingPartyGSTIN: "19AACGM6664R1Z1",
+    billingPartyState: "West Bengal",
+    billingPartyStateCode: "19",
+    providerName: "RAJ TRIMITU INFRA PROJECTS PVT. LTD.",
+    providerAddress: "Mankitala, West Bengal",
+    providerGSTIN: "19AACGM6664R1Z1",
+    providerState: "West Bengal",
+    providerStateCode: "19",
+    projectName: "QUINTESSA",
+    projectLocation: "Shimul bari, Dist.- Purbo Medinipur",
+    contractorName: "Mr. TAPAN MAITY",
+    contractorVillage: "Shimul Bari",
+    contractorPost: "Shimul Bari",
+    contractorDistrict: "Purbo Medinipur",
+    contractorPin: "721659",
+    contractorPAN: "BIZPM7207F",
+    totalAmount: 3869268.21,
+    tdsPercentage: 1,
+    tdsAmount: 38692.68,
+    netBillAmount: 0,
+    debitAdjustValue: 0,
+    bankName: "State Bank of India",
+    bankBranch: "Medinipur",
+    accountNo: "12345678901",
+    ifscCode: "SBIN0001234",
+    categories: [
+        {
+            id: mockCategoryAId,
+            clientBillId: mockBillId,
+            categoryCode: "A",
+            categoryName: "Conventional Shuttering Work",
+            tower: "TOWER",
+            description: "This rate only for UGR & STP",
+            sequence: 1,
+            lineItems: [
+                {
+                    id: "client-bill-demo-cat-a-row-1",
+                    categoryId: mockCategoryAId,
+                    slNo: 1,
+                    description: "Pile Cap & Raft",
+                    sacHsnCode: "9954",
+                    unit: "Sqm",
+                    unitRate: 1000,
+                    previousQuantity: 2292.84,
+                    presentQuantity: 18.95,
+                    cumulativeQuantity: 2311.79,
+                    previousAmount: 573210,
+                    presentAmount: 18950,
+                    cumulativeAmount: 592160,
+                    isDeduction: false,
+                    isRevisedRate: false,
+                },
+                {
+                    id: "client-bill-demo-cat-a-row-2",
+                    categoryId: mockCategoryAId,
+                    slNo: 2,
+                    description: "UGR Column & Wall (+150mm)",
+                    sacHsnCode: "9954",
+                    unit: "Sqm",
+                    unitRate: 2500,
+                    previousQuantity: 1480.00,
+                    presentQuantity: 149.57,
+                    cumulativeQuantity: 1629.57,
+                    previousAmount: 3700000,
+                    presentAmount: 373920,
+                    cumulativeAmount: 4073920,
+                    isDeduction: false,
+                    isRevisedRate: false,
+                },
+            ],
+        },
+        {
+            id: mockCategoryBId,
+            clientBillId: mockBillId,
+            categoryCode: "B",
+            categoryName: "Reinforcement Work",
+            tower: "TOWER",
+            sequence: 2,
+            lineItems: [
+                {
+                    id: "client-bill-demo-cat-b-row-1",
+                    categoryId: mockCategoryBId,
+                    slNo: 3,
+                    description: "Pile Cap & Raft",
+                    sacHsnCode: "7308",
+                    unit: "M.T",
+                    unitRate: 6500,
+                    previousQuantity: 200.00,
+                    presentQuantity: 100.25,
+                    cumulativeQuantity: 300.25,
+                    previousAmount: 1300000,
+                    presentAmount: 651625,
+                    cumulativeAmount: 1951625,
+                    isDeduction: false,
+                    isRevisedRate: false,
+                },
+                {
+                    id: "client-bill-demo-cat-b-row-2",
+                    categoryId: mockCategoryBId,
+                    slNo: 4,
+                    description: "Column & Wall",
+                    sacHsnCode: "7308",
+                    unit: "M.T",
+                    unitRate: 23200,
+                    previousQuantity: 50.00,
+                    presentQuantity: 48.24,
+                    cumulativeQuantity: 98.24,
+                    previousAmount: 1160000,
+                    presentAmount: 1118368,
+                    cumulativeAmount: 2278368,
+                    isDeduction: false,
+                    isRevisedRate: true,
+                },
+                {
+                    id: "client-bill-demo-cat-b-row-3",
+                    categoryId: mockCategoryBId,
+                    slNo: 5,
+                    description: "UGR Column & Wall (+150mm)",
+                    sacHsnCode: "7308",
+                    unit: "M.T",
+                    unitRate: 7500,
+                    previousQuantity: 450.00,
+                    presentQuantity: 56.12,
+                    cumulativeQuantity: 506.12,
+                    previousAmount: 3375000,
+                    presentAmount: 420900,
+                    cumulativeAmount: 3795900,
+                    isDeduction: true,
+                    isRevisedRate: false,
+                },
+            ],
+        },
+        {
+            id: mockCategoryCId,
+            clientBillId: mockBillId,
+            categoryCode: "G",
+            categoryName: "Daily Labour",
+            sequence: 3,
+            lineItems: [
+                {
+                    id: "client-bill-demo-cat-c-row-1",
+                    categoryId: mockCategoryCId,
+                    slNo: 6,
+                    description: "Daily (Carpenter/Fitter)",
+                    sacHsnCode: "9985",
+                    unit: "Heads",
+                    unitRate: 500,
+                    previousQuantity: 395,
+                    presentQuantity: 94.38,
+                    cumulativeQuantity: 489.38,
+                    previousAmount: 197500,
+                    presentAmount: 47190,
+                    cumulativeAmount: 244690,
+                    isDeduction: false,
+                    isRevisedRate: false,
+                },
+                {
+                    id: "client-bill-demo-cat-c-row-2",
+                    categoryId: mockCategoryCId,
+                    slNo: 7,
+                    description: "Daily (Helper)",
+                    sacHsnCode: "9985",
+                    unit: "Heads",
+                    unitRate: 380,
+                    previousQuantity: 325,
+                    presentQuantity: 62.88,
+                    cumulativeQuantity: 387.88,
+                    previousAmount: 123500,
+                    presentAmount: 23894.4,
+                    cumulativeAmount: 147394.4,
+                    isDeduction: false,
+                    isRevisedRate: false,
+                },
+                {
+                    id: "client-bill-demo-cat-c-row-3",
+                    categoryId: mockCategoryCId,
+                    slNo: 8,
+                    description: "Pile Ref. Jiggle & Straight",
+                    sacHsnCode: "7308",
+                    unit: "Pcs",
+                    unitRate: 4615,
+                    previousQuantity: 100,
+                    presentQuantity: 263.22,
+                    cumulativeQuantity: 363.22,
+                    previousAmount: 461500,
+                    presentAmount: 1214420.81,
+                    cumulativeAmount: 1675920.81,
+                    isDeduction: false,
+                    isRevisedRate: false,
+                },
+            ],
+        },
+    ],
+    createdAt: "2025-08-01T10:00:00.000Z",
+    updatedAt: "2025-08-01T10:00:00.000Z",
+}
+
+mockClientBill.netBillAmount = mockClientBill.totalAmount - mockClientBill.tdsAmount - (mockClientBill.debitAdjustValue || 0)
+
 const AccountsDashboard = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -179,6 +545,24 @@ const AccountsDashboard = () => {
         remaining: 0,
         projectCount: 0
     });
+    const [isClientBillFormOpen, setIsClientBillFormOpen] = useState(false)
+    const [clientBills, setClientBills] = useState<ClientBillRecord[]>([mockClientBill])
+    const [clientBillFormData, setClientBillFormData] = useState<ClientBillFormState>(createBlankClientBill())
+
+    const calculatedTdsAmount = useMemo(() => {
+        const amount = Number(clientBillFormData.totalAmount || 0)
+        const rate = Number(clientBillFormData.tdsPercentage || 0)
+        const computed = (amount * rate) / 100
+        return Number.isFinite(computed) ? Number(computed.toFixed(2)) : 0
+    }, [clientBillFormData.totalAmount, clientBillFormData.tdsPercentage])
+
+    const calculatedNetBillAmount = useMemo(() => {
+        const base = Number(clientBillFormData.totalAmount || 0)
+        const debit = Number(clientBillFormData.debitAdjustValue || 0)
+        const computed = base - calculatedTdsAmount - debit
+        const safeValue = Number.isFinite(computed) ? computed : 0
+        return Number(Number(Math.max(safeValue, 0)).toFixed(2))
+    }, [clientBillFormData.totalAmount, clientBillFormData.debitAdjustValue, calculatedTdsAmount])
 
     // Memoized Payroll KPIs derived from employees with latestNetSalary
     const payrollKPIs = useMemo(() => {
@@ -202,6 +586,7 @@ const AccountsDashboard = () => {
         if (path.includes('/budget')) return 'budget';
         if (path.includes('/payroll')) return 'payroll';
         if (path.includes('/taxes')) return 'taxes';
+        if (path.includes('/client-bill')) return 'client-bill';
         return 'overview'; // default tab
     };
 
@@ -212,7 +597,8 @@ const AccountsDashboard = () => {
             invoicing: '/accounts-manager/invoicing',
             budget: '/accounts-manager/budget',
             payroll: '/accounts-manager/payroll',
-            taxes: '/accounts-manager/taxes'
+            taxes: '/accounts-manager/taxes',
+            "client-bill": '/accounts-manager/client-bill'
         };
         navigate(tabRoutes[value]);
     };
@@ -397,6 +783,172 @@ const AccountsDashboard = () => {
         });
     };
 
+    const numericBillFields: Array<keyof ClientBillFormState> = ["totalAmount", "tdsPercentage", "debitAdjustValue"]
+    const numericCategoryFields: Array<keyof BillCategoryRecord> = ["sequence"]
+    const numericLineItemFields: Array<keyof BillLineItemRecord> = [
+        "slNo",
+        "unitRate",
+        "previousQuantity",
+        "presentQuantity",
+        "cumulativeQuantity",
+        "previousAmount",
+        "presentAmount",
+        "cumulativeAmount",
+    ]
+
+    const handleClientBillFieldChange = (field: keyof ClientBillFormState, value: string | number | boolean) => {
+        setClientBillFormData(prev => {
+            const parsedValue = numericBillFields.includes(field)
+                ? Number(value) || 0
+                : value
+            return {
+                ...prev,
+                [field]: parsedValue as ClientBillFormState[typeof field],
+            }
+        })
+    }
+
+    const handleCategoryFieldChange = (categoryIndex: number, field: keyof BillCategoryRecord, value: string | number) => {
+        setClientBillFormData(prev => {
+            const updatedCategories = prev.categories.map((category, idx) => {
+                if (idx !== categoryIndex) return category
+                const parsedValue = numericCategoryFields.includes(field) ? Number(value) || 0 : value
+                return {
+                    ...category,
+                    [field]: parsedValue as BillCategoryRecord[typeof field],
+                }
+            })
+            return { ...prev, categories: updatedCategories }
+        })
+    }
+
+    const handleLineItemFieldChange = (
+        categoryIndex: number,
+        lineIndex: number,
+        field: keyof BillLineItemRecord,
+        value: string | number | boolean,
+    ) => {
+        setClientBillFormData(prev => {
+            const updatedCategories = prev.categories.map((category, idx) => {
+                if (idx !== categoryIndex) return category
+                const updatedLineItems = category.lineItems.map((line, lIdx) => {
+                    if (lIdx !== lineIndex) return line
+                    const parsedValue = numericLineItemFields.includes(field)
+                        ? Number(value) || 0
+                        : value
+                    return {
+                        ...line,
+                        [field]: parsedValue as BillLineItemRecord[typeof field],
+                    }
+                })
+                return { ...category, lineItems: updatedLineItems }
+            })
+            return { ...prev, categories: updatedCategories }
+        })
+    }
+
+    const addCategorySection = () => {
+        setClientBillFormData(prev => {
+            const newCategory = createBlankCategory(prev.categories.length + 1)
+            const seededCategory = {
+                ...newCategory,
+                lineItems: newCategory.lineItems.map((line, index) => ({
+                    ...line,
+                    categoryId: newCategory.id,
+                    slNo: index + 1,
+                })),
+            }
+            return {
+                ...prev,
+                categories: [...prev.categories, seededCategory],
+            }
+        })
+    }
+
+    const removeCategorySection = (categoryIndex: number) => {
+        setClientBillFormData(prev => {
+            if (prev.categories.length === 1) return prev
+            const updatedCategories = prev.categories.filter((_, idx) => idx !== categoryIndex)
+            return { ...prev, categories: updatedCategories }
+        })
+    }
+
+    const addLineItemRow = (categoryIndex: number) => {
+        setClientBillFormData(prev => {
+            const updatedCategories = prev.categories.map((category, idx) => {
+                if (idx !== categoryIndex) return category
+                const newLine = {
+                    ...createBlankLineItem(category.lineItems.length + 1),
+                    categoryId: category.id,
+                }
+                return {
+                    ...category,
+                    lineItems: [...category.lineItems, newLine],
+                }
+            })
+            return { ...prev, categories: updatedCategories }
+        })
+    }
+
+    const removeLineItemRow = (categoryIndex: number, lineIndex: number) => {
+        setClientBillFormData(prev => {
+            const updatedCategories = prev.categories.map((category, idx) => {
+                if (idx !== categoryIndex) return category
+                if (category.lineItems.length === 1) return category
+                const remainingLines = category.lineItems.filter((_, lIdx) => lIdx !== lineIndex)
+                return { ...category, lineItems: remainingLines }
+            })
+            return { ...prev, categories: updatedCategories }
+        })
+    }
+
+    const handleClientBillSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        const normalizeDateValue = (value?: string) => {
+            if (!value) return undefined
+            const parsed = new Date(value)
+            return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString()
+        }
+
+        const newBillId = generateTempId()
+        const sanitizedCategories = clientBillFormData.categories.map((category, index) => {
+            const categoryId = category.id || generateTempId()
+            return {
+                ...category,
+                id: categoryId,
+                clientBillId: newBillId,
+                sequence: category.sequence || index + 1,
+                lineItems: category.lineItems.map((line, lineIndex) => ({
+                    ...line,
+                    id: line.id || generateTempId(),
+                    categoryId,
+                    slNo: line.slNo || lineIndex + 1,
+                })),
+            }
+        })
+
+        const totalAmount = Number(clientBillFormData.totalAmount || 0)
+        const debitAdjustValue = Number(clientBillFormData.debitAdjustValue || 0)
+
+        const cleanBill: ClientBillRecord = {
+            ...clientBillFormData,
+            id: newBillId,
+            invoiceDate: normalizeDateValue(clientBillFormData.invoiceDate) || new Date().toISOString(),
+            workOrderDate: normalizeDateValue(clientBillFormData.workOrderDate),
+            totalAmount,
+            tdsPercentage: Number(clientBillFormData.tdsPercentage || 0),
+            tdsAmount: calculatedTdsAmount,
+            debitAdjustValue,
+            netBillAmount: Math.max(totalAmount - calculatedTdsAmount - debitAdjustValue, 0),
+            categories: sanitizedCategories,
+        }
+
+        setClientBills(prev => [cleanBill, ...prev])
+        toast.success("Client bill saved. Persist to backend when ready.")
+        setClientBillFormData(createBlankClientBill())
+        setIsClientBillFormOpen(false)
+    }
+
     useEffect(() => {
         const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -570,12 +1122,13 @@ const AccountsDashboard = () => {
 
             <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
                 {/* Hide tabs on mobile - navigation is handled by sidebar */}
-                <TabsList className="hidden md:grid w-full grid-cols-5">
+                <TabsList className="hidden md:grid w-full grid-cols-6">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="invoicing">Invoicing</TabsTrigger>
                     <TabsTrigger value="budget">Budget Control</TabsTrigger>
                     <TabsTrigger value="payroll">Payroll & Compliance</TabsTrigger>
                     <TabsTrigger value="taxes">Tax Management</TabsTrigger>
+                    <TabsTrigger value="client-bill">Client Bill</TabsTrigger>
                     {/* <TabsTrigger value="reconciliation">Reconciliation</TabsTrigger> */}
                 </TabsList>
 
@@ -591,6 +1144,8 @@ const AccountsDashboard = () => {
                                 <Calculator className="h-5 w-5 text-primary" />
                             ) : getCurrentTab() === "payroll" ? (
                                 <Users className="h-5 w-5 text-primary" />
+                            ) : getCurrentTab() === "client-bill" ? (
+                                <FileText className="h-5 w-5 text-primary" />
                             ) : (
                                 <DollarSign className="h-5 w-5 text-primary" />
                             )}
@@ -600,6 +1155,7 @@ const AccountsDashboard = () => {
                                      : getCurrentTab() === "invoicing" ? "Invoicing"
                                      : getCurrentTab() === "budget" ? "Budget Control"
                                      : getCurrentTab() === "payroll" ? "Payroll & Compliance"
+                                     : getCurrentTab() === "client-bill" ? "Client Bill"
                                      : "Tax Management"}
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
@@ -607,6 +1163,7 @@ const AccountsDashboard = () => {
                                               : getCurrentTab() === "invoicing" ? "Invoicing"
                                               : getCurrentTab() === "budget" ? "Budget Control"
                                               : getCurrentTab() === "payroll" ? "Payroll & Compliance"
+                                              : getCurrentTab() === "client-bill" ? "Client Bill"
                                               : "Tax Management"}
                                 </p>
                             </div>
@@ -1165,6 +1722,184 @@ const AccountsDashboard = () => {
                     </div>
                 </TabsContent>
 
+                <TabsContent value="client-bill" className="space-y-6">
+                    <Card className="border-primary/30">
+                        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <CardTitle>Client Bill Register</CardTitle>
+                                <CardDescription>Capture RA bills in the Quintessa layout with complete metadata.</CardDescription>
+                            </div>
+                            <Button
+                                variant="default"
+                                onClick={() => setIsClientBillFormOpen(true)}
+                                className="w-full md:w-auto"
+                            >
+                                Add Client Bill
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground">
+                            Use the button above to capture a new client bill entry. The full schema-aligned form opens in a large, scrollable workspace.
+                        </CardContent>
+                    </Card>
+
+                    <div className="space-y-6">
+                        {clientBills.length === 0 && (
+                            <Card>
+                                <CardContent className="py-10 text-center text-muted-foreground">
+                                    <FileText className="mx-auto mb-4 h-10 w-10 opacity-40" />
+                                    No client bills captured yet.
+                                </CardContent>
+                            </Card>
+                        )}
+                        {clientBills.map((bill) => (
+                            <Card key={bill.id} className="shadow-sm">
+                                <CardHeader className="space-y-4">
+                                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                        <div>
+                                            <p className="text-xs uppercase text-muted-foreground">Contractor</p>
+                                            <p className="text-2xl font-semibold">{bill.contractorName}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {bill.contractorVillage}, {bill.contractorDistrict}, PIN {bill.contractorPin}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">PAN: {bill.contractorPAN}</p>
+                                        </div>
+                                        <div className="text-right space-y-1">
+                                            <p className="text-lg font-semibold">Invoice #{bill.invoiceNo}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Dated {new Date(bill.invoiceDate).toLocaleDateString("en-IN")}
+                                            </p>
+                                            <Badge variant={bill.reverseCharges ? "destructive" : "secondary"}>
+                                                Reverse Charges {bill.reverseCharges ? "Applicable" : "Not Applicable"}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                        <div className="rounded-lg border p-4">
+                                            <p className="text-xs uppercase text-muted-foreground">Billing Party</p>
+                                            <p className="font-semibold">{bill.billingPartyName}</p>
+                                            <p className="text-sm text-muted-foreground">{bill.billingPartyAddress}</p>
+                                            <p className="text-sm text-muted-foreground">GSTIN: {bill.billingPartyGSTIN} • State {bill.billingPartyStateCode}</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4">
+                                            <p className="text-xs uppercase text-muted-foreground">Service Provider</p>
+                                            <p className="font-semibold">{bill.providerName}</p>
+                                            <p className="text-sm text-muted-foreground">{bill.providerAddress}</p>
+                                            <p className="text-sm text-muted-foreground">GSTIN: {bill.providerGSTIN}</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4 space-y-2">
+                                            <div>
+                                                <p className="text-xs uppercase text-muted-foreground">Project</p>
+                                                <p className="font-semibold">{bill.projectName}</p>
+                                                <p className="text-sm text-muted-foreground">{bill.projectLocation}</p>
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">
+                                                Work Order: {bill.workOrderNo || "N/A"} ({bill.workOrderDate ? new Date(bill.workOrderDate).toLocaleDateString("en-IN") : "—"})
+                                            </div>
+                                            <div className="text-sm text-muted-foreground">RA Bill: {bill.raBillNo || "N/A"}</div>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                                        <div className="rounded-lg border p-4 bg-muted/50">
+                                            <p className="text-xs uppercase text-muted-foreground">Total Amount</p>
+                                            <p className="text-2xl font-semibold">{formatINR(bill.totalAmount)}</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4 bg-muted/50">
+                                            <p className="text-xs uppercase text-muted-foreground">TDS ({bill.tdsPercentage}%)</p>
+                                            <p className="text-2xl font-semibold text-orange-600">{formatINR(bill.tdsAmount)}</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4 bg-muted/50">
+                                            <p className="text-xs uppercase text-muted-foreground">Debit / Adjust</p>
+                                            <p className="text-2xl font-semibold">{formatINR(bill.debitAdjustValue || 0)}</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4 bg-primary/5">
+                                            <p className="text-xs uppercase text-primary">Net Bill Amount</p>
+                                            <p className="text-2xl font-semibold text-primary">{formatINR(bill.netBillAmount)}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="overflow-x-auto rounded-xl border">
+                                        <Table>
+                                            <TableHeader className="bg-muted/50">
+                                                <TableRow>
+                                                    <TableHead>Sl</TableHead>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead>SAC/HSN</TableHead>
+                                                    <TableHead>Unit</TableHead>
+                                                    <TableHead>Unit Rate</TableHead>
+                                                    <TableHead>Quantity (Prev / Pres / Cum)</TableHead>
+                                                    <TableHead>Amount (Prev / Pres / Cum)</TableHead>
+                                                    <TableHead>Flags</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {bill.categories.map((category) => (
+                                                    <Fragment key={category.id}>
+                                                        <TableRow className="bg-muted/70">
+                                                            <TableCell colSpan={8}>
+                                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                    <div className="font-semibold">
+                                                                        {category.categoryCode}. {category.categoryName}
+                                                                    </div>
+                                                                    <div className="text-sm text-muted-foreground">
+                                                                        {category.tower} • {category.description || "—"}
+                                                                    </div>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {category.lineItems.map((line) => (
+                                                            <TableRow key={line.id}>
+                                                                <TableCell>{line.slNo}</TableCell>
+                                                                <TableCell>{line.description}</TableCell>
+                                                                <TableCell>{line.sacHsnCode || "—"}</TableCell>
+                                                                <TableCell>{line.unit}</TableCell>
+                                                                <TableCell>{formatINR(line.unitRate)}</TableCell>
+                                                                <TableCell>
+                                                                    <div className="text-xs text-muted-foreground">
+                                                                        <p>Prev: {line.previousQuantity.toFixed(3)}</p>
+                                                                        <p>Pres: {line.presentQuantity.toFixed(3)}</p>
+                                                                        <p>Cum: {line.cumulativeQuantity.toFixed(3)}</p>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="text-xs text-muted-foreground">
+                                                                        <p>Prev: {formatINR(line.previousAmount)}</p>
+                                                                        <p>Pres: {formatINR(line.presentAmount)}</p>
+                                                                        <p>Cum: {formatINR(line.cumulativeAmount)}</p>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="space-x-2">
+                                                                    {line.isDeduction && <Badge variant="destructive">Deduction</Badge>}
+                                                                    {line.isRevisedRate && <Badge variant="secondary">Revised</Badge>}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </Fragment>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="rounded-lg border p-4">
+                                            <p className="text-xs uppercase text-muted-foreground">Debit / Adjust</p>
+                                            <p className="text-lg font-semibold">{formatINR(bill.debitAdjustValue || 0)}</p>
+                                            <p className="text-sm text-muted-foreground">For binding wire & nails</p>
+                                        </div>
+                                        <div className="rounded-lg border p-4">
+                                            <p className="text-xs uppercase text-muted-foreground">Bank</p>
+                                            <p className="text-lg font-semibold">{bill.bankName}</p>
+                                            <p className="text-sm text-muted-foreground">Branch: {bill.bankBranch}</p>
+                                            <p className="text-sm text-muted-foreground">A/C: {bill.accountNo} • IFSC: {bill.ifscCode}</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </TabsContent>
+
                 <TabsContent value="taxes" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatCard
@@ -1334,6 +2069,541 @@ const AccountsDashboard = () => {
                     <ReconciliationPanel />
                 </TabsContent>
             </Tabs>
+
+            {/* Client Bill Form Modal */}
+            <Dialog open={isClientBillFormOpen} onOpenChange={setIsClientBillFormOpen}>
+                <DialogContent className="w-full max-w-[95vw] xl:max-w-[1500px] bg-white">
+                    <DialogHeader>
+                        <DialogTitle>Add Client Bill</DialogTitle>
+                        <DialogDescription>Fill every section to match the Quintessa client bill layout.</DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[80vh] overflow-y-auto px-4 sm:px-6 pb-6">
+                        <form onSubmit={handleClientBillSubmit} className="space-y-6">
+                            <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-4">
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <h3 className="text-xl font-semibold">Invoice Details</h3>
+                                    <Badge variant="outline">Schema Ready</Badge>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <Label htmlFor="invoiceNo">Invoice No.</Label>
+                                        <Input
+                                            id="invoiceNo"
+                                            value={clientBillFormData.invoiceNo}
+                                            onChange={(e) => handleClientBillFieldChange("invoiceNo", e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="invoiceDate">Invoice Date</Label>
+                                        <Input
+                                            id="invoiceDate"
+                                            type="date"
+                                            value={clientBillFormData.invoiceDate}
+                                            onChange={(e) => handleClientBillFieldChange("invoiceDate", e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="raBillNo">RA Bill No.</Label>
+                                        <Input
+                                            id="raBillNo"
+                                            value={clientBillFormData.raBillNo}
+                                            onChange={(e) => handleClientBillFieldChange("raBillNo", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="workOrderNo">Work Order No.</Label>
+                                        <Input
+                                            id="workOrderNo"
+                                            value={clientBillFormData.workOrderNo}
+                                            onChange={(e) => handleClientBillFieldChange("workOrderNo", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="workOrderDate">Work Order Date</Label>
+                                        <Input
+                                            id="workOrderDate"
+                                            type="date"
+                                            value={clientBillFormData.workOrderDate}
+                                            onChange={(e) => handleClientBillFieldChange("workOrderDate", e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg border p-4">
+                                    <div>
+                                        <p className="text-sm font-medium">Reverse Charges</p>
+                                        <p className="text-xs text-muted-foreground">Mark if reverse charges apply to this bill</p>
+                                    </div>
+                                    <Switch
+                                        checked={clientBillFormData.reverseCharges}
+                                        onCheckedChange={(checked) => handleClientBillFieldChange("reverseCharges", checked)}
+                                    />
+                                </div>
+                            </section>
+
+                            <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h4 className="text-lg font-semibold">Billing Party</h4>
+                                        <div>
+                                            <Label htmlFor="billingPartyName">Name</Label>
+                                            <Input
+                                                id="billingPartyName"
+                                                value={clientBillFormData.billingPartyName}
+                                                onChange={(e) => handleClientBillFieldChange("billingPartyName", e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="billingPartyAddress">Address</Label>
+                                            <Textarea
+                                                id="billingPartyAddress"
+                                                value={clientBillFormData.billingPartyAddress}
+                                                onChange={(e) => handleClientBillFieldChange("billingPartyAddress", e.target.value)}
+                                                rows={3}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <Label htmlFor="billingPartyGSTIN">GSTIN</Label>
+                                                <Input
+                                                    id="billingPartyGSTIN"
+                                                    value={clientBillFormData.billingPartyGSTIN}
+                                                    onChange={(e) => handleClientBillFieldChange("billingPartyGSTIN", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="billingPartyState">State</Label>
+                                                <Input
+                                                    id="billingPartyState"
+                                                    value={clientBillFormData.billingPartyState}
+                                                    onChange={(e) => handleClientBillFieldChange("billingPartyState", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="billingPartyStateCode">State Code</Label>
+                                                <Input
+                                                    id="billingPartyStateCode"
+                                                    value={clientBillFormData.billingPartyStateCode}
+                                                    onChange={(e) => handleClientBillFieldChange("billingPartyStateCode", e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <h4 className="text-lg font-semibold">Service Provider</h4>
+                                        <div>
+                                            <Label htmlFor="providerName">Name</Label>
+                                            <Input
+                                                id="providerName"
+                                                value={clientBillFormData.providerName}
+                                                onChange={(e) => handleClientBillFieldChange("providerName", e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="providerAddress">Address</Label>
+                                            <Textarea
+                                                id="providerAddress"
+                                                value={clientBillFormData.providerAddress}
+                                                onChange={(e) => handleClientBillFieldChange("providerAddress", e.target.value)}
+                                                rows={3}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <Label htmlFor="providerGSTIN">GSTIN</Label>
+                                                <Input
+                                                    id="providerGSTIN"
+                                                    value={clientBillFormData.providerGSTIN}
+                                                    onChange={(e) => handleClientBillFieldChange("providerGSTIN", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="providerState">State</Label>
+                                                <Input
+                                                    id="providerState"
+                                                    value={clientBillFormData.providerState}
+                                                    onChange={(e) => handleClientBillFieldChange("providerState", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="providerStateCode">State Code</Label>
+                                                <Input
+                                                    id="providerStateCode"
+                                                    value={clientBillFormData.providerStateCode}
+                                                    onChange={(e) => handleClientBillFieldChange("providerStateCode", e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="space-y-4">
+                                        <h4 className="text-lg font-semibold">Project</h4>
+                                        <div>
+                                            <Label htmlFor="projectName">Name</Label>
+                                            <Input
+                                                id="projectName"
+                                                value={clientBillFormData.projectName}
+                                                onChange={(e) => handleClientBillFieldChange("projectName", e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="projectLocation">Location</Label>
+                                            <Input
+                                                id="projectLocation"
+                                                value={clientBillFormData.projectLocation}
+                                                onChange={(e) => handleClientBillFieldChange("projectLocation", e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 lg:col-span-2">
+                                        <h4 className="text-lg font-semibold">Contractor</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <Label htmlFor="contractorName">Name</Label>
+                                                <Input
+                                                    id="contractorName"
+                                                    value={clientBillFormData.contractorName}
+                                                    onChange={(e) => handleClientBillFieldChange("contractorName", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="contractorPAN">PAN</Label>
+                                                <Input
+                                                    id="contractorPAN"
+                                                    value={clientBillFormData.contractorPAN}
+                                                    onChange={(e) => handleClientBillFieldChange("contractorPAN", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="contractorVillage">Village</Label>
+                                                <Input
+                                                    id="contractorVillage"
+                                                    value={clientBillFormData.contractorVillage}
+                                                    onChange={(e) => handleClientBillFieldChange("contractorVillage", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="contractorPost">Post</Label>
+                                                <Input
+                                                    id="contractorPost"
+                                                    value={clientBillFormData.contractorPost}
+                                                    onChange={(e) => handleClientBillFieldChange("contractorPost", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="contractorDistrict">District</Label>
+                                                <Input
+                                                    id="contractorDistrict"
+                                                    value={clientBillFormData.contractorDistrict}
+                                                    onChange={(e) => handleClientBillFieldChange("contractorDistrict", e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label htmlFor="contractorPin">PIN</Label>
+                                                <Input
+                                                    id="contractorPin"
+                                                    value={clientBillFormData.contractorPin}
+                                                    onChange={(e) => handleClientBillFieldChange("contractorPin", e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-4">
+                                <h4 className="text-lg font-semibold">Financials</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <Label htmlFor="totalAmount">Total Amount</Label>
+                                        <Input
+                                            id="totalAmount"
+                                            type="number"
+                                            step="0.01"
+                                            value={clientBillFormData.totalAmount ?? ""}
+                                            onChange={(e) => handleClientBillFieldChange("totalAmount", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="tdsPercentage">TDS %</Label>
+                                        <Input
+                                            id="tdsPercentage"
+                                            type="number"
+                                            step="0.01"
+                                            value={clientBillFormData.tdsPercentage ?? ""}
+                                            onChange={(e) => handleClientBillFieldChange("tdsPercentage", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>TDS Amount</Label>
+                                        <Input value={calculatedTdsAmount} readOnly />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="debitAdjustValue">Debit / Adjust</Label>
+                                        <Input
+                                            id="debitAdjustValue"
+                                            type="number"
+                                            step="0.01"
+                                            value={clientBillFormData.debitAdjustValue ?? ""}
+                                            onChange={(e) => handleClientBillFieldChange("debitAdjustValue", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Net Bill Amount</Label>
+                                        <Input value={calculatedNetBillAmount} readOnly />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-4">
+                                <h4 className="text-lg font-semibold">Bank Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <Label htmlFor="bankName">Bank</Label>
+                                        <Input
+                                            id="bankName"
+                                            value={clientBillFormData.bankName}
+                                            onChange={(e) => handleClientBillFieldChange("bankName", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="bankBranch">Branch</Label>
+                                        <Input
+                                            id="bankBranch"
+                                            value={clientBillFormData.bankBranch}
+                                            onChange={(e) => handleClientBillFieldChange("bankBranch", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="accountNo">Account No.</Label>
+                                        <Input
+                                            id="accountNo"
+                                            value={clientBillFormData.accountNo}
+                                            onChange={(e) => handleClientBillFieldChange("accountNo", e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="ifscCode">IFSC</Label>
+                                        <Input
+                                            id="ifscCode"
+                                            value={clientBillFormData.ifscCode}
+                                            onChange={(e) => handleClientBillFieldChange("ifscCode", e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-4">
+                                <div className="flex items-center justify-between flex-wrap gap-3">
+                                    <h4 className="text-lg font-semibold">Categories & Line Items</h4>
+                                    <Button type="button" variant="outline" onClick={addCategorySection}>
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Category
+                                    </Button>
+                                </div>
+                                <div className="space-y-6">
+                                    {clientBillFormData.categories.map((category, categoryIndex) => (
+                                        <div key={category.id} className="rounded-xl border p-4 space-y-4 bg-muted/30">
+                                            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
+                                                    <div>
+                                                        <Label>Code</Label>
+                                                        <Input
+                                                            value={category.categoryCode}
+                                                            onChange={(e) => handleCategoryFieldChange(categoryIndex, "categoryCode", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-2">
+                                                        <Label>Name</Label>
+                                                        <Input
+                                                            value={category.categoryName}
+                                                            onChange={(e) => handleCategoryFieldChange(categoryIndex, "categoryName", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label>Tower</Label>
+                                                        <Input
+                                                            value={category.tower || ""}
+                                                            onChange={(e) => handleCategoryFieldChange(categoryIndex, "tower", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-3">
+                                                        <Label>Description</Label>
+                                                        <Input
+                                                            value={category.description || ""}
+                                                            onChange={(e) => handleCategoryFieldChange(categoryIndex, "description", e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label>Sequence</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={category.sequence}
+                                                            onChange={(e) => handleCategoryFieldChange(categoryIndex, "sequence", e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="text-destructive self-start md:self-auto"
+                                                    disabled={clientBillFormData.categories.length === 1}
+                                                    onClick={() => removeCategorySection(categoryIndex)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+
+                                            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white/90 shadow-inner">
+                                                <Table>
+                                                    <TableHeader className="bg-muted/50">
+                                                        <TableRow>
+                                                            <TableHead className="min-w-[60px]">Sl</TableHead>
+                                                            <TableHead>Description</TableHead>
+                                                            <TableHead className="min-w-[120px]">SAC/HSN</TableHead>
+                                                            <TableHead className="min-w-[80px]">Unit</TableHead>
+                                                            <TableHead className="min-w-[120px]">Unit Rate</TableHead>
+                                                            <TableHead className="min-w-[180px]">Quantity (Prev / Pres / Cum)</TableHead>
+                                                            <TableHead className="min-w-[200px]">Amount (Prev / Pres / Cum)</TableHead>
+                                                            <TableHead className="min-w-[140px]">Flags</TableHead>
+                                                            <TableHead className="min-w-[60px]" />
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {category.lineItems.map((line, lineIndex) => (
+                                                            <TableRow key={line.id}>
+                                                                <TableCell>
+                                                                    <Input
+                                                                        type="number"
+                                                                        value={line.slNo}
+                                                                        onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "slNo", e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Input
+                                                                        value={line.description}
+                                                                        onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "description", e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Input
+                                                                        value={line.sacHsnCode || ""}
+                                                                        onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "sacHsnCode", e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Input
+                                                                        value={line.unit}
+                                                                        onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "unit", e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        value={line.unitRate}
+                                                                        onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "unitRate", e.target.value)}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="grid grid-cols-3 gap-2">
+                                                                        {["previousQuantity", "presentQuantity", "cumulativeQuantity"].map((qtyKey) => (
+                                                                            <Input
+                                                                                key={qtyKey}
+                                                                                type="number"
+                                                                                step="0.001"
+                                                                                value={line[qtyKey as keyof BillLineItemRecord] as number}
+                                                                                onChange={(e) => handleLineItemFieldChange(
+                                                                                    categoryIndex,
+                                                                                    lineIndex,
+                                                                                    qtyKey as keyof BillLineItemRecord,
+                                                                                    e.target.value,
+                                                                                )}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="grid grid-cols-3 gap-2">
+                                                                        {["previousAmount", "presentAmount", "cumulativeAmount"].map((amtKey) => (
+                                                                            <Input
+                                                                                key={amtKey}
+                                                                                type="number"
+                                                                                step="0.01"
+                                                                                value={line[amtKey as keyof BillLineItemRecord] as number}
+                                                                                onChange={(e) => handleLineItemFieldChange(
+                                                                                    categoryIndex,
+                                                                                    lineIndex,
+                                                                                    amtKey as keyof BillLineItemRecord,
+                                                                                    e.target.value,
+                                                                                )}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <span className="text-xs text-muted-foreground">Deduction</span>
+                                                                            <Switch
+                                                                                checked={line.isDeduction || false}
+                                                                                onCheckedChange={(checked) => handleLineItemFieldChange(categoryIndex, lineIndex, "isDeduction", checked)}
+                                                                            />
+                                                                        </div>
+                                                                        <div className="flex items-center justify-between gap-2">
+                                                                            <span className="text-xs text-muted-foreground">Revised</span>
+                                                                            <Switch
+                                                                                checked={line.isRevisedRate || false}
+                                                                                onCheckedChange={(checked) => handleLineItemFieldChange(categoryIndex, lineIndex, "isRevisedRate", checked)}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        className="text-destructive"
+                                                                        disabled={category.lineItems.length === 1}
+                                                                        onClick={() => removeLineItemRow(categoryIndex, lineIndex)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </div>
+                                            <Button type="button" variant="secondary" size="sm" onClick={() => addLineItemRow(categoryIndex)}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Add Line Item
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+
+                            <div className="flex justify-end gap-2 pt-2">
+                                <Button type="button" variant="outline" onClick={() => setIsClientBillFormOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" className="gap-2">
+                                    <Check className="h-4 w-4" />
+                                    Save Client Bill
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Modals */}
             {showGenerateTaxModal && (
