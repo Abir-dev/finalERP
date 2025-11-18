@@ -1,6 +1,5 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -61,7 +60,7 @@ model User {
   createdProjects      Project[]              @relation("ProjectCreator")
   StoreStaff           StoreStaff[]           @relation("StoreStaffCreator")
   WeeklyProgressReport WeeklyProgressReport[] @relation("WeeklyProgressReportsCreated")
-  DailyProgressReport  DailyProgressReport[]  @relation("DailyProgressReportsCreated")
+  DailyProgressReport  DailyProgressReport[]
   Tender               Tender[]               @relation("TenderCreator")
   Task                 Task[]                 @relation("TaskCreator")
   BOQ                  BOQ[]                  @relation("BOQCreator")
@@ -616,23 +615,105 @@ model IssueReport {
 }
 
 model DailyProgressReport {
-  id             String   @id @default(uuid()) @db.Uuid
-  projectId      String   @db.Uuid
-  workDone       String
-  weather        String
-  notes          String?
-  workSections   String // JSON or comma separated
-  manpower       String
-  manpowerRoles  String
-  equipmentUsed  String // JSON or comma separated
-  safetyIncident String?
-  qualityCheck   String?
-  delayIssue     String?
-  materials      String // JSON
-  subcontractor  String?
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  createdById    String   @map("created_by_id") @db.Uuid
-  createdBy      User     @relation("DailyProgressReportsCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  // Report Details
+  dprNo String   @unique
+  date  DateTime
+
+  // Project Details
+  projectName String
+  developer   String
+  contractor  String
+  pmc         String?
+
+  // Additional Info
+  weatherCondition String?
+  majorHindrances  String?
+  actionTaken      String?
+
+  // Relations
+  workItems DPRWorkItem[]
+  resources DPRResource[]
+  remarks   DPRRemark[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?  @db.Uuid
+
+  @@index([dprNo])
+  @@index([date])
+  @@index([projectName])
+}
+
+// Universal Work Item model - handles all types of work progress
+model DPRWorkItem {
+  id    String              @id @default(cuid())
+  dprId String
+  dpr   DailyProgressReport @relation(fields: [dprId], references: [id], onDelete: Cascade)
+
+  slNo        Int
+  category    String // e.g., "Sub Structure Work", "Super Structure Work"
+  description String
+  unit        String
+
+  // Quantities
+  boqQuantity          Decimal @db.Decimal(15, 3)
+  alreadyExecuted      Decimal @db.Decimal(15, 3)
+  todaysProgram        Decimal @db.Decimal(15, 3)
+  yesterdayAchievement Decimal @db.Decimal(15, 3)
+  cumulativeQuantity   Decimal @db.Decimal(15, 3)
+  balanceQuantity      Decimal @db.Decimal(15, 3)
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dprId])
+  @@index([category])
+}
+
+// Universal Resource model - handles manpower, equipment, and staff
+model DPRResource {
+  id    String              @id @default(cuid())
+  dprId String
+  dpr   DailyProgressReport @relation(fields: [dprId], references: [id], onDelete: Cascade)
+
+  resourceType String // "MANPOWER", "EQUIPMENT", "STAFF"
+  name         String // Name/designation of resource
+
+  // Flexible quantity fields
+  actualCount  Int? // Actual number present
+  plannedCount Int? // Planned number
+  availability String? // For equipment: "YES", "NO"
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dprId])
+  @@index([resourceType])
+  @@index([name])
+}
+
+// Simple remarks model
+model DPRRemark {
+  id    String              @id @default(cuid())
+  dprId String
+  dpr   DailyProgressReport @relation(fields: [dprId], references: [id], onDelete: Cascade)
+
+  category   String // "DRAWING RELATED", "EXECUTION RELATED", etc.
+  remarkText String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dprId])
+  @@index([category])
 }
 
 model WeeklyProgressReport {
@@ -1213,70 +1294,70 @@ enum ItemQuality {
 }
 
 model ClientBill {
-  id                  String   @id @default(uuid()) @db.Uuid
-  
+  id String @id @default(uuid()) @db.Uuid
+
   // Invoice Details
-  invoiceNo           String   @unique
-  invoiceDate         DateTime @db.Timestamptz(6)
-  workOrderNo         String?
-  workOrderDate       DateTime? @db.Timestamptz(6)
-  raBillNo            String?
-  
+  invoiceNo     String    @unique
+  invoiceDate   DateTime  @db.Timestamptz(6)
+  workOrderNo   String?
+  workOrderDate DateTime? @db.Timestamptz(6)
+  raBillNo      String?
+
   // Reverse Charges
-  reverseCharges      Boolean  @default(false)
-  
+  reverseCharges Boolean @default(false)
+
   // Billing Party Details
-  billingPartyName    String
-  billingPartyAddress String
-  billingPartyGSTIN   String
-  billingPartyState   String
+  billingPartyName      String
+  billingPartyAddress   String
+  billingPartyGSTIN     String
+  billingPartyState     String
   billingPartyStateCode String
-  
+
   // Service Provider Details
-  providerName        String
-  providerAddress     String
-  providerGSTIN       String
-  providerState       String
-  providerStateCode   String
-  
+  providerName      String
+  providerAddress   String
+  providerGSTIN     String
+  providerState     String
+  providerStateCode String
+
   // Project Details
-  projectName         String?
-  projectLocation     String?
-  
+  projectName     String?
+  projectLocation String?
+
   // Contractor Details
-  contractorName      String?
-  contractorVillage   String?
-  contractorPost      String?
-  contractorDistrict  String?
-  contractorPin       String?
-  contractorPAN       String?
-  
+  contractorName     String?
+  contractorVillage  String?
+  contractorPost     String?
+  contractorDistrict String?
+  contractorPin      String?
+  contractorPAN      String?
+
   // Financial Details
-  totalAmount         Decimal  @db.Decimal(15, 2)
-  tdsPercentage       Decimal  @db.Decimal(5, 2)
-  tdsAmount           Decimal  @db.Decimal(15, 2)
-  netBillAmount       Decimal  @db.Decimal(15, 2)
-  
+  totalAmount   Decimal @db.Decimal(15, 2)
+  tdsPercentage Decimal @db.Decimal(5, 2)
+  tdsAmount     Decimal @db.Decimal(15, 2)
+  netBillAmount Decimal @db.Decimal(15, 2)
+
   // Debit/Adjust Values
-  debitAdjustValue    Decimal? @db.Decimal(15, 2)
-  
+  debitAdjustValue Decimal? @db.Decimal(15, 2)
+
   // Bank Details
-  bankName            String?
-  bankBranch          String?
-  accountNo           String?
-  ifscCode            String?
-  
+  bankName   String?
+  bankBranch String?
+  accountNo  String?
+  ifscCode   String?
+
   // User relation
-  createdById         String   @map("created_by_id") @db.Uuid
-  createdBy           User     @relation("ClientBillCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  
+  createdById String @map("created_by_id") @db.Uuid
+  createdBy   User   @relation("ClientBillCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
   // Timestamps
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
   // Relations
-  categories          BillCategory[]
-  
+  categories BillCategory[]
+
   @@index([invoiceNo])
   @@index([invoiceDate])
   @@index([contractorName])
@@ -1284,56 +1365,56 @@ model ClientBill {
 }
 
 model BillCategory {
-  id                    String     @id @default(uuid()) @db.Uuid
-  clientBillId          String     @db.Uuid
-  clientBill            ClientBill @relation(fields: [clientBillId], references: [id], onDelete: Cascade)
-  
+  id           String     @id @default(uuid()) @db.Uuid
+  clientBillId String     @db.Uuid
+  clientBill   ClientBill @relation(fields: [clientBillId], references: [id], onDelete: Cascade)
+
   // Category Details
-  categoryCode          String
-  categoryName          String
-  tower                 String?
-  description           String?
-  sequence              Int
-  
+  categoryCode String
+  categoryName String
+  tower        String?
+  description  String?
+  sequence     Int
+
   // Relations
-  lineItems             BillLineItem[]
-  
-  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  
+  lineItems BillLineItem[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([clientBillId, categoryCode])
   @@index([clientBillId])
   @@index([categoryCode])
-  @@unique([clientBillId, categoryCode])
 }
 
 model BillLineItem {
-  id                    String       @id @default(uuid()) @db.Uuid
-  categoryId            String       @db.Uuid
-  category              BillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  
+  id         String       @id @default(uuid()) @db.Uuid
+  categoryId String       @db.Uuid
+  category   BillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
   // Item Details
-  slNo                  Int
-  description           String
-  sacHsnCode            String?
-  unit                  String
-  unitRate              Decimal      @db.Decimal(10, 2)
-  
+  slNo        Int
+  description String
+  sacHsnCode  String?
+  unit        String
+  unitRate    Decimal @db.Decimal(10, 2)
+
   // Quantities
-  previousQuantity      Decimal      @db.Decimal(15, 3)
-  presentQuantity       Decimal      @db.Decimal(15, 3)
-  cumulativeQuantity    Decimal      @db.Decimal(15, 3)
-  
+  previousQuantity   Decimal @db.Decimal(15, 3)
+  presentQuantity    Decimal @db.Decimal(15, 3)
+  cumulativeQuantity Decimal @db.Decimal(15, 3)
+
   // Amounts
-  previousAmount        Decimal      @db.Decimal(15, 2)
-  presentAmount         Decimal      @db.Decimal(15, 2)
-  cumulativeAmount      Decimal      @db.Decimal(15, 2)
-  
+  previousAmount   Decimal @db.Decimal(15, 2)
+  presentAmount    Decimal @db.Decimal(15, 2)
+  cumulativeAmount Decimal @db.Decimal(15, 2)
+
   // Flags
-  isDeduction           Boolean      @default(false)
-  isRevisedRate         Boolean      @default(false)
-    
-  createdAt             DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  
+  isDeduction   Boolean @default(false)
+  isRevisedRate Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
   @@index([categoryId])
 }
