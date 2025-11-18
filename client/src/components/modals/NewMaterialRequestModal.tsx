@@ -23,7 +23,10 @@ import { supabase } from "../../lib/supabase";
 
 interface ItemRow {
   id: number;
-  itemCode: string;
+  hsnCode: string;
+  rate?: number;
+  value?: number;
+  vehicleNo?: string;
   requiredBy: string;
   quantity: number;
   targetWarehouse: string;
@@ -64,7 +67,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
   const [scanBarcode, setScanBarcode] = useState("");
   const [targetWarehouse, setTargetWarehouse] = useState("");
   const [items, setItems] = useState<ItemRow[]>([
-    { id: 1, itemCode: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" },
+    { id: 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" },
   ]);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
@@ -218,14 +221,32 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
 
   const handleItemChange = (idx: number, field: keyof ItemRow, value: any) => {
     setItems((prev) =>
-      prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
+      prev.map((item, i) => {
+        if (i !== idx) return item;
+        
+        const updatedItem = { ...item, [field]: value };
+        
+        // Auto-calculate value based on rate and quantity
+        if (field === 'rate' || field === 'quantity') {
+          const rate = field === 'rate' ? value : item.rate;
+          const quantity = field === 'quantity' ? value : item.quantity;
+          
+          if (rate && quantity) {
+            updatedItem.value = rate * quantity;
+          } else {
+            updatedItem.value = undefined;
+          }
+        }
+        
+        return updatedItem;
+      })
     );
   };
 
   const addRow = () => {
     setItems((prev) => [
       ...prev,
-      { id: prev.length > 0 ? Math.max(...prev.map(i => i.id)) + 1 : 1, itemCode: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" },
+      { id: prev.length > 0 ? Math.max(...prev.map(i => i.id)) + 1 : 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" },
     ]);
   };
 
@@ -287,7 +308,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
 
     // Validate items
     const validItems = items.filter(item => 
-      item.itemCode.trim() && 
+      item.hsnCode.trim() && 
       item.quantity > 0 && 
       item.uom.trim()
     );
@@ -313,7 +334,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
     try {
       // Filter out empty items
       const validItems = items.filter(item => 
-        item.itemCode.trim() && 
+        item.hsnCode.trim() && 
         item.quantity > 0 && 
         item.uom.trim()
       );
@@ -330,8 +351,11 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
         projectId: projectId || null,
         approvedBy: approver || null,
         items: validItems.map(item => ({
-          itemCode: item.itemCode.trim(),
+          hsnCode: item.hsnCode.trim(),
           quantity: item.quantity,
+          rate: item.rate || null,
+          value: item.value || null,
+          vehicleNo: item.vehicleNo?.trim() || null,
           uom: item.uom.trim(),
           requiredBy: item.requiredBy || null,
           targetWarehouse: item.targetWarehouse.trim() || null,
@@ -366,7 +390,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
         setRequiredBy("");
         setPriceList("Standard Buying");
         setTargetWarehouse("");
-        setItems([{ id: 1, itemCode: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" }]);
+        setItems([{ id: 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" }]);
         setTerms("");
         setMoreInfo("");
         setProjectId("");
@@ -393,7 +417,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Material Request</DialogTitle>
           <DialogDescription>Fill in the details for the new material request</DialogDescription>
@@ -509,7 +533,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                   ) : (
                     <div className="space-y-2">
                       {/* Table Headers */}
-                      <div className="grid grid-cols-8 gap-2 text-sm font-medium text-gray-700 p-2 bg-gray-50 rounded">
+                      <div className="grid grid-cols-12 gap-2 text-sm font-medium text-gray-700 p-2 bg-gray-50 rounded">
                         <div className="col-span-1">
                           <input
                             type="checkbox"
@@ -519,15 +543,18 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                           />
                         </div>
                         <div className="col-span-1">No.</div>
-                        <div className="col-span-1">Item Code *</div>
+                        <div className="col-span-1">HSN Code *</div>
+                        <div className="col-span-1">Rate</div>
+                        <div className="col-span-1">Value (Auto)</div>
+                        <div className="col-span-1">Vehicle No</div>
                         <div className="col-span-2">Required By</div>
                         <div className="col-span-1">Quantity *</div>
-                        <div className="col-span-1">Target Warehouse</div>
+                        <div className="col-span-2">Target Warehouse</div>
                         <div className="col-span-1">UOM *</div>
                       </div>
                       {/* Table Rows */}
                       {items.map((item, idx) => (
-                        <div key={item.id} className="grid grid-cols-8 gap-2 items-center p-2 border rounded">
+                        <div key={item.id} className="grid grid-cols-12 gap-2 items-center p-2 border rounded">
                           <div className="col-span-1">
                             <input
                               type="checkbox"
@@ -541,10 +568,38 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                           </div>
                           <div className="col-span-1">
                             <Input
-                              value={item.itemCode}
-                              onChange={e => handleItemChange(idx, "itemCode", e.target.value)}
+                              value={item.hsnCode}
+                              onChange={e => handleItemChange(idx, "hsnCode", e.target.value)}
                               className="h-8 text-sm"
-                              placeholder="Enter item code"
+                              placeholder="HSN Code"
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <Input
+                              type="number"
+                              value={item.rate || ""}
+                              onChange={e => handleItemChange(idx, "rate", e.target.value ? Number(e.target.value) : undefined)}
+                              className="h-8 text-sm"
+                              placeholder="Rate"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <Input
+                              type="number"
+                              value={item.value || ""}
+                              readOnly
+                              className="h-8 text-sm bg-gray-100"
+                              placeholder="Auto-calculated"
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <Input
+                              value={item.vehicleNo || ""}
+                              onChange={e => handleItemChange(idx, "vehicleNo", e.target.value)}
+                              className="h-8 text-sm"
+                              placeholder="Vehicle No"
                             />
                           </div>
                           <div className="col-span-2">
@@ -565,7 +620,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                               min="0"
                             />
                           </div>
-                          <div className="col-span-1">
+                          <div className="col-span-2">
                             <Input
                               value={item.targetWarehouse}
                               onChange={e => handleItemChange(idx, "targetWarehouse", e.target.value)}

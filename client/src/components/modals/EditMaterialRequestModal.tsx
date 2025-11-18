@@ -108,7 +108,10 @@ export function EditMaterialRequestModal({
       if (materialRequest.items && Array.isArray(materialRequest.items)) {
         setItems(
           materialRequest.items.map((item) => ({
-            itemCode: item.itemCode,
+            hsnCode: item.hsnCode,
+            rate: item.rate,
+            value: item.value,
+            vehicleNo: item.vehicleNo,
             requiredBy: item.requiredBy ? item.requiredBy.split("T")[0] : "",
             quantity: item.quantity,
             targetWarehouse: item.targetWarehouse || "",
@@ -134,10 +137,28 @@ export function EditMaterialRequestModal({
   const handleItemChange = (
     index: number,
     field: string,
-    value: string | number
+    value: string | number | undefined
   ) => {
     setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        
+        const updatedItem = { ...item, [field]: value };
+        
+        // Auto-calculate value based on rate and quantity
+        if (field === 'rate' || field === 'quantity') {
+          const rate = field === 'rate' ? value : item.rate;
+          const quantity = field === 'quantity' ? value : item.quantity;
+          
+          if (rate && quantity) {
+            updatedItem.value = Number(rate) * Number(quantity);
+          } else {
+            updatedItem.value = undefined;
+          }
+        }
+        
+        return updatedItem;
+      })
     );
   };
 
@@ -145,7 +166,10 @@ export function EditMaterialRequestModal({
     setItems((prev) => [
       ...prev,
       {
-        itemCode: "",
+        hsnCode: "",
+        rate: undefined,
+        value: undefined,
+        vehicleNo: "",
         requiredBy: "",
         quantity: 0,
         targetWarehouse: "",
@@ -414,14 +438,55 @@ export function EditMaterialRequestModal({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`itemCode-${index}`}>Item Code</Label>
+                      <Label htmlFor={`hsnCode-${index}`}>HSN Code</Label>
                       <Input
-                        id={`itemCode-${index}`}
-                        value={item.itemCode}
+                        id={`hsnCode-${index}`}
+                        value={item.hsnCode}
                         onChange={(e) =>
-                          handleItemChange(index, "itemCode", e.target.value)
+                          handleItemChange(index, "hsnCode", e.target.value)
                         }
-                        placeholder="Enter item code"
+                        placeholder="Enter HSN code"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`rate-${index}`}>Rate</Label>
+                      <Input
+                        id={`rate-${index}`}
+                        type="number"
+                        value={item.rate || ""}
+                        onChange={(e) =>
+                          handleItemChange(
+                            index,
+                            "rate",
+                            e.target.value ? parseFloat(e.target.value) : undefined
+                          )
+                        }
+                        placeholder="Enter rate"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`value-${index}`}>Value (Auto-calculated)</Label>
+                      <Input
+                        id={`value-${index}`}
+                        type="number"
+                        value={item.value || ""}
+                        readOnly
+                        className="bg-gray-100"
+                        placeholder="Auto-calculated"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`vehicleNo-${index}`}>Vehicle No</Label>
+                      <Input
+                        id={`vehicleNo-${index}`}
+                        value={item.vehicleNo || ""}
+                        onChange={(e) =>
+                          handleItemChange(index, "vehicleNo", e.target.value)
+                        }
+                        placeholder="Enter vehicle number"
                       />
                     </div>
 
@@ -468,7 +533,7 @@ export function EditMaterialRequestModal({
                       />
                     </div>
 
-                    <div className="space-y-2 col-span-2">
+                    <div className="space-y-2">
                       <Label htmlFor={`targetWarehouse-${index}`}>
                         Target Warehouse
                       </Label>

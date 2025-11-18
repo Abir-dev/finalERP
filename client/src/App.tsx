@@ -201,6 +201,7 @@ const AppLayout = () => {
               <Route path="/accounts-manager/budget" element={<AccountsDashboard />} />
               <Route path="/accounts-manager/payroll" element={<AccountsDashboard />} />
               <Route path="/accounts-manager/taxes" element={<AccountsDashboard />} />
+              <Route path="/accounts-manager/client-bill" element={<AccountsDashboard />} />
 
               <Route path="/site-manager/timeline" element={<SiteDashboard />} />
               <Route path="/site-manager/reports" element={<SiteDashboard />} />
