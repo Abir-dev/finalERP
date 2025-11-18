@@ -228,10 +228,10 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="UNREGISTERED">Unregistered</SelectItem>
-                <SelectItem value="REGISTERED">Registered</SelectItem>
-                <SelectItem value="COMPOSITION">Composition</SelectItem>
+                <SelectItem value="REGULAR">Regular</SelectItem>
+                {/* <SelectItem value="COMPOSITION">Composition</SelectItem>
                 <SelectItem value="SEZ">SEZ</SelectItem>
-                <SelectItem value="DEEMED_EXPORT">Deemed Export</SelectItem>
+                <SelectItem value="DEEMED_EXPORT">Deemed Export</SelectItem> */}
               </SelectContent>
             </Select>
           </div>

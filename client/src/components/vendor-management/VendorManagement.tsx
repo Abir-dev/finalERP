@@ -81,10 +81,10 @@ interface Vendor {
   vendorType: "COMPANY" | "INDIVIDUAL" | "PARTNERSHIP" | "PROPRIETORSHIP";
   gstCategory:
     | "UNREGISTERED"
-    | "REGISTERED"
-    | "COMPOSITION"
-    | "SEZ"
-    | "DEEMED_EXPORT";
+    | "REGULAR"
+    // | "COMPOSITION"
+    // | "SEZ"
+    // | "DEEMED_EXPORT";
   email?: string;
   mobile?: string;
   postalCode?: string;
@@ -210,14 +210,14 @@ export function VendorManagement({ selectedUserId }: { selectedUserId?: string }
     switch (category) {
       case "UNREGISTERED":
         return "Unregistered";
-      case "REGISTERED":
-        return "Registered";
-      case "COMPOSITION":
-        return "Composition";
-      case "SEZ":
-        return "SEZ";
-      case "DEEMED_EXPORT":
-        return "Deemed Export";
+      case "REGULAR":
+        return "Regular";
+      // case "COMPOSITION":
+      //   return "Composition";
+      // case "SEZ":
+      //   return "SEZ";
+      // case "DEEMED_EXPORT":
+      //   return "Deemed Export";
       default:
         return category;
     }
@@ -376,11 +376,8 @@ export function VendorManagement({ selectedUserId }: { selectedUserId?: string }
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All GST Categories</SelectItem>
-                <SelectItem value="REGISTERED">Registered</SelectItem>
                 <SelectItem value="UNREGISTERED">Unregistered</SelectItem>
-                <SelectItem value="COMPOSITION">Composition</SelectItem>
-                <SelectItem value="SEZ">SEZ</SelectItem>
-                <SelectItem value="DEEMED_EXPORT">Deemed Export</SelectItem>
+                <SelectItem value="REGULAR">Regular</SelectItem>
               </SelectContent>
             </Select>
           </div>
