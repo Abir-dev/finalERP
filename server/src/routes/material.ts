@@ -12,7 +12,7 @@ router.get('/material-requests', authenticateUser, materialController.listMateri
 router.get('/material-requests/user/:userId', authenticateUser, materialController.getMaterialRequestsByUser);
 router.get('/material-requests/:id', authenticateUser, materialController.getMaterialRequest);
 router.put('/material-requests/:id', authenticateUser,  validateMaterialRequest, materialController.updateMaterialRequest);
-router.delete('/material-requests/:id', authenticateUser,materialController.deleteMaterialRequest);
+router.delete('/material-requests/:id', materialController.deleteMaterialRequest);
 
 // Material Request Approval/Rejection
 router.post('/material-requests/:id/approve', authenticateUser, materialController.approveMaterialRequest);
