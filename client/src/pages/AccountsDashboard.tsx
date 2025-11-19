@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, Fragment, useCallback } from "react"
+import { jsPDF } from "jspdf"
+import "jspdf-autotable"
+import { saveAs } from "file-saver"
 import type { FormEvent } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -309,6 +312,139 @@ const coerceNumber = (value: unknown, fallback = 0): number => {
     return Number.isFinite(parsed) ? parsed : fallback
 }
 
+const formatDate = (value?: string) => {
+    if (!value) return "N/A"
+    try {
+        return new Date(value).toLocaleDateString("en-IN")
+    } catch {
+        return value
+    }
+}
+
+const buildQuantityLabel = (line: BillLineItemRecord) =>
+    `Prev: ${line.previousQuantity.toFixed(3)} | Pres: ${line.presentQuantity.toFixed(3)} | Cum: ${line.cumulativeQuantity.toFixed(3)}`
+
+const buildAmountLabel = (line: BillLineItemRecord) =>
+    `Prev: ${formatINR(line.previousAmount)} | Pres: ${formatINR(line.presentAmount)} | Cum: ${formatINR(line.cumulativeAmount)}`
+
+const generateClientBillPdf = (bill: ClientBillRecord) => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const margin = 40
+    let cursorY = margin
+
+    doc.setFontSize(18)
+    doc.text("Client Bill", pageWidth / 2, cursorY, { align: "center" })
+    cursorY += 24
+
+    doc.setFontSize(12)
+    doc.text(`Invoice No: ${bill.invoiceNo}`, margin, cursorY)
+    doc.text(`Invoice Date: ${formatDate(bill.invoiceDate)}`, pageWidth / 2, cursorY)
+    cursorY += 16
+    doc.text(`RA Bill No: ${bill.raBillNo || "N/A"}`, margin, cursorY)
+    doc.text(`Work Order No: ${bill.workOrderNo || "N/A"}`, pageWidth / 2, cursorY)
+    cursorY += 16
+    doc.text(`Work Order Date: ${formatDate(bill.workOrderDate)}`, margin, cursorY)
+    doc.text(`Reverse Charges: ${bill.reverseCharges ? "Applicable" : "Not Applicable"}`, pageWidth / 2, cursorY)
+    cursorY += 24
+
+    doc.setFontSize(13)
+    doc.text("Billing Party", margin, cursorY)
+    doc.text("Service Provider", pageWidth / 2, cursorY)
+    cursorY += 14
+    doc.setFontSize(11)
+    doc.text(`${bill.billingPartyName}\n${bill.billingPartyAddress}\nGSTIN: ${bill.billingPartyGSTIN} • State: ${bill.billingPartyStateCode}`, margin, cursorY, { maxWidth: pageWidth / 2 - margin })
+    doc.text(`${bill.providerName}\n${bill.providerAddress}\nGSTIN: ${bill.providerGSTIN}`, pageWidth / 2, cursorY, { maxWidth: pageWidth / 2 - margin })
+    cursorY += 54
+
+    doc.setFontSize(13)
+    doc.text("Project Details", margin, cursorY)
+    cursorY += 14
+    doc.setFontSize(11)
+    doc.text(`Project: ${bill.projectName || "N/A"}`, margin, cursorY)
+    doc.text(`Location: ${bill.projectLocation || "N/A"}`, margin + 180, cursorY)
+    cursorY += 14
+    doc.text(`Contractor: ${bill.contractorName || "N/A"} • PAN: ${bill.contractorPAN || "N/A"}`, margin, cursorY)
+    cursorY += 14
+    doc.text(`Village: ${bill.contractorVillage || "N/A"} • District: ${bill.contractorDistrict || "N/A"} • PIN: ${bill.contractorPin || "N/A"}`, margin, cursorY)
+    cursorY += 24
+
+    doc.setFontSize(13)
+    doc.text("Financial Summary", margin, cursorY)
+    cursorY += 14
+    doc.setFontSize(11)
+    doc.text(`Total Amount: ${formatINR(bill.totalAmount)}`, margin, cursorY)
+    doc.text(`TDS (${bill.tdsPercentage}%): ${formatINR(bill.tdsAmount)}`, margin + 230, cursorY)
+    cursorY += 14
+    doc.text(`Debit / Adjust: ${formatINR(bill.debitAdjustValue || 0)}`, margin, cursorY)
+    doc.text(`Net Bill Amount: ${formatINR(bill.netBillAmount)}`, margin + 230, cursorY)
+    cursorY += 24
+
+    doc.setFontSize(13)
+    doc.text("Bank Details", margin, cursorY)
+    cursorY += 14
+    doc.setFontSize(11)
+    doc.text(`Bank: ${bill.bankName || "N/A"} • Branch: ${bill.bankBranch || "N/A"}`, margin, cursorY)
+    cursorY += 14
+    doc.text(`Account No: ${bill.accountNo || "N/A"} • IFSC: ${bill.ifscCode || "N/A"}`, margin, cursorY)
+    cursorY += 24
+
+    const tableBody: any[] = []
+    bill.categories.forEach(category => {
+        tableBody.push([
+            {
+                content: `${category.categoryCode}. ${category.categoryName}${category.tower ? ` (${category.tower})` : ""} ${category.description ? `• ${category.description}` : ""}`,
+                colSpan: 8,
+                styles: { fillColor: [245, 245, 245], fontStyle: "bold" }
+            }
+        ])
+        category.lineItems.forEach(line => {
+            tableBody.push([
+                line.slNo,
+                line.description,
+                line.sacHsnCode || "—",
+                line.unit,
+                formatINR(line.unitRate),
+                buildQuantityLabel(line),
+                buildAmountLabel(line),
+                `${line.isDeduction ? "Deduction" : ""}${line.isDeduction && line.isRevisedRate ? " | " : ""}${line.isRevisedRate ? "Revised" : ""}` || "—"
+            ])
+        })
+    })
+
+    // @ts-ignore - jspdf-autotable type defs
+    doc.autoTable({
+        startY: cursorY,
+        head: [['Sl', 'Description', 'SAC/HSN', 'Unit', 'Unit Rate', 'Quantity (Prev/Pres/Cum)', 'Amount (Prev/Pres/Cum)', 'Flags']],
+        body: tableBody,
+        styles: { fontSize: 8, cellPadding: 4, valign: "middle" },
+        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+        columnStyles: {
+            0: { cellWidth: 30 },
+            1: { cellWidth: 120 },
+            2: { cellWidth: 55 },
+            3: { cellWidth: 40 },
+            4: { cellWidth: 65 },
+            5: { cellWidth: 120 },
+            6: { cellWidth: 120 },
+            7: { cellWidth: 70 },
+        }
+    })
+
+    const finalY = (doc as any).lastAutoTable?.finalY || cursorY
+    doc.setFontSize(10)
+    doc.text("Generated via Accounts Dashboard • This is a system-generated document.", margin, finalY + 24)
+
+    return doc
+}
+
+const downloadClientBillPdf = async (bill: ClientBillRecord) => {
+    const doc = generateClientBillPdf(bill)
+    const blob = doc.output("blob")
+    const fileName = `Client_Bill_${bill.invoiceNo}_${new Date().toISOString().split("T")[0]}.pdf`
+    saveAs(blob, fileName)
+}
+
 const deserializeLineItemRecord = (line: any): BillLineItemRecord => ({
     id: line.id || generateTempId(),
     categoryId: line.categoryId || "",
@@ -424,6 +560,8 @@ const AccountsDashboard = () => {
     const [clientBillsLoading, setClientBillsLoading] = useState(true)
     const [clientBillsError, setClientBillsError] = useState<string | null>(null)
     const [isClientBillSaving, setIsClientBillSaving] = useState(false)
+    const [downloadingBillId, setDownloadingBillId] = useState<string | null>(null)
+    const [deletingBillId, setDeletingBillId] = useState<string | null>(null)
     const [clientBillFormData, setClientBillFormData] = useState<ClientBillFormState>(createBlankClientBill())
 
     const calculatedTdsAmount = useMemo(() => {
@@ -676,6 +814,48 @@ const AccountsDashboard = () => {
             setClientBillsLoading(false)
         }
     }, [])
+
+    const handleDownloadClientBill = async (bill: ClientBillRecord) => {
+        setDownloadingBillId(bill.id)
+        try {
+            await downloadClientBillPdf(bill)
+            toast.success(`Client bill ${bill.invoiceNo} downloaded`)
+        } catch (error) {
+            console.error("Error downloading client bill:", error)
+            toast.error("Failed to download client bill")
+        } finally {
+            setDownloadingBillId(null)
+        }
+    }
+
+    const handleDeleteClientBill = async (bill: ClientBillRecord) => {
+        setDeletingBillId(bill.id)
+        try {
+            const headers = getAuthHeaders()
+            await axios.delete(`${API_URL}/client-bills/${bill.id}`, { headers })
+            setClientBills(prev => prev.filter(existing => existing.id !== bill.id))
+            toast.success(`Client bill ${bill.invoiceNo} deleted`)
+        } catch (error: any) {
+            console.error("Error deleting client bill:", error)
+            toast.error(error?.response?.data?.message || "Failed to delete client bill")
+        } finally {
+            setDeletingBillId(null)
+        }
+    }
+
+    const requestDeleteClientBill = (bill: ClientBillRecord) => {
+        toast.warning(`Delete client bill ${bill.invoiceNo}?`, {
+            description: "This action cannot be undone.",
+            action: {
+                label: "Delete",
+                onClick: () => handleDeleteClientBill(bill),
+            },
+            cancel: {
+                label: "Cancel",
+                onClick: () => {},
+            },
+        })
+    }
 
     const numericBillFields: Array<keyof ClientBillFormState> = ["totalAmount", "tdsPercentage", "debitAdjustValue"]
     const numericCategoryFields: Array<keyof BillCategoryRecord> = ["sequence"]
@@ -1757,7 +1937,7 @@ const AccountsDashboard = () => {
                                             </p>
                                             <p className="text-sm text-muted-foreground">PAN: {bill.contractorPAN}</p>
                                         </div>
-                                        <div className="text-right space-y-1">
+                                        <div className="text-right space-y-1 flex flex-col items-end gap-2">
                                             <p className="text-lg font-semibold">Invoice #{bill.invoiceNo}</p>
                                             <p className="text-sm text-muted-foreground">
                                                 Dated {new Date(bill.invoiceDate).toLocaleDateString("en-IN")}
@@ -1765,6 +1945,28 @@ const AccountsDashboard = () => {
                                             <Badge variant={bill.reverseCharges ? "destructive" : "secondary"}>
                                                 Reverse Charges {bill.reverseCharges ? "Applicable" : "Not Applicable"}
                                             </Badge>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                    onClick={() => handleDownloadClientBill(bill)}
+                                                    disabled={downloadingBillId === bill.id || deletingBillId === bill.id}
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    {downloadingBillId === bill.id ? "Downloading..." : "Download PDF"}
+                                                </Button>
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                    onClick={() => requestDeleteClientBill(bill)}
+                                                    disabled={deletingBillId === bill.id || downloadingBillId === bill.id}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    {deletingBillId === bill.id ? "Deleting..." : "Delete"}
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -2065,8 +2267,12 @@ const AccountsDashboard = () => {
             </Tabs>
 
             {/* Client Bill Form Modal */}
-            <Dialog open={isClientBillFormOpen} onOpenChange={setIsClientBillFormOpen}>
-                <DialogContent className="w-full max-w-[95vw] xl:max-w-[1500px] bg-white">
+            <Dialog open={isClientBillFormOpen}>
+                <DialogContent
+                    className="w-full max-w-[90vw] xl:max-w-[1400px] 2xl:max-w-[1600px] bg-white"
+                    onEscapeKeyDown={(event) => event.preventDefault()}
+                    onPointerDownOutside={(event) => event.preventDefault()}
+                >
                     <DialogHeader>
                         <DialogTitle>Add Client Bill</DialogTitle>
                         <DialogDescription>Fill every section to match the Quintessa client bill layout.</DialogDescription>
