@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Fragment } from "react"
+import { useState, useEffect, useMemo, Fragment, useCallback } from "react"
 import type { FormEvent } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import { DollarSign, FileText, Users, Calculator, CreditCard, AlertTriangle, Download, ArrowLeft, Plus, TrendingUp, PieChart, Check, Clock, ChevronDown, Trash2 } from "lucide-react"
+import { DollarSign, FileText, Users, Calculator, CreditCard, AlertTriangle, Download, ArrowLeft, Plus, TrendingUp, PieChart, Check, Clock, ChevronDown, Trash2, RefreshCw } from "lucide-react"
 import axios from "axios";
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
@@ -297,219 +297,93 @@ const createBlankClientBill = (): ClientBillFormState => ({
     categories: [createBlankCategory()],
 })
 
-const mockBillId = "client-bill-demo-001"
-const mockCategoryAId = "client-bill-demo-cat-a"
-const mockCategoryBId = "client-bill-demo-cat-b"
-const mockCategoryCId = "client-bill-demo-cat-c"
-
-const mockClientBill: ClientBillRecord = {
-    id: mockBillId,
-    invoiceNo: "INV/2025/08/001",
-    invoiceDate: "2025-08-01T00:00:00.000Z",
-    workOrderNo: "6th RA Work Order",
-    workOrderDate: "2025-07-20T00:00:00.000Z",
-    raBillNo: "6th RA",
-    reverseCharges: false,
-    billingPartyName: "RAJ TRIMITU INFRA PROJECTS PVT. LTD.",
-    billingPartyAddress: "South City Business Park, 770 Anandapur, Kolkata-700107, 7th Floor",
-    billingPartyGSTIN: "19AACGM6664R1Z1",
-    billingPartyState: "West Bengal",
-    billingPartyStateCode: "19",
-    providerName: "RAJ TRIMITU INFRA PROJECTS PVT. LTD.",
-    providerAddress: "Mankitala, West Bengal",
-    providerGSTIN: "19AACGM6664R1Z1",
-    providerState: "West Bengal",
-    providerStateCode: "19",
-    projectName: "QUINTESSA",
-    projectLocation: "Shimul bari, Dist.- Purbo Medinipur",
-    contractorName: "Mr. TAPAN MAITY",
-    contractorVillage: "Shimul Bari",
-    contractorPost: "Shimul Bari",
-    contractorDistrict: "Purbo Medinipur",
-    contractorPin: "721659",
-    contractorPAN: "BIZPM7207F",
-    totalAmount: 3869268.21,
-    tdsPercentage: 1,
-    tdsAmount: 38692.68,
-    netBillAmount: 0,
-    debitAdjustValue: 0,
-    bankName: "State Bank of India",
-    bankBranch: "Medinipur",
-    accountNo: "12345678901",
-    ifscCode: "SBIN0001234",
-    categories: [
-        {
-            id: mockCategoryAId,
-            clientBillId: mockBillId,
-            categoryCode: "A",
-            categoryName: "Conventional Shuttering Work",
-            tower: "TOWER",
-            description: "This rate only for UGR & STP",
-            sequence: 1,
-            lineItems: [
-                {
-                    id: "client-bill-demo-cat-a-row-1",
-                    categoryId: mockCategoryAId,
-                    slNo: 1,
-                    description: "Pile Cap & Raft",
-                    sacHsnCode: "9954",
-                    unit: "Sqm",
-                    unitRate: 1000,
-                    previousQuantity: 2292.84,
-                    presentQuantity: 18.95,
-                    cumulativeQuantity: 2311.79,
-                    previousAmount: 573210,
-                    presentAmount: 18950,
-                    cumulativeAmount: 592160,
-                    isDeduction: false,
-                    isRevisedRate: false,
-                },
-                {
-                    id: "client-bill-demo-cat-a-row-2",
-                    categoryId: mockCategoryAId,
-                    slNo: 2,
-                    description: "UGR Column & Wall (+150mm)",
-                    sacHsnCode: "9954",
-                    unit: "Sqm",
-                    unitRate: 2500,
-                    previousQuantity: 1480.00,
-                    presentQuantity: 149.57,
-                    cumulativeQuantity: 1629.57,
-                    previousAmount: 3700000,
-                    presentAmount: 373920,
-                    cumulativeAmount: 4073920,
-                    isDeduction: false,
-                    isRevisedRate: false,
-                },
-            ],
-        },
-        {
-            id: mockCategoryBId,
-            clientBillId: mockBillId,
-            categoryCode: "B",
-            categoryName: "Reinforcement Work",
-            tower: "TOWER",
-            sequence: 2,
-            lineItems: [
-                {
-                    id: "client-bill-demo-cat-b-row-1",
-                    categoryId: mockCategoryBId,
-                    slNo: 3,
-                    description: "Pile Cap & Raft",
-                    sacHsnCode: "7308",
-                    unit: "M.T",
-                    unitRate: 6500,
-                    previousQuantity: 200.00,
-                    presentQuantity: 100.25,
-                    cumulativeQuantity: 300.25,
-                    previousAmount: 1300000,
-                    presentAmount: 651625,
-                    cumulativeAmount: 1951625,
-                    isDeduction: false,
-                    isRevisedRate: false,
-                },
-                {
-                    id: "client-bill-demo-cat-b-row-2",
-                    categoryId: mockCategoryBId,
-                    slNo: 4,
-                    description: "Column & Wall",
-                    sacHsnCode: "7308",
-                    unit: "M.T",
-                    unitRate: 23200,
-                    previousQuantity: 50.00,
-                    presentQuantity: 48.24,
-                    cumulativeQuantity: 98.24,
-                    previousAmount: 1160000,
-                    presentAmount: 1118368,
-                    cumulativeAmount: 2278368,
-                    isDeduction: false,
-                    isRevisedRate: true,
-                },
-                {
-                    id: "client-bill-demo-cat-b-row-3",
-                    categoryId: mockCategoryBId,
-                    slNo: 5,
-                    description: "UGR Column & Wall (+150mm)",
-                    sacHsnCode: "7308",
-                    unit: "M.T",
-                    unitRate: 7500,
-                    previousQuantity: 450.00,
-                    presentQuantity: 56.12,
-                    cumulativeQuantity: 506.12,
-                    previousAmount: 3375000,
-                    presentAmount: 420900,
-                    cumulativeAmount: 3795900,
-                    isDeduction: true,
-                    isRevisedRate: false,
-                },
-            ],
-        },
-        {
-            id: mockCategoryCId,
-            clientBillId: mockBillId,
-            categoryCode: "G",
-            categoryName: "Daily Labour",
-            sequence: 3,
-            lineItems: [
-                {
-                    id: "client-bill-demo-cat-c-row-1",
-                    categoryId: mockCategoryCId,
-                    slNo: 6,
-                    description: "Daily (Carpenter/Fitter)",
-                    sacHsnCode: "9985",
-                    unit: "Heads",
-                    unitRate: 500,
-                    previousQuantity: 395,
-                    presentQuantity: 94.38,
-                    cumulativeQuantity: 489.38,
-                    previousAmount: 197500,
-                    presentAmount: 47190,
-                    cumulativeAmount: 244690,
-                    isDeduction: false,
-                    isRevisedRate: false,
-                },
-                {
-                    id: "client-bill-demo-cat-c-row-2",
-                    categoryId: mockCategoryCId,
-                    slNo: 7,
-                    description: "Daily (Helper)",
-                    sacHsnCode: "9985",
-                    unit: "Heads",
-                    unitRate: 380,
-                    previousQuantity: 325,
-                    presentQuantity: 62.88,
-                    cumulativeQuantity: 387.88,
-                    previousAmount: 123500,
-                    presentAmount: 23894.4,
-                    cumulativeAmount: 147394.4,
-                    isDeduction: false,
-                    isRevisedRate: false,
-                },
-                {
-                    id: "client-bill-demo-cat-c-row-3",
-                    categoryId: mockCategoryCId,
-                    slNo: 8,
-                    description: "Pile Ref. Jiggle & Straight",
-                    sacHsnCode: "7308",
-                    unit: "Pcs",
-                    unitRate: 4615,
-                    previousQuantity: 100,
-                    presentQuantity: 263.22,
-                    cumulativeQuantity: 363.22,
-                    previousAmount: 461500,
-                    presentAmount: 1214420.81,
-                    cumulativeAmount: 1675920.81,
-                    isDeduction: false,
-                    isRevisedRate: false,
-                },
-            ],
-        },
-    ],
-    createdAt: "2025-08-01T10:00:00.000Z",
-    updatedAt: "2025-08-01T10:00:00.000Z",
+const coerceNumber = (value: unknown, fallback = 0): number => {
+    if (typeof value === "number" && Number.isFinite(value)) return value
+    if (typeof value === "string") {
+        const parsed = Number(value)
+        return Number.isFinite(parsed) ? parsed : fallback
+    }
+    if (typeof value === "boolean") return value ? 1 : 0
+    if (value === null || value === undefined) return fallback
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
 }
 
-mockClientBill.netBillAmount = mockClientBill.totalAmount - mockClientBill.tdsAmount - (mockClientBill.debitAdjustValue || 0)
+const deserializeLineItemRecord = (line: any): BillLineItemRecord => ({
+    id: line.id || generateTempId(),
+    categoryId: line.categoryId || "",
+    slNo: coerceNumber(line.slNo),
+    description: line.description || "",
+    sacHsnCode: line.sacHsnCode || "",
+    unit: line.unit || "",
+    unitRate: coerceNumber(line.unitRate),
+    previousQuantity: coerceNumber(line.previousQuantity),
+    presentQuantity: coerceNumber(line.presentQuantity),
+    cumulativeQuantity: coerceNumber(line.cumulativeQuantity),
+    previousAmount: coerceNumber(line.previousAmount),
+    presentAmount: coerceNumber(line.presentAmount),
+    cumulativeAmount: coerceNumber(line.cumulativeAmount),
+    isDeduction: Boolean(line.isDeduction),
+    isRevisedRate: Boolean(line.isRevisedRate),
+})
+
+const deserializeCategoryRecord = (category: any): BillCategoryRecord => ({
+    id: category.id || generateTempId(),
+    clientBillId: category.clientBillId || "",
+    categoryCode: category.categoryCode || "",
+    categoryName: category.categoryName || "",
+    tower: category.tower || "",
+    description: category.description || "",
+    sequence: coerceNumber(category.sequence),
+    lineItems: (category.lineItems || []).map(deserializeLineItemRecord),
+})
+
+const deserializeClientBillRecord = (bill: any): ClientBillRecord => ({
+    id: bill.id || generateTempId(),
+    invoiceNo: bill.invoiceNo || "",
+    invoiceDate: bill.invoiceDate || "",
+    workOrderNo: bill.workOrderNo || "",
+    workOrderDate: bill.workOrderDate || "",
+    raBillNo: bill.raBillNo || "",
+    reverseCharges: Boolean(bill.reverseCharges),
+    billingPartyName: bill.billingPartyName || "",
+    billingPartyAddress: bill.billingPartyAddress || "",
+    billingPartyGSTIN: bill.billingPartyGSTIN || "",
+    billingPartyState: bill.billingPartyState || "",
+    billingPartyStateCode: bill.billingPartyStateCode || "",
+    providerName: bill.providerName || "",
+    providerAddress: bill.providerAddress || "",
+    providerGSTIN: bill.providerGSTIN || "",
+    providerState: bill.providerState || "",
+    providerStateCode: bill.providerStateCode || "",
+    projectName: bill.projectName || "",
+    projectLocation: bill.projectLocation || "",
+    contractorName: bill.contractorName || "",
+    contractorVillage: bill.contractorVillage || "",
+    contractorPost: bill.contractorPost || "",
+    contractorDistrict: bill.contractorDistrict || "",
+    contractorPin: bill.contractorPin || "",
+    contractorPAN: bill.contractorPAN || "",
+    totalAmount: coerceNumber(bill.totalAmount),
+    tdsPercentage: coerceNumber(bill.tdsPercentage),
+    tdsAmount: coerceNumber(bill.tdsAmount),
+    netBillAmount: coerceNumber(bill.netBillAmount),
+    debitAdjustValue: bill.debitAdjustValue !== null && bill.debitAdjustValue !== undefined ? coerceNumber(bill.debitAdjustValue) : undefined,
+    bankName: bill.bankName || "",
+    bankBranch: bill.bankBranch || "",
+    accountNo: bill.accountNo || "",
+    ifscCode: bill.ifscCode || "",
+    categories: (bill.categories || []).map(deserializeCategoryRecord),
+    createdAt: bill.createdAt,
+    updatedAt: bill.updatedAt,
+})
+
+const getAuthHeaders = (): Record<string, string> => {
+    if (typeof window === "undefined") return {}
+    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup")
+    return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 
 const AccountsDashboard = () => {
     const location = useLocation();
@@ -546,7 +420,10 @@ const AccountsDashboard = () => {
         projectCount: 0
     });
     const [isClientBillFormOpen, setIsClientBillFormOpen] = useState(false)
-    const [clientBills, setClientBills] = useState<ClientBillRecord[]>([mockClientBill])
+    const [clientBills, setClientBills] = useState<ClientBillRecord[]>([])
+    const [clientBillsLoading, setClientBillsLoading] = useState(true)
+    const [clientBillsError, setClientBillsError] = useState<string | null>(null)
+    const [isClientBillSaving, setIsClientBillSaving] = useState(false)
     const [clientBillFormData, setClientBillFormData] = useState<ClientBillFormState>(createBlankClientBill())
 
     const calculatedTdsAmount = useMemo(() => {
@@ -783,6 +660,23 @@ const AccountsDashboard = () => {
         });
     };
 
+    const fetchClientBills = useCallback(async () => {
+        setClientBillsLoading(true)
+        try {
+            const headers = getAuthHeaders()
+            const response = await axios.get(`${API_URL}/client-bills`, { headers })
+            const normalized = Array.isArray(response.data) ? response.data.map(deserializeClientBillRecord) : []
+            setClientBills(normalized)
+            setClientBillsError(null)
+        } catch (error: any) {
+            console.error("Error fetching client bills:", error)
+            setClientBillsError(error?.response?.data?.message || "Failed to load client bills")
+            toast.error(error?.response?.data?.message || "Failed to load client bills")
+        } finally {
+            setClientBillsLoading(false)
+        }
+    }, [])
+
     const numericBillFields: Array<keyof ClientBillFormState> = ["totalAmount", "tdsPercentage", "debitAdjustValue"]
     const numericCategoryFields: Array<keyof BillCategoryRecord> = ["sequence"]
     const numericLineItemFields: Array<keyof BillLineItemRecord> = [
@@ -902,27 +796,36 @@ const AccountsDashboard = () => {
         })
     }
 
-    const handleClientBillSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const handleClientBillSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+        if (isClientBillSaving) return
         const normalizeDateValue = (value?: string) => {
             if (!value) return undefined
             const parsed = new Date(value)
             return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString()
         }
 
-        const newBillId = generateTempId()
         const sanitizedCategories = clientBillFormData.categories.map((category, index) => {
-            const categoryId = category.id || generateTempId()
             return {
-                ...category,
-                id: categoryId,
-                clientBillId: newBillId,
+                categoryCode: category.categoryCode,
+                categoryName: category.categoryName,
+                tower: category.tower || undefined,
+                description: category.description || undefined,
                 sequence: category.sequence || index + 1,
                 lineItems: category.lineItems.map((line, lineIndex) => ({
-                    ...line,
-                    id: line.id || generateTempId(),
-                    categoryId,
                     slNo: line.slNo || lineIndex + 1,
+                    description: line.description,
+                    sacHsnCode: line.sacHsnCode || undefined,
+                    unit: line.unit,
+                    unitRate: Number(line.unitRate) || 0,
+                    previousQuantity: Number(line.previousQuantity) || 0,
+                    presentQuantity: Number(line.presentQuantity) || 0,
+                    cumulativeQuantity: Number(line.cumulativeQuantity) || 0,
+                    previousAmount: Number(line.previousAmount) || 0,
+                    presentAmount: Number(line.presentAmount) || 0,
+                    cumulativeAmount: Number(line.cumulativeAmount) || 0,
+                    isDeduction: Boolean(line.isDeduction),
+                    isRevisedRate: Boolean(line.isRevisedRate),
                 })),
             }
         })
@@ -930,23 +833,61 @@ const AccountsDashboard = () => {
         const totalAmount = Number(clientBillFormData.totalAmount || 0)
         const debitAdjustValue = Number(clientBillFormData.debitAdjustValue || 0)
 
-        const cleanBill: ClientBillRecord = {
-            ...clientBillFormData,
-            id: newBillId,
+        const payload = {
+            invoiceNo: clientBillFormData.invoiceNo,
             invoiceDate: normalizeDateValue(clientBillFormData.invoiceDate) || new Date().toISOString(),
+            workOrderNo: clientBillFormData.workOrderNo || undefined,
             workOrderDate: normalizeDateValue(clientBillFormData.workOrderDate),
+            raBillNo: clientBillFormData.raBillNo || undefined,
+            reverseCharges: clientBillFormData.reverseCharges,
+            billingPartyName: clientBillFormData.billingPartyName,
+            billingPartyAddress: clientBillFormData.billingPartyAddress,
+            billingPartyGSTIN: clientBillFormData.billingPartyGSTIN,
+            billingPartyState: clientBillFormData.billingPartyState,
+            billingPartyStateCode: clientBillFormData.billingPartyStateCode,
+            providerName: clientBillFormData.providerName,
+            providerAddress: clientBillFormData.providerAddress,
+            providerGSTIN: clientBillFormData.providerGSTIN,
+            providerState: clientBillFormData.providerState,
+            providerStateCode: clientBillFormData.providerStateCode,
+            projectName: clientBillFormData.projectName || undefined,
+            projectLocation: clientBillFormData.projectLocation || undefined,
+            contractorName: clientBillFormData.contractorName || undefined,
+            contractorVillage: clientBillFormData.contractorVillage || undefined,
+            contractorPost: clientBillFormData.contractorPost || undefined,
+            contractorDistrict: clientBillFormData.contractorDistrict || undefined,
+            contractorPin: clientBillFormData.contractorPin || undefined,
+            contractorPAN: clientBillFormData.contractorPAN || undefined,
             totalAmount,
             tdsPercentage: Number(clientBillFormData.tdsPercentage || 0),
             tdsAmount: calculatedTdsAmount,
-            debitAdjustValue,
             netBillAmount: Math.max(totalAmount - calculatedTdsAmount - debitAdjustValue, 0),
+            debitAdjustValue,
+            bankName: clientBillFormData.bankName || undefined,
+            bankBranch: clientBillFormData.bankBranch || undefined,
+            accountNo: clientBillFormData.accountNo || undefined,
+            ifscCode: clientBillFormData.ifscCode || undefined,
             categories: sanitizedCategories,
         }
 
-        setClientBills(prev => [cleanBill, ...prev])
-        toast.success("Client bill saved. Persist to backend when ready.")
-        setClientBillFormData(createBlankClientBill())
-        setIsClientBillFormOpen(false)
+        setIsClientBillSaving(true)
+        try {
+            const headers = {
+                ...getAuthHeaders(),
+                "Content-Type": "application/json",
+            }
+            const response = await axios.post(`${API_URL}/client-bills`, payload, { headers })
+            const savedBill = deserializeClientBillRecord(response.data)
+            setClientBills(prev => [savedBill, ...prev])
+            toast.success("Client bill saved successfully!")
+            setClientBillFormData(createBlankClientBill())
+            setIsClientBillFormOpen(false)
+        } catch (error: any) {
+            console.error("Error saving client bill:", error)
+            toast.error(error?.response?.data?.message || "Failed to save client bill")
+        } finally {
+            setIsClientBillSaving(false)
+        }
     }
 
     useEffect(() => {
@@ -969,6 +910,10 @@ const AccountsDashboard = () => {
             .then(res => setTaxCharges(res.data))
             .catch(() => { });
     }, []);
+
+    useEffect(() => {
+        fetchClientBills()
+    }, [fetchClientBills])
 
     const handleGenerateInvoice = () => {
         toast.success("Invoice generated and sent successfully!")
@@ -1729,21 +1674,70 @@ const AccountsDashboard = () => {
                                 <CardTitle>Client Bill Register</CardTitle>
                                 <CardDescription>Capture RA bills in the Quintessa layout with complete metadata.</CardDescription>
                             </div>
-                            <Button
-                                variant="default"
-                                onClick={() => setIsClientBillFormOpen(true)}
-                                className="w-full md:w-auto"
-                            >
-                                Add Client Bill
-                            </Button>
+                            <div className="flex flex-col w-full gap-2 md:w-auto md:flex-row">
+                                <Button
+                                    variant="outline"
+                                    onClick={fetchClientBills}
+                                    disabled={clientBillsLoading}
+                                    className="w-full md:w-auto"
+                                >
+                                    {clientBillsLoading ? (
+                                        <span className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 animate-spin" />
+                                            Refreshing
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <RefreshCw className="h-4 w-4" />
+                                            Refresh
+                                        </span>
+                                    )}
+                                </Button>
+                                <Button
+                                    variant="default"
+                                    onClick={() => setIsClientBillFormOpen(true)}
+                                    className="w-full md:w-auto"
+                                >
+                                    Add Client Bill
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent className="text-sm text-muted-foreground">
-                            Use the button above to capture a new client bill entry. The full schema-aligned form opens in a large, scrollable workspace.
+                            Use the actions above to sync with the backend register or capture a new entry. Data displayed below reflects what is stored in the `/api/client-bills` service.
                         </CardContent>
                     </Card>
 
+                    {clientBillsError && (
+                        <Card className="border-destructive/30">
+                            <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
+                                <div className="text-sm text-destructive">{clientBillsError}</div>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={fetchClientBills}
+                                    disabled={clientBillsLoading}
+                                >
+                                    Retry Fetch
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     <div className="space-y-6">
-                        {clientBills.length === 0 && (
+                        {clientBillsLoading && clientBills.length === 0 && (
+                            <Card>
+                                <CardContent className="py-10 space-y-4">
+                                    {[1, 2].map((row) => (
+                                        <div key={row} className="space-y-2 animate-pulse">
+                                            <div className="h-5 bg-muted rounded w-1/3" />
+                                            <div className="h-4 bg-muted rounded w-2/3" />
+                                            <div className="h-4 bg-muted rounded w-1/2" />
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        )}
+                        {!clientBillsLoading && clientBills.length === 0 && (
                             <Card>
                                 <CardContent className="py-10 text-center text-muted-foreground">
                                     <FileText className="mx-auto mb-4 h-10 w-10 opacity-40" />
@@ -2595,9 +2589,9 @@ const AccountsDashboard = () => {
                                 <Button type="button" variant="outline" onClick={() => setIsClientBillFormOpen(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" className="gap-2">
+                                <Button type="submit" className="gap-2" disabled={isClientBillSaving}>
                                     <Check className="h-4 w-4" />
-                                    Save Client Bill
+                                    {isClientBillSaving ? "Saving..." : "Save Client Bill"}
                                 </Button>
                             </div>
                         </form>
