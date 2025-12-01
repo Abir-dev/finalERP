@@ -1,44 +1,89 @@
-import { useState, useEffect } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { StatCard } from "@/components/stat-card"
-import { DataTable } from "@/components/data-table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie } from 'recharts'
-import { PaintBucket, FileText, Clock, AlertTriangle, Upload,Pencil, CheckCircle, Eye, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react"
-import { designsData } from "@/lib/dummy-data"
-import { ColumnDef } from "@tanstack/react-table"
-import { toast } from "sonner"
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/stat-card";
+import { DataTable } from "@/components/data-table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+} from "recharts";
+import {
+  PaintBucket,
+  FileText,
+  Clock,
+  AlertTriangle,
+  Upload,
+  Pencil,
+  CheckCircle,
+  Eye,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { designsData } from "@/lib/dummy-data";
+import { ColumnDef } from "@tanstack/react-table";
+import { toast } from "sonner";
 import axios from "axios";
 import { useUser } from "@/contexts/UserContext";
 import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import { UserFilterComponent } from "@/components/UserFilterComponent";
 import { useUserFilter } from "@/contexts/UserFilterContext";
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 interface Design {
-  id: string
-  name: string
-  clientId: string
-  client?: { id: string; name: string }
-  project?: { id: string; name: string }
-  status: string
-  createdAt: string
-  updatedAt: string
-  createdById: string
-  createdBy?: { id: string; name: string }
-  projectId: string
-  files: string[]
-  images: string[]
+  id: string;
+  name: string;
+  clientId: string;
+  client?: { id: string; name: string };
+  project?: { id: string; name: string };
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  createdById: string;
+  createdBy?: { id: string; name: string };
+  projectId: string;
+  files: string[];
+  images: string[];
 }
 
 // Types for clients and projects
@@ -54,59 +99,79 @@ interface Project {
 }
 
 interface Bottleneck {
-  type: string
-  project: string
-  days?: number
-  revisions?: number
-  designer: string
-  status: string
-  timeline?: Array<{ date: string; event: string }>
-  versions?: Array<{ version: number; date: string; reviewer: string; status: string }>
+  type: string;
+  project: string;
+  days?: number;
+  revisions?: number;
+  designer: string;
+  status: string;
+  timeline?: Array<{ date: string; event: string }>;
+  versions?: Array<{
+    version: number;
+    date: string;
+    reviewer: string;
+    status: string;
+  }>;
   sla?: {
-    sent: string
-    expected: string
-    overdue: boolean
-  }
+    sent: string;
+    expected: string;
+    overdue: boolean;
+  };
 }
 
 const bottlenecks: Bottleneck[] = [
-  { 
-    type: 'Longest Feedback Delay',
-    project: 'Commercial Tower',
+  {
+    type: "Longest Feedback Delay",
+    project: "Commercial Tower",
     days: 7,
-    designer: 'Jane Smith',
-    status: 'Awaiting Response',
+    designer: "Jane Smith",
+    status: "Awaiting Response",
     timeline: [
-      { date: '2024-01-15', event: 'Design Submitted' },
-      { date: '2024-01-18', event: 'Initial Review' },
-      { date: '2024-01-22', event: 'Feedback Due' }
-    ]
+      { date: "2024-01-15", event: "Design Submitted" },
+      { date: "2024-01-18", event: "Initial Review" },
+      { date: "2024-01-22", event: "Feedback Due" },
+    ],
   },
-  { 
-    type: 'Rejected Multiple Times',
-    project: 'Villa Complex',
+  {
+    type: "Rejected Multiple Times",
+    project: "Villa Complex",
     revisions: 6,
-    designer: 'John Doe',
-    status: 'In Revision',
+    designer: "John Doe",
+    status: "In Revision",
     versions: [
-      { version: 1, date: '2024-01-01', reviewer: 'Mike Wilson', status: 'Rejected' },
-      { version: 2, date: '2024-01-05', reviewer: 'Sarah Johnson', status: 'Rejected' },
-      { version: 3, date: '2024-01-10', reviewer: 'Mike Wilson', status: 'Rejected' }
-    ]
+      {
+        version: 1,
+        date: "2024-01-01",
+        reviewer: "Mike Wilson",
+        status: "Rejected",
+      },
+      {
+        version: 2,
+        date: "2024-01-05",
+        reviewer: "Sarah Johnson",
+        status: "Rejected",
+      },
+      {
+        version: 3,
+        date: "2024-01-10",
+        reviewer: "Mike Wilson",
+        status: "Rejected",
+      },
+    ],
   },
-  { 
-    type: 'Client Pending Response',
-    project: 'Shopping Mall',
+  {
+    type: "Client Pending Response",
+    project: "Shopping Mall",
     days: 5,
-    designer: 'Mike Johnson',
-    status: 'Client Review',
+    designer: "Mike Johnson",
+    status: "Client Review",
     sla: {
-      sent: '2024-01-17',
-      expected: '2024-01-20',
-      overdue: true
-    }
-  }
-]
+      sent: "2024-01-17",
+      expected: "2024-01-20",
+      overdue: true,
+    },
+  },
+];
 
 // Mobile-optimized columns - only name and actions
 const mobileDesignColumns: ColumnDef<any>[] = [
@@ -114,16 +179,16 @@ const mobileDesignColumns: ColumnDef<any>[] = [
     accessorKey: "name",
     header: "Drawing Name",
     cell: ({ row }) => {
-      const design = row.original
-      const [isExpanded, setIsExpanded] = useState(false)
-      
+      const design = row.original;
+      const [isExpanded, setIsExpanded] = useState(false);
+
       return (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="font-medium">{design.name}</div>
               <div className="text-sm text-muted-foreground">
-                {design.client?.name || 'N/A'} • {design.project?.name || 'N/A'}
+                {design.client?.name || "N/A"} • {design.project?.name || "N/A"}
               </div>
             </div>
             <Button
@@ -132,28 +197,44 @@ const mobileDesignColumns: ColumnDef<any>[] = [
               onClick={() => setIsExpanded(!isExpanded)}
               className="md:hidden"
             >
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
           </div>
-          
+
           {isExpanded && (
             <div className="md:hidden space-y-2 p-3 bg-muted/50 rounded-lg">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="font-medium">Created By:</span>
-                  <div className="text-muted-foreground">{design.createdBy?.name || 'N/A'}</div>
+                  <div className="text-muted-foreground">
+                    {design.createdBy?.name || "N/A"}
+                  </div>
                 </div>
                 <div>
                   <span className="font-medium">Status:</span>
                   <div>
-                    <Badge variant={
-                      design.status === "APPROVED" ? "default" : 
-                      design.status === "UNDER_REVIEW" ? "secondary" : 
-                      design.status === "REJECTED" ? "destructive" : "outline"
-                    }>
-                      {design.status === "UNDER_REVIEW" ? "Under Review" : 
-                       design.status === "APPROVED" ? "Approved" : 
-                       design.status === "REJECTED" ? "Rejected" : design.status}
+                    <Badge
+                      variant={
+                        design.status === "APPROVED"
+                          ? "default"
+                          : design.status === "UNDER_REVIEW"
+                          ? "secondary"
+                          : design.status === "REJECTED"
+                          ? "destructive"
+                          : "outline"
+                      }
+                    >
+                      {design.status === "UNDER_REVIEW"
+                        ? "Under Review"
+                        : design.status === "APPROVED"
+                        ? "Approved"
+                        : design.status === "REJECTED"
+                        ? "Rejected"
+                        : design.status}
                     </Badge>
                   </div>
                 </div>
@@ -173,16 +254,18 @@ const mobileDesignColumns: ColumnDef<any>[] = [
                 </div>
                 <div className="col-span-2">
                   <span className="font-medium">Created:</span>
-                  <div className="text-muted-foreground">{new Date(design.createdAt).toLocaleDateString()}</div>
+                  <div className="text-muted-foreground">
+                    {new Date(design.createdAt).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
-      )
+      );
     },
   },
-]
+];
 
 // Desktop columns - all original columns
 const desktopDesignColumns: ColumnDef<any>[] = [
@@ -194,100 +277,121 @@ const desktopDesignColumns: ColumnDef<any>[] = [
     accessorKey: "client",
     header: "Client",
     cell: ({ row }) => {
-      const client = row.original.client
-      return client ? client.name : "N/A"
+      const client = row.original.client;
+      return client ? client.name : "N/A";
     },
   },
   {
     accessorKey: "project",
     header: "Project",
     cell: ({ row }) => {
-      const project = row.original.project
-      return project ? project.name : "N/A"
+      const project = row.original.project;
+      return project ? project.name : "N/A";
     },
   },
   {
     accessorKey: "createdBy",
     header: "Created By",
     cell: ({ row }) => {
-      const createdBy = row.original.createdBy
-      return createdBy ? createdBy.name : "N/A"
+      const createdBy = row.original.createdBy;
+      return createdBy ? createdBy.name : "N/A";
     },
   },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
-      const variant = status === "APPROVED" ? "default" : 
-                     status === "UNDER_REVIEW" ? "secondary" : 
-                     status === "REJECTED" ? "destructive" : "outline"
-      const displayStatus = status === "UNDER_REVIEW" ? "Under Review" : 
-                           status === "APPROVED" ? "Approved" : 
-                           status === "REJECTED" ? "Rejected" : status
-      return <Badge variant={variant}>{displayStatus}</Badge>
+      const status = row.getValue("status") as string;
+      const variant =
+        status === "APPROVED"
+          ? "default"
+          : status === "UNDER_REVIEW"
+          ? "secondary"
+          : status === "REJECTED"
+          ? "destructive"
+          : "outline";
+      const displayStatus =
+        status === "UNDER_REVIEW"
+          ? "Under Review"
+          : status === "APPROVED"
+          ? "Approved"
+          : status === "REJECTED"
+          ? "Rejected"
+          : status;
+      return <Badge variant={variant}>{displayStatus}</Badge>;
     },
   },
   {
     accessorKey: "files",
     header: "Files",
     cell: ({ row }) => {
-      const files = row.getValue("files") as string[]
+      const files = row.getValue("files") as string[];
       return (
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
           <span>{files ? files.length : 0}</span>
         </div>
-      )
+      );
     },
   },
   {
     accessorKey: "images",
     header: "Images",
     cell: ({ row }) => {
-      const images = row.getValue("images") as string[]
+      const images = row.getValue("images") as string[];
       return (
         <div className="flex items-center gap-2">
           <PaintBucket className="h-4 w-4" />
           <span>{images ? images.length : 0}</span>
         </div>
-      )
+      );
     },
   },
   {
     accessorKey: "createdAt",
     header: "Created Date",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("createdAt"))
-      return date.toLocaleDateString()
+      const date = new Date(row.getValue("createdAt"));
+      return date.toLocaleDateString();
     },
   },
-]
+];
 
 const DesignDashboardContent = () => {
   const { user } = useUser();
   const location = useLocation();
   const navigate = useNavigate();
-  const [designStats, setDesignStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+  const [designStats, setDesignStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
   const [approvalTrendData, setApprovalTrendData] = useState([]);
   const [turnaroundData, setTurnaroundData] = useState([]);
   const [designs, setDesigns] = useState([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false)
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
-  const [isAnalyticModalOpen, setIsAnalyticModalOpen] = useState(false)
-  const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false)
-  const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false)
-  const [isSubmitDesignModalOpen, setIsSubmitDesignModalOpen] = useState(false)
-  const [isEditDesignModalOpen, setIsEditDesignModalOpen] = useState(false)
-  const [selectedDesign, setSelectedDesign] = useState<Design | null>(null)
-  const [selectedAnalytic, setSelectedAnalytic] = useState<string | null>(null)
-  const [selectedBottleneck, setSelectedBottleneck] = useState<any | null>(null)
-  const [selectedEscalation, setSelectedEscalation] = useState<any | null>(null)
-  const [expandedQueueItems, setExpandedQueueItems] = useState<Record<string, boolean>>({})
-  
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAnalyticModalOpen, setIsAnalyticModalOpen] = useState(false);
+  const [isBottleneckModalOpen, setIsBottleneckModalOpen] = useState(false);
+  const [isEscalateModalOpen, setIsEscalateModalOpen] = useState(false);
+  const [isSubmitDesignModalOpen, setIsSubmitDesignModalOpen] = useState(false);
+  const [isEditDesignModalOpen, setIsEditDesignModalOpen] = useState(false);
+  const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
+  const [selectedAnalytic, setSelectedAnalytic] = useState<string | null>(null);
+  const [selectedBottleneck, setSelectedBottleneck] = useState<any | null>(
+    null
+  );
+  const [selectedEscalation, setSelectedEscalation] = useState<any | null>(
+    null
+  );
+  const [expandedQueueItems, setExpandedQueueItems] = useState<
+    Record<string, boolean>
+  >({});
+
   // New design form state
   const [newDesignForm, setNewDesignForm] = useState({
     name: "",
@@ -296,8 +400,6 @@ const DesignDashboardContent = () => {
     files: [] as File[],
     images: [] as File[],
   });
-
-  
 
   // Edit design form state
   const [editDesignForm, setEditDesignForm] = useState({
@@ -308,77 +410,86 @@ const DesignDashboardContent = () => {
     files: [] as string[],
     images: [] as string[],
   });
-     const { 
-        targetUserId, 
-        selectedUser, 
-        currentUser,
-        selectedUserId,
-        setSelectedUserId,
-        isAdminUser 
-      } = useUserFilter();
-  
-    const userID = targetUserId || user?.id;
+  const {
+    targetUserId,
+    selectedUser,
+    currentUser,
+    selectedUserId,
+    setSelectedUserId,
+    isAdminUser,
+  } = useUserFilter();
 
-    // Function to get current tab from URL
-    const getCurrentTab = () => {
-      const path = location.pathname;
-      if (path.includes('/overview')) return 'overview';
-      if (path.includes('/queue')) return 'queue';
-      return 'overview'; // default tab
+  const userID = targetUserId || user?.id;
+
+  // Function to get current tab from URL
+  const getCurrentTab = () => {
+    const path = location.pathname;
+    if (path.includes("/overview")) return "overview";
+    if (path.includes("/queue")) return "queue";
+    return "overview"; // default tab
+  };
+
+  // Handle tab changes
+  const handleTabChange = (value: string) => {
+    const tabRoutes: Record<string, string> = {
+      overview: "/design-dashboard/overview",
+      queue: "/design-dashboard/queue",
     };
+    navigate(tabRoutes[value]);
+  };
 
-    // Handle tab changes
-    const handleTabChange = (value: string) => {
-      const tabRoutes: Record<string, string> = {
-        overview: '/design-dashboard/overview',
-        queue: '/design-dashboard/queue'
-      };
-      navigate(tabRoutes[value]);
-    };
-
-    const fetchDesigns = async () => {
-      
-      try {
-        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const endpoint = ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
+  const fetchDesigns = async () => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const endpoint = (
+        user?.role === "admin" || user?.role === "md"
+          ? selectedUser?.id == currentUser?.id
+          : user?.role === "admin" || user?.role === "md"
+      )
         ? `${API_URL}/designs`
         : `${API_URL}/designs/${userID}`;
-        const response = await axios.get(endpoint, { headers });
-        setDesigns(response.data);
-      } catch (error) {
-        console.error("Error fetching designs:", error);
-      }
+      const response = await axios.get(endpoint, { headers });
+      setDesigns(response.data);
+    } catch (error) {
+      console.error("Error fetching designs:", error);
     }
+  };
 
   useEffect(() => {
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    const token =
+      sessionStorage.getItem("jwt_token") ||
+      localStorage.getItem("jwt_token_backup");
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    
+
     // Initialize empty stats (will be calculated from real data)
     setDesignStats({ total: 0, pending: 0, approved: 0, rejected: 0 });
     setApprovalTrendData([
       { week: "Week 1", submitted: 10, approved: 7, rejected: 3 },
       { week: "Week 2", submitted: 12, approved: 8, rejected: 4 },
       { week: "Week 3", submitted: 15, approved: 10, rejected: 5 },
-      { week: "Week 4", submitted: 8, approved: 6, rejected: 2 }
+      { week: "Week 4", submitted: 8, approved: 6, rejected: 2 },
     ]);
     setTurnaroundData([
       { designer: "John Doe", avgDays: 3 },
       { designer: "Jane Smith", avgDays: 2.5 },
-      { designer: "Mike Johnson", avgDays: 4 }
+      { designer: "Mike Johnson", avgDays: 4 },
     ]);
-    
+
     // Fetch actual designs data
-    
+
     fetchDesigns();
-    
+
     // Fetch clients and projects for the form
-    axios.get(`${API_URL}/clients`, { headers })
-      .then(res => setClients(res.data))
+    axios
+      .get(`${API_URL}/clients`, { headers })
+      .then((res) => setClients(res.data))
       .catch(() => {});
-    axios.get(`${API_URL}/projects`, { headers })
-      .then(res => setProjects(res.data))
+    axios
+      .get(`${API_URL}/projects`, { headers })
+      .then((res) => setProjects(res.data))
       .catch(() => {});
   }, [userID]);
 
@@ -386,59 +497,63 @@ const DesignDashboardContent = () => {
   useEffect(() => {
     if (designs && designs.length > 0) {
       const total = designs.length;
-      const pending = designs.filter((d: any) => d.status === "UNDER_REVIEW").length;
-      const approved = designs.filter((d: any) => d.status === "APPROVED").length;
-      const rejected = designs.filter((d: any) => d.status === "REJECTED").length;
+      const pending = designs.filter(
+        (d: any) => d.status === "UNDER_REVIEW"
+      ).length;
+      const approved = designs.filter(
+        (d: any) => d.status === "APPROVED"
+      ).length;
+      const rejected = designs.filter(
+        (d: any) => d.status === "REJECTED"
+      ).length;
 
       setDesignStats({
         total,
         pending,
         approved,
-        rejected
+        rejected,
       });
     }
   }, [designs]);
 
   const handleUploadRevision = (design: any) => {
-    setSelectedDesign(design)
-    setIsUploadModalOpen(true)
-  }
+    setSelectedDesign(design);
+    setIsUploadModalOpen(true);
+  };
 
   const handleAddComment = (design: any) => {
-    setSelectedDesign(design)
-    setIsCommentModalOpen(true)
-  }
+    setSelectedDesign(design);
+    setIsCommentModalOpen(true);
+  };
   const handleEscalate = (design: any) => {
-    toast.success(`Design "${design.name}" escalated to Design Head`)
-  }
+    toast.success(`Design "${design.name}" escalated to Design Head`);
+  };
 
   const handleSubmitRevision = () => {
-    toast.success("Design revision uploaded successfully!")
-    setIsUploadModalOpen(false)
-    setSelectedDesign(null)
-  }
+    toast.success("Design revision uploaded successfully!");
+    setIsUploadModalOpen(false);
+    setSelectedDesign(null);
+  };
 
   const handleSubmitComment = () => {
-    toast.success("Comment added successfully!")
-    setIsCommentModalOpen(false)
-    setSelectedDesign(null)
-  }
+    toast.success("Comment added successfully!");
+    setIsCommentModalOpen(false);
+    setSelectedDesign(null);
+  };
 
   const handleSendToReview = (design: any) => {
-    setDesigns(prevDesigns => 
-      prevDesigns.map(d => 
-        d.id === design.id 
-          ? { ...d, status: "UNDER_REVIEW" }
-          : d
+    setDesigns((prevDesigns) =>
+      prevDesigns.map((d) =>
+        d.id === design.id ? { ...d, status: "UNDER_REVIEW" } : d
       )
-    )
-    toast.success(`Design "${design.name}" sent for review`)
-  }
+    );
+    toast.success(`Design "${design.name}" sent for review`);
+  };
 
   const handleViewDetails = (design: any) => {
-    setSelectedDesign(design)
-    setIsDetailsModalOpen(true)
-  }
+    setSelectedDesign(design);
+    setIsDetailsModalOpen(true);
+  };
 
   const handleApproveDesign = async (design: any) => {
     if (!user) {
@@ -447,36 +562,42 @@ const DesignDashboardContent = () => {
     }
 
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers = token ? { 
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      } : {
-        "Content-Type": "application/json"
-      };
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token
+        ? {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          }
+        : {
+            "Content-Type": "application/json",
+          };
 
       // Update design status to approved
-      await axios.put(`${API_URL}/designs/${design.id}`, {
-        ...design,
-        status: "APPROVED"
-      }, { headers });
+      await axios.put(
+        `${API_URL}/designs/${design.id}`,
+        {
+          ...design,
+          status: "APPROVED",
+        },
+        { headers }
+      );
 
       // Update local state
-      setDesigns(prevDesigns => 
-        prevDesigns.map(d => 
-          d.id === design.id 
-            ? { ...d, status: "APPROVED" }
-            : d
+      setDesigns((prevDesigns) =>
+        prevDesigns.map((d) =>
+          d.id === design.id ? { ...d, status: "APPROVED" } : d
         )
       );
-      
+
       toast.success(`Design "${design.name}" approved`);
       setIsDetailsModalOpen(false);
     } catch (error) {
       console.error("Error approving design:", error);
       toast.error("Failed to approve design");
     }
-  }
+  };
 
   const handleRejectDesign = async (design: any) => {
     if (!user) {
@@ -485,36 +606,42 @@ const DesignDashboardContent = () => {
     }
 
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers = token ? { 
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      } : {
-        "Content-Type": "application/json"
-      };
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token
+        ? {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          }
+        : {
+            "Content-Type": "application/json",
+          };
 
       // Update design status to rejected
-      await axios.put(`${API_URL}/designs/${design.id}`, {
-        ...design,
-        status: "REJECTED"
-      }, { headers });
+      await axios.put(
+        `${API_URL}/designs/${design.id}`,
+        {
+          ...design,
+          status: "REJECTED",
+        },
+        { headers }
+      );
 
       // Update local state
-      setDesigns(prevDesigns => 
-        prevDesigns.map(d => 
-          d.id === design.id 
-            ? { ...d, status: "REJECTED" }
-            : d
+      setDesigns((prevDesigns) =>
+        prevDesigns.map((d) =>
+          d.id === design.id ? { ...d, status: "REJECTED" } : d
         )
       );
-      
+
       toast.success(`Design "${design.name}" rejected`);
       setIsDetailsModalOpen(false);
     } catch (error) {
       console.error("Error rejecting design:", error);
       toast.error("Failed to reject design");
     }
-  }
+  };
 
   const handleEditDesign = (design: any) => {
     setSelectedDesign(design);
@@ -527,7 +654,7 @@ const DesignDashboardContent = () => {
       images: design.images || [],
     });
     setIsEditDesignModalOpen(true);
-  }
+  };
 
   const handleDeleteDesign = async (design: any) => {
     if (!user) {
@@ -535,43 +662,54 @@ const DesignDashboardContent = () => {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete the design "${design.name}"? This action cannot be undone.`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete the design "${design.name}"? This action cannot be undone.`
+      )
+    ) {
       return;
     }
 
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
       // Delete design via API
       await axios.delete(`${API_URL}/designs/${design.id}`, { headers });
 
       // Remove from local state
-      setDesigns(prevDesigns => prevDesigns.filter(d => d.id !== design.id));
-      
+      setDesigns((prevDesigns) =>
+        prevDesigns.filter((d) => d.id !== design.id)
+      );
+
       toast.success(`Design "${design.name}" deleted successfully`);
     } catch (error) {
       console.error("Error deleting design:", error);
       toast.error("Failed to delete design");
     }
-  }
+  };
 
   // Handle new design form input changes
   const handleNewDesignInputChange = (field: string, value: string) => {
-    setNewDesignForm(prev => ({ ...prev, [field]: value }));
+    setNewDesignForm((prev) => ({ ...prev, [field]: value }));
   };
 
   // Handle file uploads for new design
-  const handleNewDesignFileChange = (field: 'files' | 'images', files: FileList | null) => {
+  const handleNewDesignFileChange = (
+    field: "files" | "images",
+    files: FileList | null
+  ) => {
     if (files) {
       const fileArray = Array.from(files);
-      setNewDesignForm(prev => ({ ...prev, [field]: fileArray }));
+      setNewDesignForm((prev) => ({ ...prev, [field]: fileArray }));
     }
   };
 
   // Handle edit design form input changes
   const handleEditDesignInputChange = (field: string, value: string) => {
-    setEditDesignForm(prev => ({ ...prev, [field]: value }));
+    setEditDesignForm((prev) => ({ ...prev, [field]: value }));
   };
 
   // Handle edit design form submission
@@ -581,40 +719,51 @@ const DesignDashboardContent = () => {
       return;
     }
 
-    if (!editDesignForm.name || !editDesignForm.clientId || !editDesignForm.projectId) {
+    if (
+      !editDesignForm.name ||
+      !editDesignForm.clientId ||
+      !editDesignForm.projectId
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers = token ? { 
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      } : {
-        "Content-Type": "application/json"
-      };
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token
+        ? {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          }
+        : {
+            "Content-Type": "application/json",
+          };
 
       // Update design via API
-      await axios.put(`${API_URL}/designs/${selectedDesign.id}`, editDesignForm, { headers });
+      await axios.put(
+        `${API_URL}/designs/${selectedDesign.id}`,
+        editDesignForm,
+        { headers }
+      );
 
       // Update local state
-      setDesigns(prevDesigns => 
-        prevDesigns.map(d => 
-          d.id === selectedDesign.id 
-            ? { ...d, ...editDesignForm }
-            : d
+      setDesigns((prevDesigns) =>
+        prevDesigns.map((d) =>
+          d.id === selectedDesign.id ? { ...d, ...editDesignForm } : d
         )
       );
 
       toast.success("Design updated successfully!");
       setIsEditDesignModalOpen(false);
       setSelectedDesign(null);
-      
+
       // Refresh designs list
       const refreshHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-      axios.get(`${API_URL}/designs`, { headers: refreshHeaders })
-        .then(res => setDesigns(res.data))
+      axios
+        .get(`${API_URL}/designs`, { headers: refreshHeaders })
+        .then((res) => setDesigns(res.data))
         .catch(() => {});
     } catch (error) {
       console.error("Error updating design:", error);
@@ -629,40 +778,103 @@ const DesignDashboardContent = () => {
       return;
     }
 
-    if (!newDesignForm.name || !newDesignForm.clientId || !newDesignForm.projectId) {
+    if (
+      !newDesignForm.name ||
+      !newDesignForm.clientId ||
+      !newDesignForm.projectId
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
 
     try {
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers = token ? { 
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      } : {
-        "Content-Type": "application/json"
-      };
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {};
 
-      // Convert files to file paths (for now, since file upload isn't fully implemented)
-      const filePaths = newDesignForm.files.map(file => file.name);
-      const imagePaths = newDesignForm.images.map(file => file.name);
+      let fileUrls: string[] = [];
+      let imageUrls: string[] = [];
 
-      // Create design data
+      // Upload files to S3 if any
+      if (newDesignForm.files.length > 0) {
+        const fileFormData = new FormData();
+        newDesignForm.files.forEach((file) => {
+          fileFormData.append("files", file);
+        });
+
+        try {
+          const fileUploadResponse = await axios.post(
+            `${API_URL}/designs/${userID}/upload/files`,
+            fileFormData,
+            {
+              headers: {
+                ...headers,
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+          fileUrls = fileUploadResponse.data.urls || [];
+          toast.success(`${fileUrls.length} file(s) uploaded successfully`);
+        } catch (error) {
+          console.error("Error uploading files:", error);
+          toast.error("Failed to upload files");
+          return;
+        }
+      }
+
+      // Upload images to S3 if any
+      if (newDesignForm.images.length > 0) {
+        const imageFormData = new FormData();
+        newDesignForm.images.forEach((image) => {
+          imageFormData.append("images", image);
+        });
+
+        try {
+          const imageUploadResponse = await axios.post(
+            `${API_URL}/designs/${userID}/upload/images`,
+            imageFormData,
+            {
+              headers: {
+                ...headers,
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+          imageUrls = imageUploadResponse.data.urls || [];
+          toast.success(`${imageUrls.length} image(s) uploaded successfully`);
+        } catch (error) {
+          console.error("Error uploading images:", error);
+          toast.error("Failed to upload images");
+          return;
+        }
+      }
+
+      // Create design data with S3 URLs
       const designData = {
         name: newDesignForm.name,
         clientId: newDesignForm.clientId,
         projectId: newDesignForm.projectId,
-        files: filePaths,
-        images: imagePaths,
-        status: "UNDER_REVIEW"
+        files: fileUrls,
+        images: imageUrls,
+        status: "UNDER_REVIEW",
       };
 
       // Submit to backend using the correct endpoint with userId
-      await axios.post(`${API_URL}/designs/${userID}`, designData, { headers });
+      await axios.post(`${API_URL}/designs/${userID}`, designData, {
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+      });
 
       toast.success("Design submitted successfully!");
       setIsSubmitDesignModalOpen(false);
-      
+
       // Reset form
       setNewDesignForm({
         name: "",
@@ -671,11 +883,9 @@ const DesignDashboardContent = () => {
         files: [],
         images: [],
       });
-      
+
       // Refresh designs list
-      axios.get(`${API_URL}/designs/${userID}`, { headers })
-        .then(res => setDesigns(res.data))
-        .catch(() => {});
+      fetchDesigns();
     } catch (error) {
       console.error("Error submitting design:", error);
       toast.error("Failed to submit drawing");
@@ -684,19 +894,30 @@ const DesignDashboardContent = () => {
 
   return (
     <div className="space-y-6">
-      <UserFilterComponent/>
+      <UserFilterComponent />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Drawing Dashboard</h1>
-          <p className="text-muted-foreground">Drawing approval workflow and analytics</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Drawing Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Drawing approval workflow and analytics
+          </p>
         </div>
-        <Button onClick={() => setIsSubmitDesignModalOpen(true)} className="gap-2">
+        <Button
+          onClick={() => setIsSubmitDesignModalOpen(true)}
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" />
           Submit New Drawing
         </Button>
       </div>
 
-      <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
+      <Tabs
+        value={getCurrentTab()}
+        onValueChange={handleTabChange}
+        className="space-y-6"
+      >
         {/* Mobile Tab Navigation */}
         <div className="md:hidden">
           <Select value={getCurrentTab()} onValueChange={handleTabChange}>
@@ -794,12 +1015,14 @@ const DesignDashboardContent = () => {
           <Card>
             <CardHeader>
               <CardTitle>Design Gallery</CardTitle>
-              <CardDescription>Recent design submissions and their status</CardDescription>
+              <CardDescription>
+                Recent design submissions and their status
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Mobile View */}
               <div className="md:hidden">
-                <DataTable 
+                <DataTable
                   columns={[
                     ...mobileDesignColumns,
                     {
@@ -807,8 +1030,8 @@ const DesignDashboardContent = () => {
                       header: "Actions",
                       cell: ({ row }) => (
                         <div className="flex flex-col gap-1">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleViewDetails(row.original)}
                             className="w-full justify-start"
@@ -816,8 +1039,8 @@ const DesignDashboardContent = () => {
                             <Eye className="h-3 w-3 mr-2" />
                             View
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleEditDesign(row.original)}
                             className="w-full justify-start"
@@ -825,8 +1048,8 @@ const DesignDashboardContent = () => {
                             <Pencil className="h-3 w-3 mr-2" />
                             Edit
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleDeleteDesign(row.original)}
                             className="w-full justify-start"
@@ -834,28 +1057,29 @@ const DesignDashboardContent = () => {
                             <Trash2 className="h-3 w-3 mr-2" />
                             Delete
                           </Button>
-                          {row.original.status !== "UNDER_REVIEW" && row.original.status !== "APPROVED" && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleSendToReview(row.original)}
-                              className="w-full justify-start"
-                            >
-                              Send to Review
-                            </Button>
-                          )}
+                          {row.original.status !== "UNDER_REVIEW" &&
+                            row.original.status !== "APPROVED" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSendToReview(row.original)}
+                                className="w-full justify-start"
+                              >
+                                Send to Review
+                              </Button>
+                            )}
                         </div>
                       ),
                     },
                   ]}
-                  data={designs} 
-                  searchKey="name" 
+                  data={designs}
+                  searchKey="name"
                 />
               </div>
 
               {/* Desktop View */}
               <div className="hidden md:block">
-                <DataTable 
+                <DataTable
                   columns={[
                     ...desktopDesignColumns,
                     {
@@ -863,42 +1087,43 @@ const DesignDashboardContent = () => {
                       header: "Actions",
                       cell: ({ row }) => (
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleViewDetails(row.original)}
                           >
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleEditDesign(row.original)}
                           >
                             <Pencil className="h-3 w-3" />
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => handleDeleteDesign(row.original)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
-                          {row.original.status !== "UNDER_REVIEW" && row.original.status !== "APPROVED" && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleSendToReview(row.original)}
-                            >
-                              Send to Review
-                            </Button>
-                          )}
+                          {row.original.status !== "UNDER_REVIEW" &&
+                            row.original.status !== "APPROVED" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSendToReview(row.original)}
+                              >
+                                Send to Review
+                              </Button>
+                            )}
                         </div>
                       ),
                     },
                   ]}
-                  data={designs} 
-                  searchKey="name" 
+                  data={designs}
+                  searchKey="name"
                 />
               </div>
             </CardContent>
@@ -914,8 +1139,8 @@ const DesignDashboardContent = () => {
               description="Design review cycle"
               trend={{ value: -0.5, label: "improvement" }}
               onClick={() => {
-                setSelectedAnalytic("turnaround")
-                setIsAnalyticModalOpen(true)
+                setSelectedAnalytic("turnaround");
+                setIsAnalyticModalOpen(true);
               }}
             />
             <StatCard
@@ -924,8 +1149,8 @@ const DesignDashboardContent = () => {
               icon={AlertTriangle}
               description="Delayed responses"
               onClick={() => {
-                setSelectedAnalytic("delays")
-                setIsAnalyticModalOpen(true)
+                setSelectedAnalytic("delays");
+                setIsAnalyticModalOpen(true);
               }}
             />
             <StatCard
@@ -935,8 +1160,8 @@ const DesignDashboardContent = () => {
               description="First-time approval rate"
               trend={{ value: 3, label: "this quarter" }}
               onClick={() => {
-                setSelectedAnalytic("efficiency")
-                setIsAnalyticModalOpen(true)
+                setSelectedAnalytic("efficiency");
+                setIsAnalyticModalOpen(true);
               }}
             />
             <StatCard
@@ -945,8 +1170,8 @@ const DesignDashboardContent = () => {
               icon={FileText}
               description="Highest revision count"
               onClick={() => {
-                setSelectedAnalytic("revisions")
-                setIsAnalyticModalOpen(true)
+                setSelectedAnalytic("revisions");
+                setIsAnalyticModalOpen(true);
               }}
             />
           </div>
@@ -959,11 +1184,14 @@ const DesignDashboardContent = () => {
             <CardContent>
               <div className="space-y-4">
                 {bottlenecks.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer"
-                       onClick={() => {
-                         setSelectedBottleneck(item)
-                         setIsBottleneckModalOpen(true)
-                       }}>
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent cursor-pointer"
+                    onClick={() => {
+                      setSelectedBottleneck(item);
+                      setIsBottleneckModalOpen(true);
+                    }}
+                  >
                     <div>
                       <h3 className="font-medium">{item.type}</h3>
                       <p className="text-sm text-muted-foreground">
@@ -975,16 +1203,18 @@ const DesignDashboardContent = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-semibold text-orange-600">
-                        {'days' in item ? `${item.days} days` : `${item.revisions} revisions`}
+                        {"days" in item
+                          ? `${item.days} days`
+                          : `${item.revisions} revisions`}
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="mt-2"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedEscalation(item)
-                          setIsEscalateModalOpen(true)
+                          e.stopPropagation();
+                          setSelectedEscalation(item);
+                          setIsEscalateModalOpen(true);
                         }}
                       >
                         Escalate to Drawing Head
@@ -1005,149 +1235,211 @@ const DesignDashboardContent = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {designs.filter(d => d.status === "UNDER_REVIEW").length === 0 ? (
+                {designs.filter((d) => d.status === "UNDER_REVIEW").length ===
+                0 ? (
                   <div className="text-center py-8">
                     <CheckCircle className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-semibold text-gray-900">No drawing under review</h3>
-                    <p className="mt-1 text-sm text-gray-500">All drawing have been reviewed!</p>
+                    <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                      No drawing under review
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      All drawing have been reviewed!
+                    </p>
                   </div>
                 ) : (
-                  designs.filter(d => d.status === "UNDER_REVIEW").map((design, index) => {
-                    const isExpanded = expandedQueueItems[design.id] || false;
-                    
-                    const toggleExpanded = () => {
-                      setExpandedQueueItems(prev => ({
-                        ...prev,
-                        [design.id]: !prev[design.id]
-                      }));
-                    };
-                    
-                    return (
-                      <div key={design.id || index} className="border rounded-lg">
-                        {/* Mobile Layout */}
-                        <div className="md:hidden">
-                          <div className="p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex-1">
-                                <h3 className="font-medium">{design.name}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                  {design.client?.name || 'N/A'} • {design.project?.name || 'N/A'}
-                                </p>
+                  designs
+                    .filter((d) => d.status === "UNDER_REVIEW")
+                    .map((design, index) => {
+                      const isExpanded = expandedQueueItems[design.id] || false;
+
+                      const toggleExpanded = () => {
+                        setExpandedQueueItems((prev) => ({
+                          ...prev,
+                          [design.id]: !prev[design.id],
+                        }));
+                      };
+
+                      return (
+                        <div
+                          key={design.id || index}
+                          className="border rounded-lg"
+                        >
+                          {/* Mobile Layout */}
+                          <div className="md:hidden">
+                            <div className="p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex-1">
+                                  <h3 className="font-medium">{design.name}</h3>
+                                  <p className="text-sm text-muted-foreground">
+                                    {design.client?.name || "N/A"} •{" "}
+                                    {design.project?.name || "N/A"}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={toggleExpanded}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4" />
+                                  )}
+                                </Button>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={toggleExpanded}
-                              >
-                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </Button>
+
+                              {isExpanded && (
+                                <div className="space-y-3 p-3 bg-muted/50 rounded-lg mb-3">
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <span className="font-medium">
+                                        Created by:
+                                      </span>
+                                      <div className="text-muted-foreground">
+                                        {design.createdBy?.name || "N/A"}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">
+                                        Created:
+                                      </span>
+                                      <div className="text-muted-foreground">
+                                        {new Date(
+                                          design.createdAt
+                                        ).toLocaleDateString()}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">
+                                        Files:
+                                      </span>
+                                      <div className="text-muted-foreground flex items-center gap-1">
+                                        <FileText className="h-3 w-3" />
+                                        {design.files ? design.files.length : 0}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium">
+                                        Images:
+                                      </span>
+                                      <div className="text-muted-foreground flex items-center gap-1">
+                                        <PaintBucket className="h-3 w-3" />
+                                        {design.images
+                                          ? design.images.length
+                                          : 0}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Badge variant="secondary">
+                                      Under Review
+                                    </Badge>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAddComment(design)}
+                                  className="w-full"
+                                >
+                                  Comment
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewDetails(design)}
+                                  className="w-full"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  View Details
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleRejectDesign(design)}
+                                  className="w-full"
+                                >
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApproveDesign(design)}
+                                  className="w-full"
+                                >
+                                  Approve
+                                </Button>
+                              </div>
                             </div>
+                          </div>
 
-                            {isExpanded && (
-                              <div className="space-y-3 p-3 bg-muted/50 rounded-lg mb-3">
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                  <div>
-                                    <span className="font-medium">Created by:</span>
-                                    <div className="text-muted-foreground">{design.createdBy?.name || 'N/A'}</div>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Created:</span>
-                                    <div className="text-muted-foreground">{new Date(design.createdAt).toLocaleDateString()}</div>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Files:</span>
-                                    <div className="text-muted-foreground flex items-center gap-1">
-                                      <FileText className="h-3 w-3" />
-                                      {design.files ? design.files.length : 0}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Images:</span>
-                                    <div className="text-muted-foreground flex items-center gap-1">
-                                      <PaintBucket className="h-3 w-3" />
-                                      {design.images ? design.images.length : 0}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div>
-                                  <Badge variant="secondary">Under Review</Badge>
-                                </div>
+                          {/* Desktop Layout */}
+                          <div className="hidden md:flex items-center justify-between p-4">
+                            <div>
+                              <h3 className="font-medium">{design.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                Client: {design.client?.name || "N/A"} •
+                                Project: {design.project?.name || "N/A"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Created by: {design.createdBy?.name || "N/A"} •
+                                Created:{" "}
+                                {new Date(
+                                  design.createdAt
+                                ).toLocaleDateString()}
+                              </p>
+                              <div className="flex gap-2 mt-2">
+                                <Badge variant="secondary">Under Review</Badge>
+                                {design.files && design.files.length > 0 && (
+                                  <Badge variant="outline">
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    {design.files.length} Files
+                                  </Badge>
+                                )}
+                                {design.images && design.images.length > 0 && (
+                                  <Badge variant="outline">
+                                    <PaintBucket className="h-3 w-3 mr-1" />
+                                    {design.images.length} Images
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <Button variant="outline" size="sm" onClick={() => handleAddComment(design)} className="w-full">
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleAddComment(design)}
+                              >
                                 Comment
                               </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)} className="w-full">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewDetails(design)}
+                              >
                                 <Eye className="h-3 w-3 mr-1" />
                                 View Details
                               </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm" 
+                              <Button
+                                variant="destructive"
+                                size="sm"
                                 onClick={() => handleRejectDesign(design)}
-                                className="w-full"
                               >
                                 Reject
                               </Button>
-                              <Button size="sm" onClick={() => handleApproveDesign(design)} className="w-full">
+                              <Button
+                                size="sm"
+                                onClick={() => handleApproveDesign(design)}
+                              >
                                 Approve
                               </Button>
                             </div>
                           </div>
                         </div>
-
-                        {/* Desktop Layout */}
-                        <div className="hidden md:flex items-center justify-between p-4">
-                          <div>
-                            <h3 className="font-medium">{design.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Client: {design.client?.name || 'N/A'} • Project: {design.project?.name || 'N/A'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Created by: {design.createdBy?.name || 'N/A'} • 
-                              Created: {new Date(design.createdAt).toLocaleDateString()}
-                            </p>
-                            <div className="flex gap-2 mt-2">
-                              <Badge variant="secondary">Under Review</Badge>
-                              {design.files && design.files.length > 0 && (
-                                <Badge variant="outline">
-                                  <FileText className="h-3 w-3 mr-1" />
-                                  {design.files.length} Files
-                                </Badge>
-                              )}
-                              {design.images && design.images.length > 0 && (
-                                <Badge variant="outline">
-                                  <PaintBucket className="h-3 w-3 mr-1" />
-                                  {design.images.length} Images
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleAddComment(design)}>
-                              Comment
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleViewDetails(design)}>
-                              <Eye className="h-3 w-3 mr-1" />
-                              View Details
-                            </Button>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              onClick={() => handleRejectDesign(design)}
-                            >
-                              Reject
-                            </Button>
-                            <Button size="sm" onClick={() => handleApproveDesign(design)}>
-                              Approve
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })
                 )}
               </div>
             </CardContent>
@@ -1174,7 +1466,10 @@ const DesignDashboardContent = () => {
               <Textarea id="notes" placeholder="Describe the changes made..." />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsUploadModalOpen(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSubmitRevision}>Upload</Button>
@@ -1211,7 +1506,10 @@ const DesignDashboardContent = () => {
               </Select>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCommentModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsCommentModalOpen(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSubmitComment}>Add Comment</Button>
@@ -1235,7 +1533,9 @@ const DesignDashboardContent = () => {
                 <>
                   <div className="grid grid-cols-2 gap-5">
                     <div>
-                      <h4 className="text-sm font-bold mb-2">Basic Information</h4>
+                      <h4 className="text-sm font-bold mb-2">
+                        Basic Information
+                      </h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Name:</span>
@@ -1243,36 +1543,58 @@ const DesignDashboardContent = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Client:</span>
-                          <span>{selectedDesign.client?.name || 'N/A'}</span>
+                          <span>{selectedDesign.client?.name || "N/A"}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Project:</span>
-                          <span>{selectedDesign.project?.name || 'N/A'}</span>
+                          <span className="text-muted-foreground">
+                            Project:
+                          </span>
+                          <span>{selectedDesign.project?.name || "N/A"}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Created By:</span>
-                          <span>{selectedDesign.createdBy?.name || 'N/A'}</span>
+                          <span className="text-muted-foreground">
+                            Created By:
+                          </span>
+                          <span>{selectedDesign.createdBy?.name || "N/A"}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Status:</span>
-                          <Badge variant={
-                            selectedDesign.status === "APPROVED" ? "default" :
-                            selectedDesign.status === "UNDER_REVIEW" ? "secondary" :
-                            selectedDesign.status === "REJECTED" ? "destructive" : "outline"
-                          }>
-                            {selectedDesign.status === "UNDER_REVIEW" ? "Under Review" : 
-                             selectedDesign.status === "APPROVED" ? "Approved" : 
-                             selectedDesign.status === "REJECTED" ? "Rejected" : selectedDesign.status}
+                          <Badge
+                            variant={
+                              selectedDesign.status === "APPROVED"
+                                ? "default"
+                                : selectedDesign.status === "UNDER_REVIEW"
+                                ? "secondary"
+                                : selectedDesign.status === "REJECTED"
+                                ? "destructive"
+                                : "outline"
+                            }
+                          >
+                            {selectedDesign.status === "UNDER_REVIEW"
+                              ? "Under Review"
+                              : selectedDesign.status === "APPROVED"
+                              ? "Approved"
+                              : selectedDesign.status === "REJECTED"
+                              ? "Rejected"
+                              : selectedDesign.status}
                           </Badge>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold mb-2">Drawing Details</h4>
+                      <h4 className="text-sm font-bold mb-2">
+                        Drawing Details
+                      </h4>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Created Date:</span>
-                          <span>{new Date(selectedDesign.createdAt).toLocaleDateString()}</span>
+                          <span className="text-muted-foreground">
+                            Created Date:
+                          </span>
+                          <span>
+                            {new Date(
+                              selectedDesign.createdAt
+                            ).toLocaleDateString()}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Files:</span>
@@ -1283,8 +1605,14 @@ const DesignDashboardContent = () => {
                           <span>{selectedDesign.images?.length || 0}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-muted-foreground">Last Updated:</span>
-                          <span>{new Date(selectedDesign.updatedAt).toLocaleDateString()}</span>
+                          <span className="text-muted-foreground">
+                            Last Updated:
+                          </span>
+                          <span>
+                            {new Date(
+                              selectedDesign.updatedAt
+                            ).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1332,8 +1660,8 @@ const DesignDashboardContent = () => {
             </Button> */}
             {selectedDesign?.status === "UNDER_REVIEW" && (
               <>
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   onClick={() => handleRejectDesign(selectedDesign)}
                 >
                   Reject Design
@@ -1352,26 +1680,46 @@ const DesignDashboardContent = () => {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedAnalytic === 'turnaround' ? 'Turnaround Time Analysis' :
-               selectedAnalytic === 'delays' ? 'Feedback Delays' :
-               selectedAnalytic === 'efficiency' ? 'Design Cycle Efficiency' :
-               selectedAnalytic === 'revisions' ? 'Most Reviewed Designs' : ''}
+              {selectedAnalytic === "turnaround"
+                ? "Turnaround Time Analysis"
+                : selectedAnalytic === "delays"
+                ? "Feedback Delays"
+                : selectedAnalytic === "efficiency"
+                ? "Design Cycle Efficiency"
+                : selectedAnalytic === "revisions"
+                ? "Most Reviewed Designs"
+                : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <>
-                {selectedAnalytic === 'turnaround' ? (
+                {selectedAnalytic === "turnaround" ? (
                   <LineChart data={approvalTrendData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="week" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="review" name="Review Time" stroke="#3b82f6" />
-                    <Line type="monotone" dataKey="redesign" name="Redesign Time" stroke="#10b981" />
-                    <Line type="monotone" dataKey="approval" name="Approval Time" stroke="#f59e0b" />
+                    <Line
+                      type="monotone"
+                      dataKey="review"
+                      name="Review Time"
+                      stroke="#3b82f6"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="redesign"
+                      name="Redesign Time"
+                      stroke="#10b981"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="approval"
+                      name="Approval Time"
+                      stroke="#f59e0b"
+                    />
                   </LineChart>
-                ) : selectedAnalytic === 'delays' ? (
+                ) : selectedAnalytic === "delays" ? (
                   <BarChart data={turnaroundData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="designer" />
@@ -1379,13 +1727,13 @@ const DesignDashboardContent = () => {
                     <Tooltip />
                     <Bar dataKey="delays" fill="#ef4444" />
                   </BarChart>
-                ) : selectedAnalytic === 'efficiency' ? (
+                ) : selectedAnalytic === "efficiency" ? (
                   <PieChart>
                     <Tooltip />
                     <Pie
                       data={[
-                        { name: 'Ideal Cycle', value: 70 },
-                        { name: 'Extended Cycle', value: 30 }
+                        { name: "Ideal Cycle", value: 70 },
+                        { name: "Extended Cycle", value: 30 },
                       ]}
                       dataKey="value"
                       nameKey="name"
@@ -1402,7 +1750,10 @@ const DesignDashboardContent = () => {
       </Dialog>
 
       {/* Bottleneck Detail Modal */}
-      <Dialog open={isBottleneckModalOpen} onOpenChange={setIsBottleneckModalOpen}>
+      <Dialog
+        open={isBottleneckModalOpen}
+        onOpenChange={setIsBottleneckModalOpen}
+      >
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{selectedBottleneck?.type}</DialogTitle>
@@ -1414,30 +1765,45 @@ const DesignDashboardContent = () => {
             {selectedBottleneck?.timeline && (
               <div className="space-y-4">
                 <h4 className="font-medium">Timeline</h4>
-                {selectedBottleneck.timeline.map((event: any, index: number) => (
-                  <div key={index} className="flex justify-between items-center p-2 border-l-2 border-primary">
-                    <span>{event.event}</span>
-                    <span className="text-muted-foreground">{event.date}</span>
-                  </div>
-                ))}
+                {selectedBottleneck.timeline.map(
+                  (event: any, index: number) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center p-2 border-l-2 border-primary"
+                    >
+                      <span>{event.event}</span>
+                      <span className="text-muted-foreground">
+                        {event.date}
+                      </span>
+                    </div>
+                  )
+                )}
               </div>
             )}
             {selectedBottleneck?.versions && (
               <div className="space-y-4">
                 <h4 className="font-medium">Submission History</h4>
-                {selectedBottleneck.versions.map((version: any, index: number) => (
-                  <div key={index} className="p-2 border rounded">
-                    <div className="flex justify-between">
-                      <span>Version {version.version}</span>
-                      <Badge variant={version.status === 'Rejected' ? 'destructive' : 'default'}>
-                        {version.status}
-                      </Badge>
+                {selectedBottleneck.versions.map(
+                  (version: any, index: number) => (
+                    <div key={index} className="p-2 border rounded">
+                      <div className="flex justify-between">
+                        <span>Version {version.version}</span>
+                        <Badge
+                          variant={
+                            version.status === "Rejected"
+                              ? "destructive"
+                              : "default"
+                          }
+                        >
+                          {version.status}
+                        </Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Reviewed by {version.reviewer} on {version.date}
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Reviewed by {version.reviewer} on {version.date}
-                    </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             )}
             {selectedBottleneck?.sla && (
@@ -1447,15 +1813,23 @@ const DesignDashboardContent = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Sent Date</p>
-                      <p className="font-medium">{selectedBottleneck.sla.sent}</p>
+                      <p className="font-medium">
+                        {selectedBottleneck.sla.sent}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Expected Response</p>
-                      <p className="font-medium">{selectedBottleneck.sla.expected}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Expected Response
+                      </p>
+                      <p className="font-medium">
+                        {selectedBottleneck.sla.expected}
+                      </p>
                     </div>
                   </div>
                   {selectedBottleneck.sla.overdue && (
-                    <Badge variant="destructive" className="mt-4">Overdue</Badge>
+                    <Badge variant="destructive" className="mt-4">
+                      Overdue
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -1475,20 +1849,29 @@ const DesignDashboardContent = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="escalation-note">Additional Notes (Optional)</Label>
-              <Textarea 
-                id="escalation-note" 
+              <Label htmlFor="escalation-note">
+                Additional Notes (Optional)
+              </Label>
+              <Textarea
+                id="escalation-note"
                 placeholder="Add any specific concerns or context..."
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEscalateModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsEscalateModalOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast.success(`Escalated ${selectedEscalation?.project} to Design Head`)
-                setIsEscalateModalOpen(false)
-              }}>
+              <Button
+                onClick={() => {
+                  toast.success(
+                    `Escalated ${selectedEscalation?.project} to Design Head`
+                  );
+                  setIsEscalateModalOpen(false);
+                }}
+              >
                 Confirm Escalation
               </Button>
             </div>
@@ -1497,7 +1880,10 @@ const DesignDashboardContent = () => {
       </Dialog>
 
       {/* Submit New Design Modal */}
-      <Dialog open={isSubmitDesignModalOpen} onOpenChange={setIsSubmitDesignModalOpen}>
+      <Dialog
+        open={isSubmitDesignModalOpen}
+        onOpenChange={setIsSubmitDesignModalOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Submit New Drawing</DialogTitle>
@@ -1511,22 +1897,26 @@ const DesignDashboardContent = () => {
               <Input
                 id="design-name"
                 value={newDesignForm.name}
-                onChange={(e) => handleNewDesignInputChange("name", e.target.value)}
+                onChange={(e) =>
+                  handleNewDesignInputChange("name", e.target.value)
+                }
                 placeholder="Enter drawing name"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="client">Client *</Label>
               <Select
                 value={newDesignForm.clientId}
-                onValueChange={(value) => handleNewDesignInputChange("clientId", value)}
+                onValueChange={(value) =>
+                  handleNewDesignInputChange("clientId", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clients.map(client => (
+                  {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
                     </SelectItem>
@@ -1534,18 +1924,20 @@ const DesignDashboardContent = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="project">Project *</Label>
               <Select
                 value={newDesignForm.projectId}
-                onValueChange={(value) => handleNewDesignInputChange("projectId", value)}
+                onValueChange={(value) =>
+                  handleNewDesignInputChange("projectId", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map(project => (
+                  {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -1553,7 +1945,7 @@ const DesignDashboardContent = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="design-files">Drawing Files</Label>
               <Input
@@ -1561,10 +1953,17 @@ const DesignDashboardContent = () => {
                 type="file"
                 accept=".pdf,.dwg,.dxf,.rvt"
                 multiple
-                onChange={(e) => handleNewDesignFileChange("files", e.target.files)}
+                onChange={(e) =>
+                  handleNewDesignFileChange("files", e.target.files)
+                }
               />
+              {newDesignForm.files.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {newDesignForm.files.length} file(s) selected
+                </p>
+              )}
             </div>
-            
+
             <div>
               <Label htmlFor="design-images">Drawing Images</Label>
               <Input
@@ -1572,12 +1971,22 @@ const DesignDashboardContent = () => {
                 type="file"
                 accept=".jpg,.jpeg,.png,.gif"
                 multiple
-                onChange={(e) => handleNewDesignFileChange("images", e.target.files)}
+                onChange={(e) =>
+                  handleNewDesignFileChange("images", e.target.files)
+                }
               />
+              {newDesignForm.images.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {newDesignForm.images.length} image(s) selected
+                </p>
+              )}
             </div>
-            
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsSubmitDesignModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsSubmitDesignModalOpen(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSubmitNewDesign}>
@@ -1590,13 +1999,14 @@ const DesignDashboardContent = () => {
       </Dialog>
 
       {/* Edit Design Modal */}
-      <Dialog open={isEditDesignModalOpen} onOpenChange={setIsEditDesignModalOpen}>
+      <Dialog
+        open={isEditDesignModalOpen}
+        onOpenChange={setIsEditDesignModalOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Drawing</DialogTitle>
-            <DialogDescription>
-              Update drawing information
-            </DialogDescription>
+            <DialogDescription>Update drawing information</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -1604,22 +2014,26 @@ const DesignDashboardContent = () => {
               <Input
                 id="edit-design-name"
                 value={editDesignForm.name}
-                onChange={(e) => handleEditDesignInputChange("name", e.target.value)}
+                onChange={(e) =>
+                  handleEditDesignInputChange("name", e.target.value)
+                }
                 placeholder="Enter drawing name"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="edit-client">Client *</Label>
               <Select
                 value={editDesignForm.clientId}
-                onValueChange={(value) => handleEditDesignInputChange("clientId", value)}
+                onValueChange={(value) =>
+                  handleEditDesignInputChange("clientId", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent>
-                  {clients.map(client => (
+                  {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
                     </SelectItem>
@@ -1627,18 +2041,20 @@ const DesignDashboardContent = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="edit-project">Project *</Label>
               <Select
                 value={editDesignForm.projectId}
-                onValueChange={(value) => handleEditDesignInputChange("projectId", value)}
+                onValueChange={(value) =>
+                  handleEditDesignInputChange("projectId", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map(project => (
+                  {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -1651,7 +2067,9 @@ const DesignDashboardContent = () => {
               <Label htmlFor="edit-status">Status</Label>
               <Select
                 value={editDesignForm.status}
-                onValueChange={(value) => handleEditDesignInputChange("status", value)}
+                onValueChange={(value) =>
+                  handleEditDesignInputChange("status", value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -1663,9 +2081,12 @@ const DesignDashboardContent = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditDesignModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDesignModalOpen(false)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleUpdateDesign}>
@@ -1677,15 +2098,14 @@ const DesignDashboardContent = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 const DesignDashboard = () => {
   return (
     <PageUserFilterProvider allowedRoles={["client_manager", "site"]}>
       <DesignDashboardContent />
     </PageUserFilterProvider>
   );
-}
+};
 
-
-export default DesignDashboard
+export default DesignDashboard;
