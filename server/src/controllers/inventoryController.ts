@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { prismaNotificationService } from '../services/prismaNotificationService';
 import prisma from '../config/prisma';
 import logger from '../logger/logger';
+import { uploadImage as uploadImageToS3, deleteImage as deleteImageFromS3, extractKeyFromUrl } from '../utils/s3';
 
 // Interface for material transfer item validation
 interface ItemValidation {
@@ -60,8 +61,21 @@ export const inventoryController = {
       // Handle file upload if present
       let finalImageUrl = imageUrl;
       if (req.file) {
-        // If a file was uploaded, use the file path
-        finalImageUrl = `/uploads/${req.file.filename}`;
+        try {
+          // Upload image to S3
+          const uploadResult = await uploadImageToS3({
+            buffer: req.file.buffer,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+          });
+          finalImageUrl = uploadResult.url;
+        } catch (error) {
+          logger.error("Error uploading image to S3:", error);
+          return res.status(500).json({
+            error: "Failed to upload image. Please try again.",
+          });
+        }
       }
 
       const createData: any = {
@@ -173,7 +187,38 @@ export const inventoryController = {
       
       // Handle file upload if present
       if (req.file) {
-        updateData.imageUrl = `/uploads/${req.file.filename}`;
+        try {
+          // Get existing item to check for old image
+          const existingItem = await prisma.inventory.findUnique({
+            where: { id },
+            select: { imageUrl: true },
+          });
+
+          // Upload new image to S3
+          const uploadResult = await uploadImageToS3({
+            buffer: req.file.buffer,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+          });
+          updateData.imageUrl = uploadResult.url;
+
+          // Delete old image from S3 if it exists and is an S3 URL
+          if (existingItem?.imageUrl && !existingItem.imageUrl.startsWith('/uploads/')) {
+            try {
+              const oldImageKey = extractKeyFromUrl(existingItem.imageUrl);
+              await deleteImageFromS3(oldImageKey);
+            } catch (deleteError) {
+              // Log but don't fail the update if old image deletion fails
+              logger.warn("Failed to delete old image from S3:", deleteError);
+            }
+          }
+        } catch (error) {
+          logger.error("Error uploading image to S3:", error);
+          return res.status(500).json({
+            error: "Failed to upload image. Please try again.",
+          });
+        }
       }
       
       // Convert string values to numbers for numeric fields
@@ -216,7 +261,27 @@ export const inventoryController = {
   async deleteItem(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      
+      // Get the item first to check for image
+      const item = await prisma.inventory.findUnique({
+        where: { id },
+        select: { imageUrl: true },
+      });
+
+      // Delete the item from database
       await prisma.inventory.delete({ where: { id } });
+
+      // Delete the image from S3 if it exists and is an S3 URL
+      if (item?.imageUrl && !item.imageUrl.startsWith('/uploads/')) {
+        try {
+          const imageKey = extractKeyFromUrl(item.imageUrl);
+          await deleteImageFromS3(imageKey);
+        } catch (deleteError) {
+          // Log but don't fail the delete if image deletion fails
+          logger.warn("Failed to delete image from S3:", deleteError);
+        }
+      }
+
       res.status(204).send();
     } catch (error) {
       logger.error("Error deleting inventory item:", error);
