@@ -30,6 +30,7 @@ import {
   Pencil,
   Trash,
   Edit,
+  X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
@@ -385,6 +386,10 @@ const InventoryContent = () => {
   // Add image preview states
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  
+  // Add state for view modal image loading
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [viewImageUrl, setViewImageUrl] = useState<string | null>(null);
 
   // Function to handle image file selection and preview
   const handleImageChange = (
@@ -1280,9 +1285,24 @@ const InventoryContent = () => {
   };
 
   // Add view details handler
-  const handleViewDetails = (item: InventoryItemType) => {
+  const handleViewDetails = async (item: InventoryItemType) => {
     setSelectedItem(item);
     setIsViewDetailsOpen(true);
+    setViewImageUrl(null);
+    
+    // If there's an imageUrl, download and display it
+    if (item.imageUrl) {
+      setIsImageLoading(true);
+      try {
+        // The imageUrl is already a full URL from S3, just use it directly
+        setViewImageUrl(item.imageUrl);
+      } catch (error) {
+        console.error("Error loading image:", error);
+        toast.error("Failed to load image");
+      } finally {
+        setIsImageLoading(false);
+      }
+    }
   };
 
   // Add edit item handler
@@ -2140,12 +2160,27 @@ const InventoryContent = () => {
                         Upload an image for the inventory item (JPG, PNG, GIF)
                       </FormDescription>
                       {imagePreview && (
-                        <div className="mt-2">
+                        <div className="mt-2 relative inline-block">
                           <img
                             src={imagePreview}
                             alt="Preview"
                             className="w-32 h-32 object-cover rounded-lg border"
                           />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => {
+                              onChange(null);
+                              setImagePreview(null);
+                              // Reset the file input
+                              const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                              if (fileInput) fileInput.value = '';
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         </div>
                       )}
                       <FormMessage />
@@ -3221,6 +3256,156 @@ const InventoryContent = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          
+          {/* View Details Dialog */}
+          <Dialog open={isViewDetailsOpen} onOpenChange={setIsViewDetailsOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Inventory Item Details</DialogTitle>
+                <DialogDescription>
+                  View complete information about this inventory item
+                </DialogDescription>
+              </DialogHeader>
+              
+              {selectedItem && (
+                <div className="space-y-6">
+                  {/* Image Section */}
+                  {selectedItem.imageUrl && (
+                    <div className="flex flex-col items-center space-y-2">
+                      {isImageLoading ? (
+                        <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                          <p className="mt-4 text-sm text-muted-foreground">Loading image...</p>
+                        </div>
+                      ) : viewImageUrl ? (
+                        <div className="w-full flex justify-center">
+                          <img
+                            src={viewImageUrl}
+                            alt={selectedItem.name}
+                            className="max-w-full h-auto max-h-64 rounded-lg border shadow-sm"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              toast.error("Failed to display image");
+                            }}
+                            onLoad={() => setIsImageLoading(false)}
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                  
+                  {/* Item Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Item Name</Label>
+                      <p className="text-base font-semibold">{selectedItem.name}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                      <p className="text-base">
+                        {Array.isArray(selectedItem.category)
+                          ? selectedItem.category.join(", ")
+                          : selectedItem.category}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Type</Label>
+                      <Badge variant={selectedItem.type === "NEW" ? "default" : "secondary"}>
+                        {selectedItem.type || "OLD"}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Quantity</Label>
+                      <p className="text-base">
+                        <Badge variant={selectedItem.quantity > 100 ? "default" : "destructive"}>
+                          {selectedItem.quantity} {selectedItem.unit}
+                        </Badge>
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Location</Label>
+                      <p className="text-base">{selectedItem.location}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
+                      <p className="text-base">{selectedItem.lastUpdated}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Reorder Level</Label>
+                      <p className="text-base">{selectedItem.reorderLevel || "-"}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Maximum Stock</Label>
+                      <p className="text-base">{selectedItem.maxStock || "-"}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Safety Stock</Label>
+                      <p className="text-base">{selectedItem.safetyStock || "-"}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Unit Cost</Label>
+                      <p className="text-base">₹{selectedItem.unitCost?.toFixed(2) || "0.00"}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Primary Supplier</Label>
+                      <p className="text-base">{selectedItem.primarySupplier || "-"}</p>
+                    </div>
+                    
+                    {selectedItem.secondarySupplier && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-muted-foreground">Secondary Supplier</Label>
+                        <p className="text-base">{selectedItem.secondarySupplier}</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Additional Information */}
+                  {(selectedItem.description || selectedItem.notes) && (
+                    <div className="space-y-4 pt-4 border-t">
+                      {selectedItem.description && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                          <p className="text-sm">{selectedItem.description}</p>
+                        </div>
+                      )}
+                      
+                      {selectedItem.notes && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+                          <p className="text-sm">{selectedItem.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewDetailsOpen(false);
+                    setSelectedItem(null);
+                    setViewImageUrl(null);
+                    setIsImageLoading(false);
+                  }}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="transfers" className="space-y-6">

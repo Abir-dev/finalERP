@@ -19,4 +19,5 @@ export interface InventoryItem {
   qualityScore?: number;
   photos?: string[];
   notes?: string;
-} 
+  imageUrl?: string;
+}
