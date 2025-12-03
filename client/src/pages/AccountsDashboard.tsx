@@ -330,112 +330,295 @@ const buildAmountLabel = (line: BillLineItemRecord) =>
     `Prev: ${formatINR(line.previousAmount)} | Pres: ${formatINR(line.presentAmount)} | Cum: ${formatINR(line.cumulativeAmount)}`
 
 const generateClientBillPdf = (bill: ClientBillRecord) => {
-    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" })
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
     const pageWidth = doc.internal.pageSize.getWidth()
-    const margin = 40
-    let cursorY = margin
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const margin = 12
+    let cursorY = 8
 
-    doc.setFontSize(18)
-    doc.text("Client Bill", pageWidth / 2, cursorY, { align: "center" })
-    cursorY += 24
+    // ===== HEADER =====
+    doc.setFontSize(16)
+    doc.setFont(undefined, "bold")
+    doc.text(bill.billingPartyName || "Company Name", pageWidth / 2, cursorY, { align: "center" })
+    cursorY += 5
 
-    doc.setFontSize(12)
-    doc.text(`Invoice No: ${bill.invoiceNo}`, margin, cursorY)
-    doc.text(`Invoice Date: ${formatDate(bill.invoiceDate)}`, pageWidth / 2, cursorY)
-    cursorY += 16
-    doc.text(`RA Bill No: ${bill.raBillNo || "N/A"}`, margin, cursorY)
-    doc.text(`Work Order No: ${bill.workOrderNo || "N/A"}`, pageWidth / 2, cursorY)
-    cursorY += 16
-    doc.text(`Work Order Date: ${formatDate(bill.workOrderDate)}`, margin, cursorY)
-    doc.text(`Reverse Charges: ${bill.reverseCharges ? "Applicable" : "Not Applicable"}`, pageWidth / 2, cursorY)
-    cursorY += 24
+    doc.setFontSize(9)
+    doc.setFont(undefined, "normal")
+    const headerText = `${bill.billingPartyAddress || ""} • PAN- ${bill.contractorPAN || ""}`
+    doc.text(headerText, pageWidth / 2, cursorY, { align: "center", maxWidth: pageWidth - 2 * margin })
+    cursorY += 8
 
-    doc.setFontSize(13)
-    doc.text("Billing Party", margin, cursorY)
-    doc.text("Service Provider", pageWidth / 2, cursorY)
-    cursorY += 14
+    // ===== TOP BORDER =====
+    doc.line(margin, cursorY, pageWidth - margin, cursorY)
+    cursorY += 3
+
+    // ===== INVOICE LABEL & RECEIVER DETAILS =====
     doc.setFontSize(11)
-    doc.text(`${bill.billingPartyName}\n${bill.billingPartyAddress}\nGSTIN: ${bill.billingPartyGSTIN} • State: ${bill.billingPartyStateCode}`, margin, cursorY, { maxWidth: pageWidth / 2 - margin })
-    doc.text(`${bill.providerName}\n${bill.providerAddress}\nGSTIN: ${bill.providerGSTIN}`, pageWidth / 2, cursorY, { maxWidth: pageWidth / 2 - margin })
-    cursorY += 54
+    doc.setFont(undefined, "bold")
+    doc.text("INVOICE", margin, cursorY)
 
-    doc.setFontSize(13)
-    doc.text("Project Details", margin, cursorY)
-    cursorY += 14
-    doc.setFontSize(11)
-    doc.text(`Project: ${bill.projectName || "N/A"}`, margin, cursorY)
-    doc.text(`Location: ${bill.projectLocation || "N/A"}`, margin + 180, cursorY)
-    cursorY += 14
-    doc.text(`Contractor: ${bill.contractorName || "N/A"} • PAN: ${bill.contractorPAN || "N/A"}`, margin, cursorY)
-    cursorY += 14
-    doc.text(`Village: ${bill.contractorVillage || "N/A"} • District: ${bill.contractorDistrict || "N/A"} • PIN: ${bill.contractorPin || "N/A"}`, margin, cursorY)
-    cursorY += 24
+    doc.setFontSize(9)
+    doc.setFont(undefined, "normal")
+    doc.text("Original for Recipient", pageWidth - 60, cursorY - 1)
+    doc.text("Duplicate for Service Provider", pageWidth - 60, cursorY + 3)
 
-    doc.setFontSize(13)
-    doc.text("Financial Summary", margin, cursorY)
-    cursorY += 14
-    doc.setFontSize(11)
-    doc.text(`Total Amount: ${formatINR(bill.totalAmount)}`, margin, cursorY)
-    doc.text(`TDS (${bill.tdsPercentage}%): ${formatINR(bill.tdsAmount)}`, margin + 230, cursorY)
-    cursorY += 14
-    doc.text(`Debit / Adjust: ${formatINR(bill.debitAdjustValue || 0)}`, margin, cursorY)
-    doc.text(`Net Bill Amount: ${formatINR(bill.netBillAmount)}`, margin + 230, cursorY)
-    cursorY += 24
+    cursorY += 10
 
-    doc.setFontSize(13)
-    doc.text("Bank Details", margin, cursorY)
-    cursorY += 14
-    doc.setFontSize(11)
-    doc.text(`Bank: ${bill.bankName || "N/A"} • Branch: ${bill.bankBranch || "N/A"}`, margin, cursorY)
-    cursorY += 14
-    doc.text(`Account No: ${bill.accountNo || "N/A"} • IFSC: ${bill.ifscCode || "N/A"}`, margin, cursorY)
-    cursorY += 24
+    // ===== INVOICE DETAILS LEFT SIDE =====
+    const detailsBoxHeight = 30
+    doc.rect(margin, cursorY, (pageWidth - 2 * margin) / 2, detailsBoxHeight)
 
-    const tableBody: any[] = []
-    bill.categories.forEach(category => {
-        tableBody.push([
-            {
-                content: `${category.categoryCode}. ${category.categoryName}${category.tower ? ` (${category.tower})` : ""} ${category.description ? `• ${category.description}` : ""}`,
-                colSpan: 8,
-                styles: { fillColor: [245, 245, 245], fontStyle: "bold" }
-            }
+    let detailY = cursorY + 3
+    doc.setFontSize(8)
+    doc.setFont(undefined, "bold")
+    doc.text("Reverse Charges (Yes/No):", margin + 2, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(bill.reverseCharges ? "Yes" : "No", margin + 60, detailY)
+
+    detailY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Invoice No:", margin + 2, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.invoiceNo}`, margin + 30, detailY)
+
+    detailY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Invoice Date:", margin + 2, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${formatDate(bill.invoiceDate)}`, margin + 30, detailY)
+
+    detailY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("State:", margin + 2, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyStateCode || "N/A"}`, margin + 30, detailY)
+
+    // ===== RIGHT DETAILS BOX =====
+    doc.rect((pageWidth / 2) + 2, cursorY, (pageWidth - 2 * margin) / 2 - 2, detailsBoxHeight)
+
+    detailY = cursorY + 3
+    doc.setFontSize(8)
+    doc.setFont(undefined, "bold")
+    doc.text("Work Order No:", (pageWidth / 2) + 5, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.workOrderNo || "N/A"}`, (pageWidth / 2) + 35, detailY)
+
+    detailY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Work order Date:", (pageWidth / 2) + 5, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${formatDate(bill.workOrderDate)}`, (pageWidth / 2) + 35, detailY)
+
+    detailY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("R/A Bill No:", (pageWidth / 2) + 5, detailY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.raBillNo || "N/A"}`, (pageWidth / 2) + 35, detailY)
+
+    cursorY += detailsBoxHeight + 6
+
+    // ===== DETAILS OF RECEIVER AND SERVICE PROVIDER =====
+    doc.setFontSize(9)
+    doc.setFont(undefined, "bold")
+    doc.text("Details of Receiver / Billed to :", margin, cursorY)
+    doc.text("Details of Project / Service rendered at :", pageWidth / 2 + 2, cursorY)
+
+    // Add registration number on the right
+    doc.setFontSize(8)
+    doc.setFont(undefined, "normal")
+    const regNumber = "88201722720"
+    doc.text(regNumber, pageWidth - margin - 30, cursorY, { align: "left" })
+
+    cursorY += 6
+
+    // Receiver box
+    doc.rect(margin, cursorY, (pageWidth - 2 * margin) / 2 - 1, 28)
+    let receiverY = cursorY + 2
+    doc.setFontSize(8)
+    doc.setFont(undefined, "bold")
+    doc.text("Name", margin + 2, receiverY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyName}`, margin + 20, receiverY)
+
+    receiverY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Address", margin + 2, receiverY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyAddress}`, margin + 20, receiverY)
+
+    receiverY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("GSTIN No", margin + 2, receiverY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyGSTIN}`, margin + 20, receiverY)
+
+    receiverY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("State", margin + 2, receiverY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyStateCode}`, margin + 20, receiverY)
+    doc.setFont(undefined, "bold")
+    doc.text("State Code", margin + 45, receiverY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyStateCode}`, margin + 68, receiverY)
+
+    // Provider box
+    doc.rect((pageWidth / 2) + 2, cursorY, (pageWidth - 2 * margin) / 2 - 2, 28)
+    let providerY = cursorY + 2
+    doc.setFontSize(8)
+    doc.setFont(undefined, "bold")
+    doc.text("Name", (pageWidth / 2) + 4, providerY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.providerName}`, (pageWidth / 2) + 20, providerY)
+
+    providerY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Address", (pageWidth / 2) + 4, providerY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.providerAddress}`, (pageWidth / 2) + 20, providerY)
+
+    providerY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("GSTIN No", (pageWidth / 2) + 4, providerY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.providerGSTIN}`, (pageWidth / 2) + 20, providerY)
+
+    providerY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("State", (pageWidth / 2) + 4, providerY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyStateCode}`, (pageWidth / 2) + 20, providerY)
+    doc.setFont(undefined, "bold")
+    doc.text("State Code", (pageWidth / 2) + 45, providerY)
+    doc.setFont(undefined, "normal")
+    doc.text(`: ${bill.billingPartyStateCode}`, (pageWidth / 2) + 68, providerY)
+
+    cursorY += 35
+
+    // ===== ITEMS TABLE =====
+    const tableData: any[] = []
+
+    // Add header row
+    const headerRow = [
+        { content: "Sl.", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center" } },
+        { content: "Brief Description of Items", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center" } },
+        { content: "SAC/HSN Code", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center" } },
+        { content: "Unit", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center" } },
+        { content: "Rate (Rs)", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center" } },
+        { content: "Quantity", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center", colSpan: 3 } },
+        {},
+        {},
+        { content: "Amount", styles: { fontStyle: "bold", fillColor: [200, 200, 200], halign: "center", colSpan: 3 } },
+        {},
+        {}
+    ]
+
+    // Sub-headers for Quantity and Amount columns
+    const subHeaderRow = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Prev ious",
+        "Present",
+        "Cumulative",
+        "Previous",
+        "Present",
+        "Cumulative"
+    ]
+
+    // Build table data
+    bill.categories.forEach((category, catIndex) => {
+        const categoryLabel = `${category.categoryCode}. ${category.categoryName}${category.tower ? ` (${category.tower})` : ""}`
+        tableData.push([
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: categoryLabel, styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } },
+            { content: "", styles: { fontSize: 7, fontStyle: "bold", fillColor: [245, 245, 245] } }
         ])
-        category.lineItems.forEach(line => {
-            tableBody.push([
-                line.slNo,
-                line.description,
-                line.sacHsnCode || "—",
-                line.unit,
-                formatINR(line.unitRate),
-                buildQuantityLabel(line),
-                buildAmountLabel(line),
-                `${line.isDeduction ? "Deduction" : ""}${line.isDeduction && line.isRevisedRate ? " | " : ""}${line.isRevisedRate ? "Revised" : ""}` || "—"
+
+        // Line items
+        category.lineItems.forEach((line) => {
+            tableData.push([
+                { content: String(line.slNo), styles: { fontSize: 6, halign: "center" } },
+                { content: line.description, styles: { fontSize: 6 } },
+                { content: line.sacHsnCode || "—", styles: { fontSize: 6, halign: "center" } },
+                { content: line.unit, styles: { fontSize: 6, halign: "center" } },
+                { content: String(line.unitRate?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right" } },
+                { content: String(line.previousQuantity?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right" } },
+                { content: String(line.presentQuantity?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right", fillColor: [255, 240, 245] } },
+                { content: String(line.cumulativeQuantity?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right" } },
+                { content: String(line.previousAmount?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right" } },
+                { content: String(line.presentAmount?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right", fillColor: [255, 240, 245] } },
+                { content: String(line.cumulativeAmount?.toFixed(2) || "0.00"), styles: { fontSize: 6, halign: "right" } }
             ])
         })
     })
 
-    // @ts-ignore - jspdf-autotable type defs
+    // @ts-ignore
     doc.autoTable({
         startY: cursorY,
-        head: [['Sl', 'Description', 'SAC/HSN', 'Unit', 'Unit Rate', 'Quantity (Prev/Pres/Cum)', 'Amount (Prev/Pres/Cum)', 'Flags']],
-        body: tableBody,
-        styles: { fontSize: 8, cellPadding: 4, valign: "middle" },
-        headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+        head: [headerRow, subHeaderRow],
+        body: tableData,
+        margin: margin,
+        styles: { fontSize: 6, cellPadding: 2, valign: "middle", lineColor: [0, 0, 0], lineWidth: 0.5 },
+        headStyles: { fillColor: [200, 200, 200], textColor: 0, fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [255, 255, 255] },
         columnStyles: {
-            0: { cellWidth: 30 },
-            1: { cellWidth: 120 },
-            2: { cellWidth: 55 },
-            3: { cellWidth: 40 },
-            4: { cellWidth: 65 },
-            5: { cellWidth: 120 },
-            6: { cellWidth: 120 },
-            7: { cellWidth: 70 },
+            0: { cellWidth: 10, halign: "center" },
+            1: { cellWidth: 42 },
+            2: { cellWidth: 16, halign: "center" },
+            3: { cellWidth: 13, halign: "center" },
+            4: { cellWidth: 16, halign: "right" },
+            5: { cellWidth: 14, halign: "right" },
+            6: { cellWidth: 14, halign: "right" },
+            7: { cellWidth: 14, halign: "right" },
+            8: { cellWidth: 14, halign: "right" },
+            9: { cellWidth: 14, halign: "right" },
+            10: { cellWidth: 14, halign: "right" }
         }
     })
 
     const finalY = (doc as any).lastAutoTable?.finalY || cursorY
-    doc.setFontSize(10)
-    doc.text("Generated via Accounts Dashboard • This is a system-generated document.", margin, finalY + 24)
+    cursorY = finalY + 5
+
+    // ===== SUMMARY SECTION =====
+    doc.setFontSize(9)
+    doc.setFont(undefined, "bold")
+    doc.text("Total Amount:", pageWidth - margin - 80, cursorY)
+    doc.setFont(undefined, "normal")
+    doc.text(formatINR(bill.totalAmount), pageWidth - margin - 30, cursorY, { align: "right" })
+
+    cursorY += 5
+    doc.setFont(undefined, "bold")
+    doc.text(`TDS (${bill.tdsPercentage || 0}%):`, pageWidth - margin - 80, cursorY)
+    doc.setFont(undefined, "normal")
+    doc.text(formatINR(bill.tdsAmount || 0), pageWidth - margin - 30, cursorY, { align: "right" })
+
+    cursorY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Debit/Adjust:", pageWidth - margin - 80, cursorY)
+    doc.setFont(undefined, "normal")
+    doc.text(formatINR(bill.debitAdjustValue || 0), pageWidth - margin - 30, cursorY, { align: "right" })
+
+    cursorY += 5
+    doc.setFont(undefined, "bold")
+    doc.text("Net Bill Amount:", pageWidth - margin - 80, cursorY)
+    doc.setFont(undefined, "normal")
+    doc.text(formatINR(bill.netBillAmount), pageWidth - margin - 30, cursorY, { align: "right" })
+
+    // ===== FOOTER =====
+    doc.setFontSize(7)
+    doc.setFont(undefined, "normal")
+    doc.text("Generated via ERP System • System Generated Document", pageWidth / 2, pageHeight - 10, { align: "center" })
 
     return doc
 }
@@ -732,11 +915,11 @@ const AccountsDashboard = () => {
             const projectNonBillables = project.nonBillables || [];
             const nonBillableTotal = projectNonBillables.reduce((sum: number, nb: any) =>
                 sum + (nb.amount || 0), 0);
-            
+
             const projectInvoices = project.invoices || [];
             const invoiceTotal = projectInvoices.reduce((sum: number, invoice: any) =>
                 sum + (invoice.total || invoice.amount || 0), 0);
-            
+
             const projectSpent = nonBillableTotal + invoiceTotal;
 
             totalBudget += projectBudget;
@@ -857,7 +1040,7 @@ const AccountsDashboard = () => {
             },
             cancel: {
                 label: "Cancel",
-                onClick: () => {},
+                onClick: () => { },
             },
         })
     }
@@ -1159,7 +1342,7 @@ const AccountsDashboard = () => {
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
             await axios.delete(`${API_URL}/non-billables/${wageId}`, { headers });
-            
+
             toast.success("Labour wage entry deleted successfully!");
             fetchLabourWages(); // Refresh the labour wages list
             fetchProjects(); // Refresh projects to update budget calculations
@@ -1269,20 +1452,20 @@ const AccountsDashboard = () => {
                             )}
                             <div>
                                 <h2 className="text-lg font-semibold">
-                                    {getCurrentTab() === "overview" ? "Overview" 
-                                     : getCurrentTab() === "invoicing" ? "Invoicing"
-                                     : getCurrentTab() === "budget" ? "Budget Control"
-                                     : getCurrentTab() === "payroll" ? "Payroll & Compliance"
-                                     : getCurrentTab() === "client-bill" ? "Client Bill"
-                                     : "Tax Management"}
+                                    {getCurrentTab() === "overview" ? "Overview"
+                                        : getCurrentTab() === "invoicing" ? "Invoicing"
+                                            : getCurrentTab() === "budget" ? "Budget Control"
+                                                : getCurrentTab() === "payroll" ? "Payroll & Compliance"
+                                                    : getCurrentTab() === "client-bill" ? "Client Bill"
+                                                        : "Tax Management"}
                                 </h2>
                                 <p className="text-xs text-muted-foreground">
-                                    Accounts › {getCurrentTab() === "overview" ? "Overview" 
-                                              : getCurrentTab() === "invoicing" ? "Invoicing"
-                                              : getCurrentTab() === "budget" ? "Budget Control"
-                                              : getCurrentTab() === "payroll" ? "Payroll & Compliance"
-                                              : getCurrentTab() === "client-bill" ? "Client Bill"
-                                              : "Tax Management"}
+                                    Accounts › {getCurrentTab() === "overview" ? "Overview"
+                                        : getCurrentTab() === "invoicing" ? "Invoicing"
+                                            : getCurrentTab() === "budget" ? "Budget Control"
+                                                : getCurrentTab() === "payroll" ? "Payroll & Compliance"
+                                                    : getCurrentTab() === "client-bill" ? "Client Bill"
+                                                        : "Tax Management"}
                                 </p>
                             </div>
                         </div>
@@ -1574,49 +1757,49 @@ const AccountsDashboard = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <StatCard
-                            title="Total Budget"
-                            value={`₹${(budgetMetrics.totalBudget / 100000).toFixed(2)}L`}
-                            icon={DollarSign}
-                            description="All projects"
-                            trend={{
-                                value: budgetMetrics.totalBudget > 0 ? 8 : 0,
-                                label: "project allocations"
-                            }}
-                        />
-                        <StatCard
-                            title="Spent"
-                            value={`₹${(budgetMetrics.totalSpent / 100000).toFixed(2)}L`}
-                            icon={TrendingUp}
-                            description="Total expenses"
-                            trend={{
-                                value: budgetMetrics.totalBudget > 0 ?
-                                    Math.round(((budgetMetrics.totalBudget - budgetMetrics.totalSpent) / budgetMetrics.totalBudget) * 100) - 100 : 0,
-                                label: budgetMetrics.totalSpent <= budgetMetrics.totalBudget ? "under budget" : "over budget"
-                            }}
-                        />
-                        <StatCard
-                            title="Remaining"
-                            value={`₹${(budgetMetrics.remaining / 100000).toFixed(2)}L`}
-                            icon={PieChart}
-                            description="Available funds"
-                            trend={{
-                                value: budgetMetrics.totalBudget > 0 ?
-                                    Math.round((budgetMetrics.remaining / budgetMetrics.totalBudget) * 100) : 0,
-                                label: "of total budget"
-                            }}
-                        />
-                        <StatCard
-                            title="Projects"
-                            value={budgetMetrics.projectCount.toString()}
-                            icon={Users}
-                            description="Active projects"
-                            trend={{
-                                value: budgetMetrics.projectCount > 0 ?
-                                    Math.round(budgetMetrics.totalBudget / budgetMetrics.projectCount / 100000) : 0,
-                                label: "avg ₹L per project"
-                            }}
-                        />
+                            <StatCard
+                                title="Total Budget"
+                                value={`₹${(budgetMetrics.totalBudget / 100000).toFixed(2)}L`}
+                                icon={DollarSign}
+                                description="All projects"
+                                trend={{
+                                    value: budgetMetrics.totalBudget > 0 ? 8 : 0,
+                                    label: "project allocations"
+                                }}
+                            />
+                            <StatCard
+                                title="Spent"
+                                value={`₹${(budgetMetrics.totalSpent / 100000).toFixed(2)}L`}
+                                icon={TrendingUp}
+                                description="Total expenses"
+                                trend={{
+                                    value: budgetMetrics.totalBudget > 0 ?
+                                        Math.round(((budgetMetrics.totalBudget - budgetMetrics.totalSpent) / budgetMetrics.totalBudget) * 100) - 100 : 0,
+                                    label: budgetMetrics.totalSpent <= budgetMetrics.totalBudget ? "under budget" : "over budget"
+                                }}
+                            />
+                            <StatCard
+                                title="Remaining"
+                                value={`₹${(budgetMetrics.remaining / 100000).toFixed(2)}L`}
+                                icon={PieChart}
+                                description="Available funds"
+                                trend={{
+                                    value: budgetMetrics.totalBudget > 0 ?
+                                        Math.round((budgetMetrics.remaining / budgetMetrics.totalBudget) * 100) : 0,
+                                    label: "of total budget"
+                                }}
+                            />
+                            <StatCard
+                                title="Projects"
+                                value={budgetMetrics.projectCount.toString()}
+                                icon={Users}
+                                description="Active projects"
+                                trend={{
+                                    value: budgetMetrics.projectCount > 0 ?
+                                        Math.round(budgetMetrics.totalBudget / budgetMetrics.projectCount / 100000) : 0,
+                                    label: "avg ₹L per project"
+                                }}
+                            />
                         </div>
                     )}
 
@@ -2194,8 +2377,8 @@ const AccountsDashboard = () => {
                                                 <div className="text-right">
                                                     <p className="font-semibold">₹{(charge.total / 1000).toFixed(1)}K</p>
                                                 </div>
-                                                <Button 
-                                                    variant="ghost" 
+                                                <Button
+                                                    variant="ghost"
                                                     size="sm"
                                                     onClick={() => handleDeleteTaxCharge(charge)}
                                                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -2261,9 +2444,9 @@ const AccountsDashboard = () => {
 
             {/* Client Bill Form Modal */}
             <Dialog open={isClientBillFormOpen}
-            onOpenChange={setIsClientBillFormOpen}
+                onOpenChange={setIsClientBillFormOpen}
             >
-                
+
                 <DialogContent
                     className="w-full max-w-[90vw] xl:max-w-[1400px] 2xl:max-w-[1600px] bg-white"
                     onEscapeKeyDown={(event) => event.preventDefault()}
@@ -2839,15 +3022,15 @@ const AccountsDashboard = () => {
                         toast.success(`Tax "${tax.title}" created successfully!`);
                         // Refresh the tax data
 
-            const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-             const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            const [taxesResponse, taxChargesResponse] = await Promise.all([
-                axios.get(`${API_URL}/tax/taxes`, { headers }),
-                axios.get(`${API_URL}/tax/tax-charges`, { headers })
-            ]);
+                        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                        const [taxesResponse, taxChargesResponse] = await Promise.all([
+                            axios.get(`${API_URL}/tax/taxes`, { headers }),
+                            axios.get(`${API_URL}/tax/tax-charges`, { headers })
+                        ]);
 
-            setTaxes(taxesResponse.data);
-            setTaxCharges(taxChargesResponse.data);
+                        setTaxes(taxesResponse.data);
+                        setTaxCharges(taxChargesResponse.data);
                     }}
                 />
             )}
