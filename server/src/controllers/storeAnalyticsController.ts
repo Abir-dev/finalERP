@@ -381,10 +381,11 @@ export const getConsumptionTrends = async (req: Request, res: Response) => {
       }
       
       request.items.forEach(item => {
-        if (!acc[month][item.itemCode]) {
-          acc[month][item.itemCode] = 0;
+        const itemKey = item.hsnCode || item.itemName || 'unknown';
+        if (!acc[month][itemKey]) {
+          acc[month][itemKey] = 0;
         }
-        acc[month][item.itemCode] += item.quantity;
+        acc[month][itemKey] += item.quantity;
       });
       
       return acc;
