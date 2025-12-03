@@ -29,4 +29,8 @@ router.get('/:billId/categories/:categoryId/line-items/:lineItemId', authenticat
 router.put('/:billId/categories/:categoryId/line-items/:lineItemId', authenticateUser, clientBillController.updateLineItem);
 router.delete('/:billId/categories/:categoryId/line-items/:lineItemId', authenticateUser, clientBillController.deleteLineItem);
 
+// Approve/Reject routes
+router.patch('/:id/approve', authenticateUser, clientBillController.approveClientBill);
+router.patch('/:id/reject', authenticateUser, clientBillController.rejectClientBill);
+
 export default router;

@@ -27,6 +27,7 @@ import {
   Shield,
   Banknote,
   PieChart,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -157,6 +158,8 @@ const BillingManagerDashboard = () => {
   const [progressInvoices, setProgressInvoices] = useState<ProgressInvoice[]>(
     []
   );
+  const [clientBills, setClientBills] = useState<any[]>([]);
+  const [clientBillsLoading, setClientBillsLoading] = useState(false);
 
   const [generatingInvoice, setGeneratingInvoice] = useState<{
     [key: string]: boolean;
@@ -168,6 +171,7 @@ const BillingManagerDashboard = () => {
     if (path.includes('/overview')) return 'overview';
     if (path.includes('/invoices')) return 'invoices';
     if (path.includes('/payments')) return 'payments';
+    if (path.includes('/requests')) return 'requests';
     return 'overview'; // default tab
   };
 
@@ -176,7 +180,8 @@ const BillingManagerDashboard = () => {
     const tabRoutes: Record<string, string> = {
       overview: '/billing-management/overview',
       invoices: '/billing-management/invoices',
-      payments: '/billing-management/payments'
+      payments: '/billing-management/payments',
+      requests: '/billing-management/requests'
     };
     navigate(tabRoutes[value]);
   };
@@ -210,7 +215,91 @@ const BillingManagerDashboard = () => {
         setProgressInvoices(Array.isArray(res.data) ? res.data : [])
       )
       .catch(() => setProgressInvoices([]));
+
+    // Fetch client bills
+    fetchClientBills();
   }, []);
+
+  const fetchClientBills = async () => {
+    setClientBillsLoading(true);
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      const response = await axios.get(`${API_URL}/client-bills`, { headers });
+      setClientBills(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Error fetching client bills:", error);
+      setClientBills([]);
+    } finally {
+      setClientBillsLoading(false);
+    }
+  };
+
+  const handleApproveClientBill = async (billId: string) => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await axios.patch(
+        `${API_URL}/client-bills/${billId}/approve`,
+        {},
+        { headers }
+      );
+
+      toast({
+        title: "Client Bill Approved",
+        description: "The client bill has been approved successfully.",
+        variant: "default",
+      });
+
+      // Refresh client bills
+      fetchClientBills();
+    } catch (error) {
+      console.error("Error approving client bill:", error);
+      toast({
+        title: "Approval Failed",
+        description: "Failed to approve the client bill. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRejectClientBill = async (billId: string) => {
+    try {
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+      await axios.patch(
+        `${API_URL}/client-bills/${billId}/reject`,
+        {},
+        { headers }
+      );
+
+      toast({
+        title: "Client Bill Rejected",
+        description: "The client bill has been rejected.",
+        variant: "default",
+      });
+
+      // Refresh client bills
+      fetchClientBills();
+    } catch (error) {
+      console.error("Error rejecting client bill:", error);
+      toast({
+        title: "Rejection Failed",
+        description: "Failed to reject the client bill. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -944,10 +1033,11 @@ File Size: ${doc.size}`;
 
       <Tabs value={getCurrentTab()} onValueChange={handleTabChange} className="space-y-6">
         {/* Hide tabs on mobile - navigation is handled by sidebar */}
-        <TabsList className="hidden md:grid w-full grid-cols-3">
+        <TabsList className="hidden md:grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="requests">Requests</TabsTrigger>
           {/* <TabsTrigger value="reports">Reports</TabsTrigger> */}
           {/* <TabsTrigger value="progress-billing">Progress Billing</TabsTrigger> */}
           {/* <TabsTrigger value="milestones">Milestones</TabsTrigger> */}
@@ -962,11 +1052,13 @@ File Size: ${doc.size}`;
               <div>
                 <h2 className="text-lg font-semibold">
                   {getCurrentTab() === "overview" ? "Overview" :
-                   getCurrentTab() === "invoices" ? "Invoices" : "Payments"}
+                   getCurrentTab() === "invoices" ? "Invoices" : 
+                   getCurrentTab() === "payments" ? "Payments" : "Requests"}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Billing › {getCurrentTab() === "overview" ? "Overview" :
-                            getCurrentTab() === "invoices" ? "Invoices" : "Payments"}
+                            getCurrentTab() === "invoices" ? "Invoices" : 
+                            getCurrentTab() === "payments" ? "Payments" : "Requests"}
                 </p>
               </div>
             </div>
@@ -1531,6 +1623,138 @@ File Size: ${doc.size}`;
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="requests" className="mt-0">
+          <div className="space-y-4 md:space-y-6">
+            <Card>
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle>Client Bill Requests</CardTitle>
+                  <CardDescription>
+                    Review and approve client bills from project managers
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchClientBills}
+                  disabled={clientBillsLoading}
+                >
+                  {clientBillsLoading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Refresh
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {clientBillsLoading ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-8 w-8 mx-auto mb-4 animate-spin text-primary" />
+                    <p className="text-muted-foreground">Loading client bills...</p>
+                  </div>
+                ) : clientBills.filter(bill => bill.status === "DRAFT").length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground">
+                            Invoice No
+                          </th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground">
+                            Date
+                          </th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground">
+                            Project
+                          </th>
+                          <th className="text-left p-3 text-sm font-medium text-muted-foreground">
+                            Contractor
+                          </th>
+                          <th className="text-right p-3 text-sm font-medium text-muted-foreground">
+                            Total Amount
+                          </th>
+                          <th className="text-center p-3 text-sm font-medium text-muted-foreground">
+                            Status
+                          </th>
+                          <th className="text-right p-3 text-sm font-medium text-muted-foreground">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clientBills
+                          .filter(bill => bill.status === "DRAFT")
+                          .map((bill) => (
+                            <tr key={bill.id} className="border-b hover:bg-muted/50">
+                              <td className="p-3">
+                                <p className="font-medium">{bill.invoiceNo}</p>
+                              </td>
+                              <td className="p-3">
+                                <p className="text-sm text-muted-foreground">
+                                  {new Date(bill.invoiceDate).toLocaleDateString()}
+                                </p>
+                              </td>
+                              <td className="p-3">
+                                <p className="text-sm">{bill.projectName || "N/A"}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {bill.projectLocation || ""}
+                                </p>
+                              </td>
+                              <td className="p-3">
+                                <p className="text-sm">{bill.contractorName || "N/A"}</p>
+                              </td>
+                              <td className="p-3 text-right">
+                                <p className="font-semibold">
+                                  ₹{Number(bill.totalAmount).toLocaleString("en-IN")}
+                                </p>
+                              </td>
+                              <td className="p-3 text-center">
+                                <Badge variant="secondary">{bill.status}</Badge>
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleApproveClientBill(bill.id)}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleRejectClientBill(bill.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No Pending Requests
+                    </h3>
+                    <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                      There are no client bill requests pending approval from project managers.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

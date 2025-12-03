@@ -468,5 +468,81 @@ export const clientBillController = {
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
+  },
+
+  async approveClientBill(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Check if client bill exists
+      const existingBill = await prisma.clientBill.findUnique({
+        where: { id }
+      });
+
+      if (!existingBill) {
+        return res.status(404).json({ error: 'Client bill not found' });
+      }
+
+      // Update status to APPROVED
+      const clientBill = await prisma.clientBill.update({
+        where: { id },
+        data: { status: 'APPROVED' },
+        include: {
+          categories: {
+            include: {
+              lineItems: true
+            }
+          },
+          createdBy: true
+        }
+      });
+
+      logger.info(`Client bill ${id} approved by user ${req.user?.id}`);
+      res.json(clientBill);
+    } catch (error) {
+      logger.error("Error approving client bill:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  async rejectClientBill(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Check if client bill exists
+      const existingBill = await prisma.clientBill.findUnique({
+        where: { id }
+      });
+
+      if (!existingBill) {
+        return res.status(404).json({ error: 'Client bill not found' });
+      }
+
+      // Update status to REJECTED
+      const clientBill = await prisma.clientBill.update({
+        where: { id },
+        data: { status: 'REJECTED' },
+        include: {
+          categories: {
+            include: {
+              lineItems: true
+            }
+          },
+          createdBy: true
+        }
+      });
+
+      logger.info(`Client bill ${id} rejected by user ${req.user?.id}`);
+      res.json(clientBill);
+    } catch (error) {
+      logger.error("Error rejecting client bill:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
 };

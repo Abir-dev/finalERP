@@ -181,6 +181,7 @@ type BillCategoryRecord = {
 }
 
 type ClientBillRecord = {
+    status: string
     id: string
     invoiceNo: string
     invoiceDate: string
@@ -297,6 +298,7 @@ const createBlankClientBill = (): ClientBillFormState => ({
     bankBranch: "",
     accountNo: "",
     ifscCode: "",
+    status: "",
     categories: [createBlankCategory()],
 })
 
@@ -512,6 +514,7 @@ const deserializeClientBillRecord = (bill: any): ClientBillRecord => ({
     categories: (bill.categories || []).map(deserializeCategoryRecord),
     createdAt: bill.createdAt,
     updatedAt: bill.updatedAt,
+    status: bill.status || "DRAFT"
 })
 
 const getAuthHeaders = (): Record<string, string> => {
@@ -804,7 +807,9 @@ const AccountsDashboard = () => {
             const headers = getAuthHeaders()
             const response = await axios.get(`${API_URL}/client-bills`, { headers })
             const normalized = Array.isArray(response.data) ? response.data.map(deserializeClientBillRecord) : []
-            setClientBills(normalized)
+            // Filter to show only APPROVED client bills
+            const approvedBills = normalized.filter(bill => bill.status === "APPROVED")
+            setClientBills(approvedBills)
             setClientBillsError(null)
         } catch (error: any) {
             console.error("Error fetching client bills:", error)
@@ -1036,18 +1041,6 @@ const AccountsDashboard = () => {
             contractorVillage: clientBillFormData.contractorVillage || undefined,
             contractorPost: clientBillFormData.contractorPost || undefined,
             contractorDistrict: clientBillFormData.contractorDistrict || undefined,
-            contractorPin: clientBillFormData.contractorPin || undefined,
-            contractorPAN: clientBillFormData.contractorPAN || undefined,
-            totalAmount,
-            tdsPercentage: Number(clientBillFormData.tdsPercentage || 0),
-            tdsAmount: calculatedTdsAmount,
-            netBillAmount: Math.max(totalAmount - calculatedTdsAmount - debitAdjustValue, 0),
-            debitAdjustValue,
-            bankName: clientBillFormData.bankName || undefined,
-            bankBranch: clientBillFormData.bankBranch || undefined,
-            accountNo: clientBillFormData.accountNo || undefined,
-            ifscCode: clientBillFormData.ifscCode || undefined,
-            categories: sanitizedCategories,
         }
 
         setIsClientBillSaving(true)

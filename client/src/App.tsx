@@ -218,6 +218,7 @@ const AppLayout = () => {
               <Route path="/billing-management/overview" element={<BillingManagement />} />
               <Route path="/billing-management/invoices" element={<BillingManagement />} />
               <Route path="/billing-management/payments" element={<BillingManagement />} />
+              <Route path="/billing-management/requests" element={<BillingManagement />} />
               
               <Route path="/purchase-management" element={<PurchaseManagement />} />
               <Route path="/purchase-management/overview" element={<PurchaseManagement />} />
