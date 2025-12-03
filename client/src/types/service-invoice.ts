@@ -67,7 +67,7 @@ export interface ServiceInvoice {
   summary: ServiceInvoiceSummary;
   createdAt: string;
   updatedAt: string;
-  status: 'draft' | 'sent' | 'approved' | 'paid';
+  status: 'draft' | 'sent' | 'approved' | 'paid' | 'pending';
   projectId?: string;
   clientId?: string;
 }

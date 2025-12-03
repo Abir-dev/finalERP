@@ -182,6 +182,7 @@ interface User {
 }
 
 interface Project {
+  clientId: any;
   id: string;
   name: string;
 }
@@ -303,10 +304,10 @@ const purchaseOrderColumns: ColumnDef<PurchaseOrder>[] = [
         status === "Approved"
           ? "default"
           : status === "Pending"
-          ? "secondary"
-          : status === "Escalated"
-          ? "destructive"
-          : "outline";
+            ? "secondary"
+            : status === "Escalated"
+              ? "destructive"
+              : "outline";
       return <Badge variant={variant}>{status}</Badge>;
     },
   },
@@ -354,8 +355,8 @@ const equipmentColumns: ColumnDef<Equipment>[] = [
         status === "Active"
           ? "default"
           : status === "Warning"
-          ? "destructive"
-          : "secondary";
+            ? "destructive"
+            : "secondary";
       return <Badge variant={variant}>{status}</Badge>;
     },
   },
@@ -415,8 +416,8 @@ const taskColumns: ColumnDef<Task>[] = [
         status === "completed"
           ? "default"
           : status === "in_progress"
-          ? "secondary"
-          : "outline";
+            ? "secondary"
+            : "outline";
 
       // Format status for display
       const displayStatus =
@@ -455,8 +456,8 @@ const issueColumns: ColumnDef<Issue>[] = [
         severity === "High"
           ? "destructive"
           : severity === "Medium"
-          ? "default"
-          : "secondary";
+            ? "default"
+            : "secondary";
       return <Badge variant={variant}>{severity}</Badge>;
     },
   },
@@ -469,8 +470,8 @@ const issueColumns: ColumnDef<Issue>[] = [
         status === "Resolved"
           ? "default"
           : status === "In Progress"
-          ? "secondary"
-          : "outline";
+            ? "secondary"
+            : "outline";
       return <Badge variant={variant}>{status}</Badge>;
     },
   },
@@ -553,212 +554,14 @@ const SiteDashboardContent = () => {
   const [selectedEditTask, setSelectedEditTask] = useState<Task | null>(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState(false);
-    const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
-  
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
+
   const [selectedDeleteTask, setSelectedDeleteTask] = useState<Task | null>(
     null
   );
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [serviceInvoices, setServiceInvoices] = useState<ServiceInvoice[]>([
-    {
-      id: "1",
-      header: {
-        invoiceNumber: "SI-2024-001",
-        invoiceDate: "2024-01-15",
-        state: "Maharashtra",
-        stateCode: "27",
-        workOrderDate: "2024-01-10",
-        raBillNumber: "RA-2024-001",
-        uniqueIdentifier: "UID-001"
-      },
-      receiver: {
-        name: "ABC Construction Ltd.",
-        address: "123 Business Park, Mumbai, Maharashtra 400001",
-        gstin: "27AABCU9603R1ZX",
-        state: "Maharashtra",
-        stateCode: "27"
-      },
-      project: {
-        serviceRenderedAt: "Site Office, Mumbai",
-        name: "Mumbai Metro Project",
-        address: "456 Construction Site, Mumbai, Maharashtra 400002",
-        gstin: "27AABCU9603R1ZX",
-        state: "Maharashtra",
-        stateCode: "27"
-      },
-      lineItems: [
-        {
-          siNo: "1",
-          description: "Civil Engineering Services - Foundation Work",
-          sacHsnCode: "9987",
-          unit: "Nos",
-          rate: 50000,
-          quantityPrevious: 0,
-          quantityPresent: 2,
-          quantityCumulative: 2,
-          amountPrevious: 0,
-          amountPresent: 100000,
-          amountCumulative: 100000,
-          category: "Civil Works"
-        },
-        {
-          siNo: "2",
-          description: "Structural Engineering Services - Beam Installation",
-          sacHsnCode: "9987",
-          unit: "Nos",
-          rate: 75000,
-          quantityPrevious: 0,
-          quantityPresent: 1,
-          quantityCumulative: 1,
-          amountPrevious: 0,
-          amountPresent: 75000,
-          amountCumulative: 75000,
-          category: "Structural Works"
-        }
-      ],
-      summary: {
-        taxableValuePrevious: 0,
-        taxableValuePresent: 175000,
-        taxableValueCumulative: 175000,
-        deductionRate: 0.01,
-        deductionAmountPrevious: 0,
-        deductionAmountPresent: 1750,
-        deductionAmountCumulative: 1750,
-        totalAmountPrevious: 0,
-        totalAmountPresent: 175000,
-        totalAmountCumulative: 175000,
-        payableAmountRoundedPrevious: 0,
-        payableAmountRoundedPresent: 175000,
-        payableAmountRoundedCumulative: 175000
-      },
-      status: "draft",
-      createdAt: "2024-01-15T10:00:00Z",
-      updatedAt: "2024-01-15T10:00:00Z"
-    },
-    {
-      id: "2",
-      header: {
-        invoiceNumber: "SI-2024-002",
-        invoiceDate: "2024-01-20",
-        state: "Karnataka",
-        stateCode: "29",
-        workOrderDate: "2024-01-18",
-        raBillNumber: "RA-2024-002",
-        uniqueIdentifier: "UID-002"
-      },
-      receiver: {
-        name: "XYZ Infrastructure Pvt Ltd",
-        address: "789 Tech Park, Bangalore, Karnataka 560001",
-        gstin: "29AABCU9603R1ZY",
-        state: "Karnataka",
-        stateCode: "29"
-      },
-      project: {
-        serviceRenderedAt: "Site Office, Bangalore",
-        name: "Bangalore Metro Extension",
-        address: "321 Construction Site, Bangalore, Karnataka 560002",
-        gstin: "29AABCU9603R1ZY",
-        state: "Karnataka",
-        stateCode: "29"
-      },
-      lineItems: [
-        {
-          siNo: "1",
-          description: "MEP Services - Electrical Installation",
-          sacHsnCode: "9987",
-          unit: "Nos",
-          rate: 30000,
-          quantityPrevious: 0,
-          quantityPresent: 3,
-          quantityCumulative: 3,
-          amountPrevious: 0,
-          amountPresent: 90000,
-          amountCumulative: 90000,
-          category: "MEP Works"
-        }
-      ],
-      summary: {
-        taxableValuePrevious: 0,
-        taxableValuePresent: 90000,
-        taxableValueCumulative: 90000,
-        deductionRate: 0.01,
-        deductionAmountPrevious: 0,
-        deductionAmountPresent: 900,
-        deductionAmountCumulative: 900,
-        totalAmountPrevious: 0,
-        totalAmountPresent: 90000,
-        totalAmountCumulative: 90000,
-        payableAmountRoundedPrevious: 0,
-        payableAmountRoundedPresent: 90000,
-        payableAmountRoundedCumulative: 90000
-      },
-      status: "sent",
-      createdAt: "2024-01-20T14:30:00Z",
-      updatedAt: "2024-01-20T14:30:00Z"
-    },
-    {
-      id: "3",
-      header: {
-        invoiceNumber: "SI-2024-003",
-        invoiceDate: "2024-01-25",
-        state: "Tamil Nadu",
-        stateCode: "33",
-        workOrderDate: "2024-01-22",
-        raBillNumber: "RA-2024-003",
-        uniqueIdentifier: "UID-003"
-      },
-      receiver: {
-        name: "DEF Engineering Solutions",
-        address: "456 Industrial Area, Chennai, Tamil Nadu 600001",
-        gstin: "33AABCU9603R1ZZ",
-        state: "Tamil Nadu",
-        stateCode: "33"
-      },
-      project: {
-        serviceRenderedAt: "Site Office, Chennai",
-        name: "Chennai Port Expansion",
-        address: "654 Port Area, Chennai, Tamil Nadu 600002",
-        gstin: "33AABCU9603R1ZZ",
-        state: "Tamil Nadu",
-        stateCode: "33"
-      },
-      lineItems: [
-        {
-          siNo: "1",
-          description: "Consulting Services - Project Management",
-          sacHsnCode: "9983",
-          unit: "Hours",
-          rate: 2500,
-          quantityPrevious: 0,
-          quantityPresent: 40,
-          quantityCumulative: 40,
-          amountPrevious: 0,
-          amountPresent: 100000,
-          amountCumulative: 100000,
-          category: "Consulting"
-        }
-      ],
-      summary: {
-        taxableValuePrevious: 0,
-        taxableValuePresent: 100000,
-        taxableValueCumulative: 100000,
-        deductionRate: 0.01,
-        deductionAmountPrevious: 0,
-        deductionAmountPresent: 1000,
-        deductionAmountCumulative: 1000,
-        totalAmountPrevious: 0,
-        totalAmountPresent: 100000,
-        totalAmountCumulative: 100000,
-        payableAmountRoundedPrevious: 0,
-        payableAmountRoundedPresent: 100000,
-        payableAmountRoundedCumulative: 100000
-      },
-      status: "paid",
-      createdAt: "2024-01-25T09:15:00Z",
-      updatedAt: "2024-01-25T09:15:00Z"
-    }
-  ]);
+  const [serviceInvoices, setServiceInvoices] = useState<ServiceInvoice[]>([]);
   // const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const { user } = useUser();
@@ -778,7 +581,7 @@ const SiteDashboardContent = () => {
     if (path.includes("/invoices")) return "invoices";
     if (path.includes("/timeline")) return "timeline";
     if (path.includes("/reports")) return "reports";
-    if(path.includes('/central-warehouse')) return "central-warehouse";
+    if (path.includes('/central-warehouse')) return "central-warehouse";
     return "timeline"; // default tab
   };
 
@@ -787,7 +590,7 @@ const SiteDashboardContent = () => {
     const tabRoutes: Record<string, string> = {
       timeline: "/site-manager/timeline",
       reports: "/site-manager/reports",
-      "central-warehouse":"/site-manager/central-warehouse",
+      "central-warehouse": "/site-manager/central-warehouse",
       invoices: "/site-manager/invoices",
     };
 
@@ -798,24 +601,94 @@ const SiteDashboardContent = () => {
   };
 
   // Service Invoice handlers
+  const fetchServiceInvoices = async () => {
+    try {
+      const token = localStorage.getItem("jwt_token") || sessionStorage.getItem("jwt_token");
+      const response = await axios.get(`${API_URL}/client-bills`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const mappedInvoices: ServiceInvoice[] = response.data.map((bill: any) => ({
+        id: bill.id,
+        header: {
+          invoiceNumber: bill.invoiceNo,
+          invoiceDate: bill.invoiceDate,
+          state: bill.billingPartyState,
+          stateCode: bill.billingPartyStateCode,
+          workOrderDate: bill.workOrderDate,
+          raBillNumber: bill.raBillNo,
+          uniqueIdentifier: bill.id
+        },
+        receiver: {
+          name: bill.billingPartyName,
+          address: bill.billingPartyAddress,
+          gstin: bill.billingPartyGSTIN,
+          state: bill.billingPartyState,
+          stateCode: bill.billingPartyStateCode
+        },
+        project: {
+          serviceRenderedAt: bill.projectLocation,
+          name: bill.projectName || "Unknown Project",
+          address: bill.providerAddress,
+          gstin: bill.providerGSTIN,
+          state: bill.providerState,
+          stateCode: bill.providerStateCode
+        },
+        lineItems: bill.categories.flatMap((cat: any) =>
+          cat.lineItems.map((item: any) => ({
+            siNo: item.slNo.toString(),
+            description: item.description,
+            sacHsnCode: item.sacHsnCode,
+            unit: item.unit,
+            rate: parseFloat(item.unitRate),
+            quantityPrevious: parseFloat(item.previousQuantity),
+            quantityPresent: parseFloat(item.presentQuantity),
+            quantityCumulative: parseFloat(item.cumulativeQuantity),
+            amountPrevious: parseFloat(item.previousAmount),
+            amountPresent: parseFloat(item.presentAmount),
+            amountCumulative: parseFloat(item.cumulativeAmount),
+            category: cat.categoryName
+          }))
+        ),
+        summary: {
+          taxableValuePrevious: 0,
+          taxableValuePresent: 0,
+          taxableValueCumulative: parseFloat(bill.totalAmount || 0),
+          deductionRate: parseFloat(bill.tdsPercentage || 0) / 100,
+          deductionAmountPrevious: 0,
+          deductionAmountPresent: 0,
+          deductionAmountCumulative: parseFloat(bill.tdsAmount || 0),
+          totalAmountPrevious: 0,
+          totalAmountPresent: 0,
+          totalAmountCumulative: parseFloat(bill.netBillAmount || 0),
+          payableAmountRoundedPrevious: 0,
+          payableAmountRoundedPresent: 0,
+          payableAmountRoundedCumulative: Math.round(parseFloat(bill.netBillAmount || 0))
+        },
+        status: bill.status === 'DRAFT' ? 'pending' : bill.status.toLowerCase(),
+        createdAt: bill.createdAt,
+        updatedAt: bill.updatedAt
+      }));
+
+      setServiceInvoices(mappedInvoices);
+    } catch (error) {
+      console.error("Error fetching service invoices:", error);
+      toast.error("Failed to fetch service invoices");
+    }
+  };
+
+  useEffect(() => {
+    fetchServiceInvoices();
+  }, []);
+
   const handleServiceInvoiceCreate = (invoice: ServiceInvoice) => {
-    setServiceInvoices(prev => [...prev, invoice]);
-    toast({
-      title: "Success",
-      description: "Service invoice created successfully",
-    });
+    fetchServiceInvoices();
+    toast.success("Service invoice created successfully");
   };
 
   const handleServiceInvoiceUpdate = (updatedInvoice: ServiceInvoice) => {
-    setServiceInvoices(prev => 
-      prev.map(invoice => 
-        invoice.id === updatedInvoice.id ? updatedInvoice : invoice
-      )
-    );
-    toast({
-      title: "Success",
-      description: "Service invoice updated successfully",
-    });
+    fetchServiceInvoices();
+    toast.success("Service invoice updated successfully");
   };
 
   // Progress Reports Data
@@ -827,20 +700,20 @@ const SiteDashboardContent = () => {
     averageScore: "0/5",
   });
 
-    const categoryOptions = useMemo(() => {
-      const set = new Set<string>();
-      for (const it of inventoryItems) {
-        if (Array.isArray(it.category)) it.category.forEach((c) => set.add(String(c)));
-        else if (it.category) set.add(String(it.category));
-      }
-      return Array.from(set);
-    }, [inventoryItems]);
-  
-    const locationOptions = useMemo(() => {
-      const set = new Set<string>();
-      for (const it of inventoryItems) if (it.location) set.add(it.location);
-      return Array.from(set);
-    }, [inventoryItems]);
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of inventoryItems) {
+      if (Array.isArray(it.category)) it.category.forEach((c) => set.add(String(c)));
+      else if (it.category) set.add(String(it.category));
+    }
+    return Array.from(set);
+  }, [inventoryItems]);
+
+  const locationOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of inventoryItems) if (it.location) set.add(it.location);
+    return Array.from(set);
+  }, [inventoryItems]);
 
   // Fetch users and projects on component mount
   // useEffect(() => {
@@ -985,7 +858,7 @@ const SiteDashboardContent = () => {
   //   }
   // };
 
- 
+
   const [storeStaff, setStoreStaff] = useState([
     {
       name: "John Doe",
@@ -1019,14 +892,14 @@ const SiteDashboardContent = () => {
         index === 0
           ? "North Block, Level 2"
           : index === 1
-          ? "South Tower Foundation"
-          : "Main Building, East Wing",
+            ? "South Tower Foundation"
+            : "Main Building, East Wing",
       impact:
         index === 0
           ? "High - Work Stoppage"
           : index === 1
-          ? "Medium - Quality Concern"
-          : "Low - Schedule Impact",
+            ? "Medium - Quality Concern"
+            : "Low - Schedule Impact",
     }))
   );
   const [equipmentLogs, setEquipmentLogs] = useState([
@@ -1317,11 +1190,11 @@ const SiteDashboardContent = () => {
     const updatedPOs = purchaseOrders.map((p) =>
       p.id === po.id
         ? {
-            ...p,
-            status: "Approved",
-            approver: "Finance Head",
-            timeInQueue: "0hrs",
-          }
+          ...p,
+          status: "Approved",
+          approver: "Finance Head",
+          timeInQueue: "0hrs",
+        }
         : p
     );
     setPurchaseOrders(updatedPOs);
@@ -1340,11 +1213,11 @@ const SiteDashboardContent = () => {
     const updatedPOs = purchaseOrders.map((p) =>
       p.id === po.id
         ? {
-            ...p,
-            status: "In Review",
-            approver: formData.escalateTo,
-            timeInQueue: "0hrs",
-          }
+          ...p,
+          status: "In Review",
+          approver: formData.escalateTo,
+          timeInQueue: "0hrs",
+        }
         : p
     );
     setPurchaseOrders(updatedPOs);
@@ -1382,11 +1255,11 @@ const SiteDashboardContent = () => {
     const updatedEquipment = equipmentList.map((eq) =>
       eq.id === formData.equipmentId
         ? {
-            ...eq,
-            status: "Active",
-            nextService: `${formData.nextService}hrs`,
-            hours: eq.hours,
-          }
+          ...eq,
+          status: "Active",
+          nextService: `${formData.nextService}hrs`,
+          hours: eq.hours,
+        }
         : eq
     );
     setEquipmentList(updatedEquipment);
@@ -1403,9 +1276,9 @@ const SiteDashboardContent = () => {
     const updatedLabor = laborHours.map((l) =>
       l.trade === formData.trade
         ? {
-            ...l,
-            actual: l.actual + formData.hours + formData.overtime,
-          }
+          ...l,
+          actual: l.actual + formData.hours + formData.overtime,
+        }
         : l
     );
     setLaborHours(updatedLabor);
@@ -1612,7 +1485,7 @@ const SiteDashboardContent = () => {
         // assignedTo: task.assignedToId,
         assignedTo: task.assignedToId
           ? latestUsers.find((u: User) => u.id === task.assignedToId)?.name ||
-            "Unknown User"
+          "Unknown User"
           : undefined,
 
         startDate: new Date(task.startDate).toISOString().split("T")[0],
@@ -1649,75 +1522,75 @@ const SiteDashboardContent = () => {
   // } catch (error) {
   //   console.error("Error fetching tasks:", error);
   // }
-   const columns = [
-      {
-        key: "itemName",
-        label: "Item Name",
-        type: "text" as const,
-        render: (value: any, row: InventoryItem) => (
-          <div className="flex flex-col">
-            <span className="font-medium">{value}</span>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {Array.isArray(row.category) ? (
-                row.category.map((cat) => (
-                  <Badge key={cat} variant="secondary" className="text-xs">
-                    {cat}
-                  </Badge>
-                ))
-              ) : (
-                <Badge variant="secondary" className="text-xs">{row.category}</Badge>
-              )}
-              <Badge
-                variant={(row.quantity || 0) > (row.reorderLevel || 50) ? "default" : "destructive"}
-                className="text-xs"
-              >
-                {row.quantity} {row.unit}
-              </Badge>
-            </div>
-          </div>
-        ),
-      },
-      { key: "location", label: "Location", type: "text" as const, className: "hidden sm:table-cell" },
-      { key: "itemQuality", label: "Status", type: "text" as const, className: "hidden md:table-cell" },
-      // {
-      //   key: "actions",
-      //   label: "Actions",
-      //   type: "custom" as const,
-      //   // render: (_: any, row: any) => (
-      //   //   <div className="flex items-center gap-2">
-      //   //     <Button size="sm" variant="outline" onClick={() => handleEdit(row)}>Edit</Button>
-      //   //     <Button size="sm" variant="destructive" onClick={() => handleDelete(row.id)}>Delete</Button>
-      //   //   </div>
-      //   // ),
-      // },
-    ];
-  
-    // Expandable row content (simplified)
-    const expandableContent = (row: InventoryItem) => (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        <div>
-          <div className="space-y-1">
-            <div>Reorder Level: {row.reorderLevel || 50}</div>
-            <div>Max Stock: {row.maximumStock || 500}</div>
+  const columns = [
+    {
+      key: "itemName",
+      label: "Item Name",
+      type: "text" as const,
+      render: (value: any, row: InventoryItem) => (
+        <div className="flex flex-col">
+          <span className="font-medium">{value}</span>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {Array.isArray(row.category) ? (
+              row.category.map((cat) => (
+                <Badge key={cat} variant="secondary" className="text-xs">
+                  {cat}
+                </Badge>
+              ))
+            ) : (
+              <Badge variant="secondary" className="text-xs">{row.category}</Badge>
+            )}
+            <Badge
+              variant={(row.quantity || 0) > (row.reorderLevel || 50) ? "default" : "destructive"}
+              className="text-xs"
+            >
+              {row.quantity} {row.unit}
+            </Badge>
           </div>
         </div>
-        <div>
-          <div className="space-y-1">
-            <div>Safety Stock: {row.safetyStock || 20}</div>
-            <div>Unit Cost: ₹{row.unitCost || 0}</div>
-            
-          </div>
-        </div>
-        <div>
-          <div className="space-y-1">
-            <div>
-              Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
-            </div>
-            <div>Location: {row.location}</div>
-          </div>
+      ),
+    },
+    { key: "location", label: "Location", type: "text" as const, className: "hidden sm:table-cell" },
+    { key: "itemQuality", label: "Status", type: "text" as const, className: "hidden md:table-cell" },
+    // {
+    //   key: "actions",
+    //   label: "Actions",
+    //   type: "custom" as const,
+    //   // render: (_: any, row: any) => (
+    //   //   <div className="flex items-center gap-2">
+    //   //     <Button size="sm" variant="outline" onClick={() => handleEdit(row)}>Edit</Button>
+    //   //     <Button size="sm" variant="destructive" onClick={() => handleDelete(row.id)}>Delete</Button>
+    //   //   </div>
+    //   // ),
+    // },
+  ];
+
+  // Expandable row content (simplified)
+  const expandableContent = (row: InventoryItem) => (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+      <div>
+        <div className="space-y-1">
+          <div>Reorder Level: {row.reorderLevel || 50}</div>
+          <div>Max Stock: {row.maximumStock || 500}</div>
         </div>
       </div>
-    );
+      <div>
+        <div className="space-y-1">
+          <div>Safety Stock: {row.safetyStock || 20}</div>
+          <div>Unit Cost: ₹{row.unitCost || 0}</div>
+
+        </div>
+      </div>
+      <div>
+        <div className="space-y-1">
+          <div>
+            Total Value: ₹{(((row.unitCost || 0) * (row.quantity || 0)) || 0).toLocaleString()}
+          </div>
+          <div>Location: {row.location}</div>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
@@ -1762,8 +1635,8 @@ const SiteDashboardContent = () => {
       });
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to update task. Please try again."
+        error.message ||
+        "Failed to update task. Please try again."
       );
     }
   };
@@ -1802,8 +1675,8 @@ const SiteDashboardContent = () => {
       console.error("Error deleting task:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to delete task. Please try again."
+        error.message ||
+        "Failed to delete task. Please try again."
       );
     }
   };
@@ -1819,18 +1692,17 @@ const SiteDashboardContent = () => {
     const updatedBudget = budget.map((b) =>
       b.category === formData.category
         ? {
-            ...b,
-            planned:
-              formData.adjustmentType === "increase"
-                ? b.planned + formData.amount
-                : b.planned - formData.amount,
-          }
+          ...b,
+          planned:
+            formData.adjustmentType === "increase"
+              ? b.planned + formData.amount
+              : b.planned - formData.amount,
+        }
         : b
     );
     setBudget(updatedBudget);
     toast.success(
-      `Budget ${
-        formData.adjustmentType
+      `Budget ${formData.adjustmentType
       }d by ₹${formData.amount.toLocaleString()} for ${formData.category}`
     );
     setIsBudgetAdjustModalOpen(false);
@@ -1902,8 +1774,8 @@ const SiteDashboardContent = () => {
       console.error("Error uploading DPR:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to upload DPR. Please try again."
+        error.message ||
+        "Failed to upload DPR. Please try again."
       );
     }
   };
@@ -1988,8 +1860,8 @@ const SiteDashboardContent = () => {
       console.error("Error uploading WPR:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to upload WPR. Please try again."
+        error.message ||
+        "Failed to upload WPR. Please try again."
       );
     }
   };
@@ -2089,8 +1961,8 @@ const SiteDashboardContent = () => {
       console.error("Error creating task:", error);
       toast.error(
         error.response?.data?.message ||
-          error.message ||
-          "Failed to create task. Please try again."
+        error.message ||
+        "Failed to create task. Please try again."
       );
     }
   };
@@ -2119,15 +1991,15 @@ const SiteDashboardContent = () => {
     const updatedUsage = materialUsage.map((m) =>
       m.material === material
         ? {
-            ...m,
-            used:
-              m.used +
-              (m.material === "Cement"
-                ? 10
-                : m.material === "Steel"
+          ...m,
+          used:
+            m.used +
+            (m.material === "Cement"
+              ? 10
+              : m.material === "Steel"
                 ? 100
                 : 20),
-          }
+        }
         : m
     );
     setMaterialUsage(updatedUsage);
@@ -2324,8 +2196,8 @@ const SiteDashboardContent = () => {
                         ? "default"
                         : task.status === "in-progress" ||
                           task.status === "In Progress"
-                        ? "secondary"
-                        : "outline"
+                          ? "secondary"
+                          : "outline"
                     }
                   >
                     {task.status}
@@ -2575,7 +2447,7 @@ const SiteDashboardContent = () => {
                   <td className="p-2">N/A</td>
                   <td className="p-2">
                     {dpr.safetyIncident &&
-                    dpr.safetyIncident.toLowerCase() !== "n/a"
+                      dpr.safetyIncident.toLowerCase() !== "n/a"
                       ? "Yes"
                       : "No"}
                   </td>
@@ -2897,57 +2769,57 @@ const SiteDashboardContent = () => {
       axios
         .get(`${API_URL}/purchase-orders`, { headers })
         .then((res) => setPurchaseOrders(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch equipment
       axios
         .get(`${API_URL}/site-ops/equipment-maintenance`, { headers })
         .then((res) => setEquipmentList(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch staff (employees)
       axios
         .get(`${API_URL}/hr/employees`, { headers })
         .then((res) => setStoreStaff(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch issues
       axios
         .get(`${API_URL}/site-ops/issue-reports`, { headers })
         .then((res) => setIssues(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch equipment logs
       axios
         .get(`${API_URL}/site-ops/equipment-logs`, { headers })
         .then((res) => setEquipmentLogs(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch equipment locations
       axios
         .get(`${API_URL}/site-ops/equipment-locations`, { headers })
         .then((res) => setEquipmentLocations(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch stock alerts
       axios
         .get(`${API_URL}/inventory/stock-alerts`, { headers })
         .then((res) => setStockAlerts(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch material movements
       axios
         .get(`${API_URL}/inventory/material-movements`, { headers })
         .then((res) => setMaterialMovements(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch storage sections
       axios
         .get(`${API_URL}/inventory/storage-sections`, { headers })
         .then((res) => setStorageSections(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch labor hours
       axios
         .get(`${API_URL}/site-ops/labor-logs`, { headers })
         .then((res) => setLaborHours(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch budget
       axios
         .get(`${API_URL}/site-ops/budget-adjustments`, { headers })
         .then((res) => setBudget(res.data))
-        .catch(() => {});
+        .catch(() => { });
       // Fetch tasks
       // axios
       //   .get(`${API_URL}/project/${user.id}/tasks`, { headers })
@@ -2957,31 +2829,31 @@ const SiteDashboardContent = () => {
       axios
         .get(`${API_URL}/inventory/material-requests`, { headers })
         .then((res) => setMaterialRequests(res.data))
-        .catch(() => {});
+        .catch(() => { });
       axios
         .get(`${API_URL}/site/progress`, { headers })
         .then((res) => setProgressStats(res.data))
-        .catch(() => {});
+        .catch(() => { });
       axios
         .get(`${API_URL}/site/material-usage`, { headers })
         .then((res) => setMaterialUsage(res.data))
-        .catch(() => {});
+        .catch(() => { });
       axios
         .get(`${API_URL}/site/cost`, { headers })
         .then((res) => setCostData(res.data))
-        .catch(() => {});
+        .catch(() => { });
       axios
         .get(`${API_URL}/site/labor`, { headers })
         .then((res) => setLaborHours(res.data))
-        .catch(() => {});
+        .catch(() => { });
       axios
         .get(`${API_URL}/purchase-orders`, { headers })
         .then((res) => setPurchaseOrders(res.data))
-        .catch(() => {});
+        .catch(() => { });
       axios
         .get(`${API_URL}/equipment`, { headers })
         .then((res) => setEquipmentList(res.data))
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [userID]);
 
@@ -3072,7 +2944,7 @@ const SiteDashboardContent = () => {
           <TabsTrigger value="central-warehouse">Central Warehouse</TabsTrigger>
           <TabsTrigger value="invoices">Service Invoices</TabsTrigger>
         </TabsList>
-        
+
 
         <div className="md:hidden mb-4">
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
@@ -3093,24 +2965,24 @@ const SiteDashboardContent = () => {
                   {getCurrentTab() === "timeline"
                     ? "Execution Timeline"
                     : getCurrentTab() === "reports"
-                    ? "Daily & Weekly Reports"
-                    : getCurrentTab() === "central-warehouse"
-                    ? "Central Warehouse"
-                    : getCurrentTab() === "invoices"
-                    ? "Service Invoices"
-                    : ""}
+                      ? "Daily & Weekly Reports"
+                      : getCurrentTab() === "central-warehouse"
+                        ? "Central Warehouse"
+                        : getCurrentTab() === "invoices"
+                          ? "Service Invoices"
+                          : ""}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Store ›{" "}
                   {getCurrentTab() === "timeline"
                     ? "Execution Timeline"
                     : getCurrentTab() === "reports"
-                    ? "Daily & Weekly Reports"
-                    : getCurrentTab() === "central-warehouse"
-                    ? "Central Warehouse"
-                    : getCurrentTab() === "invoices"
-                    ? "Service Invoices"
-                    : "Store Staff"}
+                      ? "Daily & Weekly Reports"
+                      : getCurrentTab() === "central-warehouse"
+                        ? "Central Warehouse"
+                        : getCurrentTab() === "invoices"
+                          ? "Service Invoices"
+                          : "Store Staff"}
                 </p>
               </div>
             </div>
@@ -3118,12 +2990,12 @@ const SiteDashboardContent = () => {
               {getCurrentTab() === "timeline"
                 ? `${progressStats.pendingTasks} items`
                 : getCurrentTab() === "reports"
-                ? `${progressStats.activeTasks} reports`
-                : getCurrentTab() === "central-warehouse"
-                ? "Warehouse items"
-                : getCurrentTab() === "invoices"
-                ? `${serviceInvoices.length} invoices`
-                : ""}
+                  ? `${progressStats.activeTasks} reports`
+                  : getCurrentTab() === "central-warehouse"
+                    ? "Warehouse items"
+                    : getCurrentTab() === "invoices"
+                      ? `${serviceInvoices.length} invoices`
+                      : ""}
             </div>
           </div>
         </div>
@@ -3302,17 +3174,17 @@ const SiteDashboardContent = () => {
                                               task.status === "completed"
                                                 ? "default"
                                                 : task.status === "in_progress"
-                                                ? "secondary"
-                                                : "outline"
+                                                  ? "secondary"
+                                                  : "outline"
                                             }
                                             className="text-xs"
                                           >
                                             {task.status === "in_progress"
                                               ? "In Progress"
                                               : task.status
-                                                  .charAt(0)
-                                                  .toUpperCase() +
-                                                task.status.slice(1)}
+                                                .charAt(0)
+                                                .toUpperCase() +
+                                              task.status.slice(1)}
                                           </Badge>
                                         </div>
                                       </div>
@@ -3326,15 +3198,15 @@ const SiteDashboardContent = () => {
                                     <td className="py-3 px-4 hidden md:table-cell">
                                       {task.startDate
                                         ? new Date(
-                                            task.startDate
-                                          ).toLocaleDateString()
+                                          task.startDate
+                                        ).toLocaleDateString()
                                         : "Not set"}
                                     </td>
                                     <td className="py-3 px-4 hidden md:table-cell">
                                       {task.dueDate
                                         ? new Date(
-                                            task.dueDate
-                                          ).toLocaleDateString()
+                                          task.dueDate
+                                        ).toLocaleDateString()
                                         : "Not set"}
                                     </td>
                                     <td className="py-3 px-4 hidden sm:table-cell">
@@ -3343,16 +3215,16 @@ const SiteDashboardContent = () => {
                                           task.status === "completed"
                                             ? "default"
                                             : task.status === "in_progress"
-                                            ? "secondary"
-                                            : "outline"
+                                              ? "secondary"
+                                              : "outline"
                                         }
                                       >
                                         {task.status === "in_progress"
                                           ? "In Progress"
                                           : task.status
-                                              .charAt(0)
-                                              .toUpperCase() +
-                                            task.status.slice(1)}
+                                            .charAt(0)
+                                            .toUpperCase() +
+                                          task.status.slice(1)}
                                       </Badge>
                                     </td>
                                     <td className="py-3 px-4">
@@ -3456,8 +3328,8 @@ const SiteDashboardContent = () => {
                                                 <p className="text-sm font-medium">
                                                   {task.startDate
                                                     ? new Date(
-                                                        task.startDate
-                                                      ).toLocaleDateString()
+                                                      task.startDate
+                                                    ).toLocaleDateString()
                                                     : "Not set"}
                                                 </p>
                                               </div>
@@ -3474,8 +3346,8 @@ const SiteDashboardContent = () => {
                                                 <p className="text-sm font-medium">
                                                   {task.dueDate
                                                     ? new Date(
-                                                        task.dueDate
-                                                      ).toLocaleDateString()
+                                                      task.dueDate
+                                                    ).toLocaleDateString()
                                                     : "Not set"}
                                                 </p>
                                               </div>
@@ -3495,17 +3367,17 @@ const SiteDashboardContent = () => {
                                                       ? "default"
                                                       : task.status ===
                                                         "in_progress"
-                                                      ? "secondary"
-                                                      : "outline"
+                                                        ? "secondary"
+                                                        : "outline"
                                                   }
                                                   className="text-sm"
                                                 >
                                                   {task.status === "in_progress"
                                                     ? "In Progress"
                                                     : task.status
-                                                        .charAt(0)
-                                                        .toUpperCase() +
-                                                      task.status.slice(1)}
+                                                      .charAt(0)
+                                                      .toUpperCase() +
+                                                    task.status.slice(1)}
                                                 </Badge>
                                               </div>
                                             </div>
@@ -3603,50 +3475,50 @@ const SiteDashboardContent = () => {
                 /> */}
               </div>
               <Card>
-              <CardHeader>
-              <CardTitle>Report Upload Panel</CardTitle>
-              <CardDescription>
-              Submit daily and weekly progress reports
-              </CardDescription>
-              </CardHeader>
-              <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-4">
-              Daily Progress Report (DPR)
-              </h3>
-              <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">
-              Upload today's work progress, photos, and notes
-              </div>
-              <Button
-              onClick={() => setIsDPRModalOpen(true)}
-              className="w-full"
-              >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload DPR
-              </Button>
-              </div>
-              </div>
-              <div className="border rounded-lg p-4">
-              <h3 className="font-medium mb-4">
-              Weekly Progress Report (WPR)
-              </h3>
-              <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">
-              Submit weekly milestone progress and team performance
-              </div>
-              <Button
-              onClick={() => setIsWPRModalOpen(true)}
-              className="w-full"
-              >
-              <FileText className="h-4 w-4 mr-2" />
-              Upload WPR
-              </Button>
-              </div>
-              </div>
-              </div>
-              </CardContent>
+                <CardHeader>
+                  <CardTitle>Report Upload Panel</CardTitle>
+                  <CardDescription>
+                    Submit daily and weekly progress reports
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-medium mb-4">
+                        Daily Progress Report (DPR)
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                          Upload today's work progress, photos, and notes
+                        </div>
+                        <Button
+                          onClick={() => setIsDPRModalOpen(true)}
+                          className="w-full"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload DPR
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <h3 className="font-medium mb-4">
+                        Weekly Progress Report (WPR)
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                          Submit weekly milestone progress and team performance
+                        </div>
+                        <Button
+                          onClick={() => setIsWPRModalOpen(true)}
+                          className="w-full"
+                        >
+                          <FileText className="h-4 w-4 mr-2" />
+                          Upload WPR
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
               <Card>
                 <CardHeader>
@@ -3837,10 +3709,10 @@ const SiteDashboardContent = () => {
                                 request.status === "Approved"
                                   ? "default"
                                   : request.status === "In Transit"
-                                  ? "secondary"
-                                  : request.status === "Expedited"
-                                  ? "destructive"
-                                  : "outline"
+                                    ? "secondary"
+                                    : request.status === "Expedited"
+                                      ? "destructive"
+                                      : "outline"
                               }
                             >
                               {request.status}
@@ -3992,13 +3864,12 @@ const SiteDashboardContent = () => {
                         {["Schedule", "Cost", "Safety"].map((impact) => (
                           <div
                             key={impact}
-                            className={`p-4 rounded-lg text-center cursor-pointer transition-colors ${
-                              severity === "High"
+                            className={`p-4 rounded-lg text-center cursor-pointer transition-colors ${severity === "High"
                                 ? "bg-red-100 hover:bg-red-200"
                                 : severity === "Medium"
-                                ? "bg-yellow-100 hover:bg-yellow-200"
-                                : "bg-green-100 hover:bg-green-200"
-                            }`}
+                                  ? "bg-yellow-100 hover:bg-yellow-200"
+                                  : "bg-green-100 hover:bg-green-200"
+                              }`}
                             onClick={() =>
                               toast.info(
                                 `Viewing ${severity} severity ${impact} issues`
@@ -4010,8 +3881,8 @@ const SiteDashboardContent = () => {
                               {severity === "High"
                                 ? "3"
                                 : severity === "Medium"
-                                ? "2"
-                                : "1"}{" "}
+                                  ? "2"
+                                  : "1"}{" "}
                               issues
                             </div>
                           </div>
@@ -4481,8 +4352,8 @@ const SiteDashboardContent = () => {
                                 item.status === "Active"
                                   ? "default"
                                   : item.status === "Warning"
-                                  ? "destructive"
-                                  : "secondary"
+                                    ? "destructive"
+                                    : "secondary"
                               }
                             >
                               {item.status}
@@ -4776,8 +4647,8 @@ const SiteDashboardContent = () => {
                                   item.status === "Active"
                                     ? "default"
                                     : item.status === "Warning"
-                                    ? "destructive"
-                                    : "secondary"
+                                      ? "destructive"
+                                      : "secondary"
                                 }
                               >
                                 {item.status}
@@ -5031,11 +4902,10 @@ const SiteDashboardContent = () => {
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                  className={`h-2 rounded-full ${
-                                    metric.status === "good"
+                                  className={`h-2 rounded-full ${metric.status === "good"
                                       ? "bg-green-600"
                                       : "bg-amber-600"
-                                  }`}
+                                    }`}
                                   style={{
                                     width: `${Math.min(
                                       100,
@@ -5165,8 +5035,8 @@ const SiteDashboardContent = () => {
                                 process.status === "Optimized"
                                   ? "default"
                                   : process.status === "Under Review"
-                                  ? "outline"
-                                  : "destructive"
+                                    ? "outline"
+                                    : "destructive"
                               }
                             >
                               {process.status}
@@ -5180,8 +5050,8 @@ const SiteDashboardContent = () => {
                                   process.efficiency > 85
                                     ? "text-green-600"
                                     : process.efficiency > 70
-                                    ? "text-amber-600"
-                                    : "text-red-600"
+                                      ? "text-amber-600"
+                                      : "text-red-600"
                                 }
                               >
                                 {process.efficiency}%
@@ -5189,13 +5059,12 @@ const SiteDashboardContent = () => {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className={`h-2 rounded-full ${
-                                  process.efficiency > 85
+                                className={`h-2 rounded-full ${process.efficiency > 85
                                     ? "bg-green-600"
                                     : process.efficiency > 70
-                                    ? "bg-amber-600"
-                                    : "bg-red-600"
-                                }`}
+                                      ? "bg-amber-600"
+                                      : "bg-red-600"
+                                  }`}
                                 style={{ width: `${process.efficiency}%` }}
                               ></div>
                             </div>
@@ -5267,11 +5136,10 @@ const SiteDashboardContent = () => {
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-1.5">
                                   <div
-                                    className={`h-1.5 rounded-full ${
-                                      initiative.status === "On Track"
+                                    className={`h-1.5 rounded-full ${initiative.status === "On Track"
                                         ? "bg-green-600"
                                         : "bg-amber-600"
-                                    }`}
+                                      }`}
                                     style={{
                                       width: `${initiative.completion}%`,
                                     }}
@@ -5411,13 +5279,12 @@ const SiteDashboardContent = () => {
                           >
                             <div className="flex items-center">
                               <div
-                                className={`w-2 h-2 rounded-full mr-3 ${
-                                  activity.type === "Update"
+                                className={`w-2 h-2 rounded-full mr-3 ${activity.type === "Update"
                                     ? "bg-blue-500"
                                     : activity.type === "Upload"
-                                    ? "bg-green-500"
-                                    : "bg-amber-500"
-                                }`}
+                                      ? "bg-green-500"
+                                      : "bg-amber-500"
+                                  }`}
                               ></div>
                               <div>
                                 <p className="font-medium text-sm">
@@ -5539,8 +5406,8 @@ const SiteDashboardContent = () => {
                                   category.trend.startsWith("+")
                                     ? "text-green-600"
                                     : category.trend.startsWith("-")
-                                    ? "text-red-600"
-                                    : "text-gray-600"
+                                      ? "text-red-600"
+                                      : "text-gray-600"
                                 }
                               >
                                 {category.trend}
@@ -5666,8 +5533,8 @@ const SiteDashboardContent = () => {
                                     alert.priority === "High"
                                       ? "destructive"
                                       : alert.priority === "Medium"
-                                      ? "default"
-                                      : "outline"
+                                        ? "default"
+                                        : "outline"
                                   }
                                 >
                                   {alert.priority}
@@ -5902,11 +5769,10 @@ const SiteDashboardContent = () => {
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className={`h-2 rounded-full ${
-                                  metric.status === "good"
+                                className={`h-2 rounded-full ${metric.status === "good"
                                     ? "bg-green-600"
                                     : "bg-amber-600"
-                                }`}
+                                  }`}
                                 style={{
                                   width: `${Math.min(
                                     100,
@@ -6067,31 +5933,31 @@ const SiteDashboardContent = () => {
         </TabsContent>
         <TabsContent value="central-warehouse" className="space-y-6">
           {isLoading ? (
-                      <div className="flex items-center justify-center p-8">
-                        <div className="flex items-center space-x-2">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                          <span>Loading warehouse items...</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex justify-end">
-                        </div>
-                        <ExpandableDataTable
-                          title="Warehouse Inventory Items"
-                          description="Warehouse-focused view of inventory with quick insights"
-                          data={inventoryItems as any[]}
-                          columns={columns as any}
-                          expandableContent={expandableContent as any}
-                          searchKey="name"
-                          filters={[
-                            { key: "category", label: "Category", options: categoryOptions },
-                            { key: "location", label: "Location", options: locationOptions },
-                          ]}
-                          rowActions={["view"]}
-                        />
-                      </div>
-                    )}
+            <div className="flex items-center justify-center p-8">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span>Loading warehouse items...</span>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+              </div>
+              <ExpandableDataTable
+                title="Warehouse Inventory Items"
+                description="Warehouse-focused view of inventory with quick insights"
+                data={inventoryItems as any[]}
+                columns={columns as any}
+                expandableContent={expandableContent as any}
+                searchKey="name"
+                filters={[
+                  { key: "category", label: "Category", options: categoryOptions },
+                  { key: "location", label: "Location", options: locationOptions },
+                ]}
+                rowActions={["view"]}
+              />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="invoices" className="space-y-6">
@@ -6145,13 +6011,13 @@ const SiteDashboardContent = () => {
 
       {isInvoiceModalOpen && (
 
-            <div className="-mt-4">
-              <InvoiceBuilderModal
-                showRetentionOptions={true}
-                showWorkCompleted={false}
-                onClose={() => setIsInvoiceModalOpen(false)}
-              />
-            </div>
+        <div className="-mt-4">
+          <InvoiceBuilderModal
+            showRetentionOptions={true}
+            showWorkCompleted={false}
+            onClose={() => setIsInvoiceModalOpen(false)}
+          />
+        </div>
       )}
       {/* Material Request Modal */}
       <Dialog
@@ -6783,10 +6649,10 @@ const SiteDashboardContent = () => {
                         selectedPO.status === "Approved"
                           ? "default"
                           : selectedPO.status === "Pending"
-                          ? "secondary"
-                          : selectedPO.status === "Escalated"
-                          ? "destructive"
-                          : "outline"
+                            ? "secondary"
+                            : selectedPO.status === "Escalated"
+                              ? "destructive"
+                              : "outline"
                       }
                     >
                       {selectedPO.status}
@@ -6984,13 +6850,13 @@ const SiteDashboardContent = () => {
                   description: formData.get("description") as string,
                   startDate: formData.get("startDate")
                     ? new Date(formData.get("startDate") as string)
-                        .toISOString()
-                        .split("T")[0]
+                      .toISOString()
+                      .split("T")[0]
                     : null,
                   dueDate: formData.get("dueDate")
                     ? new Date(formData.get("dueDate") as string)
-                        .toISOString()
-                        .split("T")[0]
+                      .toISOString()
+                      .split("T")[0]
                     : null,
                 });
               }}
@@ -7147,11 +7013,10 @@ const SiteDashboardContent = () => {
                 <div>
                   <Label className="text-muted-foreground">Variance</Label>
                   <p
-                    className={`font-medium ${
-                      selectedLabor.actual > selectedLabor.planned
+                    className={`font-medium ${selectedLabor.actual > selectedLabor.planned
                         ? "text-red-500"
                         : "text-green-500"
-                    }`}
+                      }`}
                   >
                     {selectedLabor.actual - selectedLabor.planned} hours
                   </p>
@@ -7159,11 +7024,10 @@ const SiteDashboardContent = () => {
                 <div>
                   <Label className="text-muted-foreground">Cost Impact</Label>
                   <p
-                    className={`font-medium ${
-                      selectedLabor.actual > selectedLabor.planned
+                    className={`font-medium ${selectedLabor.actual > selectedLabor.planned
                         ? "text-red-500"
                         : "text-green-500"
-                    }`}
+                      }`}
                   >
                     ₹
                     {Math.abs(
@@ -7316,11 +7180,10 @@ const SiteDashboardContent = () => {
                       Next Service
                     </Label>
                     <p
-                      className={`text-2xl font-bold ${
-                        selectedEquipment.nextService === "Due Now"
+                      className={`text-2xl font-bold ${selectedEquipment.nextService === "Due Now"
                           ? "text-red-500"
                           : ""
-                      }`}
+                        }`}
                     >
                       {selectedEquipment.nextService}
                     </p>
@@ -7335,8 +7198,8 @@ const SiteDashboardContent = () => {
                         selectedEquipment.status === "Active"
                           ? "default"
                           : selectedEquipment.status === "Warning"
-                          ? "destructive"
-                          : "secondary"
+                            ? "destructive"
+                            : "secondary"
                       }
                     >
                       {selectedEquipment.status}
@@ -7382,8 +7245,8 @@ const SiteDashboardContent = () => {
                                   log.type === "Maintenance"
                                     ? "secondary"
                                     : log.type === "Repair"
-                                    ? "destructive"
-                                    : "default"
+                                      ? "destructive"
+                                      : "default"
                                 }
                               >
                                 {log.type}
@@ -7485,8 +7348,8 @@ const SiteDashboardContent = () => {
                         selectedEquipment.status === "Active"
                           ? "default"
                           : selectedEquipment.status === "Warning"
-                          ? "destructive"
-                          : "secondary"
+                            ? "destructive"
+                            : "secondary"
                       }
                     >
                       {selectedEquipment.status}
@@ -7545,8 +7408,8 @@ const SiteDashboardContent = () => {
                                     location.status === "Active"
                                       ? "default"
                                       : location.status === "Maintenance"
-                                      ? "secondary"
-                                      : "outline"
+                                        ? "secondary"
+                                        : "outline"
                                   }
                                 >
                                   {location.status}
@@ -7907,8 +7770,8 @@ const SiteDashboardContent = () => {
                   selectedIssue?.severity === "High"
                     ? "destructive"
                     : selectedIssue?.severity === "Medium"
-                    ? "default"
-                    : "secondary"
+                      ? "default"
+                      : "secondary"
                 }
               >
                 {selectedIssue?.severity}
@@ -7918,8 +7781,8 @@ const SiteDashboardContent = () => {
                   selectedIssue?.status === "Resolved"
                     ? "default"
                     : selectedIssue?.status === "In Progress"
-                    ? "secondary"
-                    : "outline"
+                      ? "secondary"
+                      : "outline"
                 }
               >
                 {selectedIssue?.status}
@@ -8040,16 +7903,16 @@ const SiteDashboardContent = () => {
                   Submitted on{" "}
                   {selectedReport?.createdAt
                     ? new Date(selectedReport.createdAt).toLocaleDateString(
-                        "en-US",
-                        {
-                          weekday: "long",
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )
+                      "en-US",
+                      {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )
                     : selectedReport?.date}
                 </DialogDescription>
               </div>
@@ -8342,13 +8205,13 @@ const SiteDashboardContent = () => {
                       <div className="text-lg font-bold text-blue-900">
                         {selectedReport.weekStart
                           ? new Date(
-                              selectedReport.weekStart
-                            ).toLocaleDateString("en-US", {
-                              weekday: "long",
-                              month: "long",
-                              day: "numeric",
-                              year: "numeric",
-                            })
+                            selectedReport.weekStart
+                          ).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })
                           : "Not specified"}
                       </div>
                     </div>
@@ -8359,13 +8222,13 @@ const SiteDashboardContent = () => {
                       <div className="text-lg font-bold text-green-900">
                         {selectedReport.weekEnding
                           ? new Date(
-                              selectedReport.weekEnding
-                            ).toLocaleDateString("en-US", {
-                              weekday: "long",
-                              month: "long",
-                              day: "numeric",
-                              year: "numeric",
-                            })
+                            selectedReport.weekEnding
+                          ).toLocaleDateString("en-US", {
+                            weekday: "long",
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })
                           : "Not specified"}
                       </div>
                     </div>
@@ -8427,16 +8290,15 @@ const SiteDashboardContent = () => {
                           </span>
                           <div className="flex items-center gap-2">
                             <span
-                              className={`text-xl font-bold ${
-                                parseInt(selectedReport.actualProgress) >=
-                                parseInt(selectedReport.plannedProgress)
+                              className={`text-xl font-bold ${parseInt(selectedReport.actualProgress) >=
+                                  parseInt(selectedReport.plannedProgress)
                                   ? "text-green-600"
                                   : "text-red-600"
-                              }`}
+                                }`}
                             >
                               {parseInt(selectedReport.actualProgress) -
                                 parseInt(selectedReport.plannedProgress) >
-                              0
+                                0
                                 ? "+"
                                 : ""}
                               {parseInt(selectedReport.actualProgress) -
@@ -8446,13 +8308,13 @@ const SiteDashboardContent = () => {
                             <Badge
                               variant={
                                 parseInt(selectedReport.actualProgress) >=
-                                parseInt(selectedReport.plannedProgress)
+                                  parseInt(selectedReport.plannedProgress)
                                   ? "default"
                                   : "destructive"
                               }
                             >
                               {parseInt(selectedReport.actualProgress) >=
-                              parseInt(selectedReport.plannedProgress)
+                                parseInt(selectedReport.plannedProgress)
                                 ? "On Track"
                                 : "Behind Schedule"}
                             </Badge>
@@ -9250,8 +9112,8 @@ const SiteDashboardContent = () => {
                       defaultValue={
                         selectedEditTask.dueDate
                           ? new Date(selectedEditTask.dueDate)
-                              .toISOString()
-                              .split("T")[0]
+                            .toISOString()
+                            .split("T")[0]
                           : ""
                       }
                     />
@@ -9346,8 +9208,8 @@ const SiteDashboardContent = () => {
                       selectedTaskView.status === "completed"
                         ? "default"
                         : selectedTaskView.status === "in-progress"
-                        ? "secondary"
-                        : "outline"
+                          ? "secondary"
+                          : "outline"
                     }
                   >
                     {selectedTaskView.status}
@@ -9596,7 +9458,7 @@ function DPRManualForm({
     setWorkItems(workItems.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
-        
+
         // Auto-calculate cumulative and balance quantities
         if (field === 'alreadyExecuted' || field === 'todaysProgress') {
           updatedItem.cumulativeQuantity = updatedItem.alreadyExecuted + updatedItem.todaysProgress;
@@ -9604,7 +9466,7 @@ function DPRManualForm({
         } else if (field === 'boqQuantity') {
           updatedItem.balanceQuantity = updatedItem.boqQuantity - updatedItem.cumulativeQuantity;
         }
-        
+
         return updatedItem;
       }
       return item;
@@ -9631,13 +9493,13 @@ function DPRManualForm({
   };
 
   const updateManpowerItem = (id: string, field: keyof ManpowerItem, value: string | number) => {
-    setManpowerItems(manpowerItems.map(item => 
+    setManpowerItems(manpowerItems.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
 
   const updateStaffItem = (id: string, count: number) => {
-    setStaffItems(staffItems.map(item => 
+    setStaffItems(staffItems.map(item =>
       item.id === id ? { ...item, count } : item
     ));
   };
@@ -9659,7 +9521,7 @@ function DPRManualForm({
   };
 
   const updateHindranceItem = (id: string, field: 'category' | 'actionTaken' | 'remarks', value: string) => {
-    setHindranceItems(hindranceItems.map(item => 
+    setHindranceItems(hindranceItems.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
@@ -9681,9 +9543,9 @@ function DPRManualForm({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border p-4 rounded-md">
         <div className="space-y-2">
           <Label htmlFor="projectName">NAME OF THE PROJECT:</Label>
-          <Select 
-            value={formData.projectName} 
-            onValueChange={(value) => setFormData({...formData, projectName: value})}
+          <Select
+            value={formData.projectName}
+            onValueChange={(value) => setFormData({ ...formData, projectName: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select project" />
@@ -9697,57 +9559,57 @@ function DPRManualForm({
             </SelectContent>
           </Select>
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="developer">DEVELOPER:</Label>
           <Input
             id="developer"
             value={formData.developer}
-            onChange={(e) => setFormData({...formData, developer: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, developer: e.target.value })}
             placeholder="Enter developer name"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="contractor">CONTRACTOR:</Label>
           <Input
             id="contractor"
             value={formData.contractor}
-            onChange={(e) => setFormData({...formData, contractor: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, contractor: e.target.value })}
             placeholder="Enter contractor name"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="pmc">PMC:</Label>
           <Input
             id="pmc"
             value={formData.pmc}
-            onChange={(e) => setFormData({...formData, pmc: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, pmc: e.target.value })}
             placeholder="Enter PMC"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="bokNo">BOK NO:</Label>
           <Input
             id="bokNo"
             value={formData.bokNo}
-            onChange={(e) => setFormData({...formData, bokNo: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, bokNo: e.target.value })}
             placeholder="Enter BOK number"
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="date">DATE:</Label>
           <Input
             id="date"
             type="date"
             value={formData.date}
-            onChange={(e) => setFormData({...formData, date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
           />
         </div>
-        
+
         <div className="space-y-2 lg:col-span-3">
           <Label>Weather Condition:</Label>
           <div className="flex space-x-4 flex-wrap">
@@ -9758,7 +9620,7 @@ function DPRManualForm({
                   checked={formData.weatherCondition === condition}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setFormData({...formData, weatherCondition: condition});
+                      setFormData({ ...formData, weatherCondition: condition });
                     }
                   }}
                 />
@@ -9768,7 +9630,7 @@ function DPRManualForm({
           </div>
         </div>
       </div>
-      
+
       {/* Work Progress Table */}
       <Card>
         <CardHeader>

@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  FileText, 
-  Plus, 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit, 
+import {
+  FileText,
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  Edit,
   Download,
   Calendar,
   Building2,
@@ -44,19 +44,20 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
   const [viewingInvoice, setViewingInvoice] = useState<ServiceInvoice | null>(null);
 
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = 
+    const matchesSearch =
       invoice.header.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.receiver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.project.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'secondary';
+      case 'pending': return 'secondary';
       case 'sent': return 'default';
       case 'approved': return 'outline';
       case 'paid': return 'default';
@@ -145,6 +146,7 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="sent">Sent</SelectItem>
                 <SelectItem value="approved">Approved</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
@@ -244,9 +246,9 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col gap-2 lg:min-w-[200px]">
+                  <div className="flex flex-col gap-2 lg:min-w-[100px]">
                     <div className="flex gap-2">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         size="sm"
                         className="flex-1"
@@ -254,14 +256,14 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
                       >
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="outline"
                         size="sm"
                         className="flex-1"
                         onClick={() => handleViewInvoice(invoice)}
                       >
-                        <Eye className="h-4 w-4 mr-2" />
+                        <Eye className="h-4 w-4 mr-0" />
                         View
                       </Button>
                     </div>
@@ -284,7 +286,7 @@ export const ServiceInvoiceList: React.FC<ServiceInvoiceListProps> = ({
               <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="text-lg font-semibold mb-2">No service invoices found</h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm || statusFilter !== 'all' 
+                {searchTerm || statusFilter !== 'all'
                   ? 'No invoices match your current filters.'
                   : 'Create your first service invoice to get started.'
                 }

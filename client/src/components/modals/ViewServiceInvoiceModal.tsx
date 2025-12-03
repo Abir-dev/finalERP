@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Building2, 
-  MapPin, 
-  Calendar, 
+import {
+  Building2,
+  MapPin,
+  Calendar,
   FileText,
   Calculator,
   Hash,
@@ -33,6 +33,7 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'secondary';
+      case 'pending': return 'secondary';
       case 'sent': return 'default';
       case 'approved': return 'outline';
       case 'paid': return 'default';
@@ -51,13 +52,13 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
     }).format(amount);
   };
 
-  const DetailRow = ({ 
-    label, 
-    value, 
-    icon: Icon 
-  }: { 
-    label: string; 
-    value: string | number; 
+  const DetailRow = ({
+    label,
+    value,
+    icon: Icon
+  }: {
+    label: string;
+    value: string | number;
     icon?: React.ElementType;
   }) => (
     <div className="flex items-center gap-3 py-2">
@@ -90,7 +91,7 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
             </div>
           </DialogTitle>
         </DialogHeader>
-        
+
         <ScrollArea className="h-[70vh] pr-4">
           <div className="space-y-6 pb-4">
             {/* Header Information */}
@@ -100,31 +101,31 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
                 Invoice Header
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailRow 
-                  label="Invoice Date" 
-                  value={new Date(invoice.header.invoiceDate).toLocaleDateString()} 
+                <DetailRow
+                  label="Invoice Date"
+                  value={new Date(invoice.header.invoiceDate).toLocaleDateString()}
                   icon={Calendar}
                 />
-                <DetailRow 
-                  label="State" 
-                  value={`${invoice.header.state} (${invoice.header.stateCode})`} 
+                <DetailRow
+                  label="State"
+                  value={`${invoice.header.state} (${invoice.header.stateCode})`}
                   icon={Globe}
                 />
                 {invoice.header.raBillNumber && (
-                  <DetailRow 
-                    label="R/A Bill Number" 
-                    value={invoice.header.raBillNumber} 
+                  <DetailRow
+                    label="R/A Bill Number"
+                    value={invoice.header.raBillNumber}
                     icon={FileText}
                   />
                 )}
-                <DetailRow 
-                  label="Unique Identifier" 
-                  value={invoice.header.uniqueIdentifier} 
+                <DetailRow
+                  label="Unique Identifier"
+                  value={invoice.header.uniqueIdentifier}
                 />
                 {invoice.header.workOrderDate && (
-                  <DetailRow 
-                    label="Work Order Date" 
-                    value={new Date(invoice.header.workOrderDate).toLocaleDateString()} 
+                  <DetailRow
+                    label="Work Order Date"
+                    value={new Date(invoice.header.workOrderDate).toLocaleDateString()}
                     icon={Calendar}
                   />
                 )}
@@ -140,14 +141,14 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DetailRow label="Name" value={invoice.receiver.name} />
                 <DetailRow label="GSTIN" value={invoice.receiver.gstin} />
-                <DetailRow 
-                  label="State" 
-                  value={`${invoice.receiver.state} (${invoice.receiver.stateCode})`} 
+                <DetailRow
+                  label="State"
+                  value={`${invoice.receiver.state} (${invoice.receiver.stateCode})`}
                 />
                 <div className="md:col-span-2">
-                  <DetailRow 
-                    label="Address" 
-                    value={invoice.receiver.address} 
+                  <DetailRow
+                    label="Address"
+                    value={invoice.receiver.address}
                     icon={MapPin}
                   />
                 </div>
@@ -164,14 +165,14 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
                 <DetailRow label="Project Name" value={invoice.project.name} />
                 <DetailRow label="Service Rendered At" value={invoice.project.serviceRenderedAt} />
                 <DetailRow label="GSTIN" value={invoice.project.gstin} />
-                <DetailRow 
-                  label="State" 
-                  value={`${invoice.project.state} (${invoice.project.stateCode})`} 
+                <DetailRow
+                  label="State"
+                  value={`${invoice.project.state} (${invoice.project.stateCode})`}
                 />
                 <div className="md:col-span-2">
-                  <DetailRow 
-                    label="Project Address" 
-                    value={invoice.project.address} 
+                  <DetailRow
+                    label="Project Address"
+                    value={invoice.project.address}
                     icon={MapPin}
                   />
                 </div>
@@ -308,14 +309,14 @@ export const ViewServiceInvoiceModal = ({ invoice, isOpen, onClose }: ViewServic
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-semibold mb-3">Audit Trail</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DetailRow 
-                  label="Created At" 
-                  value={new Date(invoice.createdAt).toLocaleDateString()} 
+                <DetailRow
+                  label="Created At"
+                  value={new Date(invoice.createdAt).toLocaleDateString()}
                   icon={Calendar}
                 />
-                <DetailRow 
-                  label="Last Updated" 
-                  value={new Date(invoice.updatedAt).toLocaleDateString()} 
+                <DetailRow
+                  label="Last Updated"
+                  value={new Date(invoice.updatedAt).toLocaleDateString()}
                   icon={Calendar}
                 />
               </div>
