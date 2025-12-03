@@ -48,9 +48,42 @@ import {
 } from "../ui/table";
 import { Switch } from "@/components/ui/switch";
 
+// Helper functions
+const generateTempId = () => Math.random().toString(36).slice(2, 10);
+
+const createBlankLineItem = (slNo = 1): BillLineItemRecord => ({
+  id: generateTempId(),
+  categoryId: "",
+  slNo,
+  description: "",
+  sacHsnCode: "",
+  unit: "",
+  unitRate: 0,
+  previousQuantity: 0,
+  presentQuantity: 0,
+  cumulativeQuantity: 0,
+  previousAmount: 0,
+  presentAmount: 0,
+  cumulativeAmount: 0,
+  isDeduction: false,
+  isRevisedRate: false,
+});
+
+const createBlankCategory = (sequence = 1): BillCategoryRecord => ({
+  id: generateTempId(),
+  clientBillId: "",
+  categoryCode: "",
+  categoryName: "",
+  tower: "",
+  description: "",
+  sequence,
+  lineItems: [createBlankLineItem()],
+});
+
 // Client Bill Form Types
 interface BillLineItemRecord {
   id: string;
+  categoryId: string;
   slNo: number;
   description: string;
   sacHsnCode?: string;
@@ -68,6 +101,7 @@ interface BillLineItemRecord {
 
 interface BillCategoryRecord {
   id: string;
+  clientBillId: string;
   categoryCode: string;
   categoryName: string;
   tower?: string;
@@ -161,67 +195,49 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
   const [currentCategory, setCurrentCategory] = useState<string>("");
 
   // Client Bill Form State
+  // Client Bill Form State
   const [clientBillFormData, setClientBillFormData] =
-    useState<ClientBillFormData>({
-      invoiceNo: "",
-      invoiceDate: new Date().toISOString().split("T")[0],
-      raBillNo: "",
-      workOrderNo: "",
-      workOrderDate: "",
-      reverseCharges: false,
-      billingPartyName: "",
-      billingPartyAddress: "",
-      billingPartyGSTIN: "",
-      billingPartyState: "",
-      billingPartyStateCode: "",
-      providerName: "",
-      providerAddress: "",
-      providerGSTIN: "",
-      providerState: "",
-      providerStateCode: "",
-      projectName: "",
-      projectLocation: "",
-      contractorName: "",
-      contractorPAN: "",
-      contractorVillage: "",
-      contractorPost: "",
-      contractorDistrict: "",
-      contractorPin: "",
-      totalAmount: null,
-      tdsPercentage: null,
-      debitAdjustValue: null,
-      bankName: "",
-      bankBranch: "",
-      accountNo: "",
-      ifscCode: "",
-      categories: [
-        {
-          id: `cat-${Date.now()}`,
-          categoryCode: "",
-          categoryName: "",
-          tower: "",
-          description: "",
-          sequence: 1,
-          lineItems: [
-            {
-              id: `line-${Date.now()}`,
-              slNo: 1,
-              description: "",
-              sacHsnCode: "",
-              unit: "",
-              unitRate: 0,
-              previousQuantity: 0,
-              presentQuantity: 0,
-              cumulativeQuantity: 0,
-              previousAmount: 0,
-              presentAmount: 0,
-              cumulativeAmount: 0,
-              isDeduction: false,
-              isRevisedRate: false,
-            },
-          ],
-        },
-      ],
+    useState<ClientBillFormData>(() => {
+      const initialCategory = createBlankCategory(1);
+      // Ensure the initial line item has the correct categoryId
+      if (initialCategory.lineItems.length > 0) {
+        initialCategory.lineItems[0].categoryId = initialCategory.id;
+      }
+
+      return {
+        invoiceNo: "",
+        invoiceDate: new Date().toISOString().split("T")[0],
+        raBillNo: "",
+        workOrderNo: "",
+        workOrderDate: "",
+        reverseCharges: false,
+        billingPartyName: "",
+        billingPartyAddress: "",
+        billingPartyGSTIN: "",
+        billingPartyState: "",
+        billingPartyStateCode: "",
+        providerName: "",
+        providerAddress: "",
+        providerGSTIN: "",
+        providerState: "",
+        providerStateCode: "",
+        projectName: "",
+        projectLocation: "",
+        contractorName: "",
+        contractorPAN: "",
+        contractorVillage: "",
+        contractorPost: "",
+        contractorDistrict: "",
+        contractorPin: "",
+        totalAmount: null,
+        tdsPercentage: null,
+        debitAdjustValue: null,
+        bankName: "",
+        bankBranch: "",
+        accountNo: "",
+        ifscCode: "",
+        categories: [initialCategory],
+      };
     });
 
   const [isClientBillSaving, setIsClientBillSaving] = useState(false);
@@ -411,43 +427,31 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
   };
 
   const addCategorySection = () => {
-    const newCategory: BillCategoryRecord = {
-      id: `cat-${Date.now()}`,
-      categoryCode: "",
-      categoryName: "",
-      tower: "",
-      description: "",
-      sequence: clientBillFormData.categories.length + 1,
-      lineItems: [
-        {
-          id: `line-${Date.now()}`,
-          slNo: 1,
-          description: "",
-          sacHsnCode: "",
-          unit: "",
-          unitRate: 0,
-          previousQuantity: 0,
-          presentQuantity: 0,
-          cumulativeQuantity: 0,
-          previousAmount: 0,
-          presentAmount: 0,
-          cumulativeAmount: 0,
-          isDeduction: false,
-          isRevisedRate: false,
-        },
-      ],
-    };
-    setClientBillFormData((prev) => ({
-      ...prev,
-      categories: [...prev.categories, newCategory],
-    }));
+    setClientBillFormData((prev) => {
+      const newCategory = createBlankCategory(prev.categories.length + 1);
+      const seededCategory = {
+        ...newCategory,
+        lineItems: newCategory.lineItems.map((line, index) => ({
+          ...line,
+          categoryId: newCategory.id,
+          slNo: index + 1,
+        })),
+      };
+      return {
+        ...prev,
+        categories: [...prev.categories, seededCategory],
+      };
+    });
   };
 
   const removeCategorySection = (categoryIndex: number) => {
-    setClientBillFormData((prev) => ({
-      ...prev,
-      categories: prev.categories.filter((_, i) => i !== categoryIndex),
-    }));
+    setClientBillFormData((prev) => {
+      if (prev.categories.length === 1) return prev;
+      const updatedCategories = prev.categories.filter(
+        (_, i) => i !== categoryIndex
+      );
+      return { ...prev, categories: updatedCategories };
+    });
   };
 
   const handleCategoryFieldChange = (
@@ -464,44 +468,34 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
   };
 
   const addLineItemRow = (categoryIndex: number) => {
-    const newLineItem: BillLineItemRecord = {
-      id: `line-${Date.now()}`,
-      slNo: clientBillFormData.categories[categoryIndex].lineItems.length + 1,
-      description: "",
-      sacHsnCode: "",
-      unit: "",
-      unitRate: 0,
-      previousQuantity: 0,
-      presentQuantity: 0,
-      cumulativeQuantity: 0,
-      previousAmount: 0,
-      presentAmount: 0,
-      cumulativeAmount: 0,
-      isDeduction: false,
-      isRevisedRate: false,
-    };
-    setClientBillFormData((prev) => ({
-      ...prev,
-      categories: prev.categories.map((cat, i) =>
-        i === categoryIndex
-          ? { ...cat, lineItems: [...cat.lineItems, newLineItem] }
-          : cat
-      ),
-    }));
+    setClientBillFormData((prev) => {
+      const updatedCategories = prev.categories.map((category, idx) => {
+        if (idx !== categoryIndex) return category;
+        const newLine = {
+          ...createBlankLineItem(category.lineItems.length + 1),
+          categoryId: category.id,
+        };
+        return {
+          ...category,
+          lineItems: [...category.lineItems, newLine],
+        };
+      });
+      return { ...prev, categories: updatedCategories };
+    });
   };
 
   const removeLineItemRow = (categoryIndex: number, lineIndex: number) => {
-    setClientBillFormData((prev) => ({
-      ...prev,
-      categories: prev.categories.map((cat, i) =>
-        i === categoryIndex
-          ? {
-              ...cat,
-              lineItems: cat.lineItems.filter((_, li) => li !== lineIndex),
-            }
-          : cat
-      ),
-    }));
+    setClientBillFormData((prev) => {
+      const updatedCategories = prev.categories.map((category, idx) => {
+        if (idx !== categoryIndex) return category;
+        if (category.lineItems.length === 1) return category;
+        const remainingLines = category.lineItems.filter(
+          (_, lIdx) => lIdx !== lineIndex
+        );
+        return { ...category, lineItems: remainingLines };
+      });
+      return { ...prev, categories: updatedCategories };
+    });
   };
 
   const handleLineItemFieldChange = (
