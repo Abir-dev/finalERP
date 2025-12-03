@@ -51,7 +51,7 @@ import { Switch } from "@/components/ui/switch";
 // Helper functions
 const generateTempId = () => Math.random().toString(36).slice(2, 10);
 
-const API_BASE_URL = process.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const createBlankLineItem = (slNo = 1): BillLineItemRecord => ({
   id: generateTempId(),
