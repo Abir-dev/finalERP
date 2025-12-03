@@ -2267,7 +2267,10 @@ const AccountsDashboard = () => {
             </Tabs>
 
             {/* Client Bill Form Modal */}
-            <Dialog open={isClientBillFormOpen}>
+            <Dialog open={isClientBillFormOpen}
+            onOpenChange={setIsClientBillFormOpen}
+            >
+                
                 <DialogContent
                     className="w-full max-w-[90vw] xl:max-w-[1400px] 2xl:max-w-[1600px] bg-white"
                     onEscapeKeyDown={(event) => event.preventDefault()}
@@ -2282,13 +2285,13 @@ const AccountsDashboard = () => {
                             <section className="rounded-[28px] border border-slate-200 bg-[#f7f8f8] p-6 shadow-sm space-y-4">
                                 <div className="flex items-center justify-between flex-wrap gap-2">
                                     <h3 className="text-xl font-semibold">Invoice Details</h3>
-                                    <Badge variant="outline">Schema Ready</Badge>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
                                         <Label htmlFor="invoiceNo">Invoice No.</Label>
                                         <Input
                                             id="invoiceNo"
+                                            placeholder="#1234"
                                             value={clientBillFormData.invoiceNo}
                                             onChange={(e) => handleClientBillFieldChange("invoiceNo", e.target.value)}
                                             required
@@ -2308,6 +2311,7 @@ const AccountsDashboard = () => {
                                         <Label htmlFor="raBillNo">RA Bill No.</Label>
                                         <Input
                                             id="raBillNo"
+                                            placeholder="AB234"
                                             value={clientBillFormData.raBillNo}
                                             onChange={(e) => handleClientBillFieldChange("raBillNo", e.target.value)}
                                         />
@@ -2317,6 +2321,7 @@ const AccountsDashboard = () => {
                                         <Input
                                             id="workOrderNo"
                                             value={clientBillFormData.workOrderNo}
+                                            placeholder="001"
                                             onChange={(e) => handleClientBillFieldChange("workOrderNo", e.target.value)}
                                         />
                                     </div>
@@ -2338,6 +2343,7 @@ const AccountsDashboard = () => {
                                     <Switch
                                         checked={clientBillFormData.reverseCharges}
                                         onCheckedChange={(checked) => handleClientBillFieldChange("reverseCharges", checked)}
+                                        className="data-[state=unchecked]:bg-black"
                                     />
                                 </div>
                             </section>
@@ -2350,6 +2356,7 @@ const AccountsDashboard = () => {
                                             <Label htmlFor="billingPartyName">Name</Label>
                                             <Input
                                                 id="billingPartyName"
+                                                placeholder="Enter Billing Party Name"
                                                 value={clientBillFormData.billingPartyName}
                                                 onChange={(e) => handleClientBillFieldChange("billingPartyName", e.target.value)}
                                                 required
@@ -2359,6 +2366,7 @@ const AccountsDashboard = () => {
                                             <Label htmlFor="billingPartyAddress">Address</Label>
                                             <Textarea
                                                 id="billingPartyAddress"
+                                                placeholder="Enter Billing Party Address"
                                                 value={clientBillFormData.billingPartyAddress}
                                                 onChange={(e) => handleClientBillFieldChange("billingPartyAddress", e.target.value)}
                                                 rows={3}
@@ -2369,6 +2377,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="billingPartyGSTIN">GSTIN</Label>
                                                 <Input
                                                     id="billingPartyGSTIN"
+                                                    placeholder="Enter Billing Party GSTIN"
                                                     value={clientBillFormData.billingPartyGSTIN}
                                                     onChange={(e) => handleClientBillFieldChange("billingPartyGSTIN", e.target.value)}
                                                 />
@@ -2377,6 +2386,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="billingPartyState">State</Label>
                                                 <Input
                                                     id="billingPartyState"
+                                                    placeholder="Enter Billing Party State"
                                                     value={clientBillFormData.billingPartyState}
                                                     onChange={(e) => handleClientBillFieldChange("billingPartyState", e.target.value)}
                                                 />
@@ -2385,6 +2395,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="billingPartyStateCode">State Code</Label>
                                                 <Input
                                                     id="billingPartyStateCode"
+                                                    placeholder="Enter Billing Party State Code"
                                                     value={clientBillFormData.billingPartyStateCode}
                                                     onChange={(e) => handleClientBillFieldChange("billingPartyStateCode", e.target.value)}
                                                 />
@@ -2398,6 +2409,7 @@ const AccountsDashboard = () => {
                                             <Input
                                                 id="providerName"
                                                 value={clientBillFormData.providerName}
+                                                placeholder="Enter Provider Name"
                                                 onChange={(e) => handleClientBillFieldChange("providerName", e.target.value)}
                                                 required
                                             />
@@ -2406,6 +2418,7 @@ const AccountsDashboard = () => {
                                             <Label htmlFor="providerAddress">Address</Label>
                                             <Textarea
                                                 id="providerAddress"
+                                                placeholder="Enter Provider Address"
                                                 value={clientBillFormData.providerAddress}
                                                 onChange={(e) => handleClientBillFieldChange("providerAddress", e.target.value)}
                                                 rows={3}
@@ -2416,6 +2429,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="providerGSTIN">GSTIN</Label>
                                                 <Input
                                                     id="providerGSTIN"
+                                                    placeholder="Enter Provider GSTIN"
                                                     value={clientBillFormData.providerGSTIN}
                                                     onChange={(e) => handleClientBillFieldChange("providerGSTIN", e.target.value)}
                                                 />
@@ -2424,6 +2438,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="providerState">State</Label>
                                                 <Input
                                                     id="providerState"
+                                                    placeholder="Enter Provider State"
                                                     value={clientBillFormData.providerState}
                                                     onChange={(e) => handleClientBillFieldChange("providerState", e.target.value)}
                                                 />
@@ -2432,6 +2447,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="providerStateCode">State Code</Label>
                                                 <Input
                                                     id="providerStateCode"
+                                                    placeholder="Enter Provider State Code"
                                                     value={clientBillFormData.providerStateCode}
                                                     onChange={(e) => handleClientBillFieldChange("providerStateCode", e.target.value)}
                                                 />
@@ -2449,6 +2465,7 @@ const AccountsDashboard = () => {
                                             <Label htmlFor="projectName">Name</Label>
                                             <Input
                                                 id="projectName"
+                                                placeholder="Enter Project Name"
                                                 value={clientBillFormData.projectName}
                                                 onChange={(e) => handleClientBillFieldChange("projectName", e.target.value)}
                                             />
@@ -2457,6 +2474,7 @@ const AccountsDashboard = () => {
                                             <Label htmlFor="projectLocation">Location</Label>
                                             <Input
                                                 id="projectLocation"
+                                                placeholder="Enter Project Location"
                                                 value={clientBillFormData.projectLocation}
                                                 onChange={(e) => handleClientBillFieldChange("projectLocation", e.target.value)}
                                             />
@@ -2469,6 +2487,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="contractorName">Name</Label>
                                                 <Input
                                                     id="contractorName"
+                                                    placeholder="Enter Contractor Name"
                                                     value={clientBillFormData.contractorName}
                                                     onChange={(e) => handleClientBillFieldChange("contractorName", e.target.value)}
                                                 />
@@ -2477,6 +2496,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="contractorPAN">PAN</Label>
                                                 <Input
                                                     id="contractorPAN"
+                                                    placeholder="Enter Contractor PAN"
                                                     value={clientBillFormData.contractorPAN}
                                                     onChange={(e) => handleClientBillFieldChange("contractorPAN", e.target.value)}
                                                 />
@@ -2485,6 +2505,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="contractorVillage">Village</Label>
                                                 <Input
                                                     id="contractorVillage"
+                                                    placeholder="Enter Contractor Village"
                                                     value={clientBillFormData.contractorVillage}
                                                     onChange={(e) => handleClientBillFieldChange("contractorVillage", e.target.value)}
                                                 />
@@ -2493,6 +2514,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="contractorPost">Post</Label>
                                                 <Input
                                                     id="contractorPost"
+                                                    placeholder="Enter Contractor Post"
                                                     value={clientBillFormData.contractorPost}
                                                     onChange={(e) => handleClientBillFieldChange("contractorPost", e.target.value)}
                                                 />
@@ -2501,6 +2523,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="contractorDistrict">District</Label>
                                                 <Input
                                                     id="contractorDistrict"
+                                                    placeholder="Enter Contractor District"
                                                     value={clientBillFormData.contractorDistrict}
                                                     onChange={(e) => handleClientBillFieldChange("contractorDistrict", e.target.value)}
                                                 />
@@ -2509,6 +2532,7 @@ const AccountsDashboard = () => {
                                                 <Label htmlFor="contractorPin">PIN</Label>
                                                 <Input
                                                     id="contractorPin"
+                                                    placeholder="Enter Contractor PIN"
                                                     value={clientBillFormData.contractorPin}
                                                     onChange={(e) => handleClientBillFieldChange("contractorPin", e.target.value)}
                                                 />
@@ -2569,6 +2593,7 @@ const AccountsDashboard = () => {
                                         <Label htmlFor="bankName">Bank</Label>
                                         <Input
                                             id="bankName"
+                                            placeholder="Enter Bank Name"
                                             value={clientBillFormData.bankName}
                                             onChange={(e) => handleClientBillFieldChange("bankName", e.target.value)}
                                         />
@@ -2577,6 +2602,7 @@ const AccountsDashboard = () => {
                                         <Label htmlFor="bankBranch">Branch</Label>
                                         <Input
                                             id="bankBranch"
+                                            placeholder="Enter Bank Branch"
                                             value={clientBillFormData.bankBranch}
                                             onChange={(e) => handleClientBillFieldChange("bankBranch", e.target.value)}
                                         />
@@ -2585,6 +2611,7 @@ const AccountsDashboard = () => {
                                         <Label htmlFor="accountNo">Account No.</Label>
                                         <Input
                                             id="accountNo"
+                                            placeholder="Enter Account No."
                                             value={clientBillFormData.accountNo}
                                             onChange={(e) => handleClientBillFieldChange("accountNo", e.target.value)}
                                         />
@@ -2593,6 +2620,7 @@ const AccountsDashboard = () => {
                                         <Label htmlFor="ifscCode">IFSC</Label>
                                         <Input
                                             id="ifscCode"
+                                            placeholder="Enter IFSC"
                                             value={clientBillFormData.ifscCode}
                                             onChange={(e) => handleClientBillFieldChange("ifscCode", e.target.value)}
                                         />
@@ -2617,6 +2645,7 @@ const AccountsDashboard = () => {
                                                         <Label>Code</Label>
                                                         <Input
                                                             value={category.categoryCode}
+                                                            placeholder="Enter Category Code"
                                                             onChange={(e) => handleCategoryFieldChange(categoryIndex, "categoryCode", e.target.value)}
                                                         />
                                                     </div>
@@ -2624,6 +2653,7 @@ const AccountsDashboard = () => {
                                                         <Label>Name</Label>
                                                         <Input
                                                             value={category.categoryName}
+                                                            placeholder="Enter Category Name"
                                                             onChange={(e) => handleCategoryFieldChange(categoryIndex, "categoryName", e.target.value)}
                                                         />
                                                     </div>
@@ -2631,6 +2661,7 @@ const AccountsDashboard = () => {
                                                         <Label>Tower</Label>
                                                         <Input
                                                             value={category.tower || ""}
+                                                            placeholder="Enter Tower"
                                                             onChange={(e) => handleCategoryFieldChange(categoryIndex, "tower", e.target.value)}
                                                         />
                                                     </div>
@@ -2638,6 +2669,7 @@ const AccountsDashboard = () => {
                                                         <Label>Description</Label>
                                                         <Input
                                                             value={category.description || ""}
+                                                            placeholder="Enter Description"
                                                             onChange={(e) => handleCategoryFieldChange(categoryIndex, "description", e.target.value)}
                                                         />
                                                     </div>
@@ -2661,18 +2693,18 @@ const AccountsDashboard = () => {
                                                 </Button>
                                             </div>
 
-                                            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white/90 shadow-inner">
+                                            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-[#f7f8f8]">
                                                 <Table>
                                                     <TableHeader className="bg-muted/50">
                                                         <TableRow>
-                                                            <TableHead className="min-w-[60px]">Sl</TableHead>
-                                                            <TableHead>Description</TableHead>
-                                                            <TableHead className="min-w-[120px]">SAC/HSN</TableHead>
-                                                            <TableHead className="min-w-[80px]">Unit</TableHead>
-                                                            <TableHead className="min-w-[120px]">Unit Rate</TableHead>
-                                                            <TableHead className="min-w-[180px]">Quantity (Prev / Pres / Cum)</TableHead>
-                                                            <TableHead className="min-w-[200px]">Amount (Prev / Pres / Cum)</TableHead>
-                                                            <TableHead className="min-w-[140px]">Flags</TableHead>
+                                                            <TableHead className="min-w-[60px] text-black">Sl</TableHead>
+                                                            <TableHead className="text-black">Description</TableHead>
+                                                            <TableHead className="min-w-[120px] text-black">SAC/HSN</TableHead>
+                                                            <TableHead className="min-w-[80px] text-black">Unit</TableHead>
+                                                            <TableHead className="min-w-[120px] text-black">Unit Rate</TableHead>
+                                                            <TableHead className="min-w-[180px] text-black">Quantity (Prev / Pres / Cum)</TableHead>
+                                                            <TableHead className="min-w-[200px] text-black">Amount (Prev / Pres / Cum)</TableHead>
+                                                            <TableHead className="min-w-[140px] text-black">Flags</TableHead>
                                                             <TableHead className="min-w-[60px]" />
                                                         </TableRow>
                                                     </TableHeader>
@@ -2689,18 +2721,21 @@ const AccountsDashboard = () => {
                                                                 <TableCell>
                                                                     <Input
                                                                         value={line.description}
+                                                                        placeholder="Description"
                                                                         onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "description", e.target.value)}
                                                                     />
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     <Input
                                                                         value={line.sacHsnCode || ""}
+                                                                        placeholder="SAC/HSN"
                                                                         onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "sacHsnCode", e.target.value)}
                                                                     />
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     <Input
                                                                         value={line.unit}
+                                                                        placeholder="Unit"
                                                                         onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "unit", e.target.value)}
                                                                     />
                                                                 </TableCell>
@@ -2755,6 +2790,7 @@ const AccountsDashboard = () => {
                                                                             <Switch
                                                                                 checked={line.isDeduction || false}
                                                                                 onCheckedChange={(checked) => handleLineItemFieldChange(categoryIndex, lineIndex, "isDeduction", checked)}
+                                                                                className="data-[state=unchecked]:bg-black"
                                                                             />
                                                                         </div>
                                                                         <div className="flex items-center justify-between gap-2">
@@ -2762,6 +2798,7 @@ const AccountsDashboard = () => {
                                                                             <Switch
                                                                                 checked={line.isRevisedRate || false}
                                                                                 onCheckedChange={(checked) => handleLineItemFieldChange(categoryIndex, lineIndex, "isRevisedRate", checked)}
+                                                                                className="data-[state=unchecked]:bg-black"
                                                                             />
                                                                         </div>
                                                                     </div>
