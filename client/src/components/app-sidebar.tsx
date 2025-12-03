@@ -414,6 +414,7 @@ export function AppSidebar() {
         { title: "Overview", url: "/billing-management/overview" },
         { title: "Invoices", url: "/billing-management/invoices" },
         { title: "Payments", url: "/billing-management/payments" },
+        { title: "Requests", url: "/billing-management/requests" },
       ],
     },
     {
