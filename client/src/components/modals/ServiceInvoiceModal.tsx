@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useUser } from "@/contexts/UserContext";
 import {
   Dialog,
   DialogContent,
@@ -164,6 +165,7 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
   clientId,
   initialData,
 }) => {
+  const { user } = useUser();
   const [formData, setFormData] = useState<ServiceInvoiceFormData>({
     header: {
       invoiceNumber: "",
@@ -609,9 +611,15 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
         contractorPost: clientBillFormData.contractorPost,
         contractorDistrict: clientBillFormData.contractorDistrict,
         contractorPin: clientBillFormData.contractorPin,
-        totalAmount: clientBillFormData.totalAmount ? parseFloat(String(clientBillFormData.totalAmount)) : null,
-        tdsPercentage: clientBillFormData.tdsPercentage ? parseFloat(String(clientBillFormData.tdsPercentage)) : null,
-        debitAdjustValue: clientBillFormData.debitAdjustValue ? parseFloat(String(clientBillFormData.debitAdjustValue)) : null,
+        totalAmount: clientBillFormData.totalAmount ? parseFloat(String(clientBillFormData.totalAmount)) : 0,
+        tdsPercentage: clientBillFormData.tdsPercentage ? parseFloat(String(clientBillFormData.tdsPercentage)) : 0,
+        tdsAmount: clientBillFormData.totalAmount && clientBillFormData.tdsPercentage 
+          ? (parseFloat(String(clientBillFormData.totalAmount)) * parseFloat(String(clientBillFormData.tdsPercentage))) / 100 
+          : 0,
+        netBillAmount: clientBillFormData.totalAmount && clientBillFormData.tdsPercentage && clientBillFormData.debitAdjustValue
+          ? parseFloat(String(clientBillFormData.totalAmount)) - ((parseFloat(String(clientBillFormData.totalAmount)) * parseFloat(String(clientBillFormData.tdsPercentage))) / 100) - parseFloat(String(clientBillFormData.debitAdjustValue))
+          : clientBillFormData.totalAmount ? parseFloat(String(clientBillFormData.totalAmount)) : 0,
+        debitAdjustValue: clientBillFormData.debitAdjustValue ? parseFloat(String(clientBillFormData.debitAdjustValue)) : 0,
         bankName: clientBillFormData.bankName,
         bankBranch: clientBillFormData.bankBranch,
         accountNo: clientBillFormData.accountNo,
@@ -639,10 +647,15 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
         })),
       };
 
+      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      if (!token) {
+        throw new Error("No authentication token found. Please log in again.");
+      }
       const response = await fetch(`${API_BASE_URL}/client-bills`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(billPayload),
       });
