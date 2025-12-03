@@ -51,6 +51,8 @@ import { Switch } from "@/components/ui/switch";
 // Helper functions
 const generateTempId = () => Math.random().toString(36).slice(2, 10);
 
+const API_BASE_URL = process.env.VITE_API_URL;
+
 const createBlankLineItem = (slNo = 1): BillLineItemRecord => ({
   id: generateTempId(),
   categoryId: "",
@@ -576,17 +578,87 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
     (clientBillFormData.debitAdjustValue || 0)
   ).toFixed(2);
 
-  const handleClientBillSubmit = (e: React.FormEvent) => {
+  const handleClientBillSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsClientBillSaving(true);
 
-    // Here you would typically save the client bill data
-    // For now, we'll just show a success message
-    setTimeout(() => {
-      toast.success("Client bill saved successfully!");
+    try {
+      // Prepare data for backend - convert string values to numbers where needed
+      const billPayload = {
+        invoiceNo: clientBillFormData.invoiceNo,
+        invoiceDate: new Date(clientBillFormData.invoiceDate),
+        raBillNo: clientBillFormData.raBillNo,
+        workOrderNo: clientBillFormData.workOrderNo,
+        workOrderDate: clientBillFormData.workOrderDate ? new Date(clientBillFormData.workOrderDate) : null,
+        reverseCharges: clientBillFormData.reverseCharges,
+        billingPartyName: clientBillFormData.billingPartyName,
+        billingPartyAddress: clientBillFormData.billingPartyAddress,
+        billingPartyGSTIN: clientBillFormData.billingPartyGSTIN,
+        billingPartyState: clientBillFormData.billingPartyState,
+        billingPartyStateCode: clientBillFormData.billingPartyStateCode,
+        providerName: clientBillFormData.providerName,
+        providerAddress: clientBillFormData.providerAddress,
+        providerGSTIN: clientBillFormData.providerGSTIN,
+        providerState: clientBillFormData.providerState,
+        providerStateCode: clientBillFormData.providerStateCode,
+        projectName: clientBillFormData.projectName,
+        projectLocation: clientBillFormData.projectLocation,
+        contractorName: clientBillFormData.contractorName,
+        contractorPAN: clientBillFormData.contractorPAN,
+        contractorVillage: clientBillFormData.contractorVillage,
+        contractorPost: clientBillFormData.contractorPost,
+        contractorDistrict: clientBillFormData.contractorDistrict,
+        contractorPin: clientBillFormData.contractorPin,
+        totalAmount: clientBillFormData.totalAmount ? parseFloat(String(clientBillFormData.totalAmount)) : null,
+        tdsPercentage: clientBillFormData.tdsPercentage ? parseFloat(String(clientBillFormData.tdsPercentage)) : null,
+        debitAdjustValue: clientBillFormData.debitAdjustValue ? parseFloat(String(clientBillFormData.debitAdjustValue)) : null,
+        bankName: clientBillFormData.bankName,
+        bankBranch: clientBillFormData.bankBranch,
+        accountNo: clientBillFormData.accountNo,
+        ifscCode: clientBillFormData.ifscCode,
+        categories: clientBillFormData.categories.map((cat) => ({
+          categoryCode: cat.categoryCode,
+          categoryName: cat.categoryName,
+          tower: cat.tower,
+          description: cat.description,
+          sequence: cat.sequence,
+          lineItems: cat.lineItems.map((line) => ({
+            description: line.description,
+            sacHsnCode: line.sacHsnCode,
+            unit: line.unit,
+            unitRate: parseFloat(String(line.unitRate)) || 0,
+            previousQuantity: parseFloat(String(line.previousQuantity)) || 0,
+            presentQuantity: parseFloat(String(line.presentQuantity)) || 0,
+            cumulativeQuantity: parseFloat(String(line.cumulativeQuantity)) || 0,
+            previousAmount: parseFloat(String(line.previousAmount)) || 0,
+            presentAmount: parseFloat(String(line.presentAmount)) || 0,
+            cumulativeAmount: parseFloat(String(line.cumulativeAmount)) || 0,
+            isDeduction: line.isDeduction || false,
+            isRevisedRate: line.isRevisedRate || false,
+          })),
+        })),
+      };
+
+      const response = await fetch(`${API_BASE_URL}/client-bills`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(billPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save client bill");
+      }
+
+      toast.success("Service invoice saved successfully!");
       setIsClientBillSaving(false);
       onClose();
-    }, 1000);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save service invoice");
+      setIsClientBillSaving(false);
+    }
   };
 
   const setIsClientBillFormOpen = (open: boolean) => {
@@ -1295,7 +1367,7 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
                                         step="0.001"
                                         value={
                                           line[
-                                            qtyKey as keyof BillLineItemRecord
+                                          qtyKey as keyof BillLineItemRecord
                                           ] as number
                                         }
                                         onChange={(e) =>
@@ -1323,7 +1395,7 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
                                         step="0.01"
                                         value={
                                           line[
-                                            amtKey as keyof BillLineItemRecord
+                                          amtKey as keyof BillLineItemRecord
                                           ] as number
                                         }
                                         onChange={(e) =>
