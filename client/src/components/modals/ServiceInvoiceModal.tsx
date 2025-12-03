@@ -613,8 +613,8 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
         contractorPin: clientBillFormData.contractorPin,
         totalAmount: clientBillFormData.totalAmount ? parseFloat(String(clientBillFormData.totalAmount)) : 0,
         tdsPercentage: clientBillFormData.tdsPercentage ? parseFloat(String(clientBillFormData.tdsPercentage)) : 0,
-        tdsAmount: clientBillFormData.totalAmount && clientBillFormData.tdsPercentage 
-          ? (parseFloat(String(clientBillFormData.totalAmount)) * parseFloat(String(clientBillFormData.tdsPercentage))) / 100 
+        tdsAmount: clientBillFormData.totalAmount && clientBillFormData.tdsPercentage
+          ? (parseFloat(String(clientBillFormData.totalAmount)) * parseFloat(String(clientBillFormData.tdsPercentage))) / 100
           : 0,
         netBillAmount: clientBillFormData.totalAmount && clientBillFormData.tdsPercentage && clientBillFormData.debitAdjustValue
           ? parseFloat(String(clientBillFormData.totalAmount)) - ((parseFloat(String(clientBillFormData.totalAmount)) * parseFloat(String(clientBillFormData.tdsPercentage))) / 100) - parseFloat(String(clientBillFormData.debitAdjustValue))
@@ -631,6 +631,7 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
           description: cat.description,
           sequence: cat.sequence,
           lineItems: cat.lineItems.map((line) => ({
+            slNo: line.slNo,
             description: line.description,
             sacHsnCode: line.sacHsnCode,
             unit: line.unit,
