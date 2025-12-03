@@ -27,7 +27,6 @@ import {
   FileText,
   Building2,
   MapPin,
-  Table,
   Check,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +39,7 @@ import {
   INDIAN_STATES,
 } from "@/types/service-invoice";
 import {
+  Table as UITable,
   TableBody,
   TableCell,
   TableHead,
@@ -1189,7 +1189,7 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
                       </div>
 
                       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-[#f7f8f8]">
-                        <Table>
+                        <UITable>
                           <TableHeader className="bg-muted/50">
                             <TableRow>
                               <TableHead className="min-w-[60px] text-black">
@@ -1222,19 +1222,8 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
                           <TableBody>
                             {category.lineItems.map((line, lineIndex) => (
                               <TableRow key={line.id}>
-                                <TableCell>
-                                  <Input
-                                    type="number"
-                                    value={line.slNo}
-                                    onChange={(e) =>
-                                      handleLineItemFieldChange(
-                                        categoryIndex,
-                                        lineIndex,
-                                        "slNo",
-                                        e.target.value
-                                      )
-                                    }
-                                  />
+                                <TableCell className="text-center font-medium">
+                                  {lineIndex + 1}
                                 </TableCell>
                                 <TableCell>
                                   <Input
@@ -1406,7 +1395,7 @@ export const ServiceInvoiceModal: React.FC<ServiceInvoiceModalProps> = ({
                               </TableRow>
                             ))}
                           </TableBody>
-                        </Table>
+                        </UITable>
                       </div>
                       <Button
                         type="button"

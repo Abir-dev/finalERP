@@ -2704,12 +2704,8 @@ const AccountsDashboard = () => {
                                                     <TableBody>
                                                         {category.lineItems.map((line, lineIndex) => (
                                                             <TableRow key={line.id}>
-                                                                <TableCell>
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={line.slNo}
-                                                                        onChange={(e) => handleLineItemFieldChange(categoryIndex, lineIndex, "slNo", e.target.value)}
-                                                                    />
+                                                                <TableCell className="text-center font-medium">
+                                                                    {lineIndex + 1}
                                                                 </TableCell>
                                                                 <TableCell>
                                                                     <Input
