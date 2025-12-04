@@ -1766,23 +1766,27 @@ const SiteDashboardContent = () => {
                 })) || [];
 
             const response = await axios.post(
-                `${API_URL}/progress-reports/dpr`,
-                {
-                    dprNo,
-                    date: formData.date,
-                    projectName: formData.projectName,
-                    developer: formData.developer || "",
-                    contractor: formData.contractor || "",
-                    pmc: formData.pmc || "",
-                    weatherCondition: formData.weatherCondition,
-                    workItems: transformedWorkItems,
-                    resources: [], // Can be extended later
-                    remarks: remarks,
-                    majorHindrances: formData.hindranceItems
-                        ?.map((item: any) => item.category)
-                        .join(", ") || "",
-                    actionTaken: ""
-                },
+              `${API_URL}/progress-reports/dpr`,
+              {
+                dprNo,
+                date: formData.date,
+                projectName: formData.projectName,
+                developer: formData.developer || "",
+                contractor: formData.contractor || "",
+                pmc: formData.pmc || "",
+                weatherCondition: formData.weatherCondition,
+                workItems: transformedWorkItems,
+                resources: [], // Can be extended later
+                remarks: remarks,
+                majorHindrances: formData.hindranceItems
+                  ?.map((item: any) => item.category)
+                  .join(", ") || "",
+                actionTaken: "",
+                // Add manpower and staff data as additional fields
+                manpowerItems: formData.manpowerItems || [],
+                staffItems: formData.staffItems || [],
+                hindranceItems: formData.hindranceItems || []
+              },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -8002,6 +8006,48 @@ const SiteDashboardContent = () => {
                                     </div>
                                 </div>
 
+                                {/* Work Items Details Table */}
+                                {selectedReport.workItems && selectedReport.workItems.length > 0 && (
+                                    <div className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl p-6 border">
+                                        <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
+                                            <Briefcase className="h-6 w-6 text-slate-700" />
+                                            Work Progress Details
+                                        </h3>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="bg-slate-300 text-slate-900">
+                                                        <th className="px-3 py-2 text-left">Sl.</th>
+                                                        <th className="px-3 py-2 text-left">Description</th>
+                                                        <th className="px-3 py-2 text-right">BOQ Qty</th>
+                                                        <th className="px-3 py-2 text-right">Already Executed</th>
+                                                        <th className="px-3 py-2 text-right">Today's Progress</th>
+                                                        <th className="px-3 py-2 text-right">Yesterday</th>
+                                                        <th className="px-3 py-2 text-right">Cumulative</th>
+                                                        <th className="px-3 py-2 text-right">Balance</th>
+                                                        <th className="px-3 py-2 text-left">Remarks</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {selectedReport.workItems.map((item: any, idx: number) => (
+                                                        <tr key={idx} className="border-b hover:bg-slate-200">
+                                                            <td className="px-3 py-2">{item.slNo || idx + 1}</td>
+                                                            <td className="px-3 py-2">{item.description}</td>
+                                                            <td className="px-3 py-2 text-right">{item.boqQuantity}</td>
+                                                            <td className="px-3 py-2 text-right">{item.alreadyExecuted}</td>
+                                                            <td className="px-3 py-2 text-right">{item.todaysProgram}</td>
+                                                            <td className="px-3 py-2 text-right">{item.yesterdayAchievement}</td>
+                                                            <td className="px-3 py-2 text-right">{item.cumulativeQuantity}</td>
+                                                            <td className="px-3 py-2 text-right">{item.balanceQuantity}</td>
+                                                            <td className="px-3 py-2">{item.remarks}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Work Details */}
                                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border">
                                     <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
@@ -8071,6 +8117,107 @@ const SiteDashboardContent = () => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Labour & Machineries Details */}
+                                {selectedReport.resources && selectedReport.resources.length > 0 && (() => {
+                                    const manpower = selectedReport.resources.filter((r: any) => r.resourceType === 'MANPOWER');
+                                    const equipment = selectedReport.resources.filter((r: any) => r.resourceType === 'EQUIPMENT');
+                                    const staff = selectedReport.resources.filter((r: any) => r.resourceType === 'STAFF');
+
+                                    return (
+                                        <div className="space-y-6">
+                                            {/* Manpower Section */}
+                                            {manpower.length > 0 && (
+                                                <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                                                    <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
+                                                        <Users className="h-6 w-6 text-blue-700" />
+                                                        Manpower Details
+                                                    </h3>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-sm bg-white rounded-lg">
+                                                            <thead>
+                                                                <tr className="bg-blue-300 text-blue-900">
+                                                                    <th className="px-3 py-2 text-left">Description</th>
+                                                                    <th className="px-3 py-2 text-right">Hours Worked</th>
+                                                                    <th className="px-3 py-2 text-right">Planned</th>
+                                                                    <th className="px-3 py-2 text-left">Remarks</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {manpower.map((res: any, idx: number) => (
+                                                                    <tr key={idx} className="border-b hover:bg-blue-50">
+                                                                        <td className="px-3 py-2">{res.name}</td>
+                                                                        <td className="px-3 py-2 text-right">{res.actualCount || '-'}</td>
+                                                                        <td className="px-3 py-2 text-right">{res.plannedCount || '-'}</td>
+                                                                        <td className="px-3 py-2">{res.remarks || '-'}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Equipment Section */}
+                                            {equipment.length > 0 && (
+                                                <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+                                                    <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
+                                                        <Truck className="h-6 w-6 text-yellow-700" />
+                                                        Equipment & Machineries
+                                                    </h3>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-sm bg-white rounded-lg">
+                                                            <thead>
+                                                                <tr className="bg-yellow-300 text-yellow-900">
+                                                                    <th className="px-3 py-2 text-left">Equipment Name</th>
+                                                                    <th className="px-3 py-2 text-right">Quantity</th>
+                                                                    <th className="px-3 py-2 text-left">Remarks</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {equipment.map((res: any, idx: number) => (
+                                                                    <tr key={idx} className="border-b hover:bg-yellow-50">
+                                                                        <td className="px-3 py-2">{res.name}</td>
+                                                                        <td className="px-3 py-2 text-right">{res.actualCount || '-'}</td>
+                                                                        <td className="px-3 py-2">{res.remarks || '-'}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Staff Section */}
+                                            {staff.length > 0 && (
+                                                <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                                                    <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
+                                                        <Users className="h-6 w-6 text-purple-700" />
+                                                        Staff Details
+                                                    </h3>
+                                                    <div className="overflow-x-auto">
+                                                        <table className="w-full text-sm bg-white rounded-lg">
+                                                            <thead>
+                                                                <tr className="bg-purple-300 text-purple-900">
+                                                                    <th className="px-3 py-2 text-left">Position</th>
+                                                                    <th className="px-3 py-2 text-right">Count</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {staff.map((res: any, idx: number) => (
+                                                                    <tr key={idx} className="border-b hover:bg-purple-50">
+                                                                        <td className="px-3 py-2 font-medium">{res.name}</td>
+                                                                        <td className="px-3 py-2 text-right text-lg font-semibold text-purple-700">{res.actualCount}</td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Equipment & Materials */}
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -8169,6 +8316,42 @@ const SiteDashboardContent = () => {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Remarks & Hindrances */}
+                                {selectedReport.remarks && selectedReport.remarks.length > 0 && (
+                                    <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-6 border border-amber-200">
+                                        <h3 className="text-xl font-bold mb-4 flex items-center gap-3">
+                                            <AlertTriangle className="h-6 w-6 text-amber-700" />
+                                            Remarks & Issues Reported
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {selectedReport.remarks.map((remark: any, idx: number) => (
+                                                <div key={idx} className="bg-white rounded-lg p-4 border border-amber-100">
+                                                    <div className="font-semibold text-amber-800 mb-2">
+                                                        {remark.category}
+                                                    </div>
+                                                    <div className="text-amber-700">
+                                                        {remark.remarkText}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedReport.majorHindrances && (
+                                    <div className="bg-gradient-to-r from-rose-50 to-rose-100 rounded-xl p-6 border border-rose-200">
+                                        <h3 className="text-lg font-bold mb-4 text-rose-800 flex items-center gap-2">
+                                            <AlertTriangle className="h-5 w-5" />
+                                            Major Hindrances
+                                        </h3>
+                                        <div className="bg-white rounded-lg p-4 border border-rose-100">
+                                            <div className="text-rose-800 whitespace-pre-wrap">
+                                                {selectedReport.majorHindrances}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Issues & Delays */}
                                 {selectedReport.delayIssue && (

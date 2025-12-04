@@ -19,7 +19,9 @@ export const progressReportController = {
         actionTaken,
         workItems,
         resources,
-        remarks
+        remarks,
+        manpowerItems,
+        staffItems
       } = req.body;
 
       // Validate required fields
@@ -59,14 +61,50 @@ export const progressReportController = {
           },
           // Create nested resources
           resources: {
-            create: (resources || []).map((res: any) => ({
-              resourceType: res.resourceType,
-              name: res.name,
-              actualCount: res.actualCount,
-              plannedCount: res.plannedCount,
-              availability: res.availability,
-              remarks: res.remarks
-            }))
+            create: [
+              // Existing resources
+              ...(resources || []).map((res: any) => ({
+                resourceType: res.resourceType,
+                name: res.name,
+                actualCount: res.actualCount,
+                plannedCount: res.plannedCount,
+                availability: res.availability,
+                remarks: res.remarks
+              })),
+              // Manpower items
+              ...(manpowerItems || [])
+                .filter((item: any) => item.dailyManpowerReport)
+                .map((item: any) => ({
+                  resourceType: 'MANPOWER',
+                  name: item.dailyManpowerReport,
+                  actualCount: Math.round(item.hoursWorked || 0),
+                  plannedCount: Math.round(item.plannedManpower || 0),
+                  availability: 'YES',
+                  remarks: item.remarks || ''
+                })),
+              // Equipment from manpower items
+              ...(manpowerItems || [])
+                .filter((item: any) => item.equipmentMachineries)
+                .map((item: any) => ({
+                  resourceType: 'EQUIPMENT',
+                  name: item.equipmentMachineries,
+                  actualCount: Math.round(item.nos || 0),
+                  plannedCount: null,
+                  availability: 'YES',
+                  remarks: item.remarks || ''
+                })),
+              // Staff items
+              ...(staffItems || [])
+                .filter((item: any) => item.count > 0)
+                .map((item: any) => ({
+                  resourceType: 'STAFF',
+                  name: item.position,
+                  actualCount: item.count,
+                  plannedCount: null,
+                  availability: 'YES',
+                  remarks: ''
+                }))
+            ]
           },
           // Create nested remarks
           remarks: {
