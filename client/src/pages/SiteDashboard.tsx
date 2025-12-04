@@ -83,6 +83,7 @@ import {
     Pencil,
     BarChart3,
     TrendingUp,
+    Download,
 } from "lucide-react";
 import { issuesData } from "@/lib/dummy-data";
 import { ColumnDef } from "@tanstack/react-table";
@@ -100,6 +101,7 @@ import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import { UserFilterComponent } from "@/components/UserFilterComponent";
 import { useUserFilter } from "@/contexts/UserFilterContext";
 import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal";
+import { downloadDPRPDF } from "@/utils/dpr-pdf-generator";
 
 const API_URL =
     import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -529,6 +531,17 @@ const SiteDashboardContent = () => {
         workSections?: string;
         materials?: string;
         subcontractor?: string;
+        // Database DPR fields
+        dprNo?: string;
+        projectName?: string;
+        developer?: string;
+        contractor?: string;
+        pmc?: string;
+        majorHindrances?: string;
+        actionTaken?: string;
+        workItems?: any[];
+        resources?: any[];
+        remarks?: any[];
         // WPR fields
         weekStart?: string;
         weekEnding?: string;
@@ -1302,8 +1315,8 @@ const SiteDashboardContent = () => {
                     ? selectedUser?.id == currentUser?.id
                     : user?.role === "admin" || user?.role === "md"
             )
-                ? `${API_URL}/progress-reports/dpr`
-                : `${API_URL}/progress-reports/dpr/${userID}`;
+                ? `${API_URL}/progress-reports/dpr/all`
+                : `${API_URL}/progress-reports/dpr/user/${userID}`;
             const dprResponse = await axios.get(endpoint, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -1316,8 +1329,8 @@ const SiteDashboardContent = () => {
                     ? selectedUser?.id == currentUser?.id
                     : user?.role === "admin" || user?.role === "md"
             )
-                ? `${API_URL}/progress-reports/wpr`
-                : `${API_URL}/progress-reports/wpr/${userID}`;
+                ? `${API_URL}/progress-reports/wpr/all`
+                : `${API_URL}/progress-reports/wpr/user/${userID}`;
             console.log("Fetching WPRs from:", endpoint2);
             const wprResponse = await axios.get(endpoint2, {
                 headers: { Authorization: `Bearer ${token}` },
@@ -1729,47 +1742,47 @@ const SiteDashboardContent = () => {
 
             // Transform hindrances to remarks
             const remarks = formData.hindranceItems
-              ?.filter((item: any) => item.category)
-              .map((item: any) => ({
-                category: item.category,
-                remarkText: `Action: ${item.actionTaken} | Remarks: ${item.remarks}`
-              })) || [];
+                ?.filter((item: any) => item.category)
+                .map((item: any) => ({
+                    category: item.category,
+                    remarkText: `Action: ${item.actionTaken} | Remarks: ${item.remarks}`
+                })) || [];
 
             // Transform work items to match backend schema
             const transformedWorkItems = formData.workItems
-              ?.filter((item: any) => item.description)
-              .map((item: any, index: number) => ({
-                slNo: index + 1,
-                category: item.category || "General",
-                description: item.description,
-                unit: item.unit || "Units",
-                boqQuantity: parseFloat(item.boqQuantity) || 0,
-                alreadyExecuted: parseFloat(item.alreadyExecuted) || 0,
-                todaysProgram: parseFloat(item.todaysProgress) || 0,
-                yesterdayAchievement: parseFloat(item.yesterdayAchievement) || 0,
-                cumulativeQuantity: parseFloat(item.cumulativeQuantity) || 0,
-                balanceQuantity: parseFloat(item.balanceQuantity) || 0,
-                remarks: item.remarks || ""
-              })) || [];
+                ?.filter((item: any) => item.description)
+                .map((item: any, index: number) => ({
+                    slNo: index + 1,
+                    category: item.category || "General",
+                    description: item.description,
+                    unit: item.unit || "Units",
+                    boqQuantity: parseFloat(item.boqQuantity) || 0,
+                    alreadyExecuted: parseFloat(item.alreadyExecuted) || 0,
+                    todaysProgram: parseFloat(item.todaysProgress) || 0,
+                    yesterdayAchievement: parseFloat(item.yesterdayAchievement) || 0,
+                    cumulativeQuantity: parseFloat(item.cumulativeQuantity) || 0,
+                    balanceQuantity: parseFloat(item.balanceQuantity) || 0,
+                    remarks: item.remarks || ""
+                })) || [];
 
             const response = await axios.post(
-              `${API_URL}/progress-reports/dpr`,
-              {
-                dprNo,
-                date: formData.date,
-                projectName: formData.projectName,
-                developer: formData.developer || "",
-                contractor: formData.contractor || "",
-                pmc: formData.pmc || "",
-                weatherCondition: formData.weatherCondition,
-                workItems: transformedWorkItems,
-                resources: [], // Can be extended later
-                remarks: remarks,
-                majorHindrances: formData.hindranceItems
-                  ?.map((item: any) => item.category)
-                  .join(", ") || "",
-                actionTaken: ""
-              },
+                `${API_URL}/progress-reports/dpr`,
+                {
+                    dprNo,
+                    date: formData.date,
+                    projectName: formData.projectName,
+                    developer: formData.developer || "",
+                    contractor: formData.contractor || "",
+                    pmc: formData.pmc || "",
+                    weatherCondition: formData.weatherCondition,
+                    workItems: transformedWorkItems,
+                    resources: [], // Can be extended later
+                    remarks: remarks,
+                    majorHindrances: formData.hindranceItems
+                        ?.map((item: any) => item.category)
+                        .join(", ") || "",
+                    actionTaken: ""
+                },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -8670,14 +8683,41 @@ const SiteDashboardContent = () => {
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                {/* <Button
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={() => toast.info(`Exporting ${selectedReport?.type} report as PDF`)}
-                >
-                  <FileText className="h-4 w-4" />
-                  Export PDF
-                </Button> */}
+                                {selectedReport?.type === "DPR" && (
+                                    <Button
+                                        variant="outline"
+                                        className="flex items-center gap-2"
+                                        onClick={async () => {
+                                            try {
+                                                // Transform data to match DPRData interface
+                                                const dprData = {
+                                                    id: selectedReport?.id || '',
+                                                    dprNo: (selectedReport as any)?.dprNo || 'N/A',
+                                                    date: selectedReport?.date || new Date(),
+                                                    projectName: (selectedReport as any)?.projectName || '',
+                                                    developer: (selectedReport as any)?.developer || '',
+                                                    contractor: (selectedReport as any)?.contractor || '',
+                                                    pmc: (selectedReport as any)?.pmc || '',
+                                                    weatherCondition: selectedReport?.weather || '',
+                                                    majorHindrances: selectedReport?.delayIssue || '',
+                                                    actionTaken: selectedReport?.notes || '',
+                                                    workItems: (selectedReport as any)?.workItems || [],
+                                                    resources: (selectedReport as any)?.resources || [],
+                                                    remarks: (selectedReport as any)?.remarks || [],
+                                                    createdAt: selectedReport?.createdAt || new Date(),
+                                                };
+                                                await downloadDPRPDF(dprData);
+                                                toast.success('DPR downloaded as PDF successfully');
+                                            } catch (error) {
+                                                console.error('Error downloading PDF:', error);
+                                                toast.error('Failed to download PDF');
+                                            }
+                                        }}
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Download PDF
+                                    </Button>
+                                )}
                                 <Button
                                     variant="outline"
                                     onClick={() => setIsViewReportModalOpen(false)}
