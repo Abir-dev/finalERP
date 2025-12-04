@@ -221,7 +221,7 @@ export function AppSidebar() {
         "client-manager",
         "store",
         "accounts",
-        // "site",
+        "tender",
         "client",
         "hr",
         "project",
@@ -396,7 +396,7 @@ export function AppSidebar() {
       title: "Tender Management",
       base: "/tender-management",
       icon: FileText,
-      allowedRoles: ["admin", "md", "client-manager"],
+      allowedRoles: ["admin", "md", "client-manager", "tender"],
       subitems: [
         { title: "Dashboard", url: "/tender-management/dashboard" },
         { title: "BOQ Generation", url: "/tender-management/preparation" },
