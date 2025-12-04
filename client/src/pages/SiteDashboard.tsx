@@ -102,6 +102,7 @@ import { UserFilterComponent } from "@/components/UserFilterComponent";
 import { useUserFilter } from "@/contexts/UserFilterContext";
 import InvoiceBuilderModal from "@/components/modals/InvoiceBuilderModal";
 import { downloadDPRPDF } from "@/utils/dpr-pdf-generator";
+import { downloadWPRPDF } from "@/utils/wpr-pdf-generator";
 
 const API_URL =
     import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -1822,7 +1823,7 @@ const SiteDashboardContent = () => {
         risks: string;
         safetySummary: string;
         qualitySummary: string;
-        manpower: { role: string; planned: string; actual: string }[];
+        manpower: { role: string; planned: string; actual: string; remarks: string }[];
         equipment: {
             equipment: string;
             uptime: string;
@@ -1855,7 +1856,7 @@ const SiteDashboardContent = () => {
                 localStorage.getItem("jwt_token_backup");
 
             const response = await axios.post(
-                `${API_URL}/progress-reports/wpr/${userID}`,
+                `${API_URL}/progress-reports/wpr`,
                 {
                     projectId: formData.projectId,
                     weekStart: formData.weekStart,
@@ -8401,6 +8402,19 @@ const SiteDashboardContent = () => {
                         ) : selectedReport?.type === "WPR" ? (
                             /* ==================== WPR DETAILED VIEW ==================== */
                             <div className="space-y-8">
+                                {/* Project & Week Period Header */}
+                                <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 border border-indigo-200">
+                                    <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-3">
+                                        <Building2 className="h-6 w-6 text-indigo-600" />
+                                        Project Information
+                                    </h3>
+                                    <div className="bg-white rounded-lg p-4 border">
+                                        <div className="text-lg font-bold text-indigo-900">
+                                            {(selectedReport as any)?.projectName || "Not specified"}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Week Period Header */}
                                 <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border border-blue-200">
                                     <h3 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-3">
@@ -8891,6 +8905,44 @@ const SiteDashboardContent = () => {
                                                 };
                                                 await downloadDPRPDF(dprData);
                                                 toast.success('DPR downloaded as PDF successfully');
+                                            } catch (error) {
+                                                console.error('Error downloading PDF:', error);
+                                                toast.error('Failed to download PDF');
+                                            }
+                                        }}
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Download PDF
+                                    </Button>
+                                )}
+                                {selectedReport?.type === "WPR" && (
+                                    <Button
+                                        variant="outline"
+                                        className="flex items-center gap-2"
+                                        onClick={async () => {
+                                            try {
+                                                // Transform data to match WPRData interface
+                                                const wprData = {
+                                                    id: selectedReport?.id || '',
+                                                    projectName: (selectedReport as any)?.projectName || '',
+                                                    weekStart: selectedReport?.weekStart || new Date(),
+                                                    weekEnding: selectedReport?.weekEnding || new Date(),
+                                                    plannedProgress: selectedReport?.plannedProgress || 0,
+                                                    actualProgress: selectedReport?.actualProgress || 0,
+                                                    progressRemarks: selectedReport?.progressRemarks || '',
+                                                    milestones: selectedReport?.milestones || '',
+                                                    issues: selectedReport?.issues || '',
+                                                    risks: selectedReport?.risks || '',
+                                                    safetySummary: selectedReport?.safetySummary || '',
+                                                    qualitySummary: selectedReport?.qualitySummary || '',
+                                                    teamPerformance: selectedReport?.teamPerformance || '',
+                                                    manpower: (selectedReport as any)?.manpower || [],
+                                                    equipment: (selectedReport as any)?.equipment || [],
+                                                    materials: (selectedReport as any)?.materials || [],
+                                                    createdAt: selectedReport?.createdAt || new Date(),
+                                                };
+                                                await downloadWPRPDF(wprData);
+                                                toast.success('WPR downloaded as PDF successfully');
                                             } catch (error) {
                                                 console.error('Error downloading PDF:', error);
                                                 toast.error('Failed to download PDF');
@@ -10191,7 +10243,7 @@ function WPRManualForm({
     projects: Project[];
 }) {
     const [manpower, setManpower] = useState([
-        { role: "", planned: "", actual: "" },
+        { role: "", planned: "", actual: "", remarks: "" },
     ]);
     const [equipment, setEquipment] = useState([
         { equipment: "", uptime: "", downtime: "", remarks: "" },
@@ -10202,7 +10254,7 @@ function WPRManualForm({
 
     // Manpower handlers
     const addManpowerRow = () =>
-        setManpower([...manpower, { role: "", planned: "", actual: "" }]);
+        setManpower([...manpower, { role: "", planned: "", actual: "", remarks: "" }]);
     const removeManpowerRow = (idx: number) =>
         setManpower(manpower.filter((_, i) => i !== idx));
     const updateManpower = (idx: number, field: string, value: string) => {
@@ -10374,7 +10426,7 @@ function WPRManualForm({
                 <Label>Manpower Summary</Label>
                 <div className="space-y-2">
                     {manpower.map((row, idx) => (
-                        <div key={idx} className="flex gap-2 items-center">
+                        <div key={idx} className="flex gap-2 items-center flex-wrap">
                             <Input
                                 name={`wprRole${idx}`}
                                 placeholder="Role"
@@ -10398,6 +10450,13 @@ function WPRManualForm({
                                 value={row.actual}
                                 onChange={(e) => updateManpower(idx, "actual", e.target.value)}
                                 required
+                            />
+                            <Input
+                                name={`wprRoleRemarks${idx}`}
+                                placeholder="Remarks"
+                                className="text-xs flex-1 min-w-[120px]"
+                                value={row.remarks || ""}
+                                onChange={(e) => updateManpower(idx, "remarks", e.target.value)}
                             />
                             {manpower.length > 1 && (
                                 <Button
@@ -10457,8 +10516,8 @@ function WPRManualForm({
                             <Input
                                 name={`wprEqRemarks${idx}`}
                                 placeholder="Remarks"
-                                className="text-xs"
-                                value={row.remarks}
+                                className="text-xs flex-1 min-w-[120px]"
+                                value={row.remarks || ""}
                                 onChange={(e) =>
                                     updateEquipment(idx, "remarks", e.target.value)
                                 }
@@ -10519,8 +10578,8 @@ function WPRManualForm({
                             <Input
                                 name={`wprMatRemarks${idx}`}
                                 placeholder="Remarks"
-                                className="text-xs"
-                                value={row.remarks}
+                                className="text-xs flex-1 min-w-[120px]"
+                                value={row.remarks || ""}
                                 onChange={(e) => updateMaterial(idx, "remarks", e.target.value)}
                             />
                             {materials.length > 1 && (
