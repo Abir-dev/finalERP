@@ -43,7 +43,8 @@ interface VendorData {
 }
 
 // API configuration
-const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
 export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
   const { user } = useUser();
@@ -59,7 +60,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
     addressLine2: "",
     city: "",
     state: "",
-    country: "India"
+    country: "India",
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -69,16 +70,18 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       toast({
         title: "Missing required fields",
         description: "Please fill out all required fields",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       // Get auth token
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+      const token =
+        sessionStorage.getItem("jwt_token") ||
+        localStorage.getItem("jwt_token_backup");
       if (!token) {
         throw new Error("Authentication required");
       }
@@ -101,21 +104,23 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
         city: vendorData.city || null,
         state: vendorData.state || null,
         country: vendorData.country || "India",
-        createdBy: user.id
+        createdBy: user.id,
       };
 
       const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       };
 
-      const response = await axios.post(`${API_URL}/vendors`, vendorPayload, { headers });
-      
+      const response = await axios.post(`${API_URL}/vendors`, vendorPayload, {
+        headers,
+      });
+
       toast({
         title: "Vendor added successfully",
         description: `${vendorData.name} has been registered in the system`,
       });
-      
+
       // Reset form
       setVendorData({
         gstin: "",
@@ -129,16 +134,19 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
         addressLine2: "",
         city: "",
         state: "",
-        country: "India"
+        country: "India",
       });
-      
+
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error creating vendor:", error);
       toast({
         title: "Error adding vendor",
-        description: error?.response?.data?.message || error?.message || "Please try again",
-        variant: "destructive"
+        description:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Please try again",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -159,7 +167,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       addressLine2: "",
       city: "",
       state: "",
-      country: "India"
+      country: "India",
     });
     onOpenChange(false);
   };
@@ -170,7 +178,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
         <DialogHeader>
           <DialogTitle>Add New Vendor</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* GSTIN / UIN Section */}
           <div className="space-y-2">
@@ -178,7 +186,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             <Input
               id="gstin"
               value={vendorData.gstin}
-              onChange={(e) => setVendorData({...vendorData, gstin: e.target.value})}
+              onChange={(e) =>
+                setVendorData({ ...vendorData, gstin: e.target.value })
+              }
               placeholder="Enter GSTIN / UIN"
             />
           </div>
@@ -189,7 +199,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             <Input
               id="vendorName"
               value={vendorData.name}
-              onChange={(e) => setVendorData({...vendorData, name: e.target.value})}
+              onChange={(e) =>
+                setVendorData({ ...vendorData, name: e.target.value })
+              }
               placeholder="Enter vendor name"
               required
             />
@@ -200,7 +212,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             <Label htmlFor="vendorType">Vendor Type *</Label>
             <Select
               value={vendorData.vendorType}
-              onValueChange={(value) => setVendorData({...vendorData, vendorType: value})}
+              onValueChange={(value) =>
+                setVendorData({ ...vendorData, vendorType: value })
+              }
               required
             >
               <SelectTrigger>
@@ -220,7 +234,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
             <Label htmlFor="gstCategory">GST Category *</Label>
             <Select
               value={vendorData.gstCategory}
-              onValueChange={(value) => setVendorData({...vendorData, gstCategory: value})}
+              onValueChange={(value) =>
+                setVendorData({ ...vendorData, gstCategory: value })
+              }
               required
             >
               <SelectTrigger>
@@ -228,7 +244,7 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="UNREGISTERED">Unregistered</SelectItem>
-                <SelectItem value="REGULAR">Regular</SelectItem>
+                <SelectItem value="REGISTERED">Registered</SelectItem>
                 {/* <SelectItem value="COMPOSITION">Composition</SelectItem>
                 <SelectItem value="SEZ">SEZ</SelectItem>
                 <SelectItem value="DEEMED_EXPORT">Deemed Export</SelectItem> */}
@@ -246,7 +262,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                   id="email"
                   type="email"
                   value={vendorData.email}
-                  onChange={(e) => setVendorData({...vendorData, email: e.target.value})}
+                  onChange={(e) =>
+                    setVendorData({ ...vendorData, email: e.target.value })
+                  }
                   placeholder="Enter email address"
                 />
               </div>
@@ -255,7 +273,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 <Input
                   id="mobile"
                   value={vendorData.mobile}
-                  onChange={(e) => setVendorData({...vendorData, mobile: e.target.value})}
+                  onChange={(e) =>
+                    setVendorData({ ...vendorData, mobile: e.target.value })
+                  }
                   placeholder="Enter mobile number"
                 />
               </div>
@@ -265,14 +285,16 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
           {/* Primary Address Details */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Primary Address Details</h3>
-           
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="postalCode">Postal Code</Label>
                 <Input
                   id="postalCode"
                   value={vendorData.postalCode}
-                  onChange={(e) => setVendorData({...vendorData, postalCode: e.target.value})}
+                  onChange={(e) =>
+                    setVendorData({ ...vendorData, postalCode: e.target.value })
+                  }
                   placeholder="Enter postal code"
                 />
               </div>
@@ -281,7 +303,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 <Input
                   id="city"
                   value={vendorData.city}
-                  onChange={(e) => setVendorData({...vendorData, city: e.target.value})}
+                  onChange={(e) =>
+                    setVendorData({ ...vendorData, city: e.target.value })
+                  }
                   placeholder="Enter city/town"
                 />
               </div>
@@ -292,7 +316,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
               <Input
                 id="addressLine1"
                 value={vendorData.addressLine1}
-                onChange={(e) => setVendorData({...vendorData, addressLine1: e.target.value})}
+                onChange={(e) =>
+                  setVendorData({ ...vendorData, addressLine1: e.target.value })
+                }
                 placeholder="Enter address line 1"
               />
             </div>
@@ -302,7 +328,9 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 <Input
                   id="state"
                   value={vendorData.state}
-                  onChange={(e) => setVendorData({...vendorData, state: e.target.value})}
+                  onChange={(e) =>
+                    setVendorData({ ...vendorData, state: e.target.value })
+                  }
                   placeholder="Enter state/province"
                 />
               </div>
@@ -311,14 +339,16 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
                 <Input
                   id="country"
                   value={vendorData.country}
-                  onChange={(e) => setVendorData({...vendorData, country: e.target.value})}
+                  onChange={(e) =>
+                    setVendorData({ ...vendorData, country: e.target.value })
+                  }
                   placeholder="Enter country"
                 />
               </div>
             </div>
           </div>
         </div>
-        
+
         <DialogFooter className="flex justify-between">
           {/* <Button 
             variant="outline" 
@@ -340,4 +370,4 @@ export const AddVendorModal = ({ open, onOpenChange }: AddVendorModalProps) => {
       </DialogContent>
     </Dialog>
   );
-}; 
+};

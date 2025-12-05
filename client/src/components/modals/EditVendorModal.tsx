@@ -26,7 +26,7 @@ interface Vendor {
   vendorType: "COMPANY" | "INDIVIDUAL" | "PARTNERSHIP" | "PROPRIETORSHIP";
   gstCategory:
     | "UNREGISTERED"
-    | "REGULAR"
+    | "REGISTERED"
     // | "COMPOSITION"
     // | "SEZ"
     // | "DEEMED_EXPORT";
@@ -132,7 +132,7 @@ export const EditVendorModal = ({ vendor, open, onOpenChange, onUpdate }: EditVe
         country: vendorData.country || "India"
       };
 
-      await onUpdate(vendorPayload);
+      await onUpdate(vendorPayload as any);
       
     } catch (error: any) {
       console.error("Error updating vendor:", error);
@@ -231,7 +231,7 @@ export const EditVendorModal = ({ vendor, open, onOpenChange, onUpdate }: EditVe
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="UNREGISTERED">Unregistered</SelectItem>
-                <SelectItem value="REGULAR">Regular</SelectItem>
+                <SelectItem value="REGISTERED">Registered</SelectItem>
                 {/* <SelectItem value="COMPOSITION">Composition</SelectItem>
                 <SelectItem value="SEZ">SEZ</SelectItem>
                 <SelectItem value="DEEMED_EXPORT">Deemed Export</SelectItem> */}
