@@ -913,7 +913,7 @@ Add any additional notes here...
                 })
             };
 
-            const response = await axios.post(`${API_URL}/projects/user/${user.id}`, projectData, {
+            const response = await axios.post(`${API_URL}/projects/user/${selectedUser?.id || user.id}`, projectData, {
                 headers: {
                     'Authorization': `Bearer ${getToken()}`,
                     'Content-Type': 'application/json',
