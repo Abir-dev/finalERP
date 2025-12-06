@@ -107,8 +107,14 @@ model Project {
   totalSpend       Float?
 
   // New fields from the form
-  squareFootage Int?
-  contingency   Float?
+  
+  itemRate String?
+  withOrWithoutItem Boolean?
+  costPlus String?
+  withOrWithoutCostPlus Boolean?
+  coverArea String?
+  coverAreaUnit String?
+  withOrWithoutCoverArea Boolean?
 
   estimatedDuration Int?
   description       String?
@@ -125,6 +131,7 @@ model Project {
   createdBy         User?              @relation("ProjectCreator", fields: [createdById], references: [id])
   billOfQuantities  BOQ[]              @relation("projectBOQ")
   Design            Design[]
+  
 }
 
 model ProjectMilestone {

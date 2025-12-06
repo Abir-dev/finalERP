@@ -31,20 +31,28 @@ interface Project {
     deadline: string;
     location: string;
     manager: string;
-    contingency?: number;
     squareFootage?: number;
     startDate: string;
     estimatedDuration?: number;
     description?: string;
     contractType?: string;
     estimatedCost?: number;
-    defaultCostCenter?: string;
     milestones?: Array<{
         id?: number;
         name: string;
         startDate: string;
         endDate?: string;
     }>;
+    itemRate?: string;
+    costPlus?: string;
+    coverArea?: string;
+    itemRateWithMaterial?: boolean;
+    itemRateWithoutMaterial?: boolean;
+    costPlusWithMaterial?: boolean;
+    costPlusWithoutMaterial?: boolean;
+    coverAreaWithMaterial?: boolean;
+    coverAreaWithoutMaterial?: boolean;
+    unit?: string;
 }
 
 interface User {
@@ -459,11 +467,11 @@ const ProjectsContent = () => {
     const location = useLocation();
     const navigate = useNavigate();
     // Use UserFilter Context
-    const { 
-        targetUserId, 
-        selectedUser, 
+    const {
+        targetUserId,
+        selectedUser,
         currentUser,
-        setSelectedUserId 
+        setSelectedUserId
     } = useUserFilter();
     const userID = targetUserId || user?.id || ""
 
@@ -497,14 +505,14 @@ const ProjectsContent = () => {
     const [clients, setClients] = useState<User[]>([]);
     const [managers, setManagers] = useState<User[]>([]);
     const [isCreatingProject, setIsCreatingProject] = useState(false);
-    
+
     // Edit project states
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [isEditingProject, setIsEditingProject] = useState(false);
     const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
     // Add subview state management
-    const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus' | 'dprSubmissions'>('main');
+    const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus'>('main');
     const [newProject, setNewProject] = useState<Partial<Project>>({
         name: '',
         clientId: '',
@@ -513,15 +521,23 @@ const ProjectsContent = () => {
         deadline: '',
         location: '',
         manager: '',
-        contingency: 0,
         squareFootage: 0,
         startDate: '',
         estimatedDuration: 0,
         description: '',
         contractType: '',
         estimatedCost: 0,
-        defaultCostCenter: '',
-        milestones: []
+        milestones: [],
+        itemRate: '',
+        costPlus: '',
+        coverArea: '',
+        itemRateWithMaterial: false,
+        itemRateWithoutMaterial: false,
+        costPlusWithMaterial: false,
+        costPlusWithoutMaterial: false,
+        coverAreaWithMaterial: false,
+        coverAreaWithoutMaterial: false,
+        unit: ''
         // designDate: '',
         // foundationDate: '',
         // structureDate: '',
@@ -583,7 +599,7 @@ const ProjectsContent = () => {
     const handleEditProject = (project: any) => {
         // Set the editing project
         setEditingProject(project);
-        
+
         // Pre-populate the form with existing project data
         setNewProject({
             name: project.name,
@@ -593,22 +609,20 @@ const ProjectsContent = () => {
             deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
             location: project.location,
             manager: project.manager ? (typeof project.manager === 'object' ? project.manager?.id || '' : project.manager) : '',
-            contingency: project.contingency,
             squareFootage: project.squareFootage,
             startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
             estimatedDuration: project.estimatedDuration,
             description: project.description,
             contractType: project.contractType,
             estimatedCost: project.estimatedCost,
-            defaultCostCenter: project.defaultCostCenter,
             milestones: project.milestones || []
         });
-        
+
         // Set project type if available
         if (project.projectType) {
             setProjectType(project.projectType);
         }
-        
+
         // Open the project dialog
         setIsProjectDialogOpen(true);
     };
@@ -644,13 +658,11 @@ const ProjectsContent = () => {
                 ...(newProject.deadline && { deadline: new Date(newProject.deadline).toISOString() }),
                 ...(newProject.budget && { budget: newProject.budget }),
                 ...(newProject.manager && { managerId: newProject.manager }),
-                ...(newProject.contingency && { contingency: newProject.contingency }),
                 ...(newProject.squareFootage && { squareFootage: newProject.squareFootage }),
                 ...(newProject.estimatedDuration && { estimatedDuration: newProject.estimatedDuration }),
                 ...(newProject.description && { description: newProject.description }),
                 ...(newProject.contractType && { contractType: newProject.contractType }),
                 ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
-                ...(newProject.defaultCostCenter && { defaultCostCenter: newProject.defaultCostCenter }),
                 ...(projectType && { projectType }),
                 // Include milestones if they exist
                 ...(newProject.milestones && newProject.milestones.length > 0 && {
@@ -678,14 +690,12 @@ const ProjectsContent = () => {
                     deadline: '',
                     location: '',
                     manager: '',
-                    contingency: 0,
                     squareFootage: 0,
                     startDate: '',
                     estimatedDuration: 0,
                     description: '',
                     contractType: '',
                     estimatedCost: 0,
-                    defaultCostCenter: '',
                     milestones: []
                 });
                 setProjectType('');
@@ -833,7 +843,7 @@ Add any additional notes here...
 
                 // Filter managers (roles that can manage projects)
                 const managerUsers = response.data.filter((user: User) =>
-                    ['admin', 'md', 'client_manager', 'site','project'].includes(user.role)
+                    ['admin', 'md', 'client_manager', 'site', 'project'].includes(user.role)
                 );
                 setManagers(managerUsers);
             }
@@ -899,13 +909,11 @@ Add any additional notes here...
                 ...(newProject.deadline && { deadline: new Date(newProject.deadline).toISOString() }),
                 ...(newProject.budget && { budget: newProject.budget }),
                 ...(newProject.manager && { managerId: newProject.manager }),
-                ...(newProject.contingency && { contingency: newProject.contingency }),
                 ...(newProject.squareFootage && { squareFootage: newProject.squareFootage }),
                 ...(newProject.estimatedDuration && { estimatedDuration: newProject.estimatedDuration }),
                 ...(newProject.description && { description: newProject.description }),
                 ...(newProject.contractType && { contractType: newProject.contractType }),
                 ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
-                ...(newProject.defaultCostCenter && { defaultCostCenter: newProject.defaultCostCenter }),
                 ...(projectType && { projectType }),
                 // Include milestones if they exist
                 ...(newProject.milestones && newProject.milestones.length > 0 && {
@@ -933,14 +941,12 @@ Add any additional notes here...
                     deadline: '',
                     location: '',
                     manager: '',
-                    contingency: 0,
                     squareFootage: 0,
                     startDate: '',
                     estimatedDuration: 0,
                     description: '',
                     contractType: '',
                     estimatedCost: 0,
-                    defaultCostCenter: '',
                     milestones: []
                 });
                 setProjectType('');
@@ -972,9 +978,9 @@ Add any additional notes here...
 
             console.log("Fetching projects for user:", userID);
             const endpoint =
-                ((user?.role==="admin"|| user?.role==="md") ?  selectedUser?.id == currentUser?.id : (user?.role==="admin"|| user?.role==="md"))
-                     ? `${API_URL}/projects`
-                    :`${API_URL}/projects/user/${userID}` ;
+                ((user?.role === "admin" || user?.role === "md") ? selectedUser?.id == currentUser?.id : (user?.role === "admin" || user?.role === "md"))
+                    ? `${API_URL}/projects`
+                    : `${API_URL}/projects/user/${userID}`;
 
             const response = await axios.get(endpoint, { headers });
             setProjects(response.data);
@@ -1014,7 +1020,7 @@ Add any additional notes here...
         <div className="space-y-4">
             {/* User Filter Component */}
             <UserFilterComponent />
-            
+
             <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">
@@ -1051,23 +1057,31 @@ Add any additional notes here...
                                 deadline: '',
                                 location: '',
                                 manager: '',
-                                contingency: 0,
                                 squareFootage: 0,
                                 startDate: '',
                                 estimatedDuration: 0,
                                 description: '',
                                 contractType: '',
                                 estimatedCost: 0,
-                                defaultCostCenter: '',
-                                milestones: []
+                                milestones: [],
+                                itemRate: '',
+                                costPlus: '',
+                                coverArea: '',
+                                itemRateWithMaterial: false,
+                                itemRateWithoutMaterial: false,
+                                costPlusWithMaterial: false,
+                                costPlusWithoutMaterial: false,
+                                coverAreaWithMaterial: false,
+                                coverAreaWithoutMaterial: false,
+                                unit: ''
                             });
                         }
                     }}>
                         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
                             <DialogHeader>
                                 <DialogTitle className="text-xl font-bold">
-                                {editingProject ? 'Edit Project' : 'Create New Project'}
-                            </DialogTitle>
+                                    {editingProject ? 'Edit Project' : 'Create New Project'}
+                                </DialogTitle>
                                 <DialogDescription>
                                     Fill in the details to create a new construction project with key milestones
                                 </DialogDescription>
@@ -1108,11 +1122,11 @@ Add any additional notes here...
                                             </Select>
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="budget">Budget (₹)</Label>
+                                            <Label htmlFor="budget">Order Value (₹)</Label>
                                             <Input
                                                 id="budget"
                                                 type="number"
-                                                placeholder="Enter project budget"
+                                                placeholder="Enter order value"
                                                 value={newProject.budget || ''}
                                                 onChange={(e) => setNewProject({ ...newProject, budget: parseInt(e.target.value) || 0 })}
                                             />
@@ -1183,29 +1197,6 @@ Add any additional notes here...
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="squareFootage">Square Footage</Label>
-                                            <Input
-                                                id="squareFootage"
-                                                type="number"
-                                                placeholder="Enter square footage"
-                                                value={newProject.squareFootage || ''}
-                                                onChange={(e) => setNewProject({ ...newProject, squareFootage: parseInt(e.target.value) || 0 })}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="contingency">Contingency (%)</Label>
-                                            <Input
-                                                id="contingency"
-                                                type="number"
-                                                placeholder="Enter contingency percentage"
-                                                value={newProject.contingency || ''}
-                                                onChange={(e) => setNewProject({ ...newProject, contingency: parseFloat(e.target.value) || 0 })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
                                             <Label htmlFor="estimatedCost">Estimated Cost (₹)</Label>
                                             <Input
                                                 id="estimatedCost"
@@ -1235,16 +1226,6 @@ Add any additional notes here...
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="defaultCostCenter">Default Cost Center</Label>
-                                        <Input
-                                            id="defaultCostCenter"
-                                            placeholder="Enter default cost center"
-                                            value={newProject.defaultCostCenter || ''}
-                                            onChange={(e) => setNewProject({ ...newProject, defaultCostCenter: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
                                         <Label htmlFor="description">Description</Label>
                                         <Textarea
                                             id="description"
@@ -1268,6 +1249,180 @@ Add any additional notes here...
                                                     {type}
                                                 </Button>
                                             ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Billing Options Section */}
+                                    <div className="space-y-4 border-t pt-4">
+                                        <h4 className="text-sm font-semibold">Billing Options</h4>
+
+                                        {/* Item Rate Input Field */}
+                                        <div className="space-y-2 border rounded-lg p-4">
+                                            <Label htmlFor="itemRate" className="font-semibold">Item Rate</Label>
+                                            <Input
+                                                id="itemRate"
+                                                type="text"
+                                                placeholder="Enter item rate value"
+                                                value={newProject.itemRate || ''}
+                                                onChange={(e) => setNewProject({ ...newProject, itemRate: e.target.value })}
+                                            />
+                                            {/* Material Options for Item Rate */}
+                                            <div className="space-y-2 mt-3 border-t pt-3">
+                                                <Label className="text-xs font-medium text-gray-600">Select Material Option</Label>
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="itemRateWithMaterial"
+                                                            checked={newProject.itemRateWithMaterial || false}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewProject({ ...newProject, itemRateWithMaterial: true, itemRateWithoutMaterial: false });
+                                                                } else {
+                                                                    setNewProject({ ...newProject, itemRateWithMaterial: false });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300"
+                                                        />
+                                                        <Label htmlFor="itemRateWithMaterial" className="font-normal cursor-pointer text-sm">With Material</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="itemRateWithoutMaterial"
+                                                            checked={newProject.itemRateWithoutMaterial || false}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewProject({ ...newProject, itemRateWithoutMaterial: true, itemRateWithMaterial: false });
+                                                                } else {
+                                                                    setNewProject({ ...newProject, itemRateWithoutMaterial: false });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300"
+                                                        />
+                                                        <Label htmlFor="itemRateWithoutMaterial" className="font-normal cursor-pointer text-sm">Without Material</Label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Cost Plus Input Field */}
+                                        <div className="space-y-2 border rounded-lg p-4">
+                                            <Label htmlFor="costPlus" className="font-semibold">Cost Plus</Label>
+                                            <Input
+                                                id="costPlus"
+                                                type="text"
+                                                placeholder="Enter cost plus value"
+                                                value={newProject.costPlus || ''}
+                                                onChange={(e) => setNewProject({ ...newProject, costPlus: e.target.value })}
+                                            />
+                                            {/* Material Options for Cost Plus */}
+                                            <div className="space-y-2 mt-3 border-t pt-3">
+                                                <Label className="text-xs font-medium text-gray-600">Select Material Option</Label>
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="costPlusWithMaterial"
+                                                            checked={newProject.costPlusWithMaterial || false}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewProject({ ...newProject, costPlusWithMaterial: true, costPlusWithoutMaterial: false });
+                                                                } else {
+                                                                    setNewProject({ ...newProject, costPlusWithMaterial: false });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300"
+                                                        />
+                                                        <Label htmlFor="costPlusWithMaterial" className="font-normal cursor-pointer text-sm">With Material</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="costPlusWithoutMaterial"
+                                                            checked={newProject.costPlusWithoutMaterial || false}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewProject({ ...newProject, costPlusWithoutMaterial: true, costPlusWithMaterial: false });
+                                                                } else {
+                                                                    setNewProject({ ...newProject, costPlusWithoutMaterial: false });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300"
+                                                        />
+                                                        <Label htmlFor="costPlusWithoutMaterial" className="font-normal cursor-pointer text-sm">Without Material</Label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Cover Area Input Field */}
+                                        <div className="space-y-2 border rounded-lg p-4">
+                                            <div className="flex gap-4">
+                                                <div className="flex-1">
+                                                    <Label htmlFor="coverArea" className="font-semibold">Cover Area</Label>
+                                                    <Input
+                                                        id="coverArea"
+                                                        type="text"
+                                                        placeholder="Enter cover area value"
+                                                        value={newProject.coverArea || ''}
+                                                        onChange={(e) => setNewProject({ ...newProject, coverArea: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <Label htmlFor="unit" className="font-semibold">Unit</Label>
+                                                    <Select
+                                                        value={newProject.unit || ''}
+                                                        onValueChange={(value) => setNewProject({ ...newProject, unit: value })}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select unit" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="square_foot">Square Foot</SelectItem>
+                                                            <SelectItem value="square_meter">Square Meter</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                            {/* Material Options for Cover Area */}
+                                            <div className="space-y-2 mt-3 border-t pt-3">
+                                                <Label className="text-xs font-medium text-gray-600">Select Material Option</Label>
+                                                <div className="flex items-center space-x-4">
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="coverAreaWithMaterial"
+                                                            checked={newProject.coverAreaWithMaterial || false}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewProject({ ...newProject, coverAreaWithMaterial: true, coverAreaWithoutMaterial: false });
+                                                                } else {
+                                                                    setNewProject({ ...newProject, coverAreaWithMaterial: false });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300"
+                                                        />
+                                                        <Label htmlFor="coverAreaWithMaterial" className="font-normal cursor-pointer text-sm">With Material</Label>
+                                                    </div>
+                                                    <div className="flex items-center space-x-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            id="coverAreaWithoutMaterial"
+                                                            checked={newProject.coverAreaWithoutMaterial || false}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setNewProject({ ...newProject, coverAreaWithoutMaterial: true, coverAreaWithMaterial: false });
+                                                                } else {
+                                                                    setNewProject({ ...newProject, coverAreaWithoutMaterial: false });
+                                                                }
+                                                            }}
+                                                            className="rounded border-gray-300"
+                                                        />
+                                                        <Label htmlFor="coverAreaWithoutMaterial" className="font-normal cursor-pointer text-sm">Without Material</Label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1436,15 +1591,23 @@ Add any additional notes here...
                                             deadline: '',
                                             location: '',
                                             manager: '',
-                                            contingency: 0,
                                             squareFootage: 0,
                                             startDate: '',
                                             estimatedDuration: 0,
                                             description: '',
                                             contractType: '',
                                             estimatedCost: 0,
-                                            defaultCostCenter: '',
-                                            milestones: []
+                                            milestones: [],
+                                            itemRate: '',
+                                            costPlus: '',
+                                            coverArea: '',
+                                            itemRateWithMaterial: false,
+                                            itemRateWithoutMaterial: false,
+                                            costPlusWithMaterial: false,
+                                            costPlusWithoutMaterial: false,
+                                            coverAreaWithMaterial: false,
+                                            coverAreaWithoutMaterial: false,
+                                            unit: ''
                                         });
                                         setProjectType('');
                                         setEditingProject(null);
@@ -1495,354 +1658,344 @@ Add any additional notes here...
 
                 <TabsContent value="overview" className="space-y-6">
                     {subview === 'main' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard
-                        title="Total Square Footage"
-                        value={`${(projects.reduce((sum, p) => sum + (p.squareFootage || 0), 0) / 1000).toFixed(3)}K sq ft`}
-                        icon={LandPlot}
-                        trend={{
-                            value: 15,
-                            label: "vs last month"
-                        }}
-                        onClick={() => setSubview('resourceAllocation')}
-                    />
-                    <StatCard
-                        title="Avg Project Duration"
-                        value={`${Math.round(projects.reduce((sum, p) => sum + (p.estimatedDuration || 0), 0) / projects.length || 0)} days`}
-                        icon={Calendar}
-                        trend={{
-                            value: -5,
-                            label: "improvement"
-                        }}
-                        onClick={() => setSubview('materialStatus')}
-                    />
-                   <StatCard
-                        title="Budget Utilization"
-                        value={
-                            <>₹{(projects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000000).toFixed(2)}Cr total</>
-                        }
-                        icon={TrendingUp}
-                        trend={{
-                            value: 3,
-                            label: "efficiency gain"
-                        }}
-                        onClick={() => setSubview('budgetAnalysis')}
-                    />
-                    <StatCard
-                        title="Avg Contingency"
-                        value={`${(projects.reduce((sum, p) => sum + (p.contingency || 0), 0) / projects.length).toFixed(2)}%`}
-                        icon={Building}
-                        trend={{
-                            value: 2,
-                            label: "safety buffer"
-                        }}
-                        onClick={() => setSubview('dprSubmissions')}
-                    />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                            <StatCard
+                                title="Total Square Footage"
+                                value={`${(projects.reduce((sum, p) => sum + (p.squareFootage || 0), 0) / 1000).toFixed(3)}K sq ft`}
+                                icon={LandPlot}
+                                trend={{
+                                    value: 15,
+                                    label: "vs last month"
+                                }}
+                                onClick={() => setSubview('resourceAllocation')}
+                            />
+                            <StatCard
+                                title="Avg Project Duration"
+                                value={`${Math.round(projects.reduce((sum, p) => sum + (p.estimatedDuration || 0), 0) / projects.length || 0)} days`}
+                                icon={Calendar}
+                                trend={{
+                                    value: -5,
+                                    label: "improvement"
+                                }}
+                                onClick={() => setSubview('materialStatus')}
+                            />
+                            <StatCard
+                                title="Order Value"
+                                value={
+                                    <>₹{(projects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000000).toFixed(2)}Cr total</>
+                                }
+                                icon={TrendingUp}
+                                trend={{
+                                    value: 3,
+                                    label: "efficiency gain"
+                                }}
+                                onClick={() => setSubview('budgetAnalysis')}
+                            />
+                        </div>
+                    )}
+
+                    {subview === 'main' && (
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle>Projects</CardTitle>
+                                <CardDescription>
+                                    View and manage all your projects
+                                </CardDescription>
+
+                                <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                                    <div className="relative flex-1">
+                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search projects..."
+                                            className="pl-8"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
                                     </div>
-                                )}
 
-            {subview === 'main' && (
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle>Projects</CardTitle>
-                        <CardDescription>
-                            View and manage all your projects
-                        </CardDescription>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="icon">
+                                            <Filter className="h-4 w-4" />
+                                        </Button>
 
-                        <div className="flex flex-col sm:flex-row gap-4 mt-2">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search projects..."
-                                    className="pl-8"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="icon">
-                                    <Filter className="h-4 w-4" />
-                                </Button>
-
-                                <Tabs defaultValue="overview" className="w-auto" onValueChange={(v) => setView(v)}>
-                                    <TabsList>
-                                        <TabsTrigger value="overview">Overview</TabsTrigger>
-                                        <TabsTrigger value="list">List</TabsTrigger>
-                                        <TabsTrigger value="milestone">Milestone</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                       
-
-{view === "list" && (
-    <div className="space-y-4">
-        {/* Mobile Cards View */}
-        <div className="block md:hidden space-y-4">
-            {filteredProjects.map((project) => (
-                <Card key={project.id} className="p-4">
-                    <div className="space-y-3">
-                        {/* Project Name and Client */}
-                        <div>
-                            <h3 className="font-semibold text-lg">{project.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                                {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}
-                            </p>
-                        </div>
-                        
-                        {/* Key Info Grid */}
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                                <span className="text-muted-foreground">Manager:</span>
-                                <p className="font-medium truncate">
-                                    {typeof project.managers === 'object' ? project.managers?.name || 'Unassigned' : project.managers || 'Unassigned'}
-                                </p>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Location:</span>
-                                <p className="font-medium truncate">{project.location}</p>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Start Date:</span>
-                                <p className="font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</p>
-                            </div>
-                            <div>
-                                <span className="text-muted-foreground">Deadline:</span>
-                                <p className="font-medium">{new Date(project.deadline).toLocaleDateString('en-IN')}</p>
-                            </div>
-                        </div>
-                        
-                        {/* Budget Info */}
-                        <div className="flex justify-between items-center pt-2 border-t">
-                            <div>
-                                <span className="text-xs text-muted-foreground">Budget:</span>
-                                <p className="font-semibold">₹{(project.budget || 0).toLocaleString()}</p>
-                            </div>
-                            <div className="text-right">
-                                <span className="text-xs text-muted-foreground">Spent:</span>
-                                <p className="font-semibold">₹{(project.totalSpend || 0).toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-            ))}
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="hidden md:block rounded-md border overflow-x-auto">
-            <table className="w-full caption-bottom text-sm">
-                <thead>
-                    <tr className="border-b transition-colors hover:bg-muted/50">
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Name</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Client</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden lg:table-cell">Manager</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Start Date</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Deadline</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Budget</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden xl:table-cell">Spent</th>
-                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden lg:table-cell">Location</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredProjects.map((project) => (
-                        <tr
-                            key={project.id}
-                            className="border-b transition-colors hover:bg-muted/50"
-                        >
-                            <td className="p-4 align-middle font-medium max-w-[200px]">
-                                <div className="truncate" title={project.name}>
-                                    {project.name}
+                                        <Tabs defaultValue="overview" className="w-auto" onValueChange={(v) => setView(v)}>
+                                            <TabsList>
+                                                <TabsTrigger value="overview">Overview</TabsTrigger>
+                                                <TabsTrigger value="list">List</TabsTrigger>
+                                                <TabsTrigger value="milestone">Milestone</TabsTrigger>
+                                            </TabsList>
+                                        </Tabs>
+                                    </div>
                                 </div>
-                            </td>
-                            <td className="p-4 align-middle max-w-[150px]">
-                                <div className="truncate" title={typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}>
-                                    {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}
-                                </div>
-                            </td>
-                            <td className="p-4 align-middle hidden lg:table-cell max-w-[150px]">
-                                <div className="truncate" title={typeof project.managers === 'object' ? project.managers?.name || 'Unknown managers' : project.managers}>
-                                    {typeof project.managers === 'object' ? project.managers?.name || 'Unassigned' : project.managers || 'Unassigned'}
-                                </div>
-                            </td>
-                            <td className="p-4 align-middle whitespace-nowrap">
-                                {new Date(project.startDate).toLocaleDateString('en-IN')}
-                            </td>
-                            <td className="p-4 align-middle whitespace-nowrap">
-                                {new Date(project.deadline).toLocaleDateString('en-IN')}
-                            </td>
-                            <td className="p-4 align-middle whitespace-nowrap">
-                                ₹{((project.budget || 0) / 100000).toFixed(1)}L
-                            </td>
-                            <td className="p-4 align-middle hidden xl:table-cell whitespace-nowrap">
-                                ₹{((project.totalSpend || 0) / 100000).toFixed(1)}L
-                            </td>
-                            <td className="p-4 align-middle hidden lg:table-cell max-w-[120px]">
-                                <div className="truncate" title={project.location}>
-                                    {project.location}
-                                </div>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                            </CardHeader>
+                            <CardContent>
 
-        {/* Empty State */}
-        {filteredProjects.length === 0 && (
-            <div className="text-center py-12">
-                <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
-                <p className="text-gray-500">No projects found matching your search criteria</p>
-            </div>
-        )}
-    </div>
-)}
 
-                        {view === "milestone" && (
-                            <div className="mt-6 space-y-6">
-                                {filteredProjects.map((project) => (
-                                    <Card key={project.id} className="hover:shadow-md transition-shadow overflow-hidden">
-                                        <CardHeader className="border-b">
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
-                                                    <CardDescription className="mt-1">
-                                                        {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client} • {project.location}
-                                                    </CardDescription>
-                                                </div>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="p-0">
-                                            {project.milestones && project.milestones.length > 0 ? (
-                                                <div className="divide-y">
-                                                    {project.milestones.map((milestone, index) => (
-                                                        <div
-                                                            key={milestone.id || index}
-                                                            className="p-4 hover:bg-gray-50 transition-colors"
-                                                        >
-                                                            <div className="flex items-start gap-4">
-                                                                <div className={`mt-1 flex-shrink-0 w-3 h-3 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                                <div className="flex-1 space-y-3">
-                                                                    <h4 className="font-medium text-base">{milestone.name}</h4>
-                                                                   
-                                                                    <div className="grid grid-cols-2 gap-4 justify-centre">
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-sm text-muted-foreground">Start Date</p>
-                                                                            <p className="font-medium">
-                                                                                {new Date(milestone.startDate).toLocaleDateString('en-IN', {
-                                                                                    day: 'numeric',
-                                                                                    month: 'short',
-                                                                                    year: 'numeric'
-                                                                                })}
-                                                                            </p>
-                                                                        </div>
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-sm text-muted-foreground">End Date</p>
-                                                                            <p className="font-medium">
-                                                                                {milestone.endDate ?
-                                                                                    new Date(milestone.endDate).toLocaleDateString('en-IN', {
-                                                                                        day: 'numeric',
-                                                                                        month: 'short',
-                                                                                        year: 'numeric'
-                                                                                    }) :
-                                                                                    <span className="text-muted-foreground">Pending</span>
-                                                                                }
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
+                                {view === "list" && (
+                                    <div className="space-y-4">
+                                        {/* Mobile Cards View */}
+                                        <div className="block md:hidden space-y-4">
+                                            {filteredProjects.map((project) => (
+                                                <Card key={project.id} className="p-4">
+                                                    <div className="space-y-3">
+                                                        {/* Project Name and Client */}
+                                                        <div>
+                                                            <h3 className="font-semibold text-lg">{project.name}</h3>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Key Info Grid */}
+                                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Manager:</span>
+                                                                <p className="font-medium truncate">
+                                                                    {typeof project.managers === 'object' ? project.managers?.name || 'Unassigned' : project.managers || 'Unassigned'}
+                                                                </p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Location:</span>
+                                                                <p className="font-medium truncate">{project.location}</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Start Date:</span>
+                                                                <p className="font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Deadline:</span>
+                                                                <p className="font-medium">{new Date(project.deadline).toLocaleDateString('en-IN')}</p>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-8 text-muted-foreground">
-                                                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                                    <p className="text-gray-500">No milestones defined for this project</p>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                                {filteredProjects.length === 0 && (
-                                    <div className="text-center py-12">
-                                        <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
-                                        <p className="text-gray-500">No projects found matching your search criteria</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
 
-                        {view === "kanban" && (
-                            <div className="mt-4">
-                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                                    {["Planning", "In Progress", "On Hold", "Completed"].map((status) => (
-                                        <div key={status} className="rounded-lg border bg-card">
-                                            <div className="p-3 border-b font-medium">{status}</div>
-                                            <div className="p-2 space-y-2">
-                                                {filteredProjects
-                                                    .filter(project => project.status === status)
-                                                    .map(project => (
-                                                        <div key={project.id} className="rounded-md border p-3 bg-background hover:shadow transition-all">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <div className="flex-1 cursor-pointer" onClick={() => toggleProjectDetails(project.id)}>
-                                                                    <div className="font-medium">{project.name}</div>
-                                                                    <div className="text-xs text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</div>
-                                                                </div>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDeleteProject(project.id, project.name);
-                                                                    }}
-                                                                >
-                                                                    <X className="h-3 w-3" />
-                                                                </Button>
+                                                        {/* Budget Info */}
+                                                        <div className="flex justify-between items-center pt-2 border-t">
+                                                            <div>
+                                                                <span className="text-xs text-muted-foreground">Budget:</span>
+                                                                <p className="font-semibold">₹{(project.budget || 0).toLocaleString()}</p>
                                                             </div>
-                                                            <div className="flex items-center text-xs text-muted-foreground mt-1">
-                                                                <MapPin className="h-3 w-3 mr-1" />
-                                                                {project.location}
-                                                            </div>
-                                                            <div className="mt-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="h-1.5 w-full bg-secondary rounded-full">
-                                                                        <div
-                                                                            className="h-full bg-primary rounded-full"
-                                                                            style={{ width: `${project.progress}%` }}
-                                                                        />
-                                                                    </div>
-                                                                    <span className="text-xs w-9 text-right">{project.progress}%</span>
-                                                                </div>
+                                                            <div className="text-right">
+                                                                <span className="text-xs text-muted-foreground">Spent:</span>
+                                                                <p className="font-semibold">₹{(project.totalSpend || 0).toLocaleString()}</p>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                            </div>
+                                                    </div>
+                                                </Card>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
 
-                        {view === "timeline" && (
-                            <div className="mt-4">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Project Timeline</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <GanttChart />
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        )}
+                                        {/* Desktop Table View */}
+                                        <div className="hidden md:block rounded-md border overflow-x-auto">
+                                            <table className="w-full caption-bottom text-sm">
+                                                <thead>
+                                                    <tr className="border-b transition-colors hover:bg-muted/50">
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Name</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Client</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden lg:table-cell">Manager</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Start Date</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Deadline</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap">Budget</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden xl:table-cell">Spent</th>
+                                                        <th className="h-12 px-4 text-left align-middle font-medium whitespace-nowrap hidden lg:table-cell">Location</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {filteredProjects.map((project) => (
+                                                        <tr
+                                                            key={project.id}
+                                                            className="border-b transition-colors hover:bg-muted/50"
+                                                        >
+                                                            <td className="p-4 align-middle font-medium max-w-[200px]">
+                                                                <div className="truncate" title={project.name}>
+                                                                    {project.name}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 align-middle max-w-[150px]">
+                                                                <div className="truncate" title={typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}>
+                                                                    {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 align-middle hidden lg:table-cell max-w-[150px]">
+                                                                <div className="truncate" title={typeof project.managers === 'object' ? project.managers?.name || 'Unknown managers' : project.managers}>
+                                                                    {typeof project.managers === 'object' ? project.managers?.name || 'Unassigned' : project.managers || 'Unassigned'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 align-middle whitespace-nowrap">
+                                                                {new Date(project.startDate).toLocaleDateString('en-IN')}
+                                                            </td>
+                                                            <td className="p-4 align-middle whitespace-nowrap">
+                                                                {new Date(project.deadline).toLocaleDateString('en-IN')}
+                                                            </td>
+                                                            <td className="p-4 align-middle whitespace-nowrap">
+                                                                ₹{((project.budget || 0) / 100000).toFixed(1)}L
+                                                            </td>
+                                                            <td className="p-4 align-middle hidden xl:table-cell whitespace-nowrap">
+                                                                ₹{((project.totalSpend || 0) / 100000).toFixed(1)}L
+                                                            </td>
+                                                            <td className="p-4 align-middle hidden lg:table-cell max-w-[120px]">
+                                                                <div className="truncate" title={project.location}>
+                                                                    {project.location}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
 
-                        {view === "overview" && (
-                            <div className="mt-4 space-y-6">
-                                {/* <Card>
+                                        {/* Empty State */}
+                                        {filteredProjects.length === 0 && (
+                                            <div className="text-center py-12">
+                                                <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
+                                                <p className="text-gray-500">No projects found matching your search criteria</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {view === "milestone" && (
+                                    <div className="mt-6 space-y-6">
+                                        {filteredProjects.map((project) => (
+                                            <Card key={project.id} className="hover:shadow-md transition-shadow overflow-hidden">
+                                                <CardHeader className="border-b">
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <CardTitle className="text-lg font-semibold">{project.name}</CardTitle>
+                                                            <CardDescription className="mt-1">
+                                                                {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client} • {project.location}
+                                                            </CardDescription>
+                                                        </div>
+                                                    </div>
+                                                </CardHeader>
+                                                <CardContent className="p-0">
+                                                    {project.milestones && project.milestones.length > 0 ? (
+                                                        <div className="divide-y">
+                                                            {project.milestones.map((milestone, index) => (
+                                                                <div
+                                                                    key={milestone.id || index}
+                                                                    className="p-4 hover:bg-gray-50 transition-colors"
+                                                                >
+                                                                    <div className="flex items-start gap-4">
+                                                                        <div className={`mt-1 flex-shrink-0 w-3 h-3 rounded-full ${milestone.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                        <div className="flex-1 space-y-3">
+                                                                            <h4 className="font-medium text-base">{milestone.name}</h4>
+
+                                                                            <div className="grid grid-cols-2 gap-4 justify-centre">
+                                                                                <div className="space-y-1">
+                                                                                    <p className="text-sm text-muted-foreground">Start Date</p>
+                                                                                    <p className="font-medium">
+                                                                                        {new Date(milestone.startDate).toLocaleDateString('en-IN', {
+                                                                                            day: 'numeric',
+                                                                                            month: 'short',
+                                                                                            year: 'numeric'
+                                                                                        })}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <div className="space-y-1">
+                                                                                    <p className="text-sm text-muted-foreground">End Date</p>
+                                                                                    <p className="font-medium">
+                                                                                        {milestone.endDate ?
+                                                                                            new Date(milestone.endDate).toLocaleDateString('en-IN', {
+                                                                                                day: 'numeric',
+                                                                                                month: 'short',
+                                                                                                year: 'numeric'
+                                                                                            }) :
+                                                                                            <span className="text-muted-foreground">Pending</span>
+                                                                                        }
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-8 text-muted-foreground">
+                                                            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                                            <p className="text-gray-500">No milestones defined for this project</p>
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                        {filteredProjects.length === 0 && (
+                                            <div className="text-center py-12">
+                                                <Building2 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
+                                                <p className="text-gray-500">No projects found matching your search criteria</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {view === "kanban" && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                                            {["Planning", "In Progress", "On Hold", "Completed"].map((status) => (
+                                                <div key={status} className="rounded-lg border bg-card">
+                                                    <div className="p-3 border-b font-medium">{status}</div>
+                                                    <div className="p-2 space-y-2">
+                                                        {filteredProjects
+                                                            .filter(project => project.status === status)
+                                                            .map(project => (
+                                                                <div key={project.id} className="rounded-md border p-3 bg-background hover:shadow transition-all">
+                                                                    <div className="flex justify-between items-start mb-2">
+                                                                        <div className="flex-1 cursor-pointer" onClick={() => toggleProjectDetails(project.id)}>
+                                                                            <div className="font-medium">{project.name}</div>
+                                                                            <div className="text-xs text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</div>
+                                                                        </div>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteProject(project.id, project.name);
+                                                                            }}
+                                                                        >
+                                                                            <X className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                    <div className="flex items-center text-xs text-muted-foreground mt-1">
+                                                                        <MapPin className="h-3 w-3 mr-1" />
+                                                                        {project.location}
+                                                                    </div>
+                                                                    <div className="mt-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="h-1.5 w-full bg-secondary rounded-full">
+                                                                                <div
+                                                                                    className="h-full bg-primary rounded-full"
+                                                                                    style={{ width: `${project.progress}%` }}
+                                                                                />
+                                                                            </div>
+                                                                            <span className="text-xs w-9 text-right">{project.progress}%</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {view === "timeline" && (
+                                    <div className="mt-4">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Project Timeline</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <GanttChart />
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                )}
+
+                                {view === "overview" && (
+                                    <div className="mt-4 space-y-6">
+                                        {/* <Card>
                                     <CardHeader>
                                         <CardTitle>Project Progress Heatmap</CardTitle>
                                     </CardHeader>
@@ -1851,1057 +2004,973 @@ Add any additional notes here...
                                     </CardContent>
                                 </Card> */}
 
-                                <div className="space-y-6">
-                                    {filteredProjects.map((project) => (
-                                        <Card key={project.id} className="hover:shadow-md transition-shadow">
-                                            <CardContent className="p-0">
-                                                {/* Main project header - always visible */}
-                                                <div className="p-6">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-4">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="p-0 h-8 w-8"
-                                                                onClick={() => toggleProjectDetails(project.id)}
-                                                            >
-                                                                {expandedProjects.has(project.id) ? (
-                                                                    <ChevronDown className="h-4 w-4" />
-                                                                ) : (
-                                                                    <ChevronRight className="h-4 w-4" />
-                                                                )}
-                                                            </Button>
-                                                            <div>
-                                                                <div className="font-semibold">{project.name}</div>
-                                                                <div className="text-sm text-muted-foreground">
-                                                                    {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client} • {project.location}
+                                        <div className="space-y-6">
+                                            {filteredProjects.map((project) => (
+                                                <Card key={project.id} className="hover:shadow-md transition-shadow">
+                                                    <CardContent className="p-0">
+                                                        {/* Main project header - always visible */}
+                                                        <div className="p-6">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-4">
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="p-0 h-8 w-8"
+                                                                        onClick={() => toggleProjectDetails(project.id)}
+                                                                    >
+                                                                        {expandedProjects.has(project.id) ? (
+                                                                            <ChevronDown className="h-4 w-4" />
+                                                                        ) : (
+                                                                            <ChevronRight className="h-4 w-4" />
+                                                                        )}
+                                                                    </Button>
+                                                                    <div>
+                                                                        <div className="font-semibold">{project.name}</div>
+                                                                        <div className="text-sm text-muted-foreground">
+                                                                            {typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client} • {project.location}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="text-right">
-                                                                <div className="font-semibold">
-                                                                    ₹{((project.budget || 0) / 100000).toFixed(1)}L
-                                                                </div>
-                                                                {/* <div className="text-sm text-muted-foreground">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="text-right">
+                                                                        <div className="font-semibold">
+                                                                            ₹{((project.budget || 0) / 100000).toFixed(1)}L
+                                                                        </div>
+                                                                        {/* <div className="text-sm text-muted-foreground">
                                                                     {project.progress}% Complete
                                                                 </div> */}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="text-blue-600 hover:bg-blue-50 h-8 w-8 p-0"
+                                                                            onClick={() => handleEditProject(project)}
+                                                                        >
+                                                                            <Edit className="h-3 w-3" />
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                                                                            onClick={() => handleDeleteProject(project.id, project.name)}
+                                                                        >
+                                                                            <Trash2 className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="text-blue-600 hover:bg-blue-50 h-8 w-8 p-0"
-                                                                    onClick={() => handleEditProject(project)}
-                                                                >
-                                                                    <Edit className="h-3 w-3" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                                                                    onClick={() => handleDeleteProject(project.id, project.name)}
-                                                                >
-                                                                    <Trash2 className="h-3 w-3" />
-                                                                </Button>
+                                                        </div>
+
+                                                        {/* Expandable project details */}
+                                                        {expandedProjects.has(project.id) && (
+                                                            <div className="border-t bg-muted/50 p-6">
+                                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                                    {/* Project Information */}
+                                                                    <div>
+                                                                        <h4 className="font-medium mb-3">Project Details</h4>
+                                                                        <div className="space-y-2 text-sm">
+                                                                            <div className="flex items-center">
+                                                                                <Users className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Manager:</span>
+                                                                                <span className="ml-1 font-medium">
+                                                                                    {(() => {
+                                                                                        if (typeof project.manager === 'object' && project.manager?.name) {
+                                                                                            return project.manager.name;
+                                                                                        }
+                                                                                        if (typeof project.manager === 'string') {
+                                                                                            return project.manager;
+                                                                                        }
+                                                                                        if (project.managers?.name) {
+                                                                                            return project.managers.name;
+                                                                                        }
+                                                                                        return 'Not assigned';
+                                                                                    })()}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="flex items-center">
+                                                                                <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Deadline:</span>
+                                                                                <span className="ml-1 font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString('en-IN') : 'Not set'}</span>
+                                                                            </div>
+                                                                            {project.startDate && (
+                                                                                <div className="flex items-center">
+                                                                                    <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                    <span className="text-muted-foreground">Start Date:</span>
+                                                                                    <span className="ml-1 font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</span>
+                                                                                </div>
+
+                                                                            )}
+                                                                            {project.estimatedDuration && (
+                                                                                <div className="flex items-center">
+                                                                                    <Calendar1Icon className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                    <span className="text-muted-foreground">Estimated Duration:</span>
+                                                                                    <span className="ml-1 font-medium">{project.estimatedDuration}</span>
+                                                                                </div>
+
+                                                                            )}
+                                                                            <div className="flex items-center">
+                                                                                <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Location:</span>
+                                                                                <span className="ml-1 font-medium">{project.location}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center">
+                                                                                <LandPlot className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Square Footage:</span>
+                                                                                <span className="ml-1 font-medium">{project.squareFootage} sq ft</span>
+                                                                            </div>
+                                                                            <div className="flex items-center">
+                                                                                <Building2 className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Project Type:</span>
+                                                                                <span className="ml-1 font-medium">{project.projectType}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Budget & Progress */}
+                                                                    <div>
+                                                                        <h4 className="font-medium mb-3">Financial Overview</h4>
+                                                                        <div className="space-y-3">
+                                                                            <div>
+                                                                                <div className="flex justify-between text-sm mb-1">
+                                                                                    <span>Order Value</span>
+                                                                                    <span className="ml-1 font-medium">{project.budget}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="flex justify-between text-sm mb-1">
+                                                                                    <span>Spent</span>
+                                                                                    <span className="ml-1 font-medium">{project.totalSpend}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div className="flex justify-between text-sm mb-1">
+                                                                                    <span>Estimated Cost</span>
+                                                                                    <span className="ml-1 font-medium">{project.estimatedCost}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                             </div>
+                                                        )}
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+
+
+                                {view === "resources" && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            <Card>
+                                                <CardHeader>
+                                                    <CardTitle>Resource Allocation</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="space-y-4">
+                                                        {['Engineers', 'Workers', 'Supervisors', 'Equipment'].map((resource, index) => (
+                                                            <div key={resource} className="flex justify-between items-center">
+                                                                <span className="text-sm font-medium">{resource}</span>
+                                                                <div className="flex items-center space-x-2">
+                                                                    <Progress value={[85, 70, 90, 60][index]} className="w-20 h-2" />
+                                                                    <span className="text-sm text-muted-foreground">{[85, 70, 90, 60][index]}%</span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+
+                                            <Card>
+                                                <CardHeader>
+                                                    <CardTitle>Material Status</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="space-y-3">
+                                                        {[
+                                                            { name: 'Cement', status: 'Available', quantity: '150 bags' },
+                                                            { name: 'Steel Bars', status: 'Low Stock', quantity: '25 tons' },
+                                                            { name: 'Bricks', status: 'Available', quantity: '50,000 units' },
+                                                            { name: 'Sand', status: 'Critical', quantity: '10 cubic meters' }
+                                                        ].map((material) => (
+                                                            <div key={material.name} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                                                                <div>
+                                                                    <p className="font-medium">{material.name}</p>
+                                                                    <p className="text-sm text-muted-foreground">{material.quantity}</p>
+                                                                </div>
+                                                                <Badge
+                                                                    variant={material.status === 'Critical' ? 'destructive' :
+                                                                        material.status === 'Low Stock' ? 'outline' : 'default'}
+                                                                >
+                                                                    {material.status}
+                                                                </Badge>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {view === "reports" && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            <Card className="lg:col-span-2">
+                                                <CardHeader>
+                                                    <CardTitle>Recent DPR Submissions</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="space-y-3">
+                                                        {[
+                                                            { project: 'Residential Complex A', date: '2025-08-10', status: 'Approved', progress: '65%' },
+                                                            { project: 'Office Tower B', date: '2025-08-09', status: 'Pending', progress: '30%' },
+                                                            { project: 'Shopping Mall C', date: '2025-08-08', status: 'Approved', progress: '85%' }
+                                                        ].map((dpr, index) => (
+                                                            <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
+                                                                <div>
+                                                                    <p className="font-medium">{dpr.project}</p>
+                                                                    <p className="text-sm text-muted-foreground">{dpr.date}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <Badge variant={dpr.status === 'Approved' ? 'default' : 'outline'}>
+                                                                        {dpr.status}
+                                                                    </Badge>
+                                                                    <p className="text-sm text-muted-foreground mt-1">Progress: {dpr.progress}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+
+                                            <Card>
+                                                <CardHeader>
+                                                    <CardTitle>Quick Actions</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="space-y-3">
+                                                        <Button
+                                                            className="w-full justify-start"
+                                                            variant="outline"
+                                                            onClick={() => setShowProgressReportModal(true)}
+                                                        >
+                                                            <FileText className="h-4 w-4 mr-2" />
+                                                            Generate Progress Report
+                                                        </Button>
+                                                        <Button
+                                                            className="w-full justify-start"
+                                                            variant="outline"
+                                                            onClick={() => setShowSitePhotosModal(true)}
+                                                        >
+                                                            <Camera className="h-4 w-4 mr-2" />
+                                                            Upload Site Photos
+                                                        </Button>
+                                                        <Button
+                                                            className="w-full justify-start"
+                                                            variant="outline"
+                                                            onClick={() => setShowResourceAssignmentModal(true)}
+                                                        >
+                                                            <Users className="h-4 w-4 mr-2" />
+                                                            Assign Resources
+                                                        </Button>
+                                                        <Button
+                                                            className="w-full justify-start"
+                                                            variant="outline"
+                                                            onClick={() => setShowSafetyAlertModal(true)}
+                                                        >
+                                                            <AlertTriangle className="h-4 w-4 mr-2" />
+                                                            Create Safety Alert
+                                                        </Button>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Active Projects Subview */}
+                    {subview === 'activeProjects' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Active Projects</CardTitle>
+                                        <CardDescription>Projects currently in progress</CardDescription>
+                                    </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {projects.filter(p => p.status === "In Progress").map((project) => (
+                                        <div key={project.id} className="p-4 border rounded-lg">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium">{project.name}</h3>
+                                                    <p className="text-sm text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
+                                                    <div className="flex items-center gap-4 mt-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                            <span className="text-sm">{project.location}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                                            <span className="text-sm">{typeof project.manager === 'object' ? project.manager?.name : project.manager || 'Not assigned'}</span>
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Expandable project details */}
-                                                {expandedProjects.has(project.id) && (
-                                                    <div className="border-t bg-muted/50 p-6">
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                                            {/* Project Information */}
-                                                            <div>
-                                                                <h4 className="font-medium mb-3">Project Details</h4>
-                                                                <div className="space-y-2 text-sm">
-                                                                    <div className="flex items-center">
-                                                                        <Users className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                        <span className="text-muted-foreground">Manager:</span>
-                                                                        <span className="ml-1 font-medium">
-                                                                            {(() => {
-                                                                                if (typeof project.manager === 'object' && project.manager?.name) {
-                                                                                    return project.manager.name;
-                                                                                }
-                                                                                if (typeof project.manager === 'string') {
-                                                                                    return project.manager;
-                                                                                }
-                                                                                if (project.managers?.name) {
-                                                                                    return project.managers.name;
-                                                                                }
-                                                                                return 'Not assigned';
-                                                                            })()}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex items-center">
-                                                                        <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                        <span className="text-muted-foreground">Deadline:</span>
-                                                                        <span className="ml-1 font-medium">{project.deadline ? new Date(project.deadline).toLocaleDateString('en-IN') : 'Not set'}</span>
-                                                                    </div>
-                                                                    {project.startDate && (
-                                                                        <div className="flex items-center">
-                                                                            <Calendar className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                            <span className="text-muted-foreground">Start Date:</span>
-                                                                            <span className="ml-1 font-medium">{new Date(project.startDate).toLocaleDateString('en-IN')}</span>
-                                                                        </div>
-                                                                        
-                                                                    )}
-                                                                      {project.estimatedDuration && (
-                                                                        <div className="flex items-center">
-                                                                            <Calendar1Icon className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                            <span className="text-muted-foreground">Estimated Duration:</span>
-                                                                            <span className="ml-1 font-medium">{project.estimatedDuration}</span>
-                                                                        </div>
-                                                                        
-                                                                    )}
-                                                                    <div className="flex items-center">
-                                                                        <MapPin className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                        <span className="text-muted-foreground">Location:</span>
-                                                                        <span className="ml-1 font-medium">{project.location}</span>
-                                                                    </div>
-                                                                    <div className="flex items-center">
-                                                                        <LandPlot className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                        <span className="text-muted-foreground">Square Footage:</span>
-                                                                        <span className="ml-1 font-medium">{project.squareFootage} sq ft</span>
-                                                                    </div>
-                                                                    <div className="flex items-center">
-                                                                        <Building2 className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                        <span className="text-muted-foreground">Project Type:</span>
-                                                                        <span className="ml-1 font-medium">{project.projectType}</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Budget & Progress */}
-                                                            <div>
-                                                                <h4 className="font-medium mb-3">Financial Overview</h4>
-                                                                <div className="space-y-3">
-                                                                    <div>
-                                                                        <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Budget</span>
-                                                                            <span className="ml-1 font-medium">{project.budget}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Spent</span>
-                                                                            <span className="ml-1 font-medium">{project.totalSpend}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Estimated Cost</span>
-                                                                            <span className="ml-1 font-medium">{project.estimatedCost}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Contigency</span>
-                                                                            <span className="ml-1 font-medium">{project.contingency}%</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="flex justify-between text-sm mb-1">
-                                                                            <span>Default Cost Center</span>
-                                                                            <span className="ml-1 font-medium">{project.defaultCostCenter}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                <div className="text-right">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-sm font-medium">{project.progress}%</span>
+                                                        <Badge variant="secondary">{project.status}</Badge>
                                                     </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
+                                                    <Progress value={project.progress} className="w-32" />
+                                                    <p className="text-sm text-muted-foreground mt-1">
+                                                        Due: {new Date(project.deadline).toLocaleDateString('en-IN')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            </CardContent>
+                        </Card>
+                    )}
 
-
-
-                        {view === "resources" && (
-                            <div className="mt-4">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Resource Allocation</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-4">
-                                                {['Engineers', 'Workers', 'Supervisors', 'Equipment'].map((resource, index) => (
-                                                    <div key={resource} className="flex justify-between items-center">
-                                                        <span className="text-sm font-medium">{resource}</span>
-                                                        <div className="flex items-center space-x-2">
-                                                            <Progress value={[85, 70, 90, 60][index]} className="w-20 h-2" />
-                                                            <span className="text-sm text-muted-foreground">{[85, 70, 90, 60][index]}%</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Material Status</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                {[
-                                                    { name: 'Cement', status: 'Available', quantity: '150 bags' },
-                                                    { name: 'Steel Bars', status: 'Low Stock', quantity: '25 tons' },
-                                                    { name: 'Bricks', status: 'Available', quantity: '50,000 units' },
-                                                    { name: 'Sand', status: 'Critical', quantity: '10 cubic meters' }
-                                                ].map((material) => (
-                                                    <div key={material.name} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                                                        <div>
-                                                            <p className="font-medium">{material.name}</p>
-                                                            <p className="text-sm text-muted-foreground">{material.quantity}</p>
-                                                        </div>
-                                                        <Badge
-                                                            variant={material.status === 'Critical' ? 'destructive' :
-                                                                material.status === 'Low Stock' ? 'outline' : 'default'}
-                                                        >
-                                                            {material.status}
-                                                        </Badge>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                    {/* On Schedule Projects Subview */}
+                    {subview === 'onSchedule' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Projects On Schedule</CardTitle>
+                                        <CardDescription>Projects meeting their timeline expectations</CardDescription>
+                                    </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
                                 </div>
-                            </div>
-                        )}
-
-                        {view === "reports" && (
-                            <div className="mt-4">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <Card className="lg:col-span-2">
-                                        <CardHeader>
-                                            <CardTitle>Recent DPR Submissions</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                {[
-                                                    { project: 'Residential Complex A', date: '2025-08-10', status: 'Approved', progress: '65%' },
-                                                    { project: 'Office Tower B', date: '2025-08-09', status: 'Pending', progress: '30%' },
-                                                    { project: 'Shopping Mall C', date: '2025-08-08', status: 'Approved', progress: '85%' }
-                                                ].map((dpr, index) => (
-                                                    <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
-                                                        <div>
-                                                            <p className="font-medium">{dpr.project}</p>
-                                                            <p className="text-sm text-muted-foreground">{dpr.date}</p>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {projects.filter(p => p.status === "In Progress" && p.progress >= 50).map((project) => (
+                                        <div key={project.id} className="p-4 border rounded-lg border-green-200 bg-green-50">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium text-green-800">{project.name}</h3>
+                                                    <p className="text-sm text-green-600">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
+                                                    <div className="flex items-center gap-4 mt-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar className="h-4 w-4 text-green-600" />
+                                                            <span className="text-sm text-green-700">Due: {new Date(project.deadline).toLocaleDateString('en-IN')}</span>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <Badge variant={dpr.status === 'Approved' ? 'default' : 'outline'}>
-                                                                {dpr.status}
-                                                            </Badge>
-                                                            <p className="text-sm text-muted-foreground mt-1">Progress: {dpr.progress}</p>
+                                                        <div className="flex items-center gap-2">
+                                                            <Users className="h-4 w-4 text-green-600" />
+                                                            <span className="text-sm text-green-700">
+                                                                {(() => {
+                                                                    if (typeof project.manager === 'object' && project.manager?.name) {
+                                                                        return project.manager.name;
+                                                                    }
+                                                                    if (typeof project.manager === 'string') {
+                                                                        return project.manager;
+                                                                    }
+                                                                    if (project.managers?.name) {
+                                                                        return project.managers.name;
+                                                                    }
+                                                                    return 'Not assigned';
+                                                                })()}
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Quick Actions</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-3">
-                                                <Button
-                                                    className="w-full justify-start"
-                                                    variant="outline"
-                                                    onClick={() => setShowProgressReportModal(true)}
-                                                >
-                                                    <FileText className="h-4 w-4 mr-2" />
-                                                    Generate Progress Report
-                                                </Button>
-                                                <Button
-                                                    className="w-full justify-start"
-                                                    variant="outline"
-                                                    onClick={() => setShowSitePhotosModal(true)}
-                                                >
-                                                    <Camera className="h-4 w-4 mr-2" />
-                                                    Upload Site Photos
-                                                </Button>
-                                                <Button
-                                                    className="w-full justify-start"
-                                                    variant="outline"
-                                                    onClick={() => setShowResourceAssignmentModal(true)}
-                                                >
-                                                    <Users className="h-4 w-4 mr-2" />
-                                                    Assign Resources
-                                                </Button>
-                                                <Button
-                                                    className="w-full justify-start"
-                                                    variant="outline"
-                                                    onClick={() => setShowSafetyAlertModal(true)}
-                                                >
-                                                    <AlertTriangle className="h-4 w-4 mr-2" />
-                                                    Create Safety Alert
-                                                </Button>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Active Projects Subview */}
-            {subview === 'activeProjects' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Active Projects</CardTitle>
-                                <CardDescription>Projects currently in progress</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {projects.filter(p => p.status === "In Progress").map((project) => (
-                                <div key={project.id} className="p-4 border rounded-lg">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <h3 className="font-medium">{project.name}</h3>
-                                            <p className="text-sm text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
-                                            <div className="flex items-center gap-4 mt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-sm">{project.location}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Users className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-sm">{typeof project.manager === 'object' ? project.manager?.name : project.manager || 'Not assigned'}</span>
+                                                <div className="text-right">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className="text-sm font-medium text-green-800">{project.progress}%</span>
+                                                        <Badge variant="default" className="bg-green-600">On Track</Badge>
+                                                    </div>
+                                                    <Progress value={project.progress} className="w-32" />
+                                                    <p className="text-sm text-green-600 mt-1">
+                                                        Budget: ₹{(project.budget / 1000000).toFixed(1)}M
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-medium">{project.progress}%</span>
-                                                <Badge variant="secondary">{project.status}</Badge>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Budget Analysis Subview */}
+                    {subview === 'budgetAnalysis' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Budget Analysis</CardTitle>
+                                        <CardDescription>Financial overview of all projects</CardDescription>
+                                    </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h3 className="font-medium">Budget Utilization</h3>
+                                        {projects.map((project) => {
+                                            const utilization = (project.totalSpend / project.budget) * 100;
+                                            return (
+                                                <div key={project.id} className="p-4 border rounded-lg">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-medium">{project.name}</h4>
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {utilization.toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                    {/* <Progress value={utilization} className="mb-2" /> */}
+                                                    <div className="flex justify-between text-sm">
+                                                        <span>Spent: ₹{(project.totalSpend / 1000000).toFixed(2)}M</span>
+                                                        <span>Budget: ₹{(project.budget / 1000000).toFixed(2)}M</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="space-y-4">
+                                        <h3 className="font-medium">Financial Summary</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 border rounded-lg">
+                                                <p className="text-sm text-muted-foreground">Total Budget</p>
+                                                <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(2)}Cr</p>
                                             </div>
-                                            <Progress value={project.progress} className="w-32" />
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                Due: {new Date(project.deadline).toLocaleDateString('en-IN')}
-                                            </p>
+                                            <div className="p-4 border rounded-lg">
+                                                <p className="text-sm text-muted-foreground">Total Spent</p>
+                                                <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.totalSpend, 0) / 10000000).toFixed(2)}Cr</p>
+                                            </div>
+                                            <div className="p-4 border rounded-lg">
+                                                <p className="text-sm text-muted-foreground">Remaining</p>
+                                                <p className="text-2xl font-bold">₹{((projects.reduce((sum, p) => sum + p.budget, 0) - projects.reduce((sum, p) => sum + p.totalSpend, 0)) / 10000000).toFixed(2)}Cr</p>
+                                            </div>
+                                            <div className="p-4 border rounded-lg">
+                                                <p className="text-sm text-muted-foreground">Avg Utilization</p>
+                                                <p className="text-2xl font-bold">{((projects.reduce((sum, p) => sum + p.totalSpend, 0) / projects.reduce((sum, p) => sum + p.budget, 0)) * 100).toFixed(2)}%</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                            </CardContent>
+                        </Card>
+                    )}
 
-            {/* On Schedule Projects Subview */}
-            {subview === 'onSchedule' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Projects On Schedule</CardTitle>
-                                <CardDescription>Projects meeting their timeline expectations</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {projects.filter(p => p.status === "In Progress" && p.progress >= 50).map((project) => (
-                                <div key={project.id} className="p-4 border rounded-lg border-green-200 bg-green-50">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <h3 className="font-medium text-green-800">{project.name}</h3>
-                                            <p className="text-sm text-green-600">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
-                                            <div className="flex items-center gap-4 mt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4 text-green-600" />
-                                                    <span className="text-sm text-green-700">Due: {new Date(project.deadline).toLocaleDateString('en-IN')}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Users className="h-4 w-4 text-green-600" />
-                                                    <span className="text-sm text-green-700">
-                                                        {(() => {
-                                                            if (typeof project.manager === 'object' && project.manager?.name) {
-                                                                return project.manager.name;
-                                                            }
-                                                            if (typeof project.manager === 'string') {
-                                                                return project.manager;
-                                                            }
-                                                            if (project.managers?.name) {
-                                                                return project.managers.name;
-                                                            }
-                                                            return 'Not assigned';
-                                                        })()}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-sm font-medium text-green-800">{project.progress}%</span>
-                                                <Badge variant="default" className="bg-green-600">On Track</Badge>
-                                            </div>
-                                            <Progress value={project.progress} className="w-32" />
-                                            <p className="text-sm text-green-600 mt-1">
-                                                Budget: ₹{(project.budget / 1000000).toFixed(1)}M
-                                            </p>
-                                        </div>
+                    {/* Alerts Subview */}
+                    {subview === 'alerts' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Project Alerts</CardTitle>
+                                        <CardDescription>Issues and attention-required items</CardDescription>
                                     </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
                                 </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {projects.filter(p => p.status === "On Hold").map((project) => (
+                                        <div key={project.id} className="p-4 border rounded-lg border-red-200 bg-red-50">
+                                            <div className="flex items-start gap-3">
+                                                <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium text-red-800">{project.name}</h3>
+                                                    <p className="text-sm text-red-600">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
+                                                    <p className="text-sm text-red-700 mt-1">
+                                                        Project is on hold. Progress: {project.progress}%
+                                                    </p>
+                                                    <div className="flex items-center gap-4 mt-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin className="h-4 w-4 text-red-600" />
+                                                            <span className="text-sm text-red-700">{project.location}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Users className="h-4 w-4 text-red-600" />
+                                                            <span className="text-sm text-red-700">{typeof project.manager === 'object' ? project.manager?.name : project.manager || 'Not assigned'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <Badge variant="destructive">On Hold</Badge>
+                                                    <p className="text-sm text-red-600 mt-1">
+                                                        Budget: ₹{(project.budget / 1000000).toFixed(1)}M
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {projects.filter(p => p.status === "On Hold").length === 0 && (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-green-600" />
+                                            <p>No active alerts. All projects are running smoothly!</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
-            {/* Budget Analysis Subview */}
-            {subview === 'budgetAnalysis' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Budget Analysis</CardTitle>
-                                <CardDescription>Financial overview of all projects</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <h3 className="font-medium">Budget Utilization</h3>
-                                {projects.map((project) => {
-                                    const utilization = (project.totalSpend / project.budget) * 100;
-                                    return (
+                    {/* Resource Allocation Subview */}
+                    {subview === 'resourceAllocation' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Resource Allocation Overview</CardTitle>
+                                        <CardDescription>Project square footage and space utilization</CardDescription>
+                                    </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {projects.map((project) => (
                                         <div key={project.id} className="p-4 border rounded-lg">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-medium">{project.name}</h4>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {utilization.toFixed(1)}%
-                                                </span>
-                                            </div>
-                                            {/* <Progress value={utilization} className="mb-2" /> */}
-                                            <div className="flex justify-between text-sm">
-                                                <span>Spent: ₹{(project.totalSpend / 1000000).toFixed(2)}M</span>
-                                                <span>Budget: ₹{(project.budget / 1000000).toFixed(2)}M</span>
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium">{project.name}</h3>
+                                                    <p className="text-sm text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
+                                                    <div className="flex items-center gap-4 mt-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <LandPlot className="h-4 w-4 text-muted-foreground" />
+                                                            <span className="text-sm">{project.squareFootage?.toLocaleString() || 0} sq ft</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                                                            <span className="text-sm">{project.contractType || 'Standard'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <Badge variant={project.squareFootage && project.squareFootage > 10000 ? "default" : "secondary"}>
+                                                        {project.squareFootage && project.squareFootage > 10000 ? "Large Scale" : "Standard"}
+                                                    </Badge>
+                                                    <p className="text-sm text-muted-foreground mt-1">
+                                                        Duration: {project.estimatedDuration || 'TBD'} days
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="space-y-4">
-                                <h3 className="font-medium">Financial Summary</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-muted-foreground">Total Budget</p>
-                                        <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.budget, 0) / 10000000).toFixed(2)}Cr</p>
-                                    </div>
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-muted-foreground">Total Spent</p>
-                                        <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + p.totalSpend, 0) / 10000000).toFixed(2)}Cr</p>
-                                    </div>
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-muted-foreground">Remaining</p>
-                                        <p className="text-2xl font-bold">₹{((projects.reduce((sum, p) => sum + p.budget, 0) - projects.reduce((sum, p) => sum + p.totalSpend, 0)) / 10000000).toFixed(2)}Cr</p>
-                                    </div>
-                                    <div className="p-4 border rounded-lg">
-                                        <p className="text-sm text-muted-foreground">Avg Utilization</p>
-                                        <p className="text-2xl font-bold">{((projects.reduce((sum, p) => sum + p.totalSpend, 0) / projects.reduce((sum, p) => sum + p.budget, 0)) * 100).toFixed(2)}%</p>
-                                    </div>
+                                    ))}
                                 </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                            </CardContent>
+                        </Card>
+                    )}
 
-            {/* Alerts Subview */}
-            {subview === 'alerts' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Project Alerts</CardTitle>
-                                <CardDescription>Issues and attention-required items</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {projects.filter(p => p.status === "On Hold").map((project) => (
-                                <div key={project.id} className="p-4 border rounded-lg border-red-200 bg-red-50">
-                                    <div className="flex items-start gap-3">
-                                        <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                                        <div className="flex-1">
-                                            <h3 className="font-medium text-red-800">{project.name}</h3>
-                                            <p className="text-sm text-red-600">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
-                                            <p className="text-sm text-red-700 mt-1">
-                                                Project is on hold. Progress: {project.progress}%
-                                            </p>
-                                            <div className="flex items-center gap-4 mt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4 text-red-600" />
-                                                    <span className="text-sm text-red-700">{project.location}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Users className="h-4 w-4 text-red-600" />
-                                                    <span className="text-sm text-red-700">{typeof project.manager === 'object' ? project.manager?.name : project.manager || 'Not assigned'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <Badge variant="destructive">On Hold</Badge>
-                                            <p className="text-sm text-red-600 mt-1">
-                                                Budget: ₹{(project.budget / 1000000).toFixed(1)}M
-                                            </p>
-                                        </div>
+                    {/* Material Status Subview */}
+                    {subview === 'materialStatus' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Material Status & Duration Tracking</CardTitle>
+                                        <CardDescription>Project timelines and estimated durations</CardDescription>
                                     </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
                                 </div>
-                            ))}
-                            {projects.filter(p => p.status === "On Hold").length === 0 && (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-green-600" />
-                                    <p>No active alerts. All projects are running smoothly!</p>
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Resource Allocation Subview */}
-            {subview === 'resourceAllocation' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Resource Allocation Overview</CardTitle>
-                                <CardDescription>Project square footage and space utilization</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {projects.map((project) => (
-                                <div key={project.id} className="p-4 border rounded-lg">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                            <h3 className="font-medium">{project.name}</h3>
-                                            <p className="text-sm text-muted-foreground">{typeof project.client === 'object' ? project.client?.name || 'Unknown Client' : project.client}</p>
-                                            <div className="flex items-center gap-4 mt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <LandPlot className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-sm">{project.squareFootage?.toLocaleString() || 0} sq ft</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                    <span className="text-sm">{project.contractType || 'Standard'}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <Badge variant={project.squareFootage && project.squareFootage > 10000 ? "default" : "secondary"}>
-                                                {project.squareFootage && project.squareFootage > 10000 ? "Large Scale" : "Standard"}
-                                            </Badge>
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                Duration: {project.estimatedDuration || 'TBD'} days
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Material Status Subview */}
-            {subview === 'materialStatus' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Material Status & Duration Tracking</CardTitle>
-                                <CardDescription>Project timelines and estimated durations</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <h3 className="font-medium">Project Durations</h3>
-                                {projects.map((project) => {
-                                    const progressDays = Math.round((project.estimatedDuration || 0) * (project.progress || 0) / 100);
-                                    const remainingDays = (project.estimatedDuration || 0) - progressDays;
-                                    return (
-                                        <div key={project.id} className="p-4 border rounded-lg">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-medium">{project.name}</h4>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {project.estimatedDuration || 0} days total
-                                                </span>
-                                            </div>
-                                            {/* <Progress value={project.progress || 0} className="mb-2" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h3 className="font-medium">Project Durations</h3>
+                                        {projects.map((project) => {
+                                            const progressDays = Math.round((project.estimatedDuration || 0) * (project.progress || 0) / 100);
+                                            const remainingDays = (project.estimatedDuration || 0) - progressDays;
+                                            return (
+                                                <div key={project.id} className="p-4 border rounded-lg">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-medium">{project.name}</h4>
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {project.estimatedDuration || 0} days total
+                                                        </span>
+                                                    </div>
+                                                    {/* <Progress value={project.progress || 0} className="mb-2" />
                                             <div className="flex justify-between text-sm">
                                                 <span>Completed: {progressDays} days</span>
                                                 <span>Remaining: {remainingDays} days</span>
                                             </div> */}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="space-y-4">
+                                        <h3 className="font-medium">Contract Types</h3>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {['FIXED_PRICE', 'COST_PLUS', 'TIME_AND_MATERIALS', 'UNIT_PRICE'].map((type) => {
+                                                const count = projects.filter(p => p.contractType === type).length;
+                                                const totalValue = projects.filter(p => p.contractType === type).reduce((sum, p) => sum + (p.budget || 0), 0);
+                                                return (
+                                                    <div key={type} className="p-4 border rounded-lg">
+                                                        <div className="flex justify-between items-center">
+                                                            <div>
+                                                                <p className="font-medium">{type.replace('_', ' ')}</p>
+                                                                <p className="text-sm text-muted-foreground">{count} projects</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="font-bold">₹{(totalValue / 1000000).toFixed(1)}M</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                            <div className="space-y-4">
-                                <h3 className="font-medium">Contract Types</h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    {['FIXED_PRICE', 'COST_PLUS', 'TIME_AND_MATERIALS', 'UNIT_PRICE'].map((type) => {
-                                        const count = projects.filter(p => p.contractType === type).length;
-                                        const totalValue = projects.filter(p => p.contractType === type).reduce((sum, p) => sum + (p.budget || 0), 0);
-                                        return (
-                                            <div key={type} className="p-4 border rounded-lg">
-                                                <div className="flex justify-between items-center">
-                                                    <div>
-                                                        <p className="font-medium">{type.replace('_', ' ')}</p>
-                                                        <p className="text-sm text-muted-foreground">{count} projects</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="font-bold">₹{(totalValue / 1000000).toFixed(1)}M</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+                            </CardContent>
+                        </Card>
+                    )}
 
-            {/* DPR Submissions Subview */}
-            {subview === 'dprSubmissions' && (
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <CardTitle>Contingency</CardTitle>
-                                <CardDescription>Contingency reserves and cost center analysis</CardDescription>
-                            </div>
-                            <Button variant="outline" onClick={() => setSubview('main')}>
-                                Back to Projects
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <h3 className="font-medium">Contingency Analysis</h3>
-                                    {projects.map((project) => {
-                                        const contingencyAmount = (project.budget || 0) * (project.contingency || 0) / 100;
-                                        return (
-                                            <div key={project.id} className="p-4 border rounded-lg">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h4 className="font-medium">{project.name}</h4>
-                                                    <span className="text-sm text-muted-foreground">
-                                                        {project.contingency || 0}%
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Reserve: ₹{(contingencyAmount / 100000).toFixed(1)}L</span>
-                                                    <span>Budget: ₹{((project.budget || 0) / 100000).toFixed(1)}L</span>
-                                                </div>
-                                                <div className="mt-2">
-                                                    <div className="text-xs text-muted-foreground">Cost Center: {project.defaultCostCenter || 'Default'}</div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+
+
+                    {/* Progress Report Modal */}
+                    <Dialog open={showProgressReportModal} onOpenChange={setShowProgressReportModal}>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle className="text-xl flex items-center gap-2">
+                                    <FileText className="w-5 h-5" />
+                                    Generate Progress Report
+                                </DialogTitle>
+                            </DialogHeader>
+
+                            <div className="grid gap-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>Select Project</Label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        defaultValue=""
+                                    >
+                                        <option value="" disabled>Select a project</option>
+                                        {filteredProjects.map((project: any) => (
+                                            <option key={project.id} value={project.id}>
+                                                {project.name} ({project.location})
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <div className="space-y-4">
-                                    <h3 className="font-medium">Cost Center Distribution</h3>
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {Object.entries(projects.reduce((centers: Record<string, { count: number, totalBudget: number, totalContingency: number }>, project) => {
-                                            const center = project.defaultCostCenter || 'Default';
-                                            if (!centers[center]) {
-                                                centers[center] = { count: 0, totalBudget: 0, totalContingency: 0 };
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Report Period</Label>
+                                        <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                            <option>Last 7 days</option>
+                                            <option>Last 30 days</option>
+                                            <option>Project-to-date</option>
+                                            <option>Custom range</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Detail Level</Label>
+                                        <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                                            <option>Summary</option>
+                                            <option>Detailed</option>
+                                            <option>Technical</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <DialogFooter>
+                                <div className="flex gap-2 w-full">
+                                    <Button
+                                        variant="outline"
+                                        className="flex-1"
+                                        onClick={() => setShowProgressReportModal(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        className="flex-1 gap-2"
+                                        onClick={() => {
+                                            const selectElement = document.querySelector('select') as HTMLSelectElement;
+                                            const selectedProjectId = parseInt(selectElement.value);
+                                            const selectedProject = filteredProjects.find(
+                                                (p: any) => p.id === selectedProjectId
+                                            );
+
+                                            if (selectedProject) {
+                                                const reportText = generateTextReport(selectedProject);
+                                                downloadTextFile(reportText, `${selectedProject.name}-report.txt`);
+                                                setShowProgressReportModal(false);
                                             }
-                                            centers[center].count++;
-                                            centers[center].totalBudget += project.budget || 0;
-                                            centers[center].totalContingency += (project.budget || 0) * (project.contingency || 0) / 100;
-                                            return centers;
-                                        }, {})).map(([center, data]: [string, { count: number, totalBudget: number, totalContingency: number }]) => (
-                                            <div key={center} className="p-4 border rounded-lg">
-                                                <div className="flex justify-between items-center">
+                                        }}
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        Download Report
+                                    </Button>
+                                </div>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Site Photos Modal */}
+                    <Dialog open={showSitePhotosModal} onOpenChange={setShowSitePhotosModal}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Upload Site Photos</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <input type="file" accept="image/*" multiple />
+                                {/* Add photo upload form here */}
+                            </div>
+                            <DialogFooter>
+                                <Button onClick={() => setShowSitePhotosModal(false)}>
+                                    Upload Photos
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Resource Assignment Modal */}
+                    <Dialog open={showResourceAssignmentModal} onOpenChange={setShowResourceAssignmentModal}>
+                        <DialogContent className="sm:max-w-[700px]">
+                            <DialogHeader>
+                                <DialogTitle className="text-xl flex items-center gap-2">
+                                    <Users className="w-5 h-5" />
+                                    Assign Resources to Project
+                                </DialogTitle>
+                            </DialogHeader>
+
+                            <div className="grid gap-6 py-4">
+                                {/* Project Selection */}
+                                <div className="space-y-2">
+                                    <Label>Select Project</Label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                        value={selectedProjectForResources || ""}
+                                        onChange={(e) => setSelectedProjectForResources(e.target.value)}
+                                    >
+                                        <option value="" disabled>Select a project</option>
+                                        {filteredProjects.map((project) => (
+                                            <option key={project.id} value={project.id}>
+                                                {project.name} ({project.location})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Resource Selection */}
+                                <div className="space-y-2">
+                                    <Label>Available Resources</Label>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-2 border rounded-lg">
+                                        {availableResources.map((resource) => (
+                                            <div
+                                                key={resource.id}
+                                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedResources.some(r => r.id === resource.id)
+                                                    ? "bg-blue-50 border-blue-200"
+                                                    : "hover:bg-gray-50"
+                                                    }`}
+                                                onClick={() => {
+                                                    setSelectedResources(prev =>
+                                                        prev.some(r => r.id === resource.id)
+                                                            ? prev.filter(r => r.id !== resource.id)
+                                                            : [...prev, resource]
+                                                    );
+                                                }}
+                                            >
+                                                <div className="flex justify-between items-start">
                                                     <div>
-                                                        <p className="font-medium">{center}</p>
-                                                        <p className="text-sm text-muted-foreground">{data.count} projects</p>
+                                                        <h4 className="font-medium">{resource.name}</h4>
+                                                        <p className="text-sm text-muted-foreground">{resource.type}</p>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="font-bold">₹{(data.totalBudget / 1000000).toFixed(1)}M</p>
-                                                        <p className="text-xs text-muted-foreground">Reserve: ₹{(data.totalContingency / 100000).toFixed(1)}L</p>
+                                                    <Badge
+                                                        variant={
+                                                            resource.availability === "High" ? "default" :
+                                                                resource.availability === "Medium" ? "secondary" : "destructive"
+                                                        }
+                                                    >
+                                                        {resource.availability} Availability
+                                                    </Badge>
+                                                </div>
+                                                <div className="mt-2 flex items-center justify-between">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {resource.nextAvailable}
+                                                        </span>
                                                     </div>
+                                                    <span className="text-sm font-medium">
+                                                        {resource.dailyRate ? `₹${resource.dailyRate}/day` : "N/A"}
+                                                    </span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
-            {/* Progress Report Modal */}
-            <Dialog open={showProgressReportModal} onOpenChange={setShowProgressReportModal}>
-                <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl flex items-center gap-2">
-                            <FileText className="w-5 h-5" />
-                            Generate Progress Report
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Select Project</Label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                defaultValue=""
-                            >
-                                <option value="" disabled>Select a project</option>
-                                {filteredProjects.map((project: any) => (
-                                    <option key={project.id} value={project.id}>
-                                        {project.name} ({project.location})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Report Period</Label>
-                                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option>Last 7 days</option>
-                                    <option>Last 30 days</option>
-                                    <option>Project-to-date</option>
-                                    <option>Custom range</option>
-                                </select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Detail Level</Label>
-                                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                                    <option>Summary</option>
-                                    <option>Detailed</option>
-                                    <option>Technical</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <div className="flex gap-2 w-full">
-                            <Button
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() => setShowProgressReportModal(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="flex-1 gap-2"
-                                onClick={() => {
-                                    const selectElement = document.querySelector('select') as HTMLSelectElement;
-                                    const selectedProjectId = parseInt(selectElement.value);
-                                    const selectedProject = filteredProjects.find(
-                                        (p: any) => p.id === selectedProjectId
-                                    );
-
-                                    if (selectedProject) {
-                                        const reportText = generateTextReport(selectedProject);
-                                        downloadTextFile(reportText, `${selectedProject.name}-report.txt`);
-                                        setShowProgressReportModal(false);
-                                    }
-                                }}
-                            >
-                                <FileText className="h-4 w-4" />
-                                Download Report
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Site Photos Modal */}
-            <Dialog open={showSitePhotosModal} onOpenChange={setShowSitePhotosModal}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Upload Site Photos</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <input type="file" accept="image/*" multiple />
-                        {/* Add photo upload form here */}
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={() => setShowSitePhotosModal(false)}>
-                            Upload Photos
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Resource Assignment Modal */}
-            <Dialog open={showResourceAssignmentModal} onOpenChange={setShowResourceAssignmentModal}>
-                <DialogContent className="sm:max-w-[700px]">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl flex items-center gap-2">
-                            <Users className="w-5 h-5" />
-                            Assign Resources to Project
-                        </DialogTitle>
-                    </DialogHeader>
-
-                    <div className="grid gap-6 py-4">
-                        {/* Project Selection */}
-                        <div className="space-y-2">
-                            <Label>Select Project</Label>
-                            <select
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                value={selectedProjectForResources || ""}
-                                onChange={(e) => setSelectedProjectForResources(e.target.value)}
-                            >
-                                <option value="" disabled>Select a project</option>
-                                {filteredProjects.map((project) => (
-                                    <option key={project.id} value={project.id}>
-                                        {project.name} ({project.location})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {/* Resource Selection */}
-                        <div className="space-y-2">
-                            <Label>Available Resources</Label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto p-2 border rounded-lg">
-                                {availableResources.map((resource) => (
-                                    <div
-                                        key={resource.id}
-                                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedResources.some(r => r.id === resource.id)
-                                            ? "bg-blue-50 border-blue-200"
-                                            : "hover:bg-gray-50"
-                                            }`}
-                                        onClick={() => {
-                                            setSelectedResources(prev =>
-                                                prev.some(r => r.id === resource.id)
-                                                    ? prev.filter(r => r.id !== resource.id)
-                                                    : [...prev, resource]
-                                            );
-                                        }}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h4 className="font-medium">{resource.name}</h4>
-                                                <p className="text-sm text-muted-foreground">{resource.type}</p>
-                                            </div>
-                                            <Badge
-                                                variant={
-                                                    resource.availability === "High" ? "default" :
-                                                        resource.availability === "Medium" ? "secondary" : "destructive"
-                                                }
-                                            >
-                                                {resource.availability} Availability
-                                            </Badge>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between">
-                                            <div className="flex items-center space-x-2">
-                                                <Calendar className="h-4 w-4 text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">
-                                                    {resource.nextAvailable}
-                                                </span>
-                                            </div>
-                                            <span className="text-sm font-medium">
-                                                {resource.dailyRate ? `₹${resource.dailyRate}/day` : "N/A"}
-                                            </span>
+                                {/* Selected Resources Summary */}
+                                {selectedResources.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label>Selected Resources ({selectedResources.length})</Label>
+                                        <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-2">
+                                            {selectedResources.map((resource) => (
+                                                <div key={resource.id} className="flex items-center justify-between p-2 border-b last:border-b-0">
+                                                    <div>
+                                                        <p className="font-medium">{resource.name}</p>
+                                                        <p className="text-sm text-muted-foreground">{resource.type}</p>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6"
+                                                        onClick={() => {
+                                                            setSelectedResources(prev =>
+                                                                prev.filter(r => r.id !== resource.id)
+                                                            );
+                                                        }}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                )}
 
-                        {/* Selected Resources Summary */}
-                        {selectedResources.length > 0 && (
-                            <div className="space-y-2">
-                                <Label>Selected Resources ({selectedResources.length})</Label>
-                                <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-2">
-                                    {selectedResources.map((resource) => (
-                                        <div key={resource.id} className="flex items-center justify-between p-2 border-b last:border-b-0">
-                                            <div>
-                                                <p className="font-medium">{resource.name}</p>
-                                                <p className="text-sm text-muted-foreground">{resource.type}</p>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6"
-                                                onClick={() => {
-                                                    setSelectedResources(prev =>
-                                                        prev.filter(r => r.id !== resource.id)
-                                                    );
-                                                }}
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </Button>
-                                        </div>
-                                    ))}
+                                {/* Assignment Details */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Start Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={resourceAssignmentStartDate}
+                                            onChange={(e) => setResourceAssignmentStartDate(e.target.value)}
+                                            min={new Date().toISOString().split('T')[0]}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Duration (days)</Label>
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            value={resourceAssignmentDuration}
+                                            onChange={(e) => setResourceAssignmentDuration(Number(e.target.value))}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Assignment Notes */}
+                                <div className="space-y-2">
+                                    <Label>Assignment Notes</Label>
+                                    <Textarea
+                                        placeholder="Add special instructions or requirements..."
+                                        value={resourceAssignmentNotes}
+                                        onChange={(e) => setResourceAssignmentNotes(e.target.value)}
+                                        className="min-h-[100px]"
+                                    />
                                 </div>
                             </div>
-                        )}
 
-                        {/* Assignment Details */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Start Date</Label>
-                                <Input
-                                    type="date"
-                                    value={resourceAssignmentStartDate}
-                                    onChange={(e) => setResourceAssignmentStartDate(e.target.value)}
-                                    min={new Date().toISOString().split('T')[0]}
-                                />
+                            <DialogFooter>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        setSelectedResources([]);
+                                        setSelectedProjectForResources("");
+                                        setResourceAssignmentStartDate("");
+                                        setResourceAssignmentDuration(1);
+                                        setResourceAssignmentNotes("");
+                                        setShowResourceAssignmentModal(false);
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={() => {
+                                        if (!selectedProjectForResources || selectedResources.length === 0) {
+                                            toast({
+                                                title: "Missing Information",
+                                                description: "Please select a project and at least one resource",
+                                                variant: "destructive",
+                                            });
+                                            return;
+                                        }
+
+                                        // Create the assignment
+                                        const assignment = {
+                                            projectId: selectedProjectForResources,
+                                            resources: selectedResources,
+                                            startDate: resourceAssignmentStartDate,
+                                            duration: resourceAssignmentDuration,
+                                            notes: resourceAssignmentNotes,
+                                            status: "Pending",
+                                            assignedAt: new Date().toISOString(),
+                                        };
+
+                                        // In a real app, you would send this to your API
+                                        console.log("Creating assignment:", assignment);
+
+                                        // Show success message
+                                        toast({
+                                            title: "Resources Assigned",
+                                            description: `${selectedResources.length} resources have been assigned to the project`,
+                                        });
+
+                                        // Reset form
+                                        setSelectedResources([]);
+                                        setSelectedProjectForResources("");
+                                        setResourceAssignmentStartDate("");
+                                        setResourceAssignmentDuration(1);
+                                        setResourceAssignmentNotes("");
+                                        setShowResourceAssignmentModal(false);
+                                    }}
+                                    disabled={isAssigningResources}
+                                >
+                                    {isAssigningResources ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Assigning...
+                                        </>
+                                    ) : (
+                                        "Confirm Assignment"
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Safety Alert Modal */}
+                    <Dialog open={showSafetyAlertModal} onOpenChange={setShowSafetyAlertModal}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Create Safety Alert</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                                <Textarea placeholder="Describe the safety concern..." />
+                                {/* Add safety alert form here */}
                             </div>
-                            <div className="space-y-2">
-                                <Label>Duration (days)</Label>
-                                <Input
-                                    type="number"
-                                    min={1}
-                                    value={resourceAssignmentDuration}
-                                    onChange={(e) => setResourceAssignmentDuration(Number(e.target.value))}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Assignment Notes */}
-                        <div className="space-y-2">
-                            <Label>Assignment Notes</Label>
-                            <Textarea
-                                placeholder="Add special instructions or requirements..."
-                                value={resourceAssignmentNotes}
-                                onChange={(e) => setResourceAssignmentNotes(e.target.value)}
-                                className="min-h-[100px]"
-                            />
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setSelectedResources([]);
-                                setSelectedProjectForResources("");
-                                setResourceAssignmentStartDate("");
-                                setResourceAssignmentDuration(1);
-                                setResourceAssignmentNotes("");
-                                setShowResourceAssignmentModal(false);
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                if (!selectedProjectForResources || selectedResources.length === 0) {
-                                    toast({
-                                        title: "Missing Information",
-                                        description: "Please select a project and at least one resource",
-                                        variant: "destructive",
-                                    });
-                                    return;
-                                }
-
-                                // Create the assignment
-                                const assignment = {
-                                    projectId: selectedProjectForResources,
-                                    resources: selectedResources,
-                                    startDate: resourceAssignmentStartDate,
-                                    duration: resourceAssignmentDuration,
-                                    notes: resourceAssignmentNotes,
-                                    status: "Pending",
-                                    assignedAt: new Date().toISOString(),
-                                };
-
-                                // In a real app, you would send this to your API
-                                console.log("Creating assignment:", assignment);
-
-                                // Show success message
-                                toast({
-                                    title: "Resources Assigned",
-                                    description: `${selectedResources.length} resources have been assigned to the project`,
-                                });
-
-                                // Reset form
-                                setSelectedResources([]);
-                                setSelectedProjectForResources("");
-                                setResourceAssignmentStartDate("");
-                                setResourceAssignmentDuration(1);
-                                setResourceAssignmentNotes("");
-                                setShowResourceAssignmentModal(false);
-                            }}
-                            disabled={isAssigningResources}
-                        >
-                            {isAssigningResources ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Assigning...
-                                </>
-                            ) : (
-                                "Confirm Assignment"
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Safety Alert Modal */}
-            <Dialog open={showSafetyAlertModal} onOpenChange={setShowSafetyAlertModal}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create Safety Alert</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <Textarea placeholder="Describe the safety concern..." />
-                        {/* Add safety alert form here */}
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={() => setShowSafetyAlertModal(false)}>
-                            Submit Alert
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            <DialogFooter>
+                                <Button onClick={() => setShowSafetyAlertModal(false)}>
+                                    Submit Alert
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
 
                 </TabsContent>
 
