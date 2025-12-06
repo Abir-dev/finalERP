@@ -44,15 +44,12 @@ interface Project {
         endDate?: string;
     }>;
     itemRate?: string;
+    withOrWithoutItem?: boolean;
     costPlus?: string;
+    withOrWithoutCostPlus?: boolean;
     coverArea?: string;
-    itemRateWithMaterial?: boolean;
-    itemRateWithoutMaterial?: boolean;
-    costPlusWithMaterial?: boolean;
-    costPlusWithoutMaterial?: boolean;
-    coverAreaWithMaterial?: boolean;
-    coverAreaWithoutMaterial?: boolean;
-    unit?: string;
+    coverAreaUnit?: string;
+    withOrWithoutCoverArea?: boolean;
 }
 
 interface User {
@@ -529,15 +526,12 @@ const ProjectsContent = () => {
         estimatedCost: 0,
         milestones: [],
         itemRate: '',
+        withOrWithoutItem: false,
         costPlus: '',
+        withOrWithoutCostPlus: false,
         coverArea: '',
-        itemRateWithMaterial: false,
-        itemRateWithoutMaterial: false,
-        costPlusWithMaterial: false,
-        costPlusWithoutMaterial: false,
-        coverAreaWithMaterial: false,
-        coverAreaWithoutMaterial: false,
-        unit: ''
+        coverAreaUnit: '',
+        withOrWithoutCoverArea: false
         // designDate: '',
         // foundationDate: '',
         // structureDate: '',
@@ -615,7 +609,14 @@ const ProjectsContent = () => {
             description: project.description,
             contractType: project.contractType,
             estimatedCost: project.estimatedCost,
-            milestones: project.milestones || []
+            milestones: project.milestones || [],
+            itemRate: project.itemRate || '',
+            withOrWithoutItem: project.withOrWithoutItem || false,
+            costPlus: project.costPlus || '',
+            withOrWithoutCostPlus: project.withOrWithoutCostPlus || false,
+            coverArea: project.coverArea || '',
+            coverAreaUnit: project.coverAreaUnit || '',
+            withOrWithoutCoverArea: project.withOrWithoutCoverArea || false
         });
 
         // Set project type if available
@@ -664,6 +665,14 @@ const ProjectsContent = () => {
                 ...(newProject.contractType && { contractType: newProject.contractType }),
                 ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
                 ...(projectType && { projectType }),
+                // Billing options
+                ...(newProject.itemRate && { itemRate: newProject.itemRate }),
+                ...(newProject.withOrWithoutItem !== undefined && { withOrWithoutItem: newProject.withOrWithoutItem }),
+                ...(newProject.costPlus && { costPlus: newProject.costPlus }),
+                ...(newProject.withOrWithoutCostPlus !== undefined && { withOrWithoutCostPlus: newProject.withOrWithoutCostPlus }),
+                ...(newProject.coverArea && { coverArea: newProject.coverArea }),
+                ...(newProject.coverAreaUnit && { coverAreaUnit: newProject.coverAreaUnit }),
+                ...(newProject.withOrWithoutCoverArea !== undefined && { withOrWithoutCoverArea: newProject.withOrWithoutCoverArea }),
                 // Include milestones if they exist
                 ...(newProject.milestones && newProject.milestones.length > 0 && {
                     milestones: newProject.milestones.filter(m => m.name && m.startDate)
@@ -696,7 +705,14 @@ const ProjectsContent = () => {
                     description: '',
                     contractType: '',
                     estimatedCost: 0,
-                    milestones: []
+                    milestones: [],
+                    itemRate: '',
+                    withOrWithoutItem: false,
+                    costPlus: '',
+                    withOrWithoutCostPlus: false,
+                    coverArea: '',
+                    coverAreaUnit: '',
+                    withOrWithoutCoverArea: false
                 });
                 setProjectType('');
                 setEditingProject(null);
@@ -915,6 +931,14 @@ Add any additional notes here...
                 ...(newProject.contractType && { contractType: newProject.contractType }),
                 ...(newProject.estimatedCost && { estimatedCost: newProject.estimatedCost }),
                 ...(projectType && { projectType }),
+                // Billing options
+                ...(newProject.itemRate && { itemRate: newProject.itemRate }),
+                ...(newProject.withOrWithoutItem !== undefined && { withOrWithoutItem: newProject.withOrWithoutItem }),
+                ...(newProject.costPlus && { costPlus: newProject.costPlus }),
+                ...(newProject.withOrWithoutCostPlus !== undefined && { withOrWithoutCostPlus: newProject.withOrWithoutCostPlus }),
+                ...(newProject.coverArea && { coverArea: newProject.coverArea }),
+                ...(newProject.coverAreaUnit && { coverAreaUnit: newProject.coverAreaUnit }),
+                ...(newProject.withOrWithoutCoverArea !== undefined && { withOrWithoutCoverArea: newProject.withOrWithoutCoverArea }),
                 // Include milestones if they exist
                 ...(newProject.milestones && newProject.milestones.length > 0 && {
                     milestones: newProject.milestones.filter(m => m.name && m.startDate)
@@ -947,7 +971,14 @@ Add any additional notes here...
                     description: '',
                     contractType: '',
                     estimatedCost: 0,
-                    milestones: []
+                    milestones: [],
+                    itemRate: '',
+                    withOrWithoutItem: false,
+                    costPlus: '',
+                    withOrWithoutCostPlus: false,
+                    coverArea: '',
+                    coverAreaUnit: '',
+                    withOrWithoutCoverArea: false
                 });
                 setProjectType('');
                 setIsProjectDialogOpen(false);
@@ -1065,15 +1096,12 @@ Add any additional notes here...
                                 estimatedCost: 0,
                                 milestones: [],
                                 itemRate: '',
+                                withOrWithoutItem: false,
                                 costPlus: '',
+                                withOrWithoutCostPlus: false,
                                 coverArea: '',
-                                itemRateWithMaterial: false,
-                                itemRateWithoutMaterial: false,
-                                costPlusWithMaterial: false,
-                                costPlusWithoutMaterial: false,
-                                coverAreaWithMaterial: false,
-                                coverAreaWithoutMaterial: false,
-                                unit: ''
+                                coverAreaUnit: '',
+                                withOrWithoutCoverArea: false
                             });
                         }
                     }}>
@@ -1274,12 +1302,12 @@ Add any additional notes here...
                                                         <input
                                                             type="checkbox"
                                                             id="itemRateWithMaterial"
-                                                            checked={newProject.itemRateWithMaterial || false}
+                                                            checked={newProject.withOrWithoutItem === true || false}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setNewProject({ ...newProject, itemRateWithMaterial: true, itemRateWithoutMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutItem: true });
                                                                 } else {
-                                                                    setNewProject({ ...newProject, itemRateWithMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutItem: false });
                                                                 }
                                                             }}
                                                             className="rounded border-gray-300"
@@ -1290,12 +1318,12 @@ Add any additional notes here...
                                                         <input
                                                             type="checkbox"
                                                             id="itemRateWithoutMaterial"
-                                                            checked={newProject.itemRateWithoutMaterial || false}
+                                                            checked={newProject.withOrWithoutItem === false || false}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setNewProject({ ...newProject, itemRateWithoutMaterial: true, itemRateWithMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutItem: false });
                                                                 } else {
-                                                                    setNewProject({ ...newProject, itemRateWithoutMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutItem: undefined });
                                                                 }
                                                             }}
                                                             className="rounded border-gray-300"
@@ -1324,12 +1352,12 @@ Add any additional notes here...
                                                         <input
                                                             type="checkbox"
                                                             id="costPlusWithMaterial"
-                                                            checked={newProject.costPlusWithMaterial || false}
+                                                            checked={newProject.withOrWithoutCostPlus === true || false}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setNewProject({ ...newProject, costPlusWithMaterial: true, costPlusWithoutMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCostPlus: true });
                                                                 } else {
-                                                                    setNewProject({ ...newProject, costPlusWithMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCostPlus: false });
                                                                 }
                                                             }}
                                                             className="rounded border-gray-300"
@@ -1340,12 +1368,12 @@ Add any additional notes here...
                                                         <input
                                                             type="checkbox"
                                                             id="costPlusWithoutMaterial"
-                                                            checked={newProject.costPlusWithoutMaterial || false}
+                                                            checked={newProject.withOrWithoutCostPlus === false || false}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setNewProject({ ...newProject, costPlusWithoutMaterial: true, costPlusWithMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCostPlus: false });
                                                                 } else {
-                                                                    setNewProject({ ...newProject, costPlusWithoutMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCostPlus: undefined });
                                                                 }
                                                             }}
                                                             className="rounded border-gray-300"
@@ -1370,10 +1398,10 @@ Add any additional notes here...
                                                     />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <Label htmlFor="unit" className="font-semibold">Unit</Label>
+                                                    <Label htmlFor="coverAreaUnit" className="font-semibold">Unit</Label>
                                                     <Select
-                                                        value={newProject.unit || ''}
-                                                        onValueChange={(value) => setNewProject({ ...newProject, unit: value })}
+                                                        value={newProject.coverAreaUnit || ''}
+                                                        onValueChange={(value) => setNewProject({ ...newProject, coverAreaUnit: value })}
                                                     >
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Select unit" />
@@ -1393,12 +1421,12 @@ Add any additional notes here...
                                                         <input
                                                             type="checkbox"
                                                             id="coverAreaWithMaterial"
-                                                            checked={newProject.coverAreaWithMaterial || false}
+                                                            checked={newProject.withOrWithoutCoverArea === true}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setNewProject({ ...newProject, coverAreaWithMaterial: true, coverAreaWithoutMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCoverArea: true });
                                                                 } else {
-                                                                    setNewProject({ ...newProject, coverAreaWithMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCoverArea: false });
                                                                 }
                                                             }}
                                                             className="rounded border-gray-300"
@@ -1406,15 +1434,15 @@ Add any additional notes here...
                                                         <Label htmlFor="coverAreaWithMaterial" className="font-normal cursor-pointer text-sm">With Material</Label>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            id="coverAreaWithoutMaterial"
-                                                            checked={newProject.coverAreaWithoutMaterial || false}
+                                                         <input
+                                                             type="checkbox"
+                                                             id="coverAreaWithoutMaterial"
+                                                             checked={newProject.withOrWithoutCoverArea === false}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
-                                                                    setNewProject({ ...newProject, coverAreaWithoutMaterial: true, coverAreaWithMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCoverArea: false });
                                                                 } else {
-                                                                    setNewProject({ ...newProject, coverAreaWithoutMaterial: false });
+                                                                    setNewProject({ ...newProject, withOrWithoutCoverArea: false });
                                                                 }
                                                             }}
                                                             className="rounded border-gray-300"
@@ -1587,27 +1615,24 @@ Add any additional notes here...
                                             name: '',
                                             clientId: '',
                                             budget: 0,
-                                            totalSpend: 0,
-                                            deadline: '',
-                                            location: '',
-                                            manager: '',
-                                            squareFootage: 0,
-                                            startDate: '',
-                                            estimatedDuration: 0,
-                                            description: '',
-                                            contractType: '',
-                                            estimatedCost: 0,
-                                            milestones: [],
-                                            itemRate: '',
-                                            costPlus: '',
-                                            coverArea: '',
-                                            itemRateWithMaterial: false,
-                                            itemRateWithoutMaterial: false,
-                                            costPlusWithMaterial: false,
-                                            costPlusWithoutMaterial: false,
-                                            coverAreaWithMaterial: false,
-                                            coverAreaWithoutMaterial: false,
-                                            unit: ''
+                                             totalSpend: 0,
+                                             deadline: '',
+                                             location: '',
+                                             manager: '',
+                                             squareFootage: 0,
+                                             startDate: '',
+                                             estimatedDuration: 0,
+                                             description: '',
+                                             contractType: '',
+                                             estimatedCost: 0,
+                                             milestones: [],
+                                             itemRate: '',
+                                             withOrWithoutItem: false,
+                                             costPlus: '',
+                                             withOrWithoutCostPlus: false,
+                                             coverArea: '',
+                                             coverAreaUnit: '',
+                                             withOrWithoutCoverArea: false
                                         });
                                         setProjectType('');
                                         setEditingProject(null);
@@ -2132,23 +2157,60 @@ Add any additional notes here...
                                                                         <h4 className="font-medium mb-3">Financial Overview</h4>
                                                                         <div className="space-y-3">
                                                                             <div>
-                                                                                <div className="flex justify-between text-sm mb-1">
-                                                                                    <span>Order Value</span>
-                                                                                    <span className="ml-1 font-medium">{project.budget}</span>
+                                                                                <div className="text-sm mb-1">
+                                                                                    <span className="text-muted-foreground">Order Value:</span>
+                                                                                    <span className="ml-2 font-medium">{project.budget}</span>
                                                                                 </div>
                                                                             </div>
+                                                                            {/* <div>
+                                                                                <div className="text-sm mb-1">
+                                                                                    <span className="text-muted-foreground">Spent:</span>
+                                                                                    <span className="ml-2 font-medium">{project.totalSpend}</span>
+                                                                                </div>
+                                                                            </div> */}
                                                                             <div>
-                                                                                <div className="flex justify-between text-sm mb-1">
-                                                                                    <span>Spent</span>
-                                                                                    <span className="ml-1 font-medium">{project.totalSpend}</span>
+                                                                                <div className="text-sm mb-1">
+                                                                                    <span className="text-muted-foreground">Estimated Cost:</span>
+                                                                                    <span className="ml-2 font-medium">{project.estimatedCost}</span>
                                                                                 </div>
                                                                             </div>
-                                                                            <div>
-                                                                                <div className="flex justify-between text-sm mb-1">
-                                                                                    <span>Estimated Cost</span>
-                                                                                    <span className="ml-1 font-medium">{project.estimatedCost}</span>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Contract Pricing Details */}
+                                                                    <div>
+                                                                        <h4 className="font-medium mb-3">Contract Pricing</h4>
+                                                                        <div className="space-y-2 text-sm">
+                                                                            {project.itemRate && (
+                                                                                <div>
+                                                                                    <span className="text-muted-foreground">Item Rate:</span>
+                                                                                    <span className="ml-2 font-medium">{project.itemRate}</span>
+                                                                                    {project.withOrWithoutItem && (
+                                                                                        <Badge variant="outline" className="ml-2 text-xs">With Material</Badge>
+                                                                                    )}
                                                                                 </div>
-                                                                            </div>
+                                                                            )}
+                                                                            {project.costPlus && (
+                                                                                <div>
+                                                                                    <span className="text-muted-foreground">Cost Plus:</span>
+                                                                                    <span className="ml-2 font-medium">{project.costPlus}</span>
+                                                                                    {project.withOrWithoutCostPlus && (
+                                                                                        <Badge variant="outline" className="ml-2 text-xs">With Material</Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                            {project.coverArea && (
+                                                                                <div>
+                                                                                    <span className="text-muted-foreground">Cover Area:</span>
+                                                                                    <span className="ml-2 font-medium">{project.coverArea} {project.coverAreaUnit || ''}</span>
+                                                                                    {project.withOrWithoutCoverArea && (
+                                                                                        <Badge variant="outline" className="ml-2 text-xs">With Material</Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                            {!project.itemRate && !project.costPlus && !project.coverArea && (
+                                                                                <div className="text-muted-foreground text-xs">No pricing details added</div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
