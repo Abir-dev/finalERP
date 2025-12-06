@@ -161,6 +161,9 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
   // State to track selected payment term IDs
   const [selectedPaymentTermIds, setSelectedPaymentTermIds] = useState<string[]>([]);
 
+  // State to track custom UOM input for each item
+  const [customUOMInput, setCustomUOMInput] = useState<{ [key: string]: string }>({});
+
   const [activeTab, setActiveTab] = useState("details");
   const [isAccountingDimensionsOpen, setIsAccountingDimensionsOpen] =
     useState(false);
@@ -234,6 +237,18 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
         taxesAndCharges: initialData.taxesAndCharges || [],
         paymentSchedule: initialData.paymentSchedule || [],
       });
+
+      // Initialize customUOMInput for any custom UOM values
+      const predefinedUOMs = ["kg", "pcs", "m", "l", "sqm", "cum"];
+      const customUOMs: { [key: string]: string } = {};
+      (initialData.items || []).forEach((item) => {
+        if (item.uom && !predefinedUOMs.includes(item.uom)) {
+          customUOMs[item.id] = item.uom;
+        }
+      });
+      if (Object.keys(customUOMs).length > 0) {
+        setCustomUOMInput(customUOMs);
+      }
     }
   }, [initialData, isEditing]);
 
@@ -1154,24 +1169,48 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                             />
                           </TableCell>
                           <TableCell>
-                            <Select
-                              value={item.uom}
-                              onValueChange={(value) =>
-                                updateItem(item.id, "uom", value)
-                              }
-                            >
-                              <SelectTrigger className="w-20">
-                                <SelectValue placeholder="UOM" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="kg">kg</SelectItem>
-                                <SelectItem value="pcs">pcs</SelectItem>
-                                <SelectItem value="m">m</SelectItem>
-                                <SelectItem value="l">l</SelectItem>
-                                <SelectItem value="sqm">sqm</SelectItem>
-                                <SelectItem value="cum">cum</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            {customUOMInput[item.id] !== undefined ? (
+                              <Input
+                                type="text"
+                                value={customUOMInput[item.id]}
+                                onChange={(e) => {
+                                  setCustomUOMInput((prev) => ({
+                                    ...prev,
+                                    [item.id]: e.target.value,
+                                  }));
+                                  updateItem(item.id, "uom", e.target.value);
+                                }}
+                                placeholder="Enter UOM"
+                                className="w-20"
+                                autoFocus
+                              />
+                            ) : (
+                              <Select
+                                value={item.uom}
+                                onValueChange={(value) => {
+                                  if (value === "other") {
+                                    setCustomUOMInput((prev) => ({
+                                      ...prev,
+                                      [item.id]: "",
+                                    }));
+                                  }
+                                  updateItem(item.id, "uom", value);
+                                }}
+                              >
+                                <SelectTrigger className="w-20">
+                                  <SelectValue placeholder="UOM" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="kg">kg</SelectItem>
+                                  <SelectItem value="pcs">pcs</SelectItem>
+                                  <SelectItem value="m">m</SelectItem>
+                                  <SelectItem value="l">l</SelectItem>
+                                  <SelectItem value="sqm">sqm</SelectItem>
+                                  <SelectItem value="cum">cum</SelectItem>
+                                  <SelectItem value="other">other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Input

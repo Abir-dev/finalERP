@@ -65,6 +65,7 @@ export function EditMaterialRequestModal({
   >([]);
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
+  const [customUOMInput, setCustomUOMInput] = useState<{ [key: number]: string }>({});
 
   // Load projects for dropdown
   useEffect(() => {
@@ -106,18 +107,29 @@ export function EditMaterialRequestModal({
 
       // Initialize items
       if (materialRequest.items && Array.isArray(materialRequest.items)) {
-        setItems(
-          materialRequest.items.map((item) => ({
-            hsnCode: item.hsnCode,
-            rate: item.rate,
-            value: item.value,
-            vehicleNo: item.vehicleNo,
-            requiredBy: item.requiredBy ? item.requiredBy.split("T")[0] : "",
-            quantity: item.quantity,
-            targetWarehouse: item.targetWarehouse || "",
-            uom: item.uom,
-          }))
-        );
+        const mappedItems = materialRequest.items.map((item) => ({
+          hsnCode: item.hsnCode,
+          rate: item.rate,
+          value: item.value,
+          vehicleNo: item.vehicleNo,
+          requiredBy: item.requiredBy ? item.requiredBy.split("T")[0] : "",
+          quantity: item.quantity,
+          targetWarehouse: item.targetWarehouse || "",
+          uom: item.uom,
+        }));
+        setItems(mappedItems);
+
+        // Initialize customUOMInput for any custom UOM values
+        const predefinedUOMs = ["CUBIC_FEET", "M_CUBE", "SQUARE_FEET", "TONNE", "SQUARE_METRE", "PIECE", "LITRE", "KILOGRAM", "BOX", "ROLL", "SHEET", "HOURS", "DAYS", "LUMPSUM"];
+        const customUOMs: { [key: number]: string } = {};
+        mappedItems.forEach((item, index) => {
+          if (item.uom && !predefinedUOMs.includes(item.uom)) {
+            customUOMs[index] = item.uom;
+          }
+        });
+        if (Object.keys(customUOMs).length > 0) {
+          setCustomUOMInput(customUOMs);
+        }
       } else {
         setItems([]);
       }
@@ -509,14 +521,53 @@ export function EditMaterialRequestModal({
 
                     <div className="space-y-2">
                       <Label htmlFor={`uom-${index}`}>Unit of Measure</Label>
-                      <Input
-                        id={`uom-${index}`}
-                        value={item.uom}
-                        onChange={(e) =>
-                          handleItemChange(index, "uom", e.target.value)
-                        }
-                        placeholder="e.g., kg, pcs, m"
-                      />
+                      {customUOMInput[index] !== undefined ? (
+                        <Input
+                          id={`uom-${index}`}
+                          type="text"
+                          value={customUOMInput[index]}
+                          onChange={(e) => {
+                            setCustomUOMInput((prev) => ({
+                              ...prev,
+                              [index]: e.target.value,
+                            }));
+                            handleItemChange(index, "uom", e.target.value);
+                          }}
+                          placeholder="Enter UOM"
+                          autoFocus
+                        />
+                      ) : (
+                        <Select value={item.uom} onValueChange={(value) => {
+                          if (value === "OTHER") {
+                            setCustomUOMInput((prev) => ({
+                              ...prev,
+                              [index]: "",
+                            }));
+                          }
+                          handleItemChange(index, "uom", value);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select UOM" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CUBIC_FEET">Cubic Feet</SelectItem>
+                            <SelectItem value="M_CUBE">M Cube</SelectItem>
+                            <SelectItem value="SQUARE_FEET">Square Feet</SelectItem>
+                            <SelectItem value="TONNE">Tonne</SelectItem>
+                            <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
+                            <SelectItem value="PIECE">Piece</SelectItem>
+                            <SelectItem value="LITRE">Litre</SelectItem>
+                            <SelectItem value="KILOGRAM">Kilogram</SelectItem>
+                            <SelectItem value="BOX">Box</SelectItem>
+                            <SelectItem value="ROLL">Roll</SelectItem>
+                            <SelectItem value="SHEET">Sheet</SelectItem>
+                            <SelectItem value="HOURS">Hours</SelectItem>
+                            <SelectItem value="DAYS">Days</SelectItem>
+                            <SelectItem value="LUMPSUM">Lump Sum</SelectItem>
+                            <SelectItem value="OTHER">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
 
                     <div className="space-y-2">
