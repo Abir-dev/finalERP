@@ -168,6 +168,7 @@ const AppLayout = () => {
               <Route path="/inventory/issue-tracking" element={<Inventory />} />
               <Route path="/inventory/transfers" element={<Inventory />} />
               <Route path="/inventory/warehouse" element={<Inventory />} />
+              <Route path="/inventory/material-indent" element={<Inventory />} />
 
               <Route path="/documents" element={<Documents />} />
               <Route path="/documents/all" element={<Documents />} />
