@@ -132,42 +132,38 @@ const maintenanceFormSchema = z.object({
     notes: z.string().optional(),
 });
 
-// Add material indent form schema
+// Add material indane form schema
 const materialIndentFormSchema = z.object({
-    project: z.string().min(1, "Project is required"),
-    indentDate: z.string().min(1, "Indent date is required"),
-    requiredDate: z.string().min(1, "Required date is required"),
-    relatedWBSNo: z.string().optional(),
-    indentNo: z.string().min(1, "Indent number is required"),
-    department: z.string().min(1, "Department is required"),
-    requestedBy: z.string().min(1, "Requested by is required"),
-    approver: z.string().optional(),
-    priority: z.string().min(1, "Priority is required"),
-    location: z.string().optional(),
-    notes: z.string().optional(),
+    companyName: z.string().optional(),
+    companyAddress: z.string().optional(),
+    companyCity: z.string().optional(),
+    companyPostalCode: z.string().optional(),
+    headerText: z.string().optional(),
+    site: z.string().min(1, "Site is required"),
+    orderSlipNo: z.string().min(1, "Order Slip No is required"),
+    date: z.string().min(1, "Date is required"),
+    storeKeeperName: z.string().min(1, "Store Keeper Name is required"),
+    storeKeeperSignature: z.instanceof(File).optional(),
+    projectManagerName: z.string().min(1, "Project Manager Name is required"),
+    projectManagerSignature: z.instanceof(File).optional(),
     items: z
         .array(
             z.object({
-                relatedItemNo: z.string().optional(),
-                materialCode: z
-                    .string()
-                    .min(1, "Material code is required"),
-                materialName: z.string().min(1, "Material name is required"),
+                slNo: z.number().min(1, "Serial number is required"),
+                dateOfOrder: z.string().optional(),
+                materialDescription: z.string().min(1, "Material description is required"),
                 unit: z.string().min(1, "Unit is required"),
-                totalPlanned: z
+                requiredQty: z
                     .number()
-                    .min(0, "Total planned must be 0 or greater"),
-                totalSupplied: z
+                    .min(0, "Required quantity must be 0 or greater"),
+                receivedQty: z
                     .number()
-                    .min(0, "Total supplied must be 0 or greater"),
-                stockAsOn: z
+                    .min(0, "Received quantity must be 0 or greater"),
+                balance: z
                     .number()
-                    .min(0, "Stock as on must be 0 or greater"),
-                quantityIndented: z
-                    .number()
-                    .min(1, "Quantity indented must be at least 1"),
-                estimatedUnitCost: z.number().min(0, "Unit cost must be 0 or greater").optional(),
-                description: z.string().optional(),
+                    .min(0, "Balance must be 0 or greater"),
+                deliveryDate: z.string().optional(),
+                remarks: z.string().optional(),
             })
         )
         .min(1, "At least one item is required"),
@@ -1044,29 +1040,27 @@ const InventoryContent = () => {
     const materialIndentForm = useForm<MaterialIndentFormValues>({
         resolver: zodResolver(materialIndentFormSchema),
         defaultValues: {
-            project: "",
-            indentDate: "",
-            requiredDate: "",
-            relatedWBSNo: "",
-            indentNo: "",
-            department: "",
-            requestedBy: user?.name || "",
-            approver: "",
-            priority: "MEDIUM",
-            location: "",
-            notes: "",
+            companyName: "",
+            companyAddress: "",
+            companyCity: "",
+            companyPostalCode: "",
+            headerText: "",
+            site: "",
+            orderSlipNo: "",
+            date: "",
+            storeKeeperName: "",
+            projectManagerName: "",
             items: [
                 {
-                    relatedItemNo: "",
-                    materialCode: "",
-                    materialName: "",
+                    slNo: 1,
+                    dateOfOrder: "",
+                    materialDescription: "",
                     unit: "",
-                    totalPlanned: 0,
-                    totalSupplied: 0,
-                    stockAsOn: 0,
-                    quantityIndented: 0,
-                    estimatedUnitCost: 0,
-                    description: "",
+                    requiredQty: 0,
+                    receivedQty: 0,
+                    balance: 0,
+                    deliveryDate: "",
+                    remarks: "",
                 },
             ],
         },
@@ -2398,7 +2392,7 @@ const InventoryContent = () => {
                 <TabsList className="hidden md:grid w-full grid-cols-6">
                     <TabsTrigger value="inventory">Inventory</TabsTrigger>
                     <TabsTrigger value="material-forecast">Material Forecast</TabsTrigger>
-                    <TabsTrigger value="material-indent">Material Indent</TabsTrigger>
+                    <TabsTrigger value="material-indent">Material Indane</TabsTrigger>
                     <TabsTrigger value="issue-tracking">Issue Tracking</TabsTrigger>
                     <TabsTrigger value="transfers">Transfers</TabsTrigger>
                     <TabsTrigger value="warehouse">Warehouse</TabsTrigger>
@@ -3819,9 +3813,9 @@ const InventoryContent = () => {
                 <TabsContent value="material-indent" className="space-y-6">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h2 className="text-2xl font-bold tracking-tight">Material Indent</h2>
+                            <h2 className="text-2xl font-bold tracking-tight">Material Indane</h2>
                             <p className="text-muted-foreground mt-1">
-                                Manage and track material indent requests
+                                Manage and track material indane requests
                             </p>
                         </div>
                         <Button
@@ -3945,12 +3939,12 @@ const InventoryContent = () => {
                                                 <Badge
                                                     variant={
                                                         indent.status ===
-                                                        "Pending"
+                                                            "Pending"
                                                             ? "secondary"
                                                             : indent.status ===
                                                                 "Approved"
-                                                              ? "default"
-                                                              : "outline"
+                                                                ? "default"
+                                                                : "outline"
                                                     }
                                                 >
                                                     {indent.status}
@@ -4801,216 +4795,146 @@ const InventoryContent = () => {
             >
                 <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto w-[93vw]">
                     <DialogHeader>
-                        <DialogTitle>Create Material Indent</DialogTitle>
+                        <DialogTitle>Create Material Indane</DialogTitle>
                         <DialogDescription>
-                            Create a new material indent request form
+                            Create a new material indane request form
                         </DialogDescription>
                     </DialogHeader>
                     <Form {...materialIndentForm}>
                         <form
                             onSubmit={materialIndentForm.handleSubmit(async (data) => {
                                 try {
-                                    // Generate a new indent
-                                    const newIndent = {
-                                        id: `INDENT${(materialIndents.length + 1).toString().padStart(3, "0")}`,
-                                        project: data.project,
-                                        indentNo: data.indentNo,
-                                        indentDate: data.indentDate,
-                                        relatedWBSNo: data.relatedWBSNo,
-                                        status: "Pending",
+                                    // Generate a new indane
+                                    const newIndane = {
+                                        id: `INDANE${(materialIndents.length + 1).toString().padStart(3, "0")}`,
+                                        companyName: data.companyName || "RAJ TRIMURTY INFRAPROJECTS PVT LTD",
+                                        companyAddress: data.companyAddress || "SOUTH CITY BUSINESS PARK, 770 ANANDAPUR",
+                                        companyCity: data.companyCity || "KOLKATA",
+                                        companyPostalCode: data.companyPostalCode || "107",
+                                        headerText: data.headerText || "Dear sir, Please Arrange Required Material For SITE WORK, Urgent Basis.",
+                                        site: data.site,
+                                        orderSlipNo: data.orderSlipNo,
+                                        date: data.date,
+                                        storeKeeperName: data.storeKeeperName,
+                                        storeKeeperSignature: data.storeKeeperSignature ? URL.createObjectURL(data.storeKeeperSignature) : null,
+                                        projectManagerName: data.projectManagerName,
+                                        projectManagerSignature: data.projectManagerSignature ? URL.createObjectURL(data.projectManagerSignature) : null,
+                                        items: data.items,
                                         createdBy: user?.name || "User",
                                         createdDate: new Date().toISOString().split("T")[0],
-                                        items: data.items,
                                     };
 
                                     // Add to the list
-                                    setMaterialIndents([...materialIndents, newIndent]);
+                                    setMaterialIndents([...materialIndents, newIndane]);
 
-                                    toast.success("Material indent created successfully");
+                                    toast.success("Material indane created successfully");
                                     setIsAddMaterialIndentOpen(false);
                                     materialIndentForm.reset();
                                 } catch (error) {
-                                    toast.error("Failed to create material indent");
-                                    console.error("Error creating material indent:", error);
+                                    toast.error("Failed to create material indane");
+                                    console.error("Error creating material indane:", error);
                                 }
                             })}
                             className="space-y-6"
                         >
+                            {/* Company Details - Row 1 */}
+                            <div className="border-2 border-black p-4 space-y-2">
+                                <h3 className="font-bold text-center text-lg">Company Details</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <FormField
+                                        control={materialIndentForm.control}
+                                        name="companyName"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-sm">Company Name (Default if empty)</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="RAJ TRIMURTY INFRAPROJECTS PVT LTD"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={materialIndentForm.control}
+                                        name="companyAddress"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-sm">Company Address (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="SOUTH CITY BUSINESS PARK, 770 ANANDAPUR"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={materialIndentForm.control}
+                                        name="companyCity"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-sm">Company City (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="KOLKATA"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={materialIndentForm.control}
+                                        name="companyPostalCode"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-sm">Company Postal Code (Optional)</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="107"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                <FormField
+                                    control={materialIndentForm.control}
+                                    name="headerText"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-sm">Header Text (Optional)</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Dear sir, Please Arrange Required Material For SITE WORK, Urgent Basis."
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
                             {/* Header Section - Row 1 */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b pb-4">
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="project"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Project</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder="Enter project name"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="indentDate"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Indent Date</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="date"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="requiredDate"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Required Date</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="date"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="relatedWBSNo"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Related WBS No.</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder="e.g., WBS-001"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
-                            {/* Header Section - Row 2 */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-b pb-4">
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="indentNo"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Indent No.</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder="e.g., IN/PR/001"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="department"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Department</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select department" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {DEPARTMENT_OPTIONS.map((dept) => (
-                                                        <SelectItem
-                                                            key={dept.value}
-                                                            value={dept.value}
-                                                        >
-                                                            {dept.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="requestedBy"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Requested By</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    placeholder="Requester name"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={materialIndentForm.control}
-                                    name="priority"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Priority</FormLabel>
-                                            <Select
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select priority" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {PRIORITY_OPTIONS.map((priority) => (
-                                                        <SelectItem
-                                                            key={priority.value}
-                                                            value={priority.value}
-                                                        >
-                                                            {priority.label}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-
-                            {/* Header Section - Row 3 */}
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 border-b pb-4">
                                 <FormField
                                     control={materialIndentForm.control}
-                                    name="approver"
+                                    name="orderSlipNo"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Approver (Optional)</FormLabel>
+                                            <FormLabel>Order Slip No.</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Approver name"
+                                                    placeholder="e.g., OS-001"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -5020,13 +4944,13 @@ const InventoryContent = () => {
                                 />
                                 <FormField
                                     control={materialIndentForm.control}
-                                    name="location"
+                                    name="site"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Delivery Location (Optional)</FormLabel>
+                                            <FormLabel>Site</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Site location or warehouse"
+                                                    placeholder="Site name"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -5036,13 +4960,49 @@ const InventoryContent = () => {
                                 />
                                 <FormField
                                     control={materialIndentForm.control}
-                                    name="notes"
+                                    name="date"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>General Notes (Optional)</FormLabel>
+                                            <FormLabel>Date</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Additional notes or remarks"
+                                                    type="date"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Store Keeper and Project Manager Details */}
+                            <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                                <FormField
+                                    control={materialIndentForm.control}
+                                    name="storeKeeperName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Store Keeper Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Store Keeper name"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={materialIndentForm.control}
+                                    name="projectManagerName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Project Manager Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Project Manager name"
                                                     {...field}
                                                 />
                                             </FormControl>
@@ -5061,24 +5021,24 @@ const InventoryContent = () => {
                                         size="sm"
                                         variant="outline"
                                         onClick={() => {
-                                            const currentItems =
-                                                materialIndentForm.getValues("items");
-                                            materialIndentForm.setValue("items", [
-                                                ...currentItems,
-                                                {
-                                                    relatedItemNo: "",
-                                                    materialCode: "",
-                                                    materialName: "",
-                                                    unit: "",
-                                                    totalPlanned: 0,
-                                                    totalSupplied: 0,
-                                                    stockAsOn: 0,
-                                                    quantityIndented: 0,
-                                                    estimatedUnitCost: 0,
-                                                    description: "",
-                                                },
-                                            ]);
-                                        }}
+                                             const currentItems =
+                                                 materialIndentForm.getValues("items");
+                                             const nextSlNo = currentItems.length + 1;
+                                             materialIndentForm.setValue("items", [
+                                                 ...currentItems,
+                                                 {
+                                                     slNo: nextSlNo,
+                                                     dateOfOrder: "",
+                                                     materialDescription: "",
+                                                     unit: "",
+                                                     requiredQty: 0,
+                                                     receivedQty: 0,
+                                                     balance: 0,
+                                                     deliveryDate: "",
+                                                     remarks: "",
+                                                 },
+                                             ]);
+                                         }}
                                     >
                                         <Plus className="h-4 w-4 mr-1" />
                                         Add Item
@@ -5090,34 +5050,31 @@ const InventoryContent = () => {
                                         <thead>
                                             <tr className="border-b bg-muted">
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Item No.
+                                                    SL NO
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Material Code
+                                                    DATE OF ORDER
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Material Name
+                                                    MATERIAL DESCRIPTION
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Unit
+                                                    UNIT
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Total Planned
+                                                    REQUIRED QTY
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Total Supplied
+                                                    RECEIVED QTY
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Stock as On
+                                                    BALANCE
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Qty Indented
+                                                    DELIVERY DATE
                                                 </th>
                                                 <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Est. Unit Cost
-                                                </th>
-                                                <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
-                                                    Description
+                                                    REMARKS
                                                 </th>
                                                 <th className="px-3 py-2 text-center font-semibold whitespace-nowrap">
                                                     Action
@@ -5137,12 +5094,16 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.relatedItemNo`}
+                                                                name={`items.${index}.slNo`}
                                                                 render={({ field }) => (
                                                                     <Input
+                                                                        type="number"
                                                                         size={1}
                                                                         placeholder="#"
                                                                         {...field}
+                                                                        onChange={(e) =>
+                                                                            field.onChange(parseInt(e.target.value) || 0)
+                                                                        }
                                                                     />
                                                                 )}
                                                             />
@@ -5152,10 +5113,10 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.materialCode`}
+                                                                name={`items.${index}.dateOfOrder`}
                                                                 render={({ field }) => (
                                                                     <Input
-                                                                        placeholder="MC-001"
+                                                                        type="date"
                                                                         {...field}
                                                                     />
                                                                 )}
@@ -5166,10 +5127,10 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.materialName`}
+                                                                name={`items.${index}.materialDescription`}
                                                                 render={({ field }) => (
                                                                     <Input
-                                                                        placeholder="Material name"
+                                                                        placeholder="Material description"
                                                                         {...field}
                                                                     />
                                                                 )}
@@ -5217,7 +5178,7 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.totalPlanned`}
+                                                                name={`items.${index}.requiredQty`}
                                                                 render={({ field }) => (
                                                                     <Input
                                                                         type="number"
@@ -5240,7 +5201,7 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.totalSupplied`}
+                                                                name={`items.${index}.receivedQty`}
                                                                 render={({ field }) => (
                                                                     <Input
                                                                         type="number"
@@ -5263,7 +5224,7 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.stockAsOn`}
+                                                                name={`items.${index}.balance`}
                                                                 render={({ field }) => (
                                                                     <Input
                                                                         type="number"
@@ -5286,20 +5247,11 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.quantityIndented`}
+                                                                name={`items.${index}.deliveryDate`}
                                                                 render={({ field }) => (
                                                                     <Input
-                                                                        type="number"
-                                                                        placeholder="0"
+                                                                        type="date"
                                                                         {...field}
-                                                                        onChange={(e) =>
-                                                                            field.onChange(
-                                                                                parseFloat(
-                                                                                    e.target
-                                                                                        .value
-                                                                                ) || 0
-                                                                            )
-                                                                        }
                                                                     />
                                                                 )}
                                                             />
@@ -5309,34 +5261,10 @@ const InventoryContent = () => {
                                                                 control={
                                                                     materialIndentForm.control
                                                                 }
-                                                                name={`items.${index}.estimatedUnitCost`}
+                                                                name={`items.${index}.remarks`}
                                                                 render={({ field }) => (
                                                                     <Input
-                                                                        type="number"
-                                                                        placeholder="0.00"
-                                                                        step="0.01"
-                                                                        {...field}
-                                                                        onChange={(e) =>
-                                                                            field.onChange(
-                                                                                parseFloat(
-                                                                                    e.target
-                                                                                        .value
-                                                                                ) || 0
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                )}
-                                                            />
-                                                        </td>
-                                                        <td className="px-3 py-2">
-                                                            <FormField
-                                                                control={
-                                                                    materialIndentForm.control
-                                                                }
-                                                                name={`items.${index}.description`}
-                                                                render={({ field }) => (
-                                                                    <Input
-                                                                        placeholder="Description"
+                                                                        placeholder="Remarks"
                                                                         {...field}
                                                                     />
                                                                 )}
@@ -5371,6 +5299,63 @@ const InventoryContent = () => {
                                 </div>
                             </div>
 
+                            {/* Signature Section */}
+                            <div className="border-t pt-4">
+                                <h3 className="font-semibold mb-4">Signatures</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <FormField
+                                        control={materialIndentForm.control}
+                                        name="storeKeeperSignature"
+                                        render={({ field: { onChange, value, ...field } }) => (
+                                            <FormItem>
+                                                <FormLabel>Signature of Store Keeper</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            onChange(file);
+                                                        }}
+                                                        {...field}
+                                                        value=""
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Upload a picture of the store keeper's signature (JPG, PNG, GIF)
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={materialIndentForm.control}
+                                        name="projectManagerSignature"
+                                        render={({ field: { onChange, value, ...field } }) => (
+                                            <FormItem>
+                                                <FormLabel>Signature of Project Manager</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            onChange(file);
+                                                        }}
+                                                        {...field}
+                                                        value=""
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Upload a picture of the project manager's signature (JPG, PNG, GIF)
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                            </div>
+
                             <DialogFooter className="gap-2">
                                 <Button
                                     type="button"
@@ -5382,7 +5367,7 @@ const InventoryContent = () => {
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit">Create Indent</Button>
+                                <Button type="submit">Create Indane</Button>
                             </DialogFooter>
                         </form>
                     </Form>
@@ -5621,7 +5606,7 @@ const InventoryContent = () => {
                                                                         item.description || "-"
                                                                     }
                                                                 </td>
-                                                                </tr>
+                                                            </tr>
                                                         )
                                                     )}
                                                 </tbody>
@@ -5657,12 +5642,12 @@ const InventoryContent = () => {
                                     <Badge
                                         variant={
                                             selectedMaterialIndent.status ===
-                                            "Pending"
+                                                "Pending"
                                                 ? "secondary"
                                                 : selectedMaterialIndent.status ===
                                                     "Approved"
-                                                  ? "default"
-                                                  : "outline"
+                                                    ? "default"
+                                                    : "outline"
                                         }
                                     >
                                         {selectedMaterialIndent.status}
