@@ -69,6 +69,7 @@ model User {
   Client               Client[]               @relation("ClientCreator")
   Warehouse            Warehouse[]            @relation("WarehouseCreator")
   ClientBill           ClientBill[]           @relation("ClientBillCreator")
+  MaterialIndanes      MaterialIndane[]       @relation("MaterialIndaneCreator")
 
   @@map("users")
 }
@@ -1426,4 +1427,71 @@ model BillLineItem {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([categoryId])
+}
+
+// Material Indane Schema
+model MaterialIndane {
+  id                    String                   @id @default(uuid()) @db.Uuid
+  
+  // Variable Fields
+  orderSlipNo           String                   @unique
+  site                  String
+  date                  DateTime                 @db.Timestamptz(6)
+  
+  // Store Keeper Details
+  storeKeeperName       String
+  storeKeeperSignature  String? // Image URL
+  
+  // Project Manager Details
+  projectManagerName    String
+  projectManagerSignature String? // Image URL
+  
+  // Company Details (Constants - stored for record keeping)
+  companyName           String                   @default("RAJ TRIMURTY INFRAPROJECTS PVT LTD")
+  companyAddress        String                   @default("SOUTH CITY BUSINESS PARK, 770 ANANDAPUR")
+  companyCity           String                   @default("KOLKATA")
+  companyPostalCode     String                   @default("107")
+  
+  // Header Text
+  headerText            String                   @default("Dear sir, Please Arrange Required Material For SITE WORK, Urgent Basis.")
+  
+  // Items
+  items                 MaterialIndaneItem[]
+  
+  // System Fields
+  createdById           String                   @db.Uuid
+  createdBy             User                     @relation("MaterialIndaneCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  @@index([orderSlipNo])
+  @@index([site])
+  @@index([date])
+  @@index([createdById])
+  @@map("material_indanes")
+}
+
+model MaterialIndaneItem {
+  id                  String         @id @default(uuid()) @db.Uuid
+  indaneId            String         @db.Uuid
+  indane              MaterialIndane @relation(fields: [indaneId], references: [id], onDelete: Cascade)
+  
+  // Item Details
+  slNo                Int            // Serial number
+  dateOfOrder         DateTime?      @db.Timestamptz(6)
+  materialDescription String
+  unit                String
+  requiredQty         Decimal        @db.Decimal(15, 3)
+  receivedQty         Decimal        @db.Decimal(15, 3) @default(0)
+  balance             Decimal        @db.Decimal(15, 3) @default(0) // Can be calculated or stored
+  deliveryDate        DateTime?      @db.Timestamptz(6)
+  remarks             String?
+  
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  @@index([indaneId])
+  @@index([slNo])
+  @@map("material_indane_items")
 }
