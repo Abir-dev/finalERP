@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import logger from '../logger/logger';
+import { uploadFile, uploadImage, deleteFile, extractKeyFromUrl } from '../utils/s3';
+import { S3_FOLDERS } from '../utils/s3';
 
 export const materialIndaneController = {
   // Create Material Indane
@@ -471,6 +473,201 @@ export const materialIndaneController = {
       res.status(204).send();
     } catch (error) {
       logger.error("Error deleting item:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  // Upload store keeper signature
+  async uploadStoreKeeperSignature(req: Request, res: Response) {
+    try {
+      const { indaneId } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const indane = await (prisma as any).materialIndane.findUnique({
+        where: { id: indaneId }
+      });
+
+      if (!indane) {
+        return res.status(404).json({ error: 'Material Indane not found' });
+      }
+
+      if (indane.createdById !== userId && (req as any).user?.role !== 'admin' && (req as any).user?.role !== 'md') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      // Delete old signature if exists
+      if (indane.storeKeeperSignature) {
+        try {
+          const oldKey = extractKeyFromUrl(indane.storeKeeperSignature);
+          await deleteFile(oldKey);
+        } catch (error) {
+          logger.warn(`Failed to delete old store keeper signature: ${error}`);
+        }
+      }
+
+      // Upload new signature
+      const { url, key } = await uploadImage(req.file);
+
+      const updated = await (prisma as any).materialIndane.update({
+        where: { id: indaneId },
+        data: { storeKeeperSignature: url }
+      });
+
+      logger.info(`Store keeper signature uploaded for indane: ${indaneId}`);
+      res.json({ url, key, indane: updated });
+    } catch (error) {
+      logger.error("Error uploading store keeper signature:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  // Upload project manager signature
+  async uploadProjectManagerSignature(req: Request, res: Response) {
+    try {
+      const { indaneId } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const indane = await (prisma as any).materialIndane.findUnique({
+        where: { id: indaneId }
+      });
+
+      if (!indane) {
+        return res.status(404).json({ error: 'Material Indane not found' });
+      }
+
+      if (indane.createdById !== userId && (req as any).user?.role !== 'admin' && (req as any).user?.role !== 'md') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      // Delete old signature if exists
+      if (indane.projectManagerSignature) {
+        try {
+          const oldKey = extractKeyFromUrl(indane.projectManagerSignature);
+          await deleteFile(oldKey);
+        } catch (error) {
+          logger.warn(`Failed to delete old project manager signature: ${error}`);
+        }
+      }
+
+      // Upload new signature
+      const { url, key } = await uploadImage(req.file);
+
+      const updated = await (prisma as any).materialIndane.update({
+        where: { id: indaneId },
+        data: { projectManagerSignature: url }
+      });
+
+      logger.info(`Project manager signature uploaded for indane: ${indaneId}`);
+      res.json({ url, key, indane: updated });
+    } catch (error) {
+      logger.error("Error uploading project manager signature:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  // Upload supporting documents
+  async uploadSupportingDocuments(req: Request, res: Response) {
+    try {
+      const { indaneId } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (!req.files || (req.files as any).length === 0) {
+        return res.status(400).json({ error: 'No files provided' });
+      }
+
+      const indane = await (prisma as any).materialIndane.findUnique({
+        where: { id: indaneId }
+      });
+
+      if (!indane) {
+        return res.status(404).json({ error: 'Material Indane not found' });
+      }
+
+      if (indane.createdById !== userId && (req as any).user?.role !== 'admin' && (req as any).user?.role !== 'md') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      const files = req.files as Express.Multer.File[];
+      const uploadedFiles = [];
+
+      for (const file of files) {
+        const { url, key, fileName } = await uploadFile(file, `${S3_FOLDERS.FILES}/materialIndane/${indaneId}`);
+        uploadedFiles.push({ url, key, fileName });
+      }
+
+      logger.info(`${uploadedFiles.length} supporting documents uploaded for indane: ${indaneId}`);
+      res.json({ files: uploadedFiles });
+    } catch (error) {
+      logger.error("Error uploading supporting documents:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  // Delete supporting document
+  async deleteSupportingDocument(req: Request, res: Response) {
+    try {
+      const { indaneId } = req.params;
+      const { fileKey } = req.body;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (!fileKey) {
+        return res.status(400).json({ error: 'File key is required' });
+      }
+
+      const indane = await (prisma as any).materialIndane.findUnique({
+        where: { id: indaneId }
+      });
+
+      if (!indane) {
+        return res.status(404).json({ error: 'Material Indane not found' });
+      }
+
+      if (indane.createdById !== userId && (req as any).user?.role !== 'admin' && (req as any).user?.role !== 'md') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      await deleteFile(fileKey);
+
+      logger.info(`Supporting document deleted from indane: ${indaneId}`);
+      res.json({ success: true, message: 'Document deleted successfully' });
+    } catch (error) {
+      logger.error("Error deleting supporting document:", error);
       res.status(500).json({
         message: "Internal server error",
         error: error instanceof Error ? error.message : "Unknown error",
