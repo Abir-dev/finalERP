@@ -32,6 +32,7 @@ import {
     Edit,
     X,
     Eye,
+    FileDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { EnhancedStatCard } from "@/components/enhanced-stat-card";
@@ -92,6 +93,7 @@ import { useUser } from "@/contexts/UserContext";
 import { useUserFilter } from "@/contexts/UserFilterContext";
 import { UserFilterComponent } from "@/components/UserFilterComponent";
 import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
+import { generateMaterialIndentPDF } from "@/utils/material-indent-pdf";
 const API_URL =
     import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -607,6 +609,32 @@ const InventoryContent = () => {
             toast.error("Failed to load indent for editing");
         } finally {
             setIsLoadingIndentDetails(false);
+        }
+    };
+
+    // Handle download PDF
+    const handleDownloadPDF = async (indentId: string) => {
+        try {
+            const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            console.log("Fetching material indent for PDF:", indentId);
+            const response = await axios.get(
+                `${API_URL}/material-indane/indanes/${indentId}`,
+                { headers }
+            );
+
+            if (!response.data) {
+                throw new Error("No data received from server");
+            }
+
+            // Generate PDF with the fetched data
+            await generateMaterialIndentPDF(response.data);
+        } catch (error) {
+            console.error("Error downloading PDF:", error);
+            toast.error("Failed to download PDF");
         }
     };
 
@@ -4212,6 +4240,16 @@ const InventoryContent = () => {
                                                         {indent.status}
                                                     </Badge>
                                                     <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                handleDownloadPDF(indent.id);
+                                                            }}
+                                                            title="Download as PDF"
+                                                        >
+                                                            <FileDown className="h-4 w-4" />
+                                                        </Button>
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
