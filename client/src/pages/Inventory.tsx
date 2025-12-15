@@ -517,8 +517,16 @@ const InventoryContent = () => {
                 localStorage.getItem("jwt_token_backup");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-            console.log("Fetching material indents...");
-            const response = await axios.get(`${API_URL}/material-indane/indanes`, {
+            console.log("Fetching material indents for user:", targetUserId);
+            
+            // Build endpoint based on user role and selection
+            // Admin/MD users can view all indents or filter by specific user
+            let endpoint = `${API_URL}/material-indane/indanes`;
+            if ((user?.role === 'admin' || user?.role === 'md') && targetUserId && targetUserId !== user?.id) {
+                endpoint = `${API_URL}/material-indane/indanes/user/${targetUserId}`;
+            }
+
+            const response = await axios.get(endpoint, {
                 headers,
             });
             console.log("Material indents data:", response.data);

@@ -8,6 +8,7 @@ const router = Router();
 // Material Indane Routes
 router.post('/indanes', authenticateUser, materialIndaneController.createMaterialIndane);
 router.get('/indanes', authenticateUser, materialIndaneController.getAllMaterialIndanes);
+router.get('/indanes/user/:userId', authenticateUser, materialIndaneController.getMaterialIndanesByUser);
 router.get('/indanes/:indaneId', authenticateUser, materialIndaneController.getMaterialIndaneById);
 router.put('/indanes/:indaneId', authenticateUser, materialIndaneController.updateMaterialIndane);
 router.delete('/indanes/:indaneId', authenticateUser, materialIndaneController.deleteMaterialIndane);

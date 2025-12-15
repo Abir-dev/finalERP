@@ -85,15 +85,19 @@ export const materialIndaneController = {
     async getAllMaterialIndanes(req: Request, res: Response) {
         try {
             const userId = (req as any).user?.id;
+            const userRole = (req as any).user?.role;
             const { site, orderSlipNo, startDate, endDate } = req.query;
 
             if (!userId) {
                 return res.status(401).json({ error: 'User not authenticated' });
             }
 
-            const whereClause: any = {
-                createdById: userId
-            };
+            const whereClause: any = {};
+
+            // Only filter by userId for non-admin/MD users; admin/MD sees all indents
+            if (userRole !== 'admin' && userRole !== 'md') {
+                whereClause.createdById = userId;
+            }
 
             if (site) {
                 whereClause.site = {
@@ -178,6 +182,81 @@ export const materialIndaneController = {
             res.json(indane);
         } catch (error) {
             logger.error("Error retrieving Material Indane:", error);
+            res.status(500).json({
+                message: "Internal server error",
+                error: error instanceof Error ? error.message : "Unknown error",
+            });
+        }
+    },
+
+    // Get Material Indanes by User ID
+    async getMaterialIndanesByUser(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user?.id;
+            const userRole = (req as any).user?.role;
+            const targetUserId = req.params.userId;
+            const { site, orderSlipNo, startDate, endDate } = req.query;
+
+            if (!userId) {
+                return res.status(401).json({ error: 'User not authenticated' });
+            }
+
+            // Verify user has permission to view another user's data
+            if (userRole !== 'admin' && userRole !== 'md' && userId !== targetUserId) {
+                return res.status(403).json({ error: 'Not authorized to view this user\'s data' });
+            }
+
+            const whereClause: any = {
+                createdById: targetUserId
+            };
+
+            if (site) {
+                whereClause.site = {
+                    contains: site as string,
+                    mode: 'insensitive'
+                };
+            }
+
+            if (orderSlipNo) {
+                whereClause.orderSlipNo = {
+                    contains: orderSlipNo as string,
+                    mode: 'insensitive'
+                };
+            }
+
+            if (startDate || endDate) {
+                whereClause.date = {};
+                if (startDate) {
+                    whereClause.date.gte = new Date(startDate as string);
+                }
+                if (endDate) {
+                    whereClause.date.lte = new Date(endDate as string);
+                }
+            }
+
+            const indanes = await (prisma as any).materialIndane.findMany({
+                where: whereClause,
+                include: {
+                    items: {
+                        orderBy: { slNo: 'asc' }
+                    },
+                    createdBy: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true
+                        }
+                    }
+                },
+                orderBy: {
+                    date: 'desc'
+                }
+            });
+
+            logger.info(`Retrieved ${indanes.length} Material Indanes for user ${targetUserId}`);
+            res.json(indanes);
+        } catch (error) {
+            logger.error("Error retrieving Material Indanes by user:", error);
             res.status(500).json({
                 message: "Internal server error",
                 error: error instanceof Error ? error.message : "Unknown error",
