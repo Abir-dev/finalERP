@@ -1181,11 +1181,8 @@ enum MaterialRequestStatus {
 }
 
 enum MaterialRequestPurpose {
-  PURCHASE
-  TRANSFER
-  CONSUMPTION
-  MAINTENANCE
-  OTHER
+  HO_PURCHASE
+  SITE_PURCHASE
 }
 
 // Vendor Type Enum
