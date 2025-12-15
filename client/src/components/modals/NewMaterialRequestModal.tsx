@@ -61,7 +61,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
   // Form state
   const [requestNumber, setRequestNumber] = useState("");
   const [transactionDate, setTransactionDate] = useState("");
-  const [purpose, setPurpose] = useState("PURCHASE");
+  const [purpose, setPurpose] = useState("HO_PURCHASE");
   const [requiredBy, setRequiredBy] = useState("");
   const [priceList, setPriceList] = useState("Standard Buying");
   const [scanBarcode, setScanBarcode] = useState("");
@@ -494,22 +494,19 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                     <SelectValue placeholder="Select purpose" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PURCHASE">Purchase</SelectItem>
-                    <SelectItem value="TRANSFER">Transfer</SelectItem>
-                    <SelectItem value="CONSUMPTION">Consumption</SelectItem>
-                    <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
+                    <SelectItem value="HO_PURCHASE">HO Purchase</SelectItem>
+                    <SelectItem value="SITE_PURCHASE">Site Purchase</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium mb-1">Required By</label>
                 <Input
                   type="date"
                   value={requiredBy}
                   onChange={e => setRequiredBy(e.target.value)}
                 />
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium mb-1">Price List</label>
                 <input
