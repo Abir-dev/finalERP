@@ -592,7 +592,7 @@ const WarehouseDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
                 <div className="space-y-1">
-                    <div>Reorder Level: {row.reorderLevel || 50}</div>
+                    {/* <div>Reorder Level: {row.reorderLevel || 50}</div> */}
                     <div>Max Stock: {row.maximumStock || 500}</div>
                 </div>
             </div>
@@ -942,7 +942,7 @@ const WarehouseDashboard = () => {
                                             )}
                                         />
 
-                                        <FormField
+                                        {/* <FormField
                                             control={warehouseForm.control}
                                             name="reorderLevel"
                                             render={({ field }) => (
@@ -954,7 +954,7 @@ const WarehouseDashboard = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
-                                        />
+                                        /> */}
 
                                         <FormField
                                             control={warehouseForm.control}
@@ -1187,7 +1187,7 @@ const WarehouseDashboard = () => {
                                             )}
                                         />
 
-                                        <FormField
+                                        {/* <FormField
                                             control={warehouseForm.control}
                                             name="reorderLevel"
                                             render={({ field }) => (
@@ -1199,7 +1199,7 @@ const WarehouseDashboard = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
-                                        />
+                                        /> */}
 
                                         <FormField
                                             control={warehouseForm.control}

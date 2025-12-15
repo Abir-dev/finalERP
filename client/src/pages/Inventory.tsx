@@ -1346,9 +1346,13 @@ const InventoryContent = () => {
     };
 
     const onEditSubmit = async (data: AddItemFormValues) => {
-        if (!editingItem || !user?.id) return;
+        if (!editingItem || !user?.id) {
+            toast.error("No item selected for editing");
+            return;
+        }
 
         try {
+            console.log("Updating item with data:", data);
             const token =
                 sessionStorage.getItem("jwt_token") ||
                 localStorage.getItem("jwt_token_backup");
@@ -1407,6 +1411,7 @@ const InventoryContent = () => {
                 formData.append("image", data.image);
             }
 
+            console.log("Sending PUT request to:", `${API_URL}/inventory/items/${editingItem.id}`);
             const response = await axios.put(
                 `${API_URL}/inventory/items/${editingItem.id}`,
                 formData,
@@ -1418,6 +1423,7 @@ const InventoryContent = () => {
                 }
             );
 
+            console.log("Update response:", response.data);
             const updatedItem = response.data;
             // Refresh the inventory data to get the latest items
             await fetchInventoryData();
@@ -1425,10 +1431,11 @@ const InventoryContent = () => {
             setIsEditItemOpen(false);
             setEditingItem(null);
             editForm.reset();
-        } catch (error) {
-            toast.error("Failed to update item. Please try again.");
+            } catch (error: any) {
             console.error("Error updating item:", error);
-        }
+            const errorMsg = error.response?.data?.message || "Failed to update item. Please try again.";
+            toast.error(errorMsg);
+            }
     };
 
     const handleExport = (tabName: string) => {
@@ -1716,6 +1723,7 @@ const InventoryContent = () => {
         // Populate edit form with current item data
         editForm.reset({
             name: getItemEnum(item.name),
+            itemCode: item.itemCode || "",
             category: [getCategoryEnum(item.category || "")],
             type: getTypeEnum(item.type || "OLD"),
             quantity: item.quantity,
@@ -1791,7 +1799,7 @@ const InventoryContent = () => {
                     <div>
                         <h4 className="font-medium mb-2">Stock Details</h4>
                         <div className="space-y-1 text-sm">
-                            <div>Reorder Level: {row.reorderLevel || 50}</div>
+                            {/* <div>Reorder Level: {row.reorderLevel || 50}</div> */}
                             <div>Max Stock: {row.maxStock || 500}</div>
                             <div>Safety Stock: {row.safetyStock || 20}</div>
                             <div>Unit Cost: ₹{row.unitCost || 0}</div>
@@ -2320,7 +2328,7 @@ const InventoryContent = () => {
                                     )}
                                 />
 
-                                <FormField
+                                {/* <FormField
                                     control={form.control}
                                     name="reorderLevel"
                                     render={({ field }) => (
@@ -2339,7 +2347,7 @@ const InventoryContent = () => {
                                             <FormMessage />
                                         </FormItem>
                                     )}
-                                />
+                                /> */}
 
                                 <FormField
                                     control={form.control}
@@ -2926,13 +2934,13 @@ const InventoryContent = () => {
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <div className="flex justify-between">
+                                                    {/* <div className="flex justify-between">
                                                         <span>Reorder Level</span>
                                                         <span>
                                                             {selectedItem.reorderLevel || 50}{" "}
                                                             {selectedItem.unit}
                                                         </span>
-                                                    </div>
+                                                    </div> */}
                                                     <div className="flex justify-between">
                                                         <span>Maximum Stock</span>
                                                         <span>
@@ -3220,6 +3228,20 @@ const InventoryContent = () => {
 
                                         <FormField
                                             control={editForm.control}
+                                            name="itemCode"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Item Code</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="Enter Item Code" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={editForm.control}
                                             name="category"
                                             render={({ field }) => (
                                                 <FormItem>
@@ -3348,7 +3370,7 @@ const InventoryContent = () => {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField
+                                        {/* <FormField
                                             control={editForm.control}
                                             name="reorderLevel"
                                             render={({ field }) => (
@@ -3370,7 +3392,7 @@ const InventoryContent = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
-                                        />
+                                        /> */}
 
                                         <FormField
                                             control={editForm.control}
@@ -3745,14 +3767,14 @@ const InventoryContent = () => {
                                             <p className="text-base">{selectedItem.lastUpdated}</p>
                                         </div>
 
-                                        <div className="space-y-2">
+                                        {/* <div className="space-y-2">
                                             <Label className="text-sm font-medium text-muted-foreground">
                                                 Reorder Level
                                             </Label>
                                             <p className="text-base">
                                                 {selectedItem.reorderLevel || "-"}
                                             </p>
-                                        </div>
+                                        </div> */}
 
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium text-muted-foreground">
@@ -6629,7 +6651,7 @@ const InventoryContent = () => {
 
 const Inventory = () => {
     return (
-        <PageUserFilterProvider allowedRoles={["site", "store"]}>
+        <PageUserFilterProvider allowedRoles={["store", "project"]}>
             <InventoryContent />
         </PageUserFilterProvider>
     );

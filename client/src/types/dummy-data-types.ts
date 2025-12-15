@@ -28,6 +28,7 @@ export type Project = {
 
 // InventoryItem type (merged backend and frontend fields)
 export type InventoryItem = {
+  itemCode: string;
   itemName: string;
   type: string;
   id: string;

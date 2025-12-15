@@ -2102,7 +2102,7 @@ const DesignDashboardContent = () => {
 };
 const DesignDashboard = () => {
   return (
-    <PageUserFilterProvider allowedRoles={["client_manager", "site"]}>
+    <PageUserFilterProvider allowedRoles={["client_manager", "project"]}>
       <DesignDashboardContent />
     </PageUserFilterProvider>
   );

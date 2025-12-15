@@ -2993,7 +2993,7 @@ const TenderManagementContent = () => {
 
 const TenderManagement = () => {
   return (
-    <PageUserFilterProvider allowedRoles={["client_manager"]}>
+    <PageUserFilterProvider allowedRoles={["client_manager", "tender"]}>
       <TenderManagementContent />
     </PageUserFilterProvider>
   );

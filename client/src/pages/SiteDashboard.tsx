@@ -9615,7 +9615,7 @@ const SiteDashboardContent = () => {
 
 const SiteDashboard = () => {
     return (
-        <PageUserFilterProvider allowedRoles={["site"]}>
+        <PageUserFilterProvider allowedRoles={["project"]}>
             <SiteDashboardContent />
         </PageUserFilterProvider>
     );

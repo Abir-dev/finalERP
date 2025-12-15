@@ -289,7 +289,6 @@ model Inventory {
   type                  InventoryType
   unit                  Unit
   location              String
-  reorderLevel          Int
   maximumStock          Int
   safetyStock           Int
   primarySupplierName   String
@@ -316,7 +315,6 @@ model Warehouse {
   unit         Unit
   type         InventoryType
   location     String
-  reorderLevel Int
   maximumStock Int
   safetyStock  Int
   unitCost     Int
@@ -331,7 +329,7 @@ model MaterialRequest {
   id              String                 @id @default(uuid()) @db.Uuid
   requestNumber   String                 @unique // Manually input by user
   transactionDate DateTime               @db.Timestamptz(6)
-  purpose         MaterialRequestPurpose @default(PURCHASE)
+  purpose         MaterialRequestPurpose @default(HO_PURCHASE)
   requiredBy      DateTime? // General required by date (string for flexibility)
   priceList       String? // e.g. "Standard Buying"
   targetWarehouse String? // Default warehouse for all items

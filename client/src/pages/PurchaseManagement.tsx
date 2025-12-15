@@ -111,7 +111,7 @@ const PurchaseManagementContent = () => {
 
 const PurchaseManagement = () => {
   return (
-    <PageUserFilterProvider allowedRoles={['site', 'store']}>
+    <PageUserFilterProvider allowedRoles={['project', 'store']}>
       <PurchaseManagementContent />
     </PageUserFilterProvider>
   );

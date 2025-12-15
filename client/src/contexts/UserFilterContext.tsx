@@ -4,14 +4,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface User {
   id: string;
   name: string;
-  role: 'admin' | 'md' | 'site' | string;
+  role: 'admin' | 'md' | 'project' | string;
 }
 
 interface CurrentUser extends User {
   // Add any additional properties specific to the current user
   id: string;
   name: string;
-  role: 'admin' | 'md' | 'site' | string;
+  role: 'admin' | 'md' | 'project' | string;
 
 }
 
