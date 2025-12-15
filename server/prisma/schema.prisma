@@ -1457,6 +1457,7 @@ model MaterialIndane {
   
   // Items
   items                 MaterialIndaneItem[]
+  status                String                   @default("PENDING")
   
   // System Fields
   createdById           String                   @db.Uuid

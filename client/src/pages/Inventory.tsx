@@ -530,7 +530,7 @@ const InventoryContent = () => {
                 project: indent.site || "Unknown",
                 indentDate: indent.date || new Date().toISOString(),
                 relatedWBSNo: indent.site,
-                status: "Pending", // Default status - adjust based on your backend
+                status: indent.status || "PENDING", // Use status from backend (PENDING, APPROVED, REJECTED)
                 createdBy: indent.createdBy?.name || "Unknown",
                 createdDate: indent.createdAt || indent.date,
                 items: indent.items || [],
@@ -4153,12 +4153,15 @@ const InventoryContent = () => {
                         />
                     </div>
 
-                    {/* Material Indents Table */}
+                    {/* Approved Material Indents Card */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Material Indent List</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                Approved Material Indents
+                            </CardTitle>
                             <CardDescription>
-                                Overview of all material indent requests
+                                Material indents with approved status
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -4171,21 +4174,21 @@ const InventoryContent = () => {
                                         </p>
                                     </div>
                                 </div>
-                            ) : materialIndents.length === 0 ? (
+                            ) : materialIndents.filter((i) => i.status === "APPROVED").length === 0 ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="text-center">
                                         <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                                         <p className="text-muted-foreground">
-                                            No material indents created yet
+                                            No approved material indents
                                         </p>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {materialIndents.map((indent) => (
+                                    {materialIndents.filter((i) => i.status === "APPROVED").map((indent) => (
                                         <div
                                             key={indent.id}
-                                            className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                                            className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-green-50 dark:bg-green-950/20"
                                         >
                                             <div className="space-y-3">
                                                 {/* Indent No */}
@@ -4228,15 +4231,7 @@ const InventoryContent = () => {
 
                                                 {/* Status & Actions */}
                                                 <div className="flex items-center justify-between pt-2 border-t">
-                                                    <Badge
-                                                        variant={
-                                                            indent.status === "Pending"
-                                                                ? "secondary"
-                                                                : indent.status === "Approved"
-                                                                    ? "default"
-                                                                    : "outline"
-                                                        }
-                                                    >
+                                                    <Badge className="bg-green-600 hover:bg-green-700">
                                                         {indent.status}
                                                     </Badge>
                                                     <div className="flex gap-2">
@@ -4260,16 +4255,6 @@ const InventoryContent = () => {
                                                             <Eye className="h-4 w-4 mr-1" />
                                                             View
                                                         </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => {
-                                                                handleEditMaterialIndent(indent.id);
-                                                            }}
-                                                        >
-                                                            <Edit className="h-4 w-4 mr-1" />
-                                                            Edit
-                                                        </Button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -4279,6 +4264,209 @@ const InventoryContent = () => {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* Pending and Rejected Cards - Side by Side */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Pending Material Indents Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-yellow-600" />
+                                    Pending Requests
+                                </CardTitle>
+                                <CardDescription>
+                                    Material indents awaiting approval
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoadingIndents ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+                                            <p className="text-muted-foreground">
+                                                Loading...
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : materialIndents.filter((i) => i.status === "PENDING").length === 0 ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-muted-foreground">
+                                                No pending requests
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {materialIndents.filter((i) => i.status === "PENDING").map((indent) => (
+                                            <div
+                                                key={indent.id}
+                                                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-yellow-50 dark:bg-yellow-950/20"
+                                            >
+                                                <div className="space-y-3">
+                                                    {/* Indent No */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Indent No.
+                                                        </p>
+                                                        <p className="font-semibold">
+                                                            {indent.indentNo}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Project */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Project
+                                                        </p>
+                                                        <p className="text-sm font-medium">{indent.project}</p>
+                                                    </div>
+
+                                                    {/* Date */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Date
+                                                        </p>
+                                                        <p className="text-sm font-medium">
+                                                            {new Date(indent.indentDate).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Status & Actions */}
+                                                    <div className="flex items-center justify-between pt-2 border-t">
+                                                        <Badge className="bg-yellow-600 hover:bg-yellow-700">
+                                                            {indent.status}
+                                                        </Badge>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    fetchMaterialIndentDetails(indent.id);
+                                                                }}
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    handleEditMaterialIndent(indent.id);
+                                                                }}
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Rejected Material Indents Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                                    Rejected Indents
+                                </CardTitle>
+                                <CardDescription>
+                                    Material indents that were rejected
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoadingIndents ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+                                            <p className="text-muted-foreground">
+                                                Loading...
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : materialIndents.filter((i) => i.status === "REJECTED").length === 0 ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-muted-foreground">
+                                                No rejected indents
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {materialIndents.filter((i) => i.status === "REJECTED").map((indent) => (
+                                            <div
+                                                key={indent.id}
+                                                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-red-50 dark:bg-red-950/20"
+                                            >
+                                                <div className="space-y-3">
+                                                    {/* Indent No */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Indent No.
+                                                        </p>
+                                                        <p className="font-semibold">
+                                                            {indent.indentNo}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Project */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Project
+                                                        </p>
+                                                        <p className="text-sm font-medium">{indent.project}</p>
+                                                    </div>
+
+                                                    {/* Date */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Date
+                                                        </p>
+                                                        <p className="text-sm font-medium">
+                                                            {new Date(indent.indentDate).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Status & Actions */}
+                                                    <div className="flex items-center justify-between pt-2 border-t">
+                                                        <Badge variant="destructive">
+                                                            {indent.status}
+                                                        </Badge>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    fetchMaterialIndentDetails(indent.id);
+                                                                }}
+                                                            >
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    handleEditMaterialIndent(indent.id);
+                                                                }}
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="warehouse" className="space-y-6">

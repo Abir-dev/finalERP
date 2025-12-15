@@ -23,4 +23,10 @@ router.post('/indanes/:indaneId/upload/project-manager-signature', authenticateU
 router.post('/indanes/:indaneId/upload/documents', authenticateUser, uploadFile.array('files', 10), materialIndaneController.uploadSupportingDocuments);
 router.delete('/indanes/:indaneId/documents', authenticateUser, materialIndaneController.deleteSupportingDocument);
 
+// Status Routes
+router.patch('/indanes/:indaneId/approve', authenticateUser, materialIndaneController.approveMaterialIndane);
+router.patch('/indanes/:indaneId/reject', authenticateUser, materialIndaneController.rejectMaterialIndane);
+router.patch('/indanes/:indaneId/undo', authenticateUser, materialIndaneController.undoMaterialIndaneStatus);
+router.get('/status/:status', authenticateUser, materialIndaneController.getMaterialIndanesByStatus);
+
 export default router;
