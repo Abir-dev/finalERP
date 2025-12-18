@@ -76,7 +76,7 @@ export const getStoreOverview = async (req: Request, res: Response) => {
       where: { createdById: userId as string }
     });
 
-    // Get low stock items by comparing quantity with reorderLevel
+    // Get low stock items by comparing quantity with safetyStock
     const lowStockItemsData = await prisma.inventory.findMany({
       where: { createdById: userId as string },
       select: {
