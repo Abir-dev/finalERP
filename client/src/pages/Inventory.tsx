@@ -4137,19 +4137,19 @@ const InventoryContent = () => {
                         <EnhancedStatCard
                             title="Pending"
                             value={materialIndents
-                                .filter((i) => i.status === "Pending")
+                                .filter((i) => i.status === "PENDING")
                                 .length.toString()}
                             icon={Clock}
                             description="Awaiting approval"
-                            trend={{ value: 2, label: "pending indents" }}
+                            trend={{ value: materialIndents.filter((i) => i.status === "PENDING").length, label: "pending indents" }}
                             threshold={{
                                 status:
-                                    materialIndents.filter((i) => i.status === "Pending").length >
+                                    materialIndents.filter((i) => i.status === "PENDING").length >
                                         0
                                         ? "warning"
                                         : "good",
                                 message:
-                                    materialIndents.filter((i) => i.status === "Pending").length >
+                                    materialIndents.filter((i) => i.status === "PENDING").length >
                                         0
                                         ? "Review pending"
                                         : "No pending",
@@ -4158,27 +4158,27 @@ const InventoryContent = () => {
                         <EnhancedStatCard
                             title="Approved"
                             value={materialIndents
-                                .filter((i) => i.status === "Approved")
+                                .filter((i) => i.status === "APPROVED")
                                 .length.toString()}
                             icon={CheckCircle}
                             description="Approved indents"
-                            trend={{ value: 5, label: "approved" }}
+                            trend={{ value: materialIndents.filter((i) => i.status === "APPROVED").length, label: "approved" }}
                             threshold={{
                                 status: "good",
                                 message: "Ready for procurement",
                             }}
                         />
                         <EnhancedStatCard
-                            title="Received"
+                            title="Rejected"
                             value={materialIndents
-                                .filter((i) => i.status === "Received")
+                                .filter((i) => i.status === "REJECTED")
                                 .length.toString()}
-                            icon={Check}
-                            description="Items received"
-                            trend={{ value: 3, label: "completed" }}
+                            icon={AlertTriangle}
+                            description="Rejected indents"
+                            trend={{ value: materialIndents.filter((i) => i.status === "REJECTED").length, label: "rejected" }}
                             threshold={{
-                                status: "good",
-                                message: "Successfully received",
+                                status: materialIndents.filter((i) => i.status === "REJECTED").length > 0 ? "warning" : "good",
+                                message: materialIndents.filter((i) => i.status === "REJECTED").length > 0 ? "Review rejections" : "No rejections",
                             }}
                         />
                     </div>
