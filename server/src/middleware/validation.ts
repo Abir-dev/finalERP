@@ -125,7 +125,6 @@ export const validateInventoryItem = [
   body('quantity').isInt({ min: 0 }),
   body('unit').isString().notEmpty(),
   body('location').isString().notEmpty(),
-  body('reorderLevel').isInt({ min: 0 }),
   body('maximumStock').isInt({ min: 0 }),
   body('safetyStock').isInt({ min: 0 }),
   body('primarySupplierName').isString().notEmpty(),

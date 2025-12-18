@@ -7,7 +7,6 @@ export interface InventoryItem {
   quantity: number;
   unit: Unit;
   location: string;
-  reorderLevel: number;
   maximumStock: number;
   safetyStock: number;
   primarySupplierName: string;
@@ -37,7 +36,6 @@ export interface CreateInventoryItemData {
   quantity: number;
   unit: Unit;
   location: string;
-  reorderLevel: number;
   maximumStock: number;
   safetyStock: number;
   primarySupplierName: string;
@@ -51,7 +49,6 @@ export interface UpdateInventoryItemData {
   quantity?: number;
   unit?: Unit;
   location?: string;
-  reorderLevel?: number;
   maximumStock?: number;
   safetyStock?: number;
   primarySupplierName?: string;

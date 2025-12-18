@@ -13,16 +13,16 @@ export const getStoreOverview = async (req: Request, res: Response) => {
       // Get inventory KPIs
     const totalItems = await prisma.inventory.count();
 
-    // Get low stock items by comparing quantity with reorderLevel
+    // Get low stock items by comparing quantity with safetyStock
     const lowStockItemsData = await prisma.inventory.findMany({
       // where: { createdById: userId as string },
       select: {
         quantity: true,
-        reorderLevel: true
+        safetyStock: true
       }
     });
     
-    const lowStockItems = lowStockItemsData.filter(item => item.quantity <= item.reorderLevel).length;
+    const lowStockItems = lowStockItemsData.filter(item => item.quantity <= item.safetyStock).length;
 
     const totalValue = await prisma.inventory.aggregate({
       // where: { createdById: userId as string },
@@ -81,11 +81,11 @@ export const getStoreOverview = async (req: Request, res: Response) => {
       where: { createdById: userId as string },
       select: {
         quantity: true,
-        reorderLevel: true
+        safetyStock: true
       }
     });
     
-    const lowStockItems = lowStockItemsData.filter(item => item.quantity <= item.reorderLevel).length;
+    const lowStockItems = lowStockItemsData.filter(item => item.quantity <= item.safetyStock).length;
 
     const totalValue = await prisma.inventory.aggregate({
       where: { createdById: userId as string },
@@ -197,7 +197,7 @@ export const getStockLevels = async (req: Request, res: Response) => {
       select: {
         itemName: true,
         quantity: true,
-        reorderLevel: true,
+        safetyStock: true,
         maximumStock: true,
         category: true,
         location: true
@@ -213,7 +213,7 @@ export const getStockLevels = async (req: Request, res: Response) => {
       
       acc[category].total += item.quantity;
       
-      if (item.quantity <= item.reorderLevel) {
+      if (item.quantity <= item.safetyStock) {
         acc[category].low++;
       } else if (item.quantity >= item.maximumStock * 0.8) {
         acc[category].high++;

@@ -22,7 +22,6 @@ interface CreateInventoryItemRequest {
   type: InventoryType;
   unit: Unit;
   location: string;
-  reorderLevel: number;
   maximumStock: number;
   safetyStock: number;
   primarySupplierName: string;
@@ -46,7 +45,6 @@ export const inventoryController = {
         type,
         unit,
         location,
-        reorderLevel,
         maximumStock,
         safetyStock,
         primarySupplierName,
@@ -86,7 +84,6 @@ export const inventoryController = {
         type,
         unit,
         location,
-        reorderLevel: parseInt(reorderLevel) || 0,
         maximumStock: parseInt(maximumStock) || 0,
         safetyStock: parseInt(safetyStock) || 0,
         primarySupplierName,
@@ -223,7 +220,6 @@ export const inventoryController = {
       
       // Convert string values to numbers for numeric fields
       if (updateData.quantity) updateData.quantity = parseInt(updateData.quantity) || 0;
-      if (updateData.reorderLevel) updateData.reorderLevel = parseInt(updateData.reorderLevel) || 0;
       if (updateData.maximumStock) updateData.maximumStock = parseInt(updateData.maximumStock) || 0;
       if (updateData.safetyStock) updateData.safetyStock = parseInt(updateData.safetyStock) || 0;
       if (updateData.unitCost) updateData.unitCost = parseInt(updateData.unitCost) || 0;
@@ -325,7 +321,7 @@ export const inventoryController = {
           requests: true 
         }
       });
-      const lowStockItems = items.filter(item => item.quantity <= item.reorderLevel);
+      const lowStockItems = items.filter(item => item.quantity <= item.safetyStock);
       res.json(lowStockItems);
     } catch (error) {
       logger.error("Error fetching low stock items:", error);
@@ -454,7 +450,7 @@ export const inventoryController = {
     try {
       const totalItems = await prisma.inventory.count();
       const items = await prisma.inventory.findMany();
-      const lowStockItems = items.filter(item => item.quantity <= item.reorderLevel);
+      const lowStockItems = items.filter(item => item.quantity <= item.safetyStock);
       const totalValue = await prisma.inventory.aggregate({
         _sum: {
           unitCost: true
