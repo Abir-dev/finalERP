@@ -47,22 +47,17 @@ export function EditMaterialRequestModal({
   const [formData, setFormData] = useState<UpdateMaterialRequestData>({
     requestNumber: "",
     transactionDate: "",
-    purpose: "PURCHASE",
+    purpose: "HO_PURCHASE",
     requiredBy: "",
     priceList: "",
     targetWarehouse: "",
     terms: "",
     moreInfo: "",
     projectId: "",
-    status: "PENDING",
+    status: "SUBMITTED",
   });
 
-  const [items, setItems] = useState<
-    Omit<
-      MaterialRequestItem,
-      "id" | "materialRequestId" | "createdAt" | "updatedAt"
-    >[]
-  >([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [customUOMInput, setCustomUOMInput] = useState<{ [key: number]: string }>({});
@@ -102,7 +97,7 @@ export function EditMaterialRequestModal({
         terms: materialRequest.terms || "",
         moreInfo: materialRequest.moreInfo || "",
         projectId: materialRequest.projectId || "",
-        status: materialRequest.status || "PENDING",
+        status: (materialRequest.status as any) || "SUBMITTED",
       });
 
       // Initialize items
@@ -330,16 +325,13 @@ export function EditMaterialRequestModal({
                   <SelectValue placeholder="Select purpose" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PURCHASE">Purchase</SelectItem>
-                  <SelectItem value="TRANSFER">Transfer</SelectItem>
-                  <SelectItem value="CONSUMPTION">Consumption</SelectItem>
-                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
+                  <SelectItem value="HO_PURCHASE">HO Purchase</SelectItem>
+                  <SelectItem value="SITE_PURCHASE">Site Purchase</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="requiredBy">Required By</Label>
               <Input
                 id="requiredBy"
@@ -349,7 +341,7 @@ export function EditMaterialRequestModal({
                   handleInputChange("requiredBy", e.target.value)
                 }
               />
-            </div>
+            </div> */}
 
             <div className="space-y-2">
               <Label htmlFor="priceList">Price List</Label>
@@ -624,10 +616,13 @@ export function EditMaterialRequestModal({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="DRAFT">Draft</SelectItem>
+                <SelectItem value="SUBMITTED">Submitted</SelectItem>
+                <SelectItem value="APPROVED">Approved</SelectItem>
                 <SelectItem value="REJECTED">Rejected</SelectItem>
                 <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
               </SelectContent>
             </Select>
             {materialRequest.requester && (

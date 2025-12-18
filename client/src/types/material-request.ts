@@ -26,13 +26,13 @@ export interface MaterialRequest {
   id: string;
   requestNumber: string;
   transactionDate: string;
-  purpose: 'PURCHASE' | 'TRANSFER' | 'CONSUMPTION' | 'MAINTENANCE' | 'OTHER';
+  purpose: 'HO_PURCHASE' | 'SITE_PURCHASE';
   requiredBy?: string;
   priceList?: string;
   targetWarehouse?: string;
   terms?: string;
   moreInfo?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' ;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   submittedAt?: string;
   approvedAt?: string;
   approvedBy?: string;
@@ -64,7 +64,7 @@ export interface MaterialRequest {
 export interface CreateMaterialRequestData {
   requestNumber: string;
   transactionDate: string;
-  purpose: 'PURCHASE' | 'TRANSFER' | 'CONSUMPTION' | 'MAINTENANCE' | 'OTHER';
+  purpose: 'HO_PURCHASE' | 'SITE_PURCHASE';
   requiredBy?: string;
   priceList?: string;
   targetWarehouse?: string;
@@ -77,7 +77,7 @@ export interface CreateMaterialRequestData {
 export interface UpdateMaterialRequestData {
   requestNumber?: string;
   transactionDate?: string;
-  purpose?: 'PURCHASE' | 'TRANSFER' | 'CONSUMPTION' | 'MAINTENANCE' | 'OTHER';
+  purpose?: 'HO_PURCHASE' | 'SITE_PURCHASE';
   requiredBy?: string;
   priceList?: string;
   targetWarehouse?: string;

@@ -330,7 +330,6 @@ model MaterialRequest {
   requestNumber   String                 @unique // Manually input by user
   transactionDate DateTime               @db.Timestamptz(6)
   purpose         MaterialRequestPurpose @default(HO_PURCHASE)
-  requiredBy      DateTime? // General required by date (string for flexibility)
   priceList       String? // e.g. "Standard Buying"
   targetWarehouse String? // Default warehouse for all items
   terms           String? // Terms and conditions
