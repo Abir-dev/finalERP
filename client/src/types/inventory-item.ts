@@ -7,7 +7,6 @@ export interface InventoryItem {
   unit: string;
   location: string;
   lastUpdated: string;
-  reorderLevel?: number;
   maxStock?: number;
   safetyStock?: number;
   isFlagged: boolean;

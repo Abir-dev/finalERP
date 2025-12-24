@@ -114,7 +114,6 @@ const addItemFormSchema = z.object({
     quantity: z.number().min(0, "Quantity must be 0 or greater"),
     unit: z.string().min(1, "Please select a unit"),
     location: z.string().min(1, "Please select a location"),
-    reorderLevel: z.number().min(0, "Reorder level must be 0 or greater"),
     maxStock: z.number().min(0, "Maximum stock must be 0 or greater"),
     safetyStock: z.number().min(0, "Safety stock must be 0 or greater"),
     primarySupplier: z.string().min(1, "Please select a primary supplier"),
@@ -197,7 +196,6 @@ const PRIORITY_OPTIONS = [
 
 const defaultValues: Partial<AddItemFormValues> = {
     quantity: 0,
-    reorderLevel: 50,
     maxStock: 500,
     safetyStock: 20,
     unitCost: 0,
@@ -1207,7 +1205,6 @@ const InventoryContent = () => {
                 lastUpdated: item.updatedAt
                     ? new Date(item.updatedAt).toLocaleDateString()
                     : new Date().toLocaleDateString(),
-                reorderLevel: item.reorderLevel,
                 maxStock: item.maximumStock || item.maxStock,
                 safetyStock: item.safetyStock,
                 isFlagged: item.isFlagged || false,
@@ -1724,7 +1721,6 @@ const InventoryContent = () => {
             formData.append("type", data.type || "OLD");
             formData.append("unit", data.unit);
             formData.append("location", data.location);
-            formData.append("reorderLevel", data.reorderLevel.toString());
             formData.append("maximumStock", data.maxStock.toString());
             formData.append("safetyStock", data.safetyStock.toString());
             formData.append("primarySupplierName", data.primarySupplier);
@@ -1813,7 +1809,6 @@ const InventoryContent = () => {
             formData.append("quantity", data.quantity.toString());
             formData.append("unit", data.unit);
             formData.append("location", data.location);
-            formData.append("reorderLevel", data.reorderLevel.toString());
             formData.append("maximumStock", data.maxStock.toString());
             formData.append("safetyStock", data.safetyStock.toString());
             formData.append("primarySupplierName", data.primarySupplier);
@@ -1897,7 +1892,6 @@ const InventoryContent = () => {
                     Unit: item.unit,
                     Location: item.location,
                     "Last Updated": item.lastUpdated,
-                    "Reorder Level": item.reorderLevel,
                     "Max Stock": item.maxStock,
                     "Safety Stock": item.safetyStock,
                 }));
@@ -2159,7 +2153,6 @@ const InventoryContent = () => {
             quantity: item.quantity,
             unit: getUnitEnum(item.unit || ""),
             location: item.location || "",
-            reorderLevel: item.reorderLevel || 50,
             maxStock: item.maxStock || 500,
             safetyStock: item.safetyStock || 20,
             primarySupplier: item.primarySupplier || "",
@@ -2229,7 +2222,6 @@ const InventoryContent = () => {
                     <div>
                         <h4 className="font-medium mb-2">Stock Details</h4>
                         <div className="space-y-1 text-sm">
-                            {/* <div>Reorder Level: {row.reorderLevel || 50}</div> */}
                             <div>Max Stock: {row.maxStock || 500}</div>
                             <div>Safety Stock: {row.safetyStock || 20}</div>
                             <div>Unit Cost: ₹{row.unitCost || 0}</div>
@@ -2338,7 +2330,7 @@ const InventoryContent = () => {
                         </Badge>
                         <Badge
                             variant={
-                                row.quantity > (row.reorderLevel || 50)
+                                row.quantity > (row.safetyStock || 20)
                                     ? "default"
                                     : "destructive"
                             }
@@ -2748,27 +2740,6 @@ const InventoryContent = () => {
                                         </FormItem>
                                     )}
                                 />
-
-                                {/* <FormField
-                                    control={form.control}
-                                    name="reorderLevel"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Reorder Level</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Enter reorder level"
-                                                    {...field}
-                                                    onChange={(e) =>
-                                                        field.onChange(Number(e.target.value))
-                                                    }
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                /> */}
 
                                 <FormField
                                     control={form.control}
