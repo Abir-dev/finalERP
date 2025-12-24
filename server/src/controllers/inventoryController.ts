@@ -12,8 +12,9 @@ interface ItemValidation {
   itemName: Item;
   type: InventoryType;
   notes: string | null;
+  hsnCode: string | null;
 }
-import { InventoryCategory, Unit,MaterialRequestStatus, InventoryType, Item } from '@prisma/client';
+import { InventoryCategory, Unit, MaterialRequestStatus, InventoryType, Item } from '@prisma/client';
 
 interface CreateInventoryItemRequest {
   itemName: Item;
@@ -102,51 +103,51 @@ export const inventoryController = {
 
       const item = await prisma.inventory.create({
         data: createData,
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
-      
+
       res.status(201).json(item);
     } catch (err) {
       logger.error("Error creating inventory item:", err);
       res.status(400).json({ error: (err as Error).message });
     }
   },
-   async listItems(req: Request, res: Response) {
+  async listItems(req: Request, res: Response) {
     try {
-      const {userId} = req.query
-      if(userId){
+      const { userId } = req.query
+      if (userId) {
         const items = await prisma.inventory.findMany({
-          where:{
-            createdById:userId as string
+          where: {
+            createdById: userId as string
           },
-          include: { 
+          include: {
             createdBy: { select: { id: true, name: true, email: true } },
             primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
             secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-            requests: true 
+            requests: true
           }
         });
         res.json(items);
-      }else{
+      } else {
         const items = await prisma.inventory.findMany({
-          where:{
+          where: {
             // createdById:userId as string
           },
-          include: { 
+          include: {
             createdBy: { select: { id: true, name: true, email: true } },
             primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
             secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-            requests: true 
+            requests: true
           }
         });
         res.json(items);
       }
-     
+
     } catch (error) {
       logger.error("Error fetching inventory items:", error);
       res.status(500).json({
@@ -160,11 +161,11 @@ export const inventoryController = {
       const { id } = req.params;
       const item = await prisma.inventory.findUnique({
         where: { id },
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
       if (!item) return res.status(404).json({ error: 'Inventory item not found' });
@@ -181,7 +182,7 @@ export const inventoryController = {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      
+
       // Handle file upload if present
       if (req.file) {
         try {
@@ -217,13 +218,13 @@ export const inventoryController = {
           });
         }
       }
-      
+
       // Convert string values to numbers for numeric fields
       if (updateData.quantity) updateData.quantity = parseInt(updateData.quantity) || 0;
       if (updateData.maximumStock) updateData.maximumStock = parseInt(updateData.maximumStock) || 0;
       if (updateData.safetyStock) updateData.safetyStock = parseInt(updateData.safetyStock) || 0;
       if (updateData.unitCost) updateData.unitCost = parseInt(updateData.unitCost) || 0;
-      
+
       // Handle secondary supplier fields - set to null if empty strings are provided
       if (updateData.secondarySupplierName === "") {
         updateData.secondarySupplierName = null;
@@ -231,18 +232,18 @@ export const inventoryController = {
       if (updateData.secondaryVendorId === "") {
         updateData.secondaryVendorId = null;
       }
-      
+
       // Remove undefined values and createdById/createdAt/updatedAt from update
       const { createdById, createdAt, updatedAt, ...cleanUpdateData } = updateData;
-      
+
       const item = await prisma.inventory.update({
         where: { id },
         data: cleanUpdateData,
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
       res.json(item);
@@ -257,7 +258,7 @@ export const inventoryController = {
   async deleteItem(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      
+
       // Get the item first to check for image
       const item = await prisma.inventory.findUnique({
         where: { id },
@@ -294,11 +295,11 @@ export const inventoryController = {
       const { category } = req.params;
       const items = await prisma.inventory.findMany({
         where: { category: category as InventoryCategory },
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
       res.json(items);
@@ -314,11 +315,11 @@ export const inventoryController = {
   async getLowStockItems(req: Request, res: Response) {
     try {
       const items = await prisma.inventory.findMany({
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
       const lowStockItems = items.filter(item => item.quantity <= item.safetyStock);
@@ -338,7 +339,7 @@ export const inventoryController = {
       if (!search) {
         return res.status(400).json({ error: "Search parameter is required" });
       }
-      
+
       const items = await prisma.inventory.findMany({
         where: {
           OR: [
@@ -347,11 +348,11 @@ export const inventoryController = {
             { location: { contains: search as string, mode: 'insensitive' } }
           ]
         },
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
       res.json(items);
@@ -368,14 +369,14 @@ export const inventoryController = {
     try {
       const request = await prisma.materialRequest.create({
         data: req.body,
-        include: { 
-          items: true, 
-          project: true, 
+        include: {
+          items: true,
+          project: true,
           requester: { select: { id: true, name: true, email: true } },
           approver: { select: { id: true, name: true, email: true } }
         }
       });
-      
+
       // Notify store manager(s)
       const storeManagers = await prisma.user.findMany({ where: { role: 'store' } });
       await Promise.all(storeManagers.map(manager =>
@@ -397,9 +398,9 @@ export const inventoryController = {
   async listMaterialRequests(req: Request, res: Response) {
     try {
       const requests = await prisma.materialRequest.findMany({
-        include: { 
-          items: true, 
-          project: true, 
+        include: {
+          items: true,
+          project: true,
           requester: { select: { id: true, name: true, email: true } },
           approver: { select: { id: true, name: true, email: true } }
         }
@@ -419,14 +420,14 @@ export const inventoryController = {
       const request = await prisma.materialRequest.update({
         where: { id },
         data: req.body,
-        include: { 
-          items: true, 
-          project: true, 
+        include: {
+          items: true,
+          project: true,
           requester: { select: { id: true, name: true, email: true } },
           approver: { select: { id: true, name: true, email: true } }
         }
       });
-      
+
       // If approved, notify requester
       if (request.status === MaterialRequestStatus.COMPLETED) {
         await prismaNotificationService.createNotification({
@@ -484,8 +485,8 @@ export const inventoryController = {
         return res.status(404).json({ error: 'Inventory item not found' });
       }
 
-      const newQuantity = operation === 'add' 
-        ? currentItem.quantity + quantity 
+      const newQuantity = operation === 'add'
+        ? currentItem.quantity + quantity
         : currentItem.quantity - quantity;
 
       if (newQuantity < 0) {
@@ -495,11 +496,11 @@ export const inventoryController = {
       const updatedItem = await prisma.inventory.update({
         where: { id },
         data: { quantity: newQuantity },
-        include: { 
+        include: {
           createdBy: { select: { id: true, name: true, email: true } },
           primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
           secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
-          requests: true 
+          requests: true
         }
       });
 
@@ -518,6 +519,8 @@ export const inventoryController = {
     try {
       const {
         transferID,
+        fromLocation,
+        toLocation,
         requestedDate,
         status,
         driverName,
@@ -528,10 +531,14 @@ export const inventoryController = {
         items,
         fromUserId,
         toUserId,
+        inventoryType,
+        gstIn,
+        state,
+        stateCode,
       } = req.body || {};
 
-      if (!transferID  || !requestedDate) {
-        return res.status(400).json({ error: "transferID, fromLocation, toLocation, requestedDate are required" });
+      if (!transferID || !fromLocation || !toLocation || !requestedDate) {
+        return res.status(400).json({ error: "transferID, fromLocation, toLocation, and requestedDate are required" });
       }
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "At least one item is required" });
@@ -564,19 +571,19 @@ export const inventoryController = {
       const itemValidations: ItemValidation[] = [];
 
       for (const item of items) {
-        const { itemCode, itemName, type, quantity, unit } = item;
+        const { itemCode, itemName, type, quantity, unit, hsnCode } = item;
 
         if (!itemCode || !itemName || !type || !quantity) {
-          return res.status(400).json({ 
-            error: `Missing required fields for item: itemCode, itemName, type, and quantity are required` 
+          return res.status(400).json({
+            error: `Missing required fields for item: itemCode, itemName, type, and quantity are required`
           });
         }
 
         // Validate quantity is a positive integer
         const quantityInt = parseInt(quantity);
         if (isNaN(quantityInt) || quantityInt <= 0) {
-          return res.status(400).json({ 
-            error: `Invalid quantity for item ${itemCode}: must be a positive integer` 
+          return res.status(400).json({
+            error: `Invalid quantity for item ${itemCode}: must be a positive integer`
           });
         }
 
@@ -591,15 +598,15 @@ export const inventoryController = {
         });
 
         if (!inventoryItem) {
-          return res.status(404).json({ 
-            error: `Item not found in from user's inventory: ${itemCode} - ${itemName} (${type})` 
+          return res.status(404).json({
+            error: `Item not found in from user's inventory: ${itemCode} - ${itemName} (${type})`
           });
         }
 
         // Check if sufficient quantity is available
         if (inventoryItem.quantity < quantityInt) {
-          return res.status(400).json({ 
-            error: `Insufficient quantity for item ${itemCode} - ${itemName}. Available: ${inventoryItem.quantity}, Requested: ${quantityInt}` 
+          return res.status(400).json({
+            error: `Insufficient quantity for item ${itemCode} - ${itemName}. Available: ${inventoryItem.quantity}, Requested: ${quantityInt}`
           });
         }
 
@@ -609,7 +616,8 @@ export const inventoryController = {
           itemCode,
           itemName: itemName as Item,
           type: type as InventoryType,
-          notes: item.notes || null
+          notes: item.notes || null,
+          hsnCode: hsnCode || null
         });
       }
 
@@ -618,7 +626,7 @@ export const inventoryController = {
         const transferItems: any[] = [];
 
         for (const validation of itemValidations) {
-          const { fromInventoryItem, quantity, itemCode, itemName, type, notes } = validation;
+          const { fromInventoryItem, quantity, itemCode, itemName, type, notes, hsnCode } = validation;
 
           // Deduct from from user's inventory
           await tx.inventory.update({
@@ -633,6 +641,7 @@ export const inventoryController = {
             unit: fromInventoryItem.unit,
             inventoryId: fromInventoryItem.id,
             notes: notes,
+            hsnCode: hsnCode,
           });
         }
 
@@ -640,10 +649,16 @@ export const inventoryController = {
         const created = await tx.materialTransfer.create({
           data: {
             transferID,
+            fromLocation,
+            toLocation,
             requestedDate: new Date(requestedDate),
             status: status ?? 'PENDING',
             driverName: driverName || null,
             etaMinutes: typeof etaMinutes === 'number' ? etaMinutes : null,
+            inventoryType: inventoryType || null,
+            gstIn: gstIn || null,
+            state: state || null,
+            stateCode: stateCode || null,
             vehicleId: vehicleId || null,
             approvedById: approvedById || null,
             priority: priority ?? 'NORMAL',
@@ -677,7 +692,7 @@ export const inventoryController = {
     }
   },
 
- async listMaterialTransfers(req: Request, res: Response) {
+  async listMaterialTransfers(req: Request, res: Response) {
     try {
       const { userId } = req.query;
       if (userId) {
@@ -692,19 +707,19 @@ export const inventoryController = {
           orderBy: { createdAt: 'desc' },
         });
         res.json(transfers);
-      }else{
-      const transfers = await (prisma as any).materialTransfer.findMany({
-        // where: { createdById: userId as string },
-        include: {
-          items: true,
-          vehicle: true,
-          approvedBy: { select: { id: true, name: true, email: true } },
-          createdBy: { select: { id: true, name: true, email: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      res.json(transfers);
-    }
+      } else {
+        const transfers = await (prisma as any).materialTransfer.findMany({
+          // where: { createdById: userId as string },
+          include: {
+            items: true,
+            vehicle: true,
+            approvedBy: { select: { id: true, name: true, email: true } },
+            createdBy: { select: { id: true, name: true, email: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        res.json(transfers);
+      }
     } catch (error) {
       logger.error("Error fetching material transfers:", error);
       res.status(500).json({
@@ -749,21 +764,40 @@ export const inventoryController = {
       if (!existing) return res.status(404).json({ error: 'Material transfer not found' });
       if (existing.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-      const { transferID, fromLocation, toLocation, requestedDate, status, driverName, etaMinutes, vehicleId, approvedById, priority } = req.body || {};
+      const {
+        transferID,
+        fromLocation,
+        toLocation,
+        requestedDate,
+        status,
+        driverName,
+        etaMinutes,
+        inventoryType,
+        gstIn,
+        state,
+        stateCode,
+        vehicleId,
+        approvedById,
+        priority
+      } = req.body || {};
 
       const updated = await (prisma as any).materialTransfer.update({
         where: { id },
         data: {
-          transferID,
-          fromLocation,
-          toLocation,
-          requestedDate: requestedDate ? new Date(requestedDate) : undefined,
-          status,
-          driverName,
-          etaMinutes,
-          vehicleId,
-          approvedById,
-          priority,
+          ...(transferID && { transferID }),
+          ...(fromLocation && { fromLocation }),
+          ...(toLocation && { toLocation }),
+          ...(requestedDate && { requestedDate: new Date(requestedDate) }),
+          ...(status && { status }),
+          ...(driverName !== undefined && { driverName }),
+          ...(etaMinutes !== undefined && { etaMinutes }),
+          ...(inventoryType !== undefined && { inventoryType }),
+          ...(gstIn !== undefined && { gstIn }),
+          ...(state !== undefined && { state }),
+          ...(stateCode !== undefined && { stateCode }),
+          ...(vehicleId !== undefined && { vehicleId }),
+          ...(approvedById !== undefined && { approvedById }),
+          ...(priority && { priority }),
         },
         include: {
           items: true,
@@ -829,7 +863,7 @@ export const inventoryController = {
       if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
       if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-      const { description, quantity, unit, inventoryId, notes } = req.body || {};
+      const { description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
       if (!description || typeof quantity !== 'number') {
         return res.status(400).json({ error: 'description and quantity are required' });
       }
@@ -841,6 +875,7 @@ export const inventoryController = {
           unit: unit || null,
           inventoryId: inventoryId || null,
           notes: notes || null,
+          hsnCode: hsnCode || null,
         },
       });
       res.status(201).json(item);
@@ -879,10 +914,17 @@ export const inventoryController = {
       const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
       if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
       if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
-      const { description, quantity, unit, inventoryId, notes } = req.body || {};
+      const { description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
       const item = await (prisma as any).materialTransferItem.update({
         where: { id: itemId },
-        data: { description, quantity, unit, inventoryId, notes },
+        data: {
+          ...(description && { description }),
+          ...(quantity !== undefined && { quantity }),
+          ...(unit !== undefined && { unit }),
+          ...(inventoryId !== undefined && { inventoryId }),
+          ...(notes !== undefined && { notes }),
+          ...(hsnCode !== undefined && { hsnCode }),
+        },
       });
       if (!item || item.transferId !== transferId) return res.status(404).json({ error: 'Material transfer item not found' });
       res.json(item);
