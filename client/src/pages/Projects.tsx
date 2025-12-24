@@ -509,7 +509,7 @@ const ProjectsContent = () => {
     const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
     // Add subview state management
-    const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus'>('main');
+    const [subview, setSubview] = useState<'main' | 'activeProjects' | 'onSchedule' | 'budgetAnalysis' | 'alerts' | 'resourceAllocation' | 'materialStatus' | 'projectsOverview'>('main');
     const [newProject, setNewProject] = useState<Partial<Project>>({
         name: '',
         clientId: '',
@@ -1434,10 +1434,10 @@ Add any additional notes here...
                                                         <Label htmlFor="coverAreaWithMaterial" className="font-normal cursor-pointer text-sm">With Material</Label>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
-                                                         <input
-                                                             type="checkbox"
-                                                             id="coverAreaWithoutMaterial"
-                                                             checked={newProject.withOrWithoutCoverArea === false}
+                                                        <input
+                                                            type="checkbox"
+                                                            id="coverAreaWithoutMaterial"
+                                                            checked={newProject.withOrWithoutCoverArea === false}
                                                             onChange={(e) => {
                                                                 if (e.target.checked) {
                                                                     setNewProject({ ...newProject, withOrWithoutCoverArea: false });
@@ -1615,24 +1615,24 @@ Add any additional notes here...
                                             name: '',
                                             clientId: '',
                                             budget: 0,
-                                             totalSpend: 0,
-                                             deadline: '',
-                                             location: '',
-                                             manager: '',
-                                             squareFootage: 0,
-                                             startDate: '',
-                                             estimatedDuration: 0,
-                                             description: '',
-                                             contractType: '',
-                                             estimatedCost: 0,
-                                             milestones: [],
-                                             itemRate: '',
-                                             withOrWithoutItem: false,
-                                             costPlus: '',
-                                             withOrWithoutCostPlus: false,
-                                             coverArea: '',
-                                             coverAreaUnit: '',
-                                             withOrWithoutCoverArea: false
+                                            totalSpend: 0,
+                                            deadline: '',
+                                            location: '',
+                                            manager: '',
+                                            squareFootage: 0,
+                                            startDate: '',
+                                            estimatedDuration: 0,
+                                            description: '',
+                                            contractType: '',
+                                            estimatedCost: 0,
+                                            milestones: [],
+                                            itemRate: '',
+                                            withOrWithoutItem: false,
+                                            costPlus: '',
+                                            withOrWithoutCostPlus: false,
+                                            coverArea: '',
+                                            coverAreaUnit: '',
+                                            withOrWithoutCoverArea: false
                                         });
                                         setProjectType('');
                                         setEditingProject(null);
@@ -1685,34 +1685,42 @@ Add any additional notes here...
                     {subview === 'main' && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                             <StatCard
-                                title="Total Square Footage"
-                                value={`${(projects.reduce((sum, p) => sum + (p.squareFootage || 0), 0) / 1000).toFixed(3)}K sq ft`}
-                                icon={LandPlot}
+                                title="Total Projects"
+                                value={projects.length}
+                                icon={Building}
                                 trend={{
-                                    value: 15,
-                                    label: "vs last month"
+                                    value: projects.length > 0 ? Math.round((projects.length / (projects.length || 1)) * 100) : 0,
+                                    label: "active projects"
                                 }}
-                                onClick={() => setSubview('resourceAllocation')}
+                                onClick={() => setSubview('projectsOverview')}
                             />
                             <StatCard
-                                title="Avg Project Duration"
-                                value={`${Math.round(projects.reduce((sum, p) => sum + (p.estimatedDuration || 0), 0) / projects.length || 0)} days`}
-                                icon={Calendar}
-                                trend={{
-                                    value: -5,
-                                    label: "improvement"
-                                }}
-                                onClick={() => setSubview('materialStatus')}
-                            />
-                            <StatCard
-                                title="Order Value"
-                                value={
-                                    <>₹{(projects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000000).toFixed(2)}Cr total</>
-                                }
+                                title="Total Budget"
+                                value={`₹${(projects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000000).toFixed(2)}Cr`}
                                 icon={TrendingUp}
                                 trend={{
-                                    value: 3,
-                                    label: "efficiency gain"
+                                    value: Math.round((projects.reduce((sum, p) => sum + (p.budget || 0), 0) / (projects.length || 1)) / 1000000),
+                                    label: "avg per project"
+                                }}
+                                onClick={() => setSubview('budgetAnalysis')}
+                            />
+                            <StatCard
+                                title="Total Spent"
+                                value={`₹${(projects.reduce((sum, p) => sum + (p.totalSpend || 0), 0) / 10000000).toFixed(2)}Cr`}
+                                icon={AlertTriangle}
+                                trend={{
+                                    value: Math.round(((projects.reduce((sum, p) => sum + (p.totalSpend || 0), 0)) / (projects.reduce((sum, p) => sum + (p.budget || 0), 0) || 1)) * 100),
+                                    label: "of total budget"
+                                }}
+                                onClick={() => setSubview('budgetAnalysis')}
+                            />
+                            <StatCard
+                                title="Remaining Budget"
+                                value={`₹${(Math.max(0, projects.reduce((sum, p) => sum + ((p.budget || 0) - (p.totalSpend || 0)), 0)) / 10000000).toFixed(2)}Cr`}
+                                icon={Calendar}
+                                trend={{
+                                    value: Math.round((Math.max(0, projects.reduce((sum, p) => sum + ((p.budget || 0) - (p.totalSpend || 0)), 0)) / (projects.reduce((sum, p) => sum + (p.budget || 0), 0) || 1)) * 100),
+                                    label: "left to spend"
                                 }}
                                 onClick={() => setSubview('budgetAnalysis')}
                             />
@@ -2707,7 +2715,88 @@ Add any additional notes here...
                         </Card>
                     )}
 
+                    {/* Projects Overview Subview */}
+                    {subview === 'projectsOverview' && (
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle>Projects Overview</CardTitle>
+                                        <CardDescription>Detailed view of all projects and their status</CardDescription>
+                                    </div>
+                                    <Button variant="outline" onClick={() => setSubview('main')}>
+                                        Back to Projects
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+                                    {/* Summary Statistics */}
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="p-4 border rounded-lg">
+                                            <p className="text-sm text-muted-foreground">Total Projects</p>
+                                            <p className="text-2xl font-bold">{projects.length}</p>
+                                        </div>
+                                        <div className="p-4 border rounded-lg">
+                                            <p className="text-sm text-muted-foreground">Total Budget</p>
+                                            <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + (p.budget || 0), 0) / 10000000).toFixed(2)}Cr</p>
+                                        </div>
+                                        <div className="p-4 border rounded-lg">
+                                            <p className="text-sm text-muted-foreground">Total Spent</p>
+                                            <p className="text-2xl font-bold">₹{(projects.reduce((sum, p) => sum + (p.totalSpend || 0), 0) / 10000000).toFixed(2)}Cr</p>
+                                        </div>
+                                        <div className="p-4 border rounded-lg">
+                                            <p className="text-sm text-muted-foreground">Avg Budget</p>
+                                            <p className="text-2xl font-bold">₹{(projects.length > 0 ? projects.reduce((sum, p) => sum + (p.budget || 0), 0) / projects.length / 1000000 : 0).toFixed(1)}M</p>
+                                        </div>
+                                    </div>
 
+                                    {/* Projects List */}
+                                    <div className="space-y-3">
+                                        <h3 className="font-medium">All Projects</h3>
+                                        <div className="space-y-2">
+                                            {projects.map((project) => {
+                                                const budgetUtilization = project.budget > 0 ? ((project.totalSpend || 0) / project.budget) * 100 : 0;
+                                                const isOverBudget = budgetUtilization > 100;
+                                                return (
+                                                    <div key={project.id} className={`p-4 border rounded-lg ${isOverBudget ? 'border-red-200 bg-red-50' : ''}`}>
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div>
+                                                                <h4 className="font-medium">{project.name}</h4>
+                                                                <p className="text-sm text-muted-foreground">{project.location}</p>
+                                                            </div>
+                                                            <Badge variant={isOverBudget ? 'destructive' : budgetUtilization > 80 ? 'secondary' : 'default'}>
+                                                                {budgetUtilization.toFixed(0)}% Utilized
+                                                            </Badge>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-4 text-sm">
+                                                            <div>
+                                                                <span className="text-muted-foreground">Budget:</span>
+                                                                <p className="font-medium">₹{((project.budget || 0) / 1000000).toFixed(1)}M</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Spent:</span>
+                                                                <p className="font-medium">₹{((project.totalSpend || 0) / 1000000).toFixed(1)}M</p>
+                                                            </div>
+                                                            <div>
+                                                                <span className="text-muted-foreground">Remaining:</span>
+                                                                <p className="font-medium">₹{(Math.max(0, (project.budget || 0) - (project.totalSpend || 0)) / 1000000).toFixed(1)}M</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {projects.length === 0 && (
+                                                <div className="text-center py-8 text-muted-foreground">
+                                                    <p>No projects available</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Progress Report Modal */}
                     <Dialog open={showProgressReportModal} onOpenChange={setShowProgressReportModal}>
