@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SelectWithOtherFormField } from "@/components/ui/select-with-other";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -225,8 +226,12 @@ const WarehouseDashboard = () => {
     // Open edit with row data prefilled
     const handleEdit = (row: any) => {
         setEditingWarehouseId(row.id);
+        const itemNameValue = row.itemName || row.name || "";
+        const predefinedItems = ITEM_OPTIONS.map(opt => opt.value);
+        const isCustomItem = itemNameValue && !predefinedItems.includes(itemNameValue);
         warehouseForm.reset({
-            itemName: row.itemName || row.name || "",
+            itemName: isCustomItem ? "OTHER" : itemNameValue,
+            itemNameOther: isCustomItem ? itemNameValue : "",
             category: Array.isArray(row.category) ? (row.category[0] || "") : (row.category || ""),
             type: row.type || "OLD",
             quantity: Number(row.quantity) || 0,
@@ -268,7 +273,7 @@ const WarehouseDashboard = () => {
             const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
 
             const payload = {
-                itemName: values.itemName,
+                itemName: values.itemName === "OTHER" ? (values.itemNameOther || "") : values.itemName,
                 category: values.category,
                 type: values.type,
                 quantity: Number(values.quantity) || 0,
@@ -514,7 +519,7 @@ const WarehouseDashboard = () => {
             const headers = token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" };
 
             const payload = {
-                itemName: values.itemName,
+                itemName: values.itemName === "OTHER" ? (values.itemNameOther || "") : values.itemName,
                 category: values.category,
                 type: values.type,
                 quantity: Number(values.quantity) || 0,
@@ -801,32 +806,15 @@ const WarehouseDashboard = () => {
                             <Form {...warehouseForm}>
                                 <form onSubmit={warehouseForm.handleSubmit(onSubmitAddWarehouse)} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField
+                                        <SelectWithOtherFormField
                                             control={warehouseForm.control}
                                             name="itemName"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Item</FormLabel>
-                                                    <Select
-                                                        onValueChange={field.onChange}
-                                                        defaultValue={field.value}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select Item" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {ITEM_OPTIONS.map((option) => (
-                                                                <SelectItem key={option.value} value={option.value}>
-                                                                    {option.label}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
+                                            label="Item"
+                                            options={ITEM_OPTIONS.filter(opt => opt.value !== "OTHER").map(opt => ({ value: opt.value, label: opt.label }))}
+                                            placeholder="Select Item"
+                                            otherPlaceholder="Enter item name"
+                                            otherOptionValue="OTHER"
+                                            otherOptionLabel="Other"
                                         />
 
                                         <FormField
@@ -1047,32 +1035,15 @@ const WarehouseDashboard = () => {
                             <Form {...warehouseForm}>
                                 <form onSubmit={warehouseForm.handleSubmit(onSubmitUpdateWarehouse)} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField
+                                        <SelectWithOtherFormField
                                             control={warehouseForm.control}
                                             name="itemName"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Item</FormLabel>
-                                                    <Select
-                                                        onValueChange={field.onChange}
-                                                        defaultValue={field.value}
-                                                    >
-                                                        <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select Item" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {ITEM_OPTIONS.map((option) => (
-                                                                <SelectItem key={option.value} value={option.value}>
-                                                                    {option.label}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
+                                            label="Item"
+                                            options={ITEM_OPTIONS.filter(opt => opt.value !== "OTHER").map(opt => ({ value: opt.value, label: opt.label }))}
+                                            placeholder="Select Item"
+                                            otherPlaceholder="Enter item name"
+                                            otherOptionValue="OTHER"
+                                            otherOptionLabel="Other"
                                         />
 
                                         <FormField

@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Trash2 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -60,7 +61,24 @@ export function EditMaterialRequestModal({
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
-  const [customUOMInput, setCustomUOMInput] = useState<{ [key: number]: string }>({});
+
+  // UOM options for SelectWithOther
+  const uomOptions = [
+    { value: "CUBIC_FEET", label: "Cubic Feet" },
+    { value: "M_CUBE", label: "M Cube" },
+    { value: "SQUARE_FEET", label: "Square Feet" },
+    { value: "TONNE", label: "Tonne" },
+    { value: "SQUARE_METRE", label: "Square Metre" },
+    { value: "PIECE", label: "Piece" },
+    { value: "LITRE", label: "Litre" },
+    { value: "KILOGRAM", label: "Kilogram" },
+    { value: "BOX", label: "Box" },
+    { value: "ROLL", label: "Roll" },
+    { value: "SHEET", label: "Sheet" },
+    { value: "HOURS", label: "Hours" },
+    { value: "DAYS", label: "Days" },
+    { value: "LUMPSUM", label: "Lump Sum" },
+  ];
 
   // Load projects for dropdown
   useEffect(() => {
@@ -102,29 +120,22 @@ export function EditMaterialRequestModal({
 
       // Initialize items
       if (materialRequest.items && Array.isArray(materialRequest.items)) {
-        const mappedItems = materialRequest.items.map((item) => ({
-          hsnCode: item.hsnCode,
-          rate: item.rate,
-          value: item.value,
-          vehicleNo: item.vehicleNo,
-          requiredBy: item.requiredBy ? item.requiredBy.split("T")[0] : "",
-          quantity: item.quantity,
-          targetWarehouse: item.targetWarehouse || "",
-          uom: item.uom,
-        }));
-        setItems(mappedItems);
-
-        // Initialize customUOMInput for any custom UOM values
         const predefinedUOMs = ["CUBIC_FEET", "M_CUBE", "SQUARE_FEET", "TONNE", "SQUARE_METRE", "PIECE", "LITRE", "KILOGRAM", "BOX", "ROLL", "SHEET", "HOURS", "DAYS", "LUMPSUM"];
-        const customUOMs: { [key: number]: string } = {};
-        mappedItems.forEach((item, index) => {
-          if (item.uom && !predefinedUOMs.includes(item.uom)) {
-            customUOMs[index] = item.uom;
-          }
+        const mappedItems = materialRequest.items.map((item) => {
+          const isCustomUOM = item.uom && !predefinedUOMs.includes(item.uom);
+          return {
+            hsnCode: item.hsnCode,
+            rate: item.rate,
+            value: item.value,
+            vehicleNo: item.vehicleNo,
+            requiredBy: item.requiredBy ? item.requiredBy.split("T")[0] : "",
+            quantity: item.quantity,
+            targetWarehouse: item.targetWarehouse || "",
+            uom: isCustomUOM ? "OTHER" : item.uom,
+            uomOther: isCustomUOM ? item.uom : "",
+          };
         });
-        if (Object.keys(customUOMs).length > 0) {
-          setCustomUOMInput(customUOMs);
-        }
+        setItems(mappedItems);
       } else {
         setItems([]);
       }
@@ -236,8 +247,10 @@ export function EditMaterialRequestModal({
 
         // Create new items
         for (const item of items) {
+          const finalUOM = item.uom === "OTHER" ? (item.uomOther || "") : item.uom;
           const itemData = {
             ...item,
+            uom: finalUOM,
             requiredBy: item.requiredBy
               ? new Date(item.requiredBy + "T00:00:00.000Z").toISOString()
               : undefined,
@@ -513,53 +526,17 @@ export function EditMaterialRequestModal({
 
                     <div className="space-y-2">
                       <Label htmlFor={`uom-${index}`}>Unit of Measure</Label>
-                      {customUOMInput[index] !== undefined ? (
-                        <Input
-                          id={`uom-${index}`}
-                          type="text"
-                          value={customUOMInput[index]}
-                          onChange={(e) => {
-                            setCustomUOMInput((prev) => ({
-                              ...prev,
-                              [index]: e.target.value,
-                            }));
-                            handleItemChange(index, "uom", e.target.value);
-                          }}
-                          placeholder="Enter UOM"
-                          autoFocus
-                        />
-                      ) : (
-                        <Select value={item.uom} onValueChange={(value) => {
-                          if (value === "OTHER") {
-                            setCustomUOMInput((prev) => ({
-                              ...prev,
-                              [index]: "",
-                            }));
-                          }
-                          handleItemChange(index, "uom", value);
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select UOM" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="CUBIC_FEET">Cubic Feet</SelectItem>
-                            <SelectItem value="M_CUBE">M Cube</SelectItem>
-                            <SelectItem value="SQUARE_FEET">Square Feet</SelectItem>
-                            <SelectItem value="TONNE">Tonne</SelectItem>
-                            <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
-                            <SelectItem value="PIECE">Piece</SelectItem>
-                            <SelectItem value="LITRE">Litre</SelectItem>
-                            <SelectItem value="KILOGRAM">Kilogram</SelectItem>
-                            <SelectItem value="BOX">Box</SelectItem>
-                            <SelectItem value="ROLL">Roll</SelectItem>
-                            <SelectItem value="SHEET">Sheet</SelectItem>
-                            <SelectItem value="HOURS">Hours</SelectItem>
-                            <SelectItem value="DAYS">Days</SelectItem>
-                            <SelectItem value="LUMPSUM">Lump Sum</SelectItem>
-                            <SelectItem value="OTHER">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
+                      <SelectWithOther
+                        value={item.uom || ""}
+                        onValueChange={(value) => handleItemChange(index, "uom", value)}
+                        otherValue={item.uomOther || ""}
+                        onOtherValueChange={(value) => handleItemChange(index, "uomOther", value)}
+                        options={uomOptions}
+                        placeholder="Select UOM"
+                        otherPlaceholder="Enter UOM"
+                        otherOptionValue="OTHER"
+                        otherOptionLabel="Other"
+                      />
                     </div>
 
                     <div className="space-y-2">

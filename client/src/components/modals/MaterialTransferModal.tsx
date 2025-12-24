@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
@@ -51,6 +52,7 @@ interface ItemRow {
   id: number;
   itemCode: string;
   itemName: string;
+  itemNameOther?: string; // For custom item name when "Other" is selected
   quantity: number;
   unit: Unit | "";
   itemType: ItemType | ""; // OLD or NEW
@@ -121,7 +123,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
   const [toUserId, setToUserId] = useState<string>("");
 
   const [items, setItems] = useState<ItemRow[]>([
-    { id: 1, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" },
+    { id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" },
   ]);
   const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
 
@@ -186,12 +188,13 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                     id: idx + 1,
                     itemCode: it.itemCode || "",
                     itemName: it.itemName || "",
+                    itemNameOther: "",
                     quantity: typeof it.quantity === 'number' ? it.quantity : 0,
                     unit: (it.unit || "") as Unit | "",
                     itemType: (it.itemType || "") as ItemType | "",
                     inventoryId: it.inventoryId || undefined,
                   }))
-                : [{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }];
+                : [{ id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" }];
               setItems(mappedItems);
               setNotes("");
             } else {
@@ -234,7 +237,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       toast({ title: "Validation Error", description: "Requested date is required", variant: "destructive" });
       return false;
     }
-    const validItems = items.filter((i) => i.itemCode.trim() && i.itemName.trim() && i.quantity > 0);
+    const validItems = items.filter((i) => {
+      const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
+      return i.itemCode.trim() && hasItemName && i.quantity > 0;
+    });
     if (validItems.length === 0) {
       toast({ title: "Validation Error", description: "At least one valid item is required", variant: "destructive" });
       return false;
@@ -262,10 +268,13 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
         approvedById: approvedById || null,
         priority,
         items: items
-          .filter((i) => i.itemCode && i.itemName && i.quantity > 0)
+          .filter((i) => {
+            const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
+            return i.itemCode.trim() && hasItemName && i.quantity > 0;
+          })
           .map((i) => ({
             itemCode: i.itemCode,
-            itemName: i.itemName,
+            itemName: i.itemName === "OTHER" ? (i.itemNameOther || "") : i.itemName,
             quantity: i.quantity,
             unit: i.unit || null,
             type: i.itemType || null,
@@ -350,7 +359,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       setVehicleId("");
       setApprovedById("");
       setPriority("NORMAL");
-      setItems([{ id: 1, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }]);
+      setItems([{ id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" }]);
       setNotes("");
     } catch (e) {
       toast({ title: "Error", description: (e as Error).message || (mode === 'edit' ? 'Failed to update material transfer' : 'Failed to create material transfer'), variant: "destructive" });
@@ -553,18 +562,20 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                         />
                       </TableCell>
                       <TableCell>
-                        <Select value={row.itemName} onValueChange={(v) => updateItem(row.id, "itemName", v)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Item" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ITEM_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SelectWithOther
+                          value={row.itemName}
+                          onValueChange={(v) => updateItem(row.id, "itemName", v)}
+                          otherValue={row.itemNameOther || ""}
+                          onOtherValueChange={(v) => updateItem(row.id, "itemNameOther", v)}
+                          options={ITEM_OPTIONS.filter(opt => opt.value !== "OTHER").map(opt => ({ value: opt.value, label: opt.label }))}
+                          placeholder="Select Item"
+                          otherPlaceholder="Enter item name"
+                          otherLabel="Item Name"
+                          otherOptionValue="OTHER"
+                          otherOptionLabel="Other"
+                          selectClassName="h-10"
+                          inputClassName="h-10"
+                        />
                       </TableCell>
                       <TableCell>
                         <Select value={row.itemType} onValueChange={(v: ItemType) => updateItem(row.id, "itemType", v)}>

@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -62,6 +63,7 @@ interface PurchaseOrderItem {
   requiredBy: string;
   quantity: number;
   uom: string;
+  uomOther?: string; // For custom UOM when "other" is selected
   rate: number;
   amount: number;
 }
@@ -162,7 +164,15 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
   const [selectedPaymentTermIds, setSelectedPaymentTermIds] = useState<string[]>([]);
 
   // State to track custom UOM input for each item
-  const [customUOMInput, setCustomUOMInput] = useState<{ [key: string]: string }>({});
+  // UOM options for SelectWithOther
+  const uomOptions = [
+    { value: "kg", label: "kg" },
+    { value: "pcs", label: "pcs" },
+    { value: "m", label: "m" },
+    { value: "l", label: "l" },
+    { value: "sqm", label: "sqm" },
+    { value: "cum", label: "cum" },
+  ];
 
   const [activeTab, setActiveTab] = useState("details");
   const [isAccountingDimensionsOpen, setIsAccountingDimensionsOpen] =
@@ -238,17 +248,17 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
         paymentSchedule: initialData.paymentSchedule || [],
       });
 
-      // Initialize customUOMInput for any custom UOM values
+      // Initialize items with uomOther for custom UOM values
       const predefinedUOMs = ["kg", "pcs", "m", "l", "sqm", "cum"];
-      const customUOMs: { [key: string]: string } = {};
-      (initialData.items || []).forEach((item) => {
-        if (item.uom && !predefinedUOMs.includes(item.uom)) {
-          customUOMs[item.id] = item.uom;
-        }
+      const updatedItems = (initialData.items || []).map((item) => {
+        const isCustomUOM = item.uom && !predefinedUOMs.includes(item.uom);
+        return {
+          ...item,
+          uom: isCustomUOM ? "other" : item.uom,
+          uomOther: isCustomUOM ? item.uom : "",
+        };
       });
-      if (Object.keys(customUOMs).length > 0) {
-        setCustomUOMInput(customUOMs);
-      }
+      setFormData(prev => ({ ...prev, items: updatedItems }));
     }
   }, [initialData, isEditing]);
 
@@ -389,6 +399,10 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
       ...formData,
       terms: terms,
       userId: user?.id || "",
+      items: formData.items.map(item => ({
+        ...item,
+        uom: item.uom === "other" ? (item.uomOther || "") : item.uom,
+      })),
     };
 
     try {
@@ -439,7 +453,8 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
       if (!item.quantity || item.quantity <= 0) {
         errors.push(`Item ${index + 1}: Valid quantity is required`);
       }
-      if (!item.uom) {
+      const hasUOM = item.uom === "other" ? (item.uomOther?.trim() || "") : (item.uom?.trim() || "");
+      if (!hasUOM) {
         errors.push(`Item ${index + 1}: Unit of Measure is required`);
       }
       if (!item.rate || item.rate <= 0) {
@@ -683,7 +698,7 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                               <td>{item.itemCode || ''}</td>
                               <td>{item.description || ''}</td>
                               <td>{Number(item.quantity) || 0}</td>
-                              <td>{item.uom || ''}</td>
+                              <td>{item.uom === "other" ? (item.uomOther || "") : (item.uom || '')}</td>
                               <td>₹ {(Number(item.rate) || 0).toFixed(2)}</td>
                               <td>₹ {(Number(item.amount) || 0).toFixed(2)}</td>
                             </tr>
@@ -1169,48 +1184,19 @@ export function PurchaseOrderForm({ onSuccess, initialData, isEditing = false }:
                             />
                           </TableCell>
                           <TableCell>
-                            {customUOMInput[item.id] !== undefined ? (
-                              <Input
-                                type="text"
-                                value={customUOMInput[item.id]}
-                                onChange={(e) => {
-                                  setCustomUOMInput((prev) => ({
-                                    ...prev,
-                                    [item.id]: e.target.value,
-                                  }));
-                                  updateItem(item.id, "uom", e.target.value);
-                                }}
-                                placeholder="Enter UOM"
-                                className="w-20"
-                                autoFocus
-                              />
-                            ) : (
-                              <Select
-                                value={item.uom}
-                                onValueChange={(value) => {
-                                  if (value === "other") {
-                                    setCustomUOMInput((prev) => ({
-                                      ...prev,
-                                      [item.id]: "",
-                                    }));
-                                  }
-                                  updateItem(item.id, "uom", value);
-                                }}
-                              >
-                                <SelectTrigger className="w-20">
-                                  <SelectValue placeholder="UOM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="kg">kg</SelectItem>
-                                  <SelectItem value="pcs">pcs</SelectItem>
-                                  <SelectItem value="m">m</SelectItem>
-                                  <SelectItem value="l">l</SelectItem>
-                                  <SelectItem value="sqm">sqm</SelectItem>
-                                  <SelectItem value="cum">cum</SelectItem>
-                                  <SelectItem value="other">other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            )}
+                            <SelectWithOther
+                              value={item.uom || ""}
+                              onValueChange={(value) => updateItem(item.id, "uom", value)}
+                              otherValue={item.uomOther || ""}
+                              onOtherValueChange={(value) => updateItem(item.id, "uomOther", value)}
+                              options={uomOptions}
+                              placeholder="UOM"
+                              otherPlaceholder="Enter UOM"
+                              otherOptionValue="other"
+                              otherOptionLabel="other"
+                              selectClassName="w-20 h-8"
+                              inputClassName="w-20 h-8"
+                            />
                           </TableCell>
                           <TableCell>
                             <Input

@@ -10,6 +10,7 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { SelectWithOther } from "../ui/select-with-other";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "../ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
@@ -31,6 +32,7 @@ interface ItemRow {
   quantity: number;
   targetWarehouse: string;
   uom: string;
+  uomOther?: string; // For custom UOM when "OTHER" is selected
 }
 
 interface Project {
@@ -67,12 +69,11 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
   const [scanBarcode, setScanBarcode] = useState("");
   const [targetWarehouse, setTargetWarehouse] = useState("");
   const [items, setItems] = useState<ItemRow[]>([
-    { id: 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" },
+    { id: 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "", uomOther: "" },
   ]);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [selectAll, setSelectAll] = useState(false);
   const [expanded, setExpanded] = useState(true);
-  const [customUOMInput, setCustomUOMInput] = useState<{ [key: number]: string }>({});
 
   const API_URL =
   import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
@@ -95,19 +96,25 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
     }
   }, [open]);
 
-  // Initialize customUOMInput for any custom UOM values
-  useEffect(() => {
-    const predefinedUOMs = ["CUBIC_FEET", "M_CUBE", "SQUARE_FEET", "TONNE", "SQUARE_METRE", "PIECE", "LITRE", "KILOGRAM", "BOX", "ROLL", "SHEET", "HOURS", "DAYS", "LUMPSUM"];
-    const customUOMs: { [key: number]: string } = {};
-    items.forEach((item) => {
-      if (item.uom && !predefinedUOMs.includes(item.uom)) {
-        customUOMs[item.id] = item.uom;
-      }
-    });
-    if (Object.keys(customUOMs).length > 0) {
-      setCustomUOMInput(customUOMs);
-    }
-  }, [items]);
+  // UOM options for SelectWithOther
+  const uomOptions = [
+    { value: "CUBIC_FEET", label: "Cubic Feet" },
+    { value: "M_CUBE", label: "M Cube" },
+    { value: "SQUARE_FEET", label: "Square Feet" },
+    { value: "TONNE", label: "Tonne" },
+    { value: "SQUARE_METRE", label: "Square Metre" },
+    { value: "PIECE", label: "Piece" },
+    { value: "LITRE", label: "Litre" },
+    { value: "KILOGRAM", label: "Kilogram" },
+    { value: "BOX", label: "Box" },
+    { value: "ROLL", label: "Roll" },
+    { value: "SHEET", label: "Sheet" },
+    { value: "HOURS", label: "Hours" },
+    { value: "DAYS", label: "Days" },
+    { value: "LUMPSUM", label: "Lump Sum" },
+  ];
+
+  // Removed customUOMInput initialization - now handled by SelectWithOther component
 
 
   const getToken = () => {
@@ -322,11 +329,10 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
     }
 
     // Validate items
-    const validItems = items.filter(item => 
-      item.hsnCode.trim() && 
-      item.quantity > 0 && 
-      item.uom.trim()
-    );
+    const validItems = items.filter(item => {
+      const hasUOM = item.uom === "OTHER" ? (item.uomOther?.trim() || "") : (item.uom.trim() || "");
+      return item.hsnCode.trim() && item.quantity > 0 && hasUOM;
+    });
 
     if (validItems.length === 0) {
       toast({
@@ -348,11 +354,10 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
     setLoading(true);
     try {
       // Filter out empty items
-      const validItems = items.filter(item => 
-        item.hsnCode.trim() && 
-        item.quantity > 0 && 
-        item.uom.trim()
-      );
+      const validItems = items.filter(item => {
+        const hasUOM = item.uom === "OTHER" ? (item.uomOther?.trim() || "") : (item.uom.trim() || "");
+        return item.hsnCode.trim() && item.quantity > 0 && hasUOM;
+      });
 
       const materialRequestData = {
         requestNumber: requestNumber.trim(),
@@ -371,7 +376,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
           rate: item.rate || null,
           value: item.value || null,
           vehicleNo: item.vehicleNo?.trim() || null,
-          uom: item.uom.trim(),
+          uom: item.uom === "OTHER" ? (item.uomOther || "") : item.uom.trim(),
           requiredBy: item.requiredBy || null,
           targetWarehouse: item.targetWarehouse.trim() || null,
         }))
@@ -405,7 +410,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
         setRequiredBy("");
         setPriceList("Standard Buying");
         setTargetWarehouse("");
-        setItems([{ id: 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "" }]);
+        setItems([{ id: 1, hsnCode: "", rate: undefined, value: undefined, vehicleNo: "", requiredBy: "", quantity: 0, targetWarehouse: "", uom: "", uomOther: "" }]);
         setTerms("");
         setMoreInfo("");
         setProjectId("");
@@ -641,53 +646,19 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                             />
                           </div>
                           <div className="col-span-1">
-                            {customUOMInput[item.id] !== undefined ? (
-                              <Input
-                                type="text"
-                                value={customUOMInput[item.id]}
-                                onChange={(e) => {
-                                  setCustomUOMInput((prev) => ({
-                                    ...prev,
-                                    [item.id]: e.target.value,
-                                  }));
-                                  handleItemChange(idx, "uom", e.target.value);
-                                }}
-                                placeholder="Enter UOM"
-                                className="h-8 text-sm"
-                                autoFocus
-                              />
-                            ) : (
-                              <Select value={item.uom} onValueChange={(value) => {
-                                if (value === "OTHER") {
-                                  setCustomUOMInput((prev) => ({
-                                    ...prev,
-                                    [item.id]: "",
-                                  }));
-                                }
-                                handleItemChange(idx, "uom", value);
-                              }}>
-                                <SelectTrigger className="h-8 text-sm">
-                                  <SelectValue placeholder="UOM" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="CUBIC_FEET">Cubic Feet</SelectItem>
-                                  <SelectItem value="M_CUBE">M Cube</SelectItem>
-                                  <SelectItem value="SQUARE_FEET">Square Feet</SelectItem>
-                                  <SelectItem value="TONNE">Tonne</SelectItem>
-                                  <SelectItem value="SQUARE_METRE">Square Metre</SelectItem>
-                                  <SelectItem value="PIECE">Piece</SelectItem>
-                                  <SelectItem value="LITRE">Litre</SelectItem>
-                                  <SelectItem value="KILOGRAM">Kilogram</SelectItem>
-                                  <SelectItem value="BOX">Box</SelectItem>
-                                  <SelectItem value="ROLL">Roll</SelectItem>
-                                  <SelectItem value="SHEET">Sheet</SelectItem>
-                                  <SelectItem value="HOURS">Hours</SelectItem>
-                                  <SelectItem value="DAYS">Days</SelectItem>
-                                  <SelectItem value="LUMPSUM">Lump Sum</SelectItem>
-                                  <SelectItem value="OTHER">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            )}
+                            <SelectWithOther
+                              value={item.uom}
+                              onValueChange={(value) => handleItemChange(idx, "uom", value)}
+                              otherValue={item.uomOther || ""}
+                              onOtherValueChange={(value) => handleItemChange(idx, "uomOther", value)}
+                              options={uomOptions}
+                              placeholder="UOM"
+                              otherPlaceholder="Enter UOM"
+                              otherOptionValue="OTHER"
+                              otherOptionLabel="Other"
+                              selectClassName="h-8 text-sm"
+                              inputClassName="h-8 text-sm"
+                            />
                           </div>
                         </div>
                       ))}
