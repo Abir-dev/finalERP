@@ -3018,7 +3018,7 @@ const InventoryContent = () => {
                         {/* <EnhancedStatCard
               title="Forecasted Items"
               value={inventoryItems
-                .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
+                .filter((item) => item.quantity < (item.safetyStock || 50) * 2)
                 .length.toString()}
               icon={Package}
               description="Items needing procurement"
@@ -3031,12 +3031,12 @@ const InventoryContent = () => {
                         <EnhancedStatCard
                             title="Estimated Cost"
                             value={`₹${inventoryItems
-                                .filter((item) => item.quantity < (item.reorderLevel || 50) * 2)
+                                .filter((item) => item.quantity < (item.safetyStock || 50) * 2)
                                 .reduce(
                                     (total, item) =>
                                         total +
                                         (item.unitCost || 0) *
-                                        ((item.reorderLevel || 50) - item.quantity),
+                                        ((item.safetyStock || 50) - item.quantity),
                                     0
                                 )
                                 .toLocaleString()}`}
@@ -3267,13 +3267,13 @@ const InventoryContent = () => {
                                             <Badge
                                                 variant={
                                                     selectedItem.quantity >
-                                                        (selectedItem.reorderLevel || 50)
+                                                        (selectedItem.safetyStock || 50)
                                                         ? "default"
                                                         : "destructive"
                                                 }
                                             >
                                                 {selectedItem.quantity >
-                                                    (selectedItem.reorderLevel || 50)
+                                                    (selectedItem.safetyStock || 50)
                                                     ? "In Stock"
                                                     : "Low Stock"}
                                             </Badge>
@@ -3329,7 +3329,7 @@ const InventoryContent = () => {
                                                     {/* <div className="flex justify-between">
                                                         <span>Reorder Level</span>
                                                         <span>
-                                                            {selectedItem.reorderLevel || 50}{" "}
+                                                            {selectedItem.safetyStock || 50}{" "}
                                                             {selectedItem.unit}
                                                         </span>
                                                     </div> */}
@@ -3752,7 +3752,7 @@ const InventoryContent = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         {/* <FormField
                                             control={editForm.control}
-                                            name="reorderLevel"
+                                            name="safetyStock"
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Reorder Level</FormLabel>
@@ -4152,7 +4152,7 @@ const InventoryContent = () => {
                                                 Reorder Level
                                             </Label>
                                             <p className="text-base">
-                                                {selectedItem.reorderLevel || "-"}
+                                                {selectedItem.safetyStock || "-"}
                                             </p>
                                         </div> */}
 

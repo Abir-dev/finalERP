@@ -33,7 +33,6 @@ interface InventoryItem {
     unit: string;
     location: string;
     lastUpdated: string;
-    reorderLevel?: number;
     maxStock?: number;
     safetyStock?: number;
     unitCost?: number;
@@ -72,21 +71,157 @@ const UNIT_OPTIONS = [
     { value: "BOX", label: "Boxes" },
     { value: "ROLL", label: "Rolls" },
     { value: "SHEET", label: "Sheets" },
+    { value: "OTHER", label: "Other"}
 ];
 
+// Match Item enum from Inventory page
 const ITEM_OPTIONS = [
-    { value: "CEMENT", label: "Cement" },
-    { value: "SAND", label: "Sand" },
-    { value: "BRICKS", label: "Bricks" },
-    { value: "STEEL", label: "Steel" },
-    { value: "AGGREGATE", label: "Aggregate" },
-    { value: "WOOD", label: "Wood" },
-    { value: "GLASS", label: "Glass" },
-    { value: "PAINT", label: "Paint" },
-    { value: "ELECTRICAL", label: "Electrical" },
-    { value: "PLUMBING", label: "Plumbing" },
-    { value: "FIXTURES", label: "Fixtures" },
-    { value: "TOOLS", label: "Tools" },
+    // Acrogan items
+    { value: "ACROGAN", label: "Acrogan" },
+    { value: "ACROSPAN", label: "Acrospan" },
+    { value: "INNER_ACROSPAN", label: "Inner Acrospan" },
+    { value: "OUTER_ACROGAN", label: "Outer Acrogan" },
+    { value: "OUTER_ACROSPAN", label: "Outer Acrospan" },
+    { value: "TWO_POINT_FIVE_MTR_INNER_ACROSPAN", label: "2.5 Mtr Inner Acrospan" },
+    { value: "TWO_POINT_FIVE_MTR_OUTER_ACROSPAN", label: "2.5 Mtr Outer Acrospan" },
+    { value: "THREE_MTR_INNER_ACROSPAN", label: "3 Mtr Inner Acrospan" },
+    { value: "THREE_MTR_OUTER_ACROSPAN", label: "3 Mtr Outer Acrospan" },
+    { value: "TWO_MTR_BOX_SET_ACROSPAN", label: "2 Mtr Box Set Acrospan" },
+    { value: "THREE_MTR_BOX_SET_ACROSPAN", label: "3 Mtr Box Set Acrospan" },
+    
+    // Tele Prop items
+    { value: "THREE_THREE_TELE_PROP", label: "3/3 Tele Prop" },
+    { value: "TWO_THREE_TELE_PROP", label: "2/3 Tele Prop" },
+    { value: "THREE_MTR_INNER_TELE_PROP", label: "3 Mtr Inner Tele Prop" },
+    { value: "THREE_MTR_OUTER_TELE_PROP", label: "3 Mtr Outer Tele Prop" },
+    { value: "TWO_TWO_TELE_PROP", label: "2/2 Tele Prop" },
+    { value: "TWO_MTR_INNER_TELE_PROP", label: "2 Mtr Inner Tele Prop" },
+    { value: "TWO_MTR_OUTER_TELE_PROP", label: "2 Mtr Outer Tele Prop" },
+    
+    // Vertical items
+    { value: "CUTTING_PIC_VERTICAL", label: "Cutting Pic Vertical" },
+    { value: "SCRAP_VERTICAL", label: "Scrap Vertical" },
+    { value: "THREE_MTR_2_CAP_VERTICAL", label: "3 Mtr 2 Cap Vertical" },
+    { value: "THREE_MTR_3_CAP_VERTICAL", label: "3 Mtr 3 Cap Vertical" },
+    { value: "THREE_MTR_6_CAP_VERTICAL", label: "3 Mtr 6 Cap Vertical" },
+    { value: "REJECT_3_MTR_VERTICAL", label: "Reject 3 Mtr Vertical" },
+    { value: "FIVE_HUNDRED_MM_VERTICAL", label: "500 MM Vertical" },
+    { value: "MM_VERTICAL_1500", label: "1500 MM Vertical" },
+    { value: "MM_VERTICAL_1000", label: "1000 MM Vertical" },
+    { value: "TWO_MTR_VERTICAL", label: "2 Mtr Vertical" },
+    
+    // Horizontal items
+    { value: "MM_HORIZONTAL_600", label: "600 MM Horizontal" },
+    { value: "SEVEN_FIFTY_MM_HORIZONTAL", label: "750 MM Horizontal" },
+    { value: "NINE_HUNDRED_MM_HORIZONTAL", label: "900 MM Horizontal" },
+    { value: "MM_HORIZONTAL_1000", label: "1000 MM Horizontal" },
+    { value: "ONE_THOUSAND_FIFTY_MM_HORIZONTAL", label: "1050 MM Horizontal" },
+    { value: "MM_HORIZONTAL_1150", label: "1150 MM Horizontal" },
+    { value: "MM_HORIZONTAL_1200", label: "1200 MM Horizontal" },
+    { value: "TWELVE_FIFTY_MM_HORIZONTAL", label: "1250 MM Horizontal" },
+    { value: "FIFTEEN_HUNDRED_MM_HORIZONTAL", label: "1500 MM Horizontal" },
+    { value: "MM_HORIZONTAL_1700", label: "1700 MM Horizontal" },
+    { value: "SEVENTEEN_FIFTY_MM_HORIZONTAL", label: "1750 MM Horizontal" },
+    { value: "MM_HORIZONTAL_1800", label: "1800 MM Horizontal" },
+    
+    // MS Pipe items
+    { value: "STAGING_SUPPORTING_PIPE", label: "Staging Supporting Pipe" },
+    { value: "TWENTY_FEET_MS_PIPE", label: "20 Feet MS Pipe" },
+    { value: "TEN_FEET_MS_PIPE", label: "10 Feet MS Pipe" },
+    { value: "CUTTING_PIC_MS_PIPE", label: "Cutting Pic MS Pipe" },
+    { value: "MS_CLUMP", label: "MS Clump" },
+    { value: "FORTY_X_FORTY_SWING_CLUMP", label: "40x40 Swing Clump" },
+    { value: "CLAMP_40X40_FIXED", label: "40x40 Fixed Clamp" },
+    { value: "CLAMP_50X40_SWING", label: "50x40 Swing Clamp" },
+    { value: "FIFTY_X_FORTY_FIXED_CLUMP", label: "50x40 Fixed Clump" },
+    { value: "GI_SHEET_TINA", label: "GI Sheet Tina" },
+    
+    // SIKANJA sizes
+    { value: "SIKANJA_600MM", label: "600 MM SIKANJA" },
+    { value: "SIKANJA_650MM", label: "650 MM SIKANJA" },
+    { value: "SIKANJA_700MM", label: "700 MM SIKANJA" },
+    { value: "SIKANJA_750MM", label: "750 MM SIKANJA" },
+    { value: "SIKANJA_800MM", label: "800 MM SIKANJA" },
+    { value: "SIKANJA_850MM", label: "850 MM SIKANJA" },
+    { value: "SIKANJA_900MM", label: "900 MM SIKANJA" },
+    { value: "SIKANJA_950MM", label: "950 MM SIKANJA" },
+    { value: "SIKANJA_1000MM", label: "1000 MM SIKANJA" },
+    { value: "SIKANJA_1050MM", label: "1050 MM SIKANJA" },
+    { value: "SIKANJA_1100MM", label: "1100 MM SIKANJA" },
+    { value: "SIKANJA_1150MM", label: "1150 MM SIKANJA" },
+    { value: "SIKANJA_1200MM", label: "1200 MM SIKANJA" },
+    { value: "SIKANJA_1250MM", label: "1250 MM SIKANJA" },
+    { value: "SIKANJA_1300MM", label: "1300 MM SIKANJA" },
+    { value: "SIKANJA_1350MM", label: "1350 MM SIKANJA" },
+    { value: "SIKANJA_1400MM", label: "1400 MM SIKANJA" },
+    { value: "SIKANJA_1450MM", label: "1450 MM SIKANJA" },
+    { value: "SIKANJA_1500MM", label: "1500 MM SIKANJA" },
+    { value: "SIKANJA_1550MM", label: "1550 MM SIKANJA" },
+    { value: "SIKANJA_1600MM", label: "1600 MM SIKANJA" },
+    { value: "SIKANJA_1650MM", label: "1650 MM SIKANJA" },
+    { value: "SIKANJA_1700MM", label: "1700 MM SIKANJA" },
+    { value: "SIKANJA_1750MM", label: "1750 MM SIKANJA" },
+    { value: "SIKANJA_1800MM", label: "1800 MM SIKANJA" },
+    { value: "SIKANJA_1850MM", label: "1850 MM SIKANJA" },
+    { value: "SIKANJA_1900MM", label: "1900 MM SIKANJA" },
+    { value: "SIKANJA_2000MM", label: "2000 MM SIKANJA" },
+    { value: "SIKANJA_2050MM", label: "2050 MM SIKANJA" },
+    { value: "SIKANJA_2100MM", label: "2100 MM SIKANJA" },
+    { value: "SIKANJA_2150MM", label: "2150 MM SIKANJA" },
+    { value: "SIKANJA_2200MM", label: "2200 MM SIKANJA" },
+    { value: "SIKANJA_2250MM", label: "2250 MM SIKANJA" },
+    { value: "SIKANJA_2300MM", label: "2300 MM SIKANJA" },
+    { value: "ALL_SIKANJA", label: "All SIKANJA" },
+    { value: "SIKANJA_PIN", label: "SIKANJA Pin" },
+    
+    // C SIKANJA variants
+    { value: "C_SIKANJA_750MM", label: "750 MM C SIKANJA" },
+    { value: "C_SIKANJA_800MM", label: "800 MM C SIKANJA" },
+    { value: "C_SIKANJA_860MM", label: "860 MM C SIKANJA" },
+    { value: "C_SIKANJA_1000MM", label: "1000 MM C SIKANJA" },
+    { value: "C_SIKANJA_1050MM", label: "1050 MM C SIKANJA" },
+    
+    // Other structural items
+    { value: "C_CHANEL", label: "C Channel" },
+    { value: "TAI_ROD", label: "Tai Rod" },
+    { value: "BASE_PLATE", label: "Base Plate" },
+    { value: "BASE_JACK", label: "Base Jack" },
+    { value: "STIRRUP_HEAD", label: "Stirrup Head" },
+    { value: "U_HEAD_JACK", label: "U Head Jack" },
+    { value: "JOINT_PIN", label: "Joint Pin" },
+    { value: "MS_PLATE", label: "MS Plate" },
+    { value: "MS_ANGLE", label: "MS Angle" },
+    { value: "WAILER", label: "Wailer" },
+    { value: "EIGHT_SIX_ONE", label: "Eight Six One" },
+    { value: "WALKWAY_JALI", label: "Walkway Jali" },
+    { value: "WALKWAY_TABLE", label: "Walkway Table" },
+    { value: "HOLLOW_PIPE", label: "Hollow Pipe" },
+    { value: "FORTY_X_FORTY_HOLLOW_PIPE", label: "40x40 Hollow Pipe" },
+    { value: "LIFT_GUARD_OPENING", label: "Lift Guard Opening" },
+    { value: "PVC_PIPE_10_MM", label: "PVC Pipe 10 MM" },
+    
+    // Bunker beds and support equipment
+    { value: "TWO_TARE_BUNKER_BED", label: "2 Tyre Bunker Bed" },
+    { value: "THREE_TARE_BUNKER_BED", label: "3 Tyre Bunker Bed" },
+    { value: "VERTICAL_BUNKER_BED", label: "Vertical Bunker Bed" },
+    { value: "HORIZENTAL_BUNKER_BED", label: "Horizontal Bunker Bed" },
+    { value: "NUT_BOLT_FOR_BUNKER_BED", label: "Nut Bolt For Bunker Bed" },
+    { value: "PLY_FOR_BUNKER_BED", label: "Ply For Bunker Bed" },
+    
+    // Safety and infrastructure
+    { value: "FIRE_EXTINGULS", label: "Fire Extinguishers" },
+    { value: "WATER_STOPPER", label: "Water Stopper" },
+    { value: "SHALL_BALLAH", label: "Shall Ballah" },
+    { value: "SHUTTERINING_PLATE", label: "Shuttering Plate" },
+    
+    // Water tank sizes
+    { value: "TWO_HUNDRED_LTR_WATER_TANK", label: "200 Ltr Water Tank" },
+    { value: "FIVE_FIFTY_LTR_WATER_TANK", label: "550 Ltr Water Tank" },
+    { value: "SEVEN_FIFTY_LTR_WATER_TANK", label: "750 Ltr Water Tank" },
+    { value: "ONE_THOUSAND_LTR_WATER_TANK", label: "1000 Ltr Water Tank" },
+    { value: "TWO_THOUSAND_LTR_WATER_TANK", label: "2000 Ltr Water Tank" },
+    { value: "FIVE_THOUSAND_LTR_WATER_TANK", label: "5000 Ltr Water Tank" },
+    
     { value: "OTHER", label: "Other" },
 ];
 
@@ -130,7 +265,7 @@ const WarehouseDashboard = () => {
                 filtered = inventoryItems.filter(item => item.type === 'NEW');
                 break;
             case 'lowstock':
-                filtered = inventoryItems.filter(item => (item.quantity || 0) <= (item.reorderLevel || 50));
+                filtered = inventoryItems.filter(item => (item.quantity || 0) <= (item.safetyStock || 50));
                 break;
             case 'value':
                 filtered = [...inventoryItems].sort((a, b) => ((b.unitCost || 0) * (b.quantity || 0)) - ((a.unitCost || 0) * (a.quantity || 0)));
@@ -150,7 +285,6 @@ const WarehouseDashboard = () => {
         quantity: number;
         unit: string;
         location: string;
-        reorderLevel: number;
         maxStock: number;
         safetyStock: number;
         primarySupplier: string;
@@ -164,7 +298,6 @@ const WarehouseDashboard = () => {
             quantity: 0,
             unit: "",
             location: "",
-            reorderLevel: 0,
             maxStock: 0,
             safetyStock: 0,
             primarySupplier: "",
@@ -176,12 +309,12 @@ const WarehouseDashboard = () => {
     // Warehouse form for Warehouse model schema
     const warehouseForm = useForm<{
         itemName: string;
+        itemNameOther?: string;
         category: string; // InventoryCategory enum value
         type: string;
         quantity: number;
         unit: string; // Unit enum value
         location: string;
-        reorderLevel: number;
         maximumStock: number;
         safetyStock: number;
         unitCost: number;
@@ -189,12 +322,12 @@ const WarehouseDashboard = () => {
     }>({
         defaultValues: {
             itemName: "",
+            itemNameOther: "",
             category: "",
             type: "",
             quantity: 0,
             unit: "",
             location: "",
-            reorderLevel: 0,
             maximumStock: 0,
             safetyStock: 0,
             unitCost: 0,
@@ -237,7 +370,7 @@ const WarehouseDashboard = () => {
             quantity: Number(row.quantity) || 0,
             unit: row.unit || "",
             location: row.location || "",
-            reorderLevel: Number(row.reorderLevel) || 0,
+    
             maximumStock: Number(row.maximumStock ?? row.maxStock ?? 0),
             safetyStock: Number(row.safetyStock) || 0,
             unitCost: Number(row.unitCost) || 0,
@@ -279,7 +412,6 @@ const WarehouseDashboard = () => {
                 quantity: Number(values.quantity) || 0,
                 unit: values.unit,
                 location: values.location,
-                reorderLevel: Number(values.reorderLevel) || 0,
                 maximumStock: Number(values.maximumStock) || 0,
                 safetyStock: Number(values.safetyStock) || 0,
                 unitCost: Number(values.unitCost) || 0,
@@ -348,7 +480,7 @@ const WarehouseDashboard = () => {
         [inventoryItems]
     );
     const lowStockCount = useMemo(
-        () => inventoryItems.filter((it) => (it.quantity || 0) <= (it.reorderLevel || 50)).length,
+        () => inventoryItems.filter((it) => (it.quantity || 0) <= (it.safetyStock || 50)).length,
         [inventoryItems]
     );
     const uniqueCategoryCount = useMemo(() => {
@@ -390,7 +522,6 @@ const WarehouseDashboard = () => {
                 quantity: Number(values.quantity) || 0,
                 unit: values.unit, // enum
                 location: values.location,
-                reorderLevel: Number(values.reorderLevel) || 0,
                 maximumStock: Number(values.maxStock) || 0,
                 safetyStock: Number(values.safetyStock) || 0,
                 primarySupplierName: values.primarySupplier,
@@ -525,7 +656,6 @@ const WarehouseDashboard = () => {
                 quantity: Number(values.quantity) || 0,
                 unit: values.unit,
                 location: values.location,
-                reorderLevel: Number(values.reorderLevel) || 0,
                 maximumStock: Number(values.maximumStock) || 0,
                 safetyStock: Number(values.safetyStock) || 0,
                 unitCost: Number(values.unitCost) || 0,
@@ -568,7 +698,7 @@ const WarehouseDashboard = () => {
                             <Badge variant="secondary" className="text-xs">{row.category}</Badge>
                         )}
                         <Badge
-                            variant={(row.quantity || 0) > (row.reorderLevel || 50) ? "default" : "destructive"}
+                            variant={(row.quantity || 0) > (row.safetyStock || 50) ? "default" : "destructive"}
                             className="text-xs"
                         >
                             {row.quantity} {row.unit}
@@ -597,7 +727,7 @@ const WarehouseDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
                 <div className="space-y-1">
-                    {/* <div>Reorder Level: {row.reorderLevel || 50}</div> */}
+                    {/* <div>Safety Stock: {row.safetyStock || 50}</div> */}
                     <div>Max Stock: {row.maximumStock || 500}</div>
                 </div>
             </div>

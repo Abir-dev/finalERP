@@ -157,7 +157,7 @@ interface InventoryItem {
     unit: string;
     location: string;
     lastUpdated: string;
-    reorderLevel?: number;
+    safetyStock?: number;
     maxStock?: number;
     safetyStock?: number;
     unitCost?: number;
@@ -1555,7 +1555,7 @@ const SiteDashboardContent = () => {
                             <Badge variant="secondary" className="text-xs">{row.category}</Badge>
                         )}
                         <Badge
-                            variant={(row.quantity || 0) > (row.reorderLevel || 50) ? "default" : "destructive"}
+                            variant={(row.quantity || 0) > (row.safetyStock || 50) ? "default" : "destructive"}
                             className="text-xs"
                         >
                             {row.quantity} {row.unit}
@@ -1584,7 +1584,7 @@ const SiteDashboardContent = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
                 <div className="space-y-1">
-                    <div>Reorder Level: {row.reorderLevel || 50}</div>
+                    <div>Safety Stock: {row.safetyStock || 50}</div>
                     <div>Max Stock: {row.maximumStock || 500}</div>
                 </div>
             </div>

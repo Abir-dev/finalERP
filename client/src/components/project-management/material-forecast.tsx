@@ -56,7 +56,7 @@ export function MaterialForecast({ projectId, timeframe, inventoryData }: Materi
     const totalQuantity = categoryItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalValue = categoryItems.reduce((sum, item) => sum + (item.quantity * (item.unitCost || 0)), 0);
     const lowStockItems = categoryItems.filter(item => 
-      item.reorderLevel && item.quantity <= item.reorderLevel
+      item.safetyStock && item.quantity <= item.safetyStock
     ).length;
     
     return {
@@ -72,22 +72,22 @@ export function MaterialForecast({ projectId, timeframe, inventoryData }: Materi
   const totalInventoryValue = categoryStats.reduce((sum, cat) => sum + cat.totalValue, 0);
   const totalItems = inventoryData.length;
   const lowStockItemsCount = inventoryData.filter(item => 
-    item.reorderLevel && item.quantity <= item.reorderLevel
+    item.safetyStock && item.quantity <= item.safetyStock
   ).length;
 
   const getAvailabilityColor = (item: InventoryItem) => {
-    if (!item.reorderLevel) return 'default';
+    if (!item.safetyStock) return 'default';
     if (item.quantity === 0) return 'destructive';
-    if (item.quantity <= item.reorderLevel) return 'secondary';
-    if (item.quantity <= (item.reorderLevel * 1.5)) return 'outline';
+    if (item.quantity <= item.safetyStock) return 'secondary';
+    if (item.quantity <= (item.safetyStock * 1.5)) return 'outline';
     return 'default';
   };
 
   const getAvailabilityText = (item: InventoryItem) => {
-    if (!item.reorderLevel) return 'Unknown';
+    if (!item.safetyStock) return 'Unknown';
     if (item.quantity === 0) return 'Out of Stock';
-    if (item.quantity <= item.reorderLevel) return 'Low Stock';
-    if (item.quantity <= (item.reorderLevel * 1.5)) return 'Medium Stock';
+    if (item.quantity <= item.safetyStock) return 'Low Stock';
+    if (item.quantity <= (item.safetyStock * 1.5)) return 'Medium Stock';
     return 'In Stock';
   };
 
@@ -314,9 +314,9 @@ export function MaterialForecast({ projectId, timeframe, inventoryData }: Materi
                           <MapPin className="h-3 w-3" />
                           {material.location || 'N/A'}
                         </p>
-                        {material.reorderLevel && (
+                        {material.safetyStock && (
                           <p className="text-xs text-muted-foreground">
-                            Reorder: {material.reorderLevel} {material.unit}
+                            Safety Stock: {material.safetyStock} {material.unit}
                           </p>
                         )}
                       </div>

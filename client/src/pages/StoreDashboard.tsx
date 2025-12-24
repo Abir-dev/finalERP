@@ -1429,16 +1429,16 @@ setInventory(response.data);
                       Critical Stock Alerts
                     </CardTitle>
                     <CardDescription>
-                      Items below reorder level that need immediate attention
+                      Items below safety stock that need immediate attention
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {inventory
-                        .filter((item) => item.quantity <= item.reorderLevel)
+                        .filter((item) => item.quantity <= item.safetyStock)
                         .map((item) => {
                           const stockStatus =
-                            item.quantity <= item.reorderLevel * 0.5
+                            item.quantity <= item.safetyStock * 0.5
                               ? "Critical"
                               : "Low";
                           const bgColor =
@@ -1465,7 +1465,7 @@ setInventory(response.data);
                                   </p>
                                   <p className="text-sm text-gray-600">
                                     Current: {item.quantity} {item.unit} |
-                                    Reorder Level: {item.reorderLevel}{" "}
+                                    Safety Stock: {item.safetyStock}{" "}
                                     {item.unit}
                                   </p>
                                   <p className="text-xs text-gray-500">
@@ -1494,7 +1494,7 @@ setInventory(response.data);
                           );
                         })}
                       {inventory.filter(
-                        (item) => item.quantity <= item.reorderLevel
+                        (item) => item.quantity <= item.safetyStock
                       ).length === 0 && (
                         <div className="text-center py-8 text-gray-500">
                           <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
@@ -1814,10 +1814,10 @@ setInventory(response.data);
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {inventory
-                        .filter((item) => item.quantity <= item.reorderLevel)
+                        .filter((item) => item.quantity <= item.safetyStock)
                         .map((item) => {
                           const stockStatus =
-                            item.quantity <= item.reorderLevel * 0.5
+                            item.quantity <= item.safetyStock * 0.5
                               ? "Critical"
                               : "Low";
                           const bgColor =
@@ -1844,7 +1844,7 @@ setInventory(response.data);
                                   </p>
                                   <p className="text-sm text-gray-600">
                                     Current: {item.quantity} {item.unit} |
-                                    Reorder Level: {item.reorderLevel}{" "}
+                                    Safety Stock: {item.safetyStock}{" "}
                                     {item.unit}
                                   </p>
                                   <p className="text-xs text-gray-500">
@@ -1873,7 +1873,7 @@ setInventory(response.data);
                           );
                         })}
                       {inventory.filter(
-                        (item) => item.quantity <= item.reorderLevel
+                        (item) => item.quantity <= item.safetyStock
                       ).length === 0 && (
                         <div className="text-center py-8 text-gray-500">
                           <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
@@ -2043,24 +2043,24 @@ setInventory(response.data);
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   Category: {item.category} | Reorder Level:{" "}
-                                  {item.reorderLevel} {item.unit}
+                                  {item.safetyStock} {item.unit}
                                 </p>
                               </div>
                             </div>
                             <div className="flex space-x-2">
                               <Badge
                                 variant={
-                                  item.quantity <= item.reorderLevel
+                                  item.quantity <= item.safetyStock
                                     ? "destructive"
                                     : "default"
                                 }
                                 className={
-                                  item.quantity <= item.reorderLevel
+                                  item.quantity <= item.safetyStock
                                     ? "bg-red-500"
                                     : "bg-green-500"
                                 }
                               >
-                                {item.quantity <= item.reorderLevel
+                                {item.quantity <= item.safetyStock
                                   ? "Low Stock"
                                   : "In Stock"}
                               </Badge>
