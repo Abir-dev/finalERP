@@ -953,4 +953,64 @@ export const inventoryController = {
       res.status(500).json({ message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' });
     }
   },
-};
+
+  // Upload authorised signature for Material Transfer
+  async uploadAuthorisedSignature(req: Request, res: Response) {
+    try {
+      const { transferId } = req.params;
+      const userId = (req as any).user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const transfer = await (prisma as any).materialTransfer.findUnique({
+        where: { id: transferId }
+      });
+
+      if (!transfer) {
+        return res.status(404).json({ error: 'Material transfer not found' });
+      }
+
+      if (transfer.createdById !== userId && (req as any).user?.role !== 'admin' && (req as any).user?.role !== 'md') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      // Delete old signature if exists
+      if (transfer.authorisedSignature) {
+        try {
+          const oldKey = extractKeyFromUrl(transfer.authorisedSignature);
+          await deleteImageFromS3(oldKey);
+        } catch (error) {
+          logger.warn(`Failed to delete old authorised signature: ${error}`);
+        }
+      }
+
+      // Upload new signature
+      const { url, key } = await uploadImageToS3({
+        buffer: req.file.buffer,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      });
+
+      const updated = await (prisma as any).materialTransfer.update({
+        where: { id: transferId },
+        data: { authorisedSignature: url }
+      });
+
+      logger.info(`Authorised signature uploaded for transfer: ${transferId}`);
+      res.json({ url, key, transfer: updated });
+    } catch (error) {
+      logger.error("Error uploading authorised signature:", error);
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+  };

@@ -40,4 +40,7 @@ router.get('/transfers/:transferId/items/:itemId', authenticateUser, inventoryCo
 router.put('/transfers/:transferId/items/:itemId', authenticateUser, inventoryController.updateMaterialTransferItem);
 router.delete('/transfers/:transferId/items/:itemId', authenticateUser, inventoryController.deleteMaterialTransferItem);
 
+// Material Transfer Signature Upload
+router.post('/transfers/:transferId/signature', authenticateUser, uploadImage.single('signature'), inventoryController.uploadAuthorisedSignature);
+
 export default router; 
