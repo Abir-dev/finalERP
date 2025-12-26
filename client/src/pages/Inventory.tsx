@@ -95,6 +95,7 @@ import { useUserFilter } from "@/contexts/UserFilterContext";
 import { UserFilterComponent } from "@/components/UserFilterComponent";
 import { PageUserFilterProvider } from "@/components/PageUserFilterProvider";
 import { generateMaterialIndentPDF } from "@/utils/material-indent-pdf";
+import { generateMaterialTransferPDF } from "@/utils/material-transfer-pdf";
 const API_URL =
     import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -283,7 +284,7 @@ const ITEM_OPTIONS = [
     { value: "THREE_MTR_OUTER_ACROSPAN", label: "3 Mtr Outer Acrospan" },
     { value: "TWO_MTR_BOX_SET_ACROSPAN", label: "2 Mtr Box Set Acrospan" },
     { value: "THREE_MTR_BOX_SET_ACROSPAN", label: "3 Mtr Box Set Acrospan" },
-    
+
     // Tele Prop items
     { value: "THREE_THREE_TELE_PROP", label: "3/3 Tele Prop" },
     { value: "TWO_THREE_TELE_PROP", label: "2/3 Tele Prop" },
@@ -292,7 +293,7 @@ const ITEM_OPTIONS = [
     { value: "TWO_TWO_TELE_PROP", label: "2/2 Tele Prop" },
     { value: "TWO_MTR_INNER_TELE_PROP", label: "2 Mtr Inner Tele Prop" },
     { value: "TWO_MTR_OUTER_TELE_PROP", label: "2 Mtr Outer Tele Prop" },
-    
+
     // Vertical items
     { value: "CUTTING_PIC_VERTICAL", label: "Cutting Pic Vertical" },
     { value: "SCRAP_VERTICAL", label: "Scrap Vertical" },
@@ -304,7 +305,7 @@ const ITEM_OPTIONS = [
     { value: "MM_VERTICAL_1500", label: "1500 MM Vertical" },
     { value: "MM_VERTICAL_1000", label: "1000 MM Vertical" },
     { value: "TWO_MTR_VERTICAL", label: "2 Mtr Vertical" },
-    
+
     // Horizontal items
     { value: "MM_HORIZONTAL_600", label: "600 MM Horizontal" },
     { value: "SEVEN_FIFTY_MM_HORIZONTAL", label: "750 MM Horizontal" },
@@ -318,7 +319,7 @@ const ITEM_OPTIONS = [
     { value: "MM_HORIZONTAL_1700", label: "1700 MM Horizontal" },
     { value: "SEVENTEEN_FIFTY_MM_HORIZONTAL", label: "1750 MM Horizontal" },
     { value: "MM_HORIZONTAL_1800", label: "1800 MM Horizontal" },
-    
+
     // MS Pipe items
     { value: "STAGING_SUPPORTING_PIPE", label: "Staging Supporting Pipe" },
     { value: "TWENTY_FEET_MS_PIPE", label: "20 Feet MS Pipe" },
@@ -330,7 +331,7 @@ const ITEM_OPTIONS = [
     { value: "CLAMP_50X40_SWING", label: "50x40 Swing Clamp" },
     { value: "FIFTY_X_FORTY_FIXED_CLUMP", label: "50x40 Fixed Clump" },
     { value: "GI_SHEET_TINA", label: "GI Sheet Tina" },
-    
+
     // SIKANJA sizes
     { value: "SIKANJA_600MM", label: "600 MM SIKANJA" },
     { value: "SIKANJA_650MM", label: "650 MM SIKANJA" },
@@ -368,14 +369,14 @@ const ITEM_OPTIONS = [
     { value: "SIKANJA_2300MM", label: "2300 MM SIKANJA" },
     { value: "ALL_SIKANJA", label: "All SIKANJA" },
     { value: "SIKANJA_PIN", label: "SIKANJA Pin" },
-    
+
     // C SIKANJA variants
     { value: "C_SIKANJA_750MM", label: "750 MM C SIKANJA" },
     { value: "C_SIKANJA_800MM", label: "800 MM C SIKANJA" },
     { value: "C_SIKANJA_860MM", label: "860 MM C SIKANJA" },
     { value: "C_SIKANJA_1000MM", label: "1000 MM C SIKANJA" },
     { value: "C_SIKANJA_1050MM", label: "1050 MM C SIKANJA" },
-    
+
     // Other structural items
     { value: "C_CHANEL", label: "C Channel" },
     { value: "TAI_ROD", label: "Tai Rod" },
@@ -394,7 +395,7 @@ const ITEM_OPTIONS = [
     { value: "FORTY_X_FORTY_HOLLOW_PIPE", label: "40x40 Hollow Pipe" },
     { value: "LIFT_GUARD_OPENING", label: "Lift Guard Opening" },
     { value: "PVC_PIPE_10_MM", label: "PVC Pipe 10 MM" },
-    
+
     // Bunker beds and support equipment
     { value: "TWO_TARE_BUNKER_BED", label: "2 Tyre Bunker Bed" },
     { value: "THREE_TARE_BUNKER_BED", label: "3 Tyre Bunker Bed" },
@@ -402,13 +403,13 @@ const ITEM_OPTIONS = [
     { value: "HORIZENTAL_BUNKER_BED", label: "Horizontal Bunker Bed" },
     { value: "NUT_BOLT_FOR_BUNKER_BED", label: "Nut Bolt For Bunker Bed" },
     { value: "PLY_FOR_BUNKER_BED", label: "Ply For Bunker Bed" },
-    
+
     // Safety and infrastructure
     { value: "FIRE_EXTINGULS", label: "Fire Extinguishers" },
     { value: "WATER_STOPPER", label: "Water Stopper" },
     { value: "SHALL_BALLAH", label: "Shall Ballah" },
     { value: "SHUTTERINING_PLATE", label: "Shuttering Plate" },
-    
+
     // Water tank sizes
     { value: "TWO_HUNDRED_LTR_WATER_TANK", label: "200 Ltr Water Tank" },
     { value: "FIVE_FIFTY_LTR_WATER_TANK", label: "550 Ltr Water Tank" },
@@ -416,7 +417,7 @@ const ITEM_OPTIONS = [
     { value: "ONE_THOUSAND_LTR_WATER_TANK", label: "1000 Ltr Water Tank" },
     { value: "TWO_THOUSAND_LTR_WATER_TANK", label: "2000 Ltr Water Tank" },
     { value: "FIVE_THOUSAND_LTR_WATER_TANK", label: "5000 Ltr Water Tank" },
-    
+
     // Miscellaneous equipment
     { value: "BYCYCLE", label: "Bicycle" },
     { value: "GHUGHU_NUT", label: "Ghughu Nut" },
@@ -442,14 +443,14 @@ const ITEM_OPTIONS = [
     { value: "OXIZEN_CYCLDER", label: "Oxygen Cylinder" },
     { value: "LPG_GAS_CYLINDER", label: "LPG Gas Cylinder" },
     { value: "GARBAGE_CHUTE", label: "Garbage Chute" },
-    
+
     // Vibrators
     { value: "ELECTRIC_VIBRATOR", label: "Electric Vibrator" },
     { value: "PETROL_VIBRATOR", label: "Petrol Vibrator" },
     { value: "DISEAL_VIBRATOR", label: "Diesel Vibrator" },
     { value: "HAND_ELECTRIC_VIBRATOR", label: "Hand Electric Vibrator" },
     { value: "NOZZEL_VIBRATOR", label: "Nozzle Vibrator" },
-    
+
     // Dewatering Pumps
     { value: "ONE_POINT_FIVE_HP_PETROL_DEWATERING_PUMP", label: "1.5 Hp Petrol Dewatering Pump" },
     { value: "THREE_HP_DISEAL_DEWATERING_PUMP", label: "3 Hp Diesel Dewatering Pump" },
@@ -462,7 +463,7 @@ const ITEM_OPTIONS = [
     { value: "TWO_HP_ELECTRIC_DEWATERING_PUMP", label: "2 Hp Electric Dewatering Pump" },
     { value: "THREE_HP_ELECTRIC_DEWATERING_PUMP", label: "3 Hp Electric Dewatering Pump" },
     { value: "FIVE_HP_ELECTRIC_DEWATERING_PUMP", label: "5 Hp Electric Dewatering Pump" },
-    
+
     // Submersible Pumps
     { value: "ONE_HP_SUMERSIBLE_PUMP", label: "1 Hp Submersible Pump" },
     { value: "ONE_POINT_FIVE_HP_SUMERSIBLE_PUMP", label: "1.5 Hp Submersible Pump" },
@@ -474,29 +475,29 @@ const ITEM_OPTIONS = [
     { value: "FOURTEEN_HP_SUMERSIBLE_PUMP", label: "14 Hp Submersible Pump" },
     { value: "FIFTEEN_HP_SUMERSIBLE_PUMP", label: "15 Hp Submersible Pump" },
     { value: "SUMERSIBLE_TULU_PUMP", label: "Submersible Tulu Pump" },
-    
+
     // Mud Submersible Pumps
     { value: "ONE_POINT_FIVE_HP_MUD_SUMERSIBLE_PUMP", label: "1.5 Hp Mud Submersible Pump" },
     { value: "TWO_HP_MUD_SUMERSIBLE_PUMP", label: "2 Hp Mud Submersible Pump" },
     { value: "THREE_HP_MUD_SUMERSIBLE_PUMP", label: "3 Hp Mud Submersible Pump" },
     { value: "FIVE_HP_MUD_SUMERSIBLE_PUMP", label: "5 Hp Mud Submersible Pump" },
-    
+
     // Monoblock Pumps
     { value: "ONE_HP_MONOBLOCK_PUMP", label: "1 Hp Monoblock Pump" },
     { value: "TWO_HP_MONOBLOCK_PUMP", label: "2 Hp Monoblock Pump" },
     { value: "THREE_HP_MONOBLOCK_PUMP", label: "3 Hp Monoblock Pump" },
     { value: "FIVE_HP_MONOBLOCK_PUMP", label: "5 Hp Monoblock Pump" },
     { value: "TWELVE_POINT_FIVE_HP_MONOBLOCK_PUMP", label: "12.5 Hp Monoblock Pump" },
-    
+
     // Diesel Generator
     { value: "DG_125_KVA", label: "DG 125 KVA" },
-    
+
     // Compactors and Welding Machines
     { value: "SOIL_COMPECTOR_MACHINE", label: "Soil Compactor Machine" },
     { value: "ROLLER_MINI_COMPACTOR", label: "Roller Mini Compactor" },
     { value: "SMALL_WELDING_MACHINE", label: "Small Welding Machine" },
     { value: "BIG_WELDING_MACHINE", label: "Big Welding Machine" },
-    
+
     // Cutting and Bending Machines
     { value: "FOURTEEN_INCH_STEEL_CUTTER_MACHINE", label: "14 Inch Steel Cutter Machine" },
     { value: "BIG_STEEL_CUTTER_MACHINE", label: "Big Steel Cutter Machine" },
@@ -505,7 +506,7 @@ const ITEM_OPTIONS = [
     { value: "GANDING_MACHINE", label: "Grinding Machine" },
     { value: "PLY_CUTTER_MACHINE", label: "Ply Cutter Machine" },
     { value: "BLOCK_CUTTING_MACHINE", label: "Block Cutting Machine" },
-    
+
     // Demolition and Drilling Tools
     { value: "FIVE_KG_DEMOLITION_HAMMER", label: "5 Kg Demolition Hammer" },
     { value: "SEVEN_KG_DEMOLITION_HAMMER", label: "7 Kg Demolition Hammer" },
@@ -514,13 +515,13 @@ const ITEM_OPTIONS = [
     { value: "SIXTEEN_KG_DRILL_HAMMER", label: "16 Kg Drill Hammer" },
     { value: "DRILL_MACHINE", label: "Drill Machine" },
     { value: "HILTI_GUN", label: "Hilti Gun" },
-    
+
     // Mixture Machines
     { value: "TEN_SEVEN_MIXTURE_MACHINE", label: "10/7 Mixture Machine" },
     { value: "TEN_FIVE_MIXTURE_MACHINE", label: "10/5 Mixture Machine" },
     { value: "BABY_MIXTURE_MACHINE", label: "Baby Mixture Machine" },
     { value: "ONE_THOUSAND_FIFTY_UNIVERSAL_MACHINE", label: "1050 Universal Machine" },
-    
+
     // Batching and Testing Equipment
     { value: "BATCHING_PLANT", label: "Batching Plant" },
     { value: "CEMENT_SILO", label: "Cement Silo" },
@@ -540,7 +541,7 @@ const ITEM_OPTIONS = [
     { value: "CTM_MACHINE_2000_KN", label: "CTM Machine 2000 KN" },
     { value: "ONE_TWENTY_KN_DAIL_GAUGE", label: "120 KN Dial Gauge" },
     { value: "TWO_THOUSAND_KN_DAIL_GAUGE", label: "2000 KN Dial Gauge" },
-    
+
     // Miscellaneous Testing and Utility
     { value: "MEASURING_CYLINDER", label: "Measuring Cylinder" },
     { value: "OIL_SUCKING_PUMP", label: "Oil Sucking Pump" },
@@ -548,20 +549,20 @@ const ITEM_OPTIONS = [
     { value: "SOIL_TESTING_MACHINE", label: "Soil Testing Machine" },
     { value: "SUSPENDED_PLATEFROM_HOIST_CADLE", label: "Suspended Platform Hoist Cradle" },
     { value: "JET_PUMP_CPWO2", label: "Jet Pump CPWO2" },
-    
+
     // Fans
     { value: "CELLING_FAN", label: "Ceiling Fan" },
     { value: "STAND_FAN", label: "Stand Fan" },
     { value: "WALL_FAN", label: "Wall Fan" },
     { value: "EXHUAST_FAN", label: "Exhaust Fan" },
-    
+
     // Computing Devices
     { value: "COMPUTER", label: "Computer" },
     { value: "CPU", label: "CPU" },
     { value: "UPS", label: "UPS" },
     { value: "MONITER", label: "Monitor" },
     { value: "PRINTER", label: "Printer" },
-    
+
     // Lights and Power
     { value: "TWO_HUNDRED_W_LED_LIGHT", label: "200 W LED Light" },
     { value: "TWO_FORTY_W_LED_LIGHT", label: "240 W LED Light" },
@@ -570,7 +571,7 @@ const ITEM_OPTIONS = [
     { value: "THREE_HUNDRED_W_LED_LIGHT", label: "300 W LED Light" },
     { value: "AIR_BLOWER", label: "Air Blower" },
     { value: "PROJECTOR", label: "Projector" },
-    
+
     // Concrete Pumps - Schwing
     { value: "SP_2000_CONCREATE_PUMP_SCHWING", label: "SP 2000 Concrete Pump Schwing" },
     { value: "CONCRETE_PUMP_1407_AQUARIOUS", label: "1407 Concrete Pump Aquarious" },
@@ -579,13 +580,13 @@ const ITEM_OPTIONS = [
     { value: "CONCRETE_PUMP_1460_AQUARIOUS", label: "1460 Concrete Pump Aquarious" },
     { value: "CONCRETE_PUMP_1400_AQUARIOUS", label: "1400 Concrete Pump Aquarious" },
     { value: "CONCRETE_PUMP_1405D_AQUARIOUS", label: "1405D Concrete Pump Aquarious" },
-    
+
     // Concrete Pump Pipes and Components
     { value: "THREE_MTR_PIPE_CONCREATE_PUMP", label: "3 Mtr Pipe Concrete Pump" },
     { value: "TWO_MTR_PIPE_CONCREATE_PUMP", label: "2 Mtr Pipe Concrete Pump" },
     { value: "ONE_MTR_PIPE_CONCREATE_PUMP", label: "1 Mtr Pipe Concrete Pump" },
     { value: "HALF_MTR_PIPE_CONCREATE_PUMP", label: "0.5 Mtr Pipe Concrete Pump" },
-    
+
     // Concrete Pump Bands
     { value: "NINETY_BAND_CONCREATE_PUMP", label: "90 Band Concrete Pump" },
     { value: "SIXTY_BAND_CONCREATE_PUMP", label: "60 Band Concrete Pump" },
@@ -593,7 +594,7 @@ const ITEM_OPTIONS = [
     { value: "THIRTY_BAND_CONCREATE_PUMP", label: "30 Band Concrete Pump" },
     { value: "FIFTEEN_BAND_CONCREATE_PUMP", label: "15 Band Concrete Pump" },
     { value: "S_BAND_CONCREATE_PUMP", label: "S Band Concrete Pump" },
-    
+
     // Concrete Pump Components
     { value: "PISTION_CONCREATE_PUMP", label: "Piston Concrete Pump" },
     { value: "BALL_HEAD_CONCREATE_PUMP", label: "Ball Head Concrete Pump" },
@@ -604,7 +605,7 @@ const ITEM_OPTIONS = [
     { value: "MAIN_PIPE_CONCREATE_PUMP", label: "Main Pipe Concrete Pump" },
     { value: "GATE_VALVE_CONCREATE_PUMP", label: "Gate Valve Concrete Pump" },
     { value: "BRACKET_FOR_CONCREATE_PIPE_LINE", label: "Bracket For Concrete Pipe Line" },
-    
+
     // Tower Crane items
     { value: "TOWER_CRAIN_SET", label: "Tower Crane Set" },
     { value: "THREE_MTR_MASS_PIC", label: "3 Mtr Mass Pic" },
@@ -658,7 +659,7 @@ const ITEM_OPTIONS = [
     { value: "CAGE_PIN_LOCK", label: "Cage Pin Lock" },
     { value: "CAGE_SIDE_RAILING", label: "Cage Side Railing" },
     { value: "GRISH_GUN", label: "Grish Gun" },
-    
+
     // Hoist items
     { value: "WINGS_ELECTRIC_MOTOR_SET", label: "Wings Electric Motor Set" },
     { value: "WINGS_DISEAL_MACHINE_SET", label: "Wings Diesel Machine Set" },
@@ -683,7 +684,7 @@ const ITEM_OPTIONS = [
     { value: "LIMIT_FRAM", label: "Limit Frame" },
     { value: "WALL_SUPPORT", label: "Wall Support" },
     { value: "TOWER_SUPPORT_FRAME", label: "Tower Support Frame" },
-    
+
     // MKG variants and additional hoist equipment
     { value: "MKG_WINGS_ELECTRIC_MOTOR_SET", label: "MKG Wings Electric Motor Set" },
     { value: "MKG_TOWER_HOIST_COLUMN_1MTR", label: "MKG 1 Mtr Tower Hoist Column" },
@@ -703,8 +704,8 @@ const ITEM_OPTIONS = [
     { value: "END_CLOSER_GATE_MAIN_SWITCH", label: "End Closer Gate Main Switch" },
     { value: "MKG_TOWER_HOIST_COLUMN_SUPPORTING", label: "MKG Tower Hoist Column Supporting" },
     { value: "OTHER", label: "Other" },
-    
-    
+
+
 ];
 
 const INVENTORY_TYPE_OPTIONS = [
@@ -938,7 +939,7 @@ const InventoryContent = () => {
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
             console.log("Fetching material indents for user:", targetUserId);
-            
+
             // Build endpoint based on user role and selection
             // Admin/MD users can view all indents or filter by specific user
             let endpoint = `${API_URL}/material-indane/indanes`;
@@ -1063,6 +1064,96 @@ const InventoryContent = () => {
         } catch (error) {
             console.error("Error downloading PDF:", error);
             toast.error("Failed to download PDF");
+        }
+    };
+
+    const handleDownloadTransferPDF = async (transfer: any) => {
+        try {
+            const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            // Fetch complete transfer data from server
+            const transferId = transfer.dbId || transfer.id;
+            const userID = user?.id || "";
+            console.log("========== DOWNLOAD TRANSFER PDF START ==========");
+            console.log("Transfer ID:", transferId);
+            console.log("User ID:", userID);
+            console.log("Frontend transfer object:", transfer);
+            
+            const response = await axios.get(
+                `${API_URL}/inventory/transfers/${transferId}?userId=${userID}`,
+                { headers }
+            );
+
+            const apiTransfer = response.data;
+            console.log("========== API RESPONSE ==========");
+            console.log("Full API transfer response:", JSON.stringify(apiTransfer, null, 2));
+            console.log("Items array:", apiTransfer?.items);
+            console.log("Items array type:", Array.isArray(apiTransfer?.items) ? "array" : "not array");
+            console.log("Items length:", apiTransfer?.items?.length);
+            console.log("Signature field (authorisedSignature):", apiTransfer?.authorisedSignature);
+            console.log("Signature field type:", typeof apiTransfer?.authorisedSignature);
+            console.log("Signature length:", apiTransfer?.authorisedSignature?.length);
+
+            // Map the API response to PDF generator format
+            const itemsArray = Array.isArray(apiTransfer?.items) 
+                ? apiTransfer.items.filter((item: any) => item !== null && item !== undefined).map((item: any, idx: number) => {
+                    console.log(`Item ${idx}:`, JSON.stringify(item, null, 2));
+                    const mappedItem = {
+                        itemCode: item?.itemCode || item?.code || "-",
+                        itemName: item?.itemName || item?.name || "-",
+                        quantity: item?.quantity ? parseFloat(item.quantity.toString()) : 0,
+                        unit: item?.unit || null,
+                        type: item?.type || "-",
+                        description: item?.description || item?.itemName || item?.name || "-",
+                    };
+                    console.log(`Mapped item ${idx}:`, mappedItem);
+                    return mappedItem;
+                })
+                : [];
+
+            console.log("========== MAPPING COMPLETE ==========");
+            console.log("Final items array:", JSON.stringify(itemsArray, null, 2));
+
+            const transferDataForPDF = {
+                id: apiTransfer?.id || transferId,
+                transferID: apiTransfer?.transferID || apiTransfer?.id || transferId,
+                fromLocation: apiTransfer?.fromLocation || "-",
+                toLocation: apiTransfer?.toLocation || "-",
+                fromUserId: apiTransfer?.fromUserId,
+                toUserId: apiTransfer?.toUserId,
+                fromUserName: apiTransfer?.createdBy?.name || "-",
+                toUserName: apiTransfer?.approvedBy?.name || "-",
+                requestedDate: apiTransfer?.requestedDate ? new Date(apiTransfer.requestedDate).toISOString() : new Date().toISOString(),
+                status: apiTransfer?.status || "PENDING",
+                driverName: apiTransfer?.driverName || "-",
+                etaMinutes: apiTransfer?.etaMinutes ? Math.round(apiTransfer.etaMinutes) : undefined,
+                vehicleName: apiTransfer?.vehicle?.vehicleName || "-",
+                vehicleReg: apiTransfer?.vehicle?.registrationNumber || "-",
+                approvedByName: apiTransfer?.approvedBy?.name || "-",
+                priority: apiTransfer?.priority || "NORMAL",
+                items: itemsArray,
+                notes: apiTransfer?.notes || "",
+                authorisedSignature: apiTransfer?.authorisedSignature || "",
+                companyName: apiTransfer?.companyName || "RAJ TRIMURTY INFRAPROJECTS PVT LTD",
+                companyAddress: apiTransfer?.companyAddress || "SOUTH CITY BUSINESS PARK , 770 ANANDAPUR.",
+                companyCity: apiTransfer?.companyCity || "KOLKATA",
+                companyPostalCode: apiTransfer?.companyPostalCode || "700",
+            };
+
+            console.log("========== FINAL PDF DATA ==========");
+            console.log("Transfer data for PDF:", JSON.stringify(transferDataForPDF, null, 2));
+            console.log("Items count in PDF data:", transferDataForPDF.items?.length);
+            console.log("========== STARTING PDF GENERATION ==========");
+
+            // Generate PDF with the transfer data
+            await generateMaterialTransferPDF(transferDataForPDF);
+            console.log("========== PDF GENERATION COMPLETE ==========");
+        } catch (error) {
+            console.error("Error downloading transfer PDF:", error);
+            toast.error("Failed to download PDF: " + ((error as any)?.message || "Unknown error"));
         }
     };
 
@@ -1276,7 +1367,7 @@ const InventoryContent = () => {
                             ? t.items.map((it: any) => ({
                                 description: it.description,
                                 quantity: it.quantity,
-                                unit: it.unit,
+                                unit: it.unit || null,
                             }))
                             : [],
                     } as any)
@@ -1856,11 +1947,11 @@ const InventoryContent = () => {
             setIsEditItemOpen(false);
             setEditingItem(null);
             editForm.reset();
-            } catch (error: any) {
+        } catch (error: any) {
             console.error("Error updating item:", error);
             const errorMsg = error.response?.data?.message || "Failed to update item. Please try again.";
             toast.error(errorMsg);
-            }
+        }
     };
 
     const handleExport = (tabName: string) => {
@@ -3587,24 +3678,24 @@ const InventoryContent = () => {
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Item Name as Searchable Select */}
-                                         <FormField
-                                             control={editForm.control}
-                                             name="name"
-                                             render={({ field }) => (
-                                                  <FormItem>
-                                                      <FormLabel>Item</FormLabel>
-                                                      <FormControl>
-                                                          <SimpleSearchableSelect
-                                                              value={field.value || ""}
-                                                              onValueChange={field.onChange}
-                                                              options={ITEM_OPTIONS}
-                                                              placeholder="Search and select item..."
-                                                          />
-                                                      </FormControl>
-                                                      <FormMessage />
-                                                  </FormItem>
-                                              )}
-                                          />
+                                        <FormField
+                                            control={editForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Item</FormLabel>
+                                                    <FormControl>
+                                                        <SimpleSearchableSelect
+                                                            value={field.value || ""}
+                                                            onValueChange={field.onChange}
+                                                            options={ITEM_OPTIONS}
+                                                            placeholder="Search and select item..."
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
                                         <FormField
                                             control={editForm.control}
@@ -4365,15 +4456,46 @@ const InventoryContent = () => {
                                         {(row.itemsList && row.itemsList.length > 0
                                             ? row.itemsList
                                             : []
-                                        ).map((it: any, idx: number) => (
+                                        ).map((it: any, idx: number) => {
+                                            const UNIT_LABELS: Record<string, string> = {
+                                                'CUBIC_FEET': 'Cubic Feet',
+                                                'M_CUBE': 'Metre Cube',
+                                                'SQUARE_FEET': 'Square Feet',
+                                                'TONNE': 'Tonne',
+                                                'PIECE': 'Piece',
+                                                'LITRE': 'Litre',
+                                                'KILOGRAM': 'Kilogram',
+                                                'BOX': 'Box',
+                                                'ROLL': 'Roll',
+                                                'SHEET': 'Sheet',
+                                                'HOURS': 'Hours',
+                                                'DAYS': 'Days',
+                                                'LUMPSUM': 'Lump Sum',
+                                            };
+                                            const displayUnit = it.unit ? (UNIT_LABELS[it.unit] || it.unit) : "";
+                                            return (
                                             <div key={idx}>
-                                                • {it.description}: {it.quantity} {it.unit || ""}
+                                                • {it.description}: {it.quantity} {displayUnit}
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                         {(!row.itemsList || row.itemsList.length === 0) && (
                                             <div className="text-muted-foreground">No items</div>
                                         )}
                                     </div>
+                                </div>
+                                <div className="col-span-full flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            handleDownloadTransferPDF(row);
+                                        }}
+                                        title="Download as PDF"
+                                    >
+                                        <FileDown className="h-4 w-4 mr-2" />
+                                        Download PDF
+                                    </Button>
                                 </div>
                             </div>
                         )}

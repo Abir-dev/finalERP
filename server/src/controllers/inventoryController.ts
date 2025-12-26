@@ -11,6 +11,7 @@ interface ItemValidation {
     itemCode: string;
     itemName: Item;
     type: InventoryType;
+    unit: Unit | string | null;
     notes: string | null;
     hsnCode: string | null;
 }
@@ -611,14 +612,15 @@ export const inventoryController = {
                 // }
 
                 itemValidations.push({
-                    fromInventoryItem: inventoryItem,
-                    quantity: quantityInt,
-                    itemCode,
-                    itemName: itemName as Item,
-                    type: type as InventoryType,
-                    notes: item.notes || null,
-                    hsnCode: hsnCode || null
-                });
+                     fromInventoryItem: inventoryItem,
+                     quantity: quantityInt,
+                     itemCode,
+                     itemName: itemName as Item,
+                     type: type as InventoryType,
+                     unit: unit || null,
+                     notes: item.notes || null,
+                     hsnCode: hsnCode || null
+                 });
             }
 
             // Use fallback locations if not provided
@@ -630,29 +632,29 @@ export const inventoryController = {
                 const transferItems: any[] = [];
 
                 for (const validation of itemValidations) {
-                    const { fromInventoryItem, quantity, itemCode, itemName, type, notes, hsnCode } = validation;
+                     const { fromInventoryItem, quantity, itemCode, itemName, type, unit, notes, hsnCode } = validation;
 
-                    // Deduct from from user's inventory if item exists
-                    if (fromInventoryItem) {
-                        await tx.inventory.update({
-                            where: { id: fromInventoryItem.id },
-                            data: { quantity: fromInventoryItem.quantity - quantity }
-                        });
-                    }
+                     // Deduct from from user's inventory if item exists
+                     if (fromInventoryItem) {
+                         await tx.inventory.update({
+                             where: { id: fromInventoryItem.id },
+                             data: { quantity: fromInventoryItem.quantity - quantity }
+                         });
+                     }
 
-                    // Prepare transfer item data
-                    transferItems.push({
-                        itemCode: itemCode,
-                        itemName: itemName,
-                        type: type,
-                        description: `${itemCode} - ${itemName} (${type})`,
-                        quantity: quantity,
-                        unit: fromInventoryItem?.unit,
-                        inventoryId: fromInventoryItem?.id,
-                        notes: notes,
-                        hsnCode: hsnCode,
-                    });
-                }
+                     // Prepare transfer item data
+                     transferItems.push({
+                         itemCode: itemCode,
+                         itemName: itemName,
+                         type: type,
+                         description: `${itemCode} - ${itemName} (${type})`,
+                         quantity: quantity,
+                         unit: unit || fromInventoryItem?.unit || null,
+                         inventoryId: fromInventoryItem?.id,
+                         notes: notes,
+                         hsnCode: hsnCode,
+                     });
+                 }
 
                 // Create the material transfer
                 const created = await tx.materialTransfer.create({
@@ -872,14 +874,22 @@ export const inventoryController = {
             if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
             if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
 
-            const { description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
-            if (!description || typeof quantity !== 'number') {
-                return res.status(400).json({ error: 'description and quantity are required' });
+            const { itemCode, itemName, type, description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
+            
+            // Use itemCode and itemName to build description if description not provided
+            const finalDescription = description || `${itemCode || 'Item'} - ${itemName || 'Unknown'} (${type || 'N/A'})`;
+            
+            if (!quantity || typeof quantity !== 'number') {
+                return res.status(400).json({ error: 'quantity is required and must be a number' });
             }
+            
             const item = await (prisma as any).materialTransferItem.create({
                 data: {
                     transferId,
-                    description,
+                    itemCode: itemCode || null,
+                    itemName: itemName || null,
+                    type: type || null,
+                    description: finalDescription,
                     quantity,
                     unit: unit || null,
                     inventoryId: inventoryId || null,
@@ -923,10 +933,13 @@ export const inventoryController = {
             const parent = await (prisma as any).materialTransfer.findUnique({ where: { id: transferId } });
             if (!parent) return res.status(404).json({ error: 'Material transfer not found' });
             if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
-            const { description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
+            const { itemCode, itemName, type, description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
             const item = await (prisma as any).materialTransferItem.update({
                 where: { id: itemId },
                 data: {
+                    ...(itemCode !== undefined && { itemCode }),
+                    ...(itemName !== undefined && { itemName }),
+                    ...(type !== undefined && { type }),
                     ...(description && { description }),
                     ...(quantity !== undefined && { quantity }),
                     ...(unit !== undefined && { unit }),
