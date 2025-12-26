@@ -621,6 +621,10 @@ export const inventoryController = {
         });
       }
 
+      // Use fallback locations if not provided
+      const finalFromLocation = fromLocation || fromUser.name || fromUser.email;
+      const finalToLocation = toLocation || toUser.name || toUser.email;
+
       // Use transaction to ensure all operations succeed or fail together
       const result = await prisma.$transaction(async (tx) => {
         const transferItems: any[] = [];
@@ -628,11 +632,13 @@ export const inventoryController = {
         for (const validation of itemValidations) {
           const { fromInventoryItem, quantity, itemCode, itemName, type, notes, hsnCode } = validation;
 
-          // Deduct from from user's inventory
-          await tx.inventory.update({
-            where: { id: fromInventoryItem.id },
-            data: { quantity: fromInventoryItem.quantity - quantity }
-          });
+          // Deduct from from user's inventory if item exists
+          if (fromInventoryItem) {
+            await tx.inventory.update({
+              where: { id: fromInventoryItem.id },
+              data: { quantity: fromInventoryItem.quantity - quantity }
+            });
+          }
 
           // Prepare transfer item data
           transferItems.push({
@@ -641,8 +647,8 @@ export const inventoryController = {
             type: type,
             description: `${itemCode} - ${itemName} (${type})`,
             quantity: quantity,
-            unit: fromInventoryItem.unit,
-            inventoryId: fromInventoryItem.id,
+            unit: fromInventoryItem?.unit,
+            inventoryId: fromInventoryItem?.id,
             notes: notes,
             hsnCode: hsnCode,
           });
@@ -652,8 +658,8 @@ export const inventoryController = {
         const created = await tx.materialTransfer.create({
           data: {
             transferID,
-            fromLocation,
-            toLocation,
+            fromLocation: finalFromLocation,
+            toLocation: finalToLocation,
             requestedDate: new Date(requestedDate),
             status: status ?? 'PENDING',
             driverName: driverName || null,
