@@ -18,71 +18,71 @@ type TransferStatus = "PENDING" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED";
 type TransferPriority = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
 type Unit =
-  | "CUBIC_FEET"
-  | "M_CUBE"
-  | "TONNE"
-  | "SQUARE_FEET"
-  | "PIECE"
-  | "LITRE"
-  | "KILOGRAM"
-  | "BOX"
-  | "ROLL"
-  | "SHEET"
-  | "HOURS"
-  | "DAYS"
-  | "LUMPSUM";
+    | "CUBIC_FEET"
+    | "M_CUBE"
+    | "TONNE"
+    | "SQUARE_FEET"
+    | "PIECE"
+    | "LITRE"
+    | "KILOGRAM"
+    | "BOX"
+    | "ROLL"
+    | "SHEET"
+    | "HOURS"
+    | "DAYS"
+    | "LUMPSUM";
 
 // Item type for material transfer rows
 type ItemType = "OLD" | "NEW";
 
 interface Vehicle {
-  id: string;
-  vehicleName: string;
-  driverName: string;
-  registrationNumber: string;
+    id: string;
+    vehicleName: string;
+    driverName: string;
+    registrationNumber: string;
 }
 
 interface UserOption {
-  role: string;
-  id: string;
-  name: string;
-  email: string;
+    role: string;
+    id: string;
+    name: string;
+    email: string;
 }
 
 interface ItemRow {
-  id: number;
-  itemCode: string;
-  itemName: string;
-  itemNameOther?: string; // For custom item name when "Other" is selected
-  quantity: number;
-  unit: Unit | "";
-  itemType: ItemType | ""; // OLD or NEW
-  inventoryId?: string;
+    id: number;
+    itemCode: string;
+    itemName: string;
+    itemNameOther?: string; // For custom item name when "Other" is selected
+    quantity: number;
+    unit: Unit | "";
+    itemType: ItemType | ""; // OLD or NEW
+    inventoryId?: string;
 }
 
 interface MaterialTransferModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave?: (createdOrUpdated: any) => void;
-  mode?: 'create' | 'edit';
-  transferId?: string; // DB id for edit mode
-  onRequestNew?: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSave?: (createdOrUpdated: any) => void;
+    mode?: 'create' | 'edit';
+    transferId?: string; // DB id for edit mode
+    onRequestNew?: () => void;
 }
 
 const UNITS: { value: Unit; label: string }[] = [
-  { value: "CUBIC_FEET", label: "Cubic Feet" },
-  { value: "M_CUBE", label: "Metre Cube" },
-  { value: "SQUARE_FEET", label: "Square Feet" },
-  { value: "TONNE", label: "Tonne" },
-  { value: "PIECE", label: "Piece" },
-  { value: "LITRE", label: "Litre" },
-  { value: "KILOGRAM", label: "Kilogram" },
-  { value: "BOX", label: "Box" },
-  { value: "ROLL", label: "Roll" },
-  { value: "SHEET", label: "Sheet" },
-  { value: "HOURS", label: "Hours" },
-  { value: "DAYS", label: "Days" },
-  { value: "LUMPSUM", label: "Lump Sum" },
+    { value: "CUBIC_FEET", label: "Cubic Feet" },
+    { value: "M_CUBE", label: "Metre Cube" },
+    { value: "SQUARE_FEET", label: "Square Feet" },
+    { value: "TONNE", label: "Tonne" },
+    { value: "PIECE", label: "Piece" },
+    { value: "LITRE", label: "Litre" },
+    { value: "KILOGRAM", label: "Kilogram" },
+    { value: "BOX", label: "Box" },
+    { value: "ROLL", label: "Roll" },
+    { value: "SHEET", label: "Sheet" },
+    { value: "HOURS", label: "Hours" },
+    { value: "DAYS", label: "Days" },
+    { value: "LUMPSUM", label: "Lump Sum" },
 ];
 
 // Match the item enum used in Inventory.tsx
@@ -100,7 +100,7 @@ const ITEM_OPTIONS = [
     { value: "THREE_MTR_OUTER_ACROSPAN", label: "3 Mtr Outer Acrospan" },
     { value: "TWO_MTR_BOX_SET_ACROSPAN", label: "2 Mtr Box Set Acrospan" },
     { value: "THREE_MTR_BOX_SET_ACROSPAN", label: "3 Mtr Box Set Acrospan" },
-    
+
     // Tele Prop items
     { value: "THREE_THREE_TELE_PROP", label: "3/3 Tele Prop" },
     { value: "TWO_THREE_TELE_PROP", label: "2/3 Tele Prop" },
@@ -109,7 +109,7 @@ const ITEM_OPTIONS = [
     { value: "TWO_TWO_TELE_PROP", label: "2/2 Tele Prop" },
     { value: "TWO_MTR_INNER_TELE_PROP", label: "2 Mtr Inner Tele Prop" },
     { value: "TWO_MTR_OUTER_TELE_PROP", label: "2 Mtr Outer Tele Prop" },
-    
+
     // Vertical items
     { value: "CUTTING_PIC_VERTICAL", label: "Cutting Pic Vertical" },
     { value: "SCRAP_VERTICAL", label: "Scrap Vertical" },
@@ -121,7 +121,7 @@ const ITEM_OPTIONS = [
     { value: "MM_VERTICAL_1500", label: "1500 MM Vertical" },
     { value: "MM_VERTICAL_1000", label: "1000 MM Vertical" },
     { value: "TWO_MTR_VERTICAL", label: "2 Mtr Vertical" },
-    
+
     // Horizontal items
     { value: "MM_HORIZONTAL_600", label: "600 MM Horizontal" },
     { value: "SEVEN_FIFTY_MM_HORIZONTAL", label: "750 MM Horizontal" },
@@ -135,7 +135,7 @@ const ITEM_OPTIONS = [
     { value: "MM_HORIZONTAL_1700", label: "1700 MM Horizontal" },
     { value: "SEVENTEEN_FIFTY_MM_HORIZONTAL", label: "1750 MM Horizontal" },
     { value: "MM_HORIZONTAL_1800", label: "1800 MM Horizontal" },
-    
+
     // MS Pipe items
     { value: "STAGING_SUPPORTING_PIPE", label: "Staging Supporting Pipe" },
     { value: "TWENTY_FEET_MS_PIPE", label: "20 Feet MS Pipe" },
@@ -147,7 +147,7 @@ const ITEM_OPTIONS = [
     { value: "CLAMP_50X40_SWING", label: "50x40 Swing Clamp" },
     { value: "FIFTY_X_FORTY_FIXED_CLUMP", label: "50x40 Fixed Clump" },
     { value: "GI_SHEET_TINA", label: "GI Sheet Tina" },
-    
+
     // SIKANJA sizes
     { value: "SIKANJA_600MM", label: "600 MM SIKANJA" },
     { value: "SIKANJA_650MM", label: "650 MM SIKANJA" },
@@ -185,14 +185,14 @@ const ITEM_OPTIONS = [
     { value: "SIKANJA_2300MM", label: "2300 MM SIKANJA" },
     { value: "ALL_SIKANJA", label: "All SIKANJA" },
     { value: "SIKANJA_PIN", label: "SIKANJA Pin" },
-    
+
     // C SIKANJA variants
     { value: "C_SIKANJA_750MM", label: "750 MM C SIKANJA" },
     { value: "C_SIKANJA_800MM", label: "800 MM C SIKANJA" },
     { value: "C_SIKANJA_860MM", label: "860 MM C SIKANJA" },
     { value: "C_SIKANJA_1000MM", label: "1000 MM C SIKANJA" },
     { value: "C_SIKANJA_1050MM", label: "1050 MM C SIKANJA" },
-    
+
     // Other structural items
     { value: "C_CHANEL", label: "C Channel" },
     { value: "TAI_ROD", label: "Tai Rod" },
@@ -211,7 +211,7 @@ const ITEM_OPTIONS = [
     { value: "FORTY_X_FORTY_HOLLOW_PIPE", label: "40x40 Hollow Pipe" },
     { value: "LIFT_GUARD_OPENING", label: "Lift Guard Opening" },
     { value: "PVC_PIPE_10_MM", label: "PVC Pipe 10 MM" },
-    
+
     // Bunker beds and support equipment
     { value: "TWO_TARE_BUNKER_BED", label: "2 Tyre Bunker Bed" },
     { value: "THREE_TARE_BUNKER_BED", label: "3 Tyre Bunker Bed" },
@@ -219,13 +219,13 @@ const ITEM_OPTIONS = [
     { value: "HORIZENTAL_BUNKER_BED", label: "Horizontal Bunker Bed" },
     { value: "NUT_BOLT_FOR_BUNKER_BED", label: "Nut Bolt For Bunker Bed" },
     { value: "PLY_FOR_BUNKER_BED", label: "Ply For Bunker Bed" },
-    
+
     // Safety and infrastructure
     { value: "FIRE_EXTINGULS", label: "Fire Extinguishers" },
     { value: "WATER_STOPPER", label: "Water Stopper" },
     { value: "SHALL_BALLAH", label: "Shall Ballah" },
     { value: "SHUTTERINING_PLATE", label: "Shuttering Plate" },
-    
+
     // Water tank sizes
     { value: "TWO_HUNDRED_LTR_WATER_TANK", label: "200 Ltr Water Tank" },
     { value: "FIVE_FIFTY_LTR_WATER_TANK", label: "550 Ltr Water Tank" },
@@ -233,7 +233,7 @@ const ITEM_OPTIONS = [
     { value: "ONE_THOUSAND_LTR_WATER_TANK", label: "1000 Ltr Water Tank" },
     { value: "TWO_THOUSAND_LTR_WATER_TANK", label: "2000 Ltr Water Tank" },
     { value: "FIVE_THOUSAND_LTR_WATER_TANK", label: "5000 Ltr Water Tank" },
-    
+
     // Miscellaneous equipment
     { value: "BYCYCLE", label: "Bicycle" },
     { value: "GHUGHU_NUT", label: "Ghughu Nut" },
@@ -259,14 +259,14 @@ const ITEM_OPTIONS = [
     { value: "OXIZEN_CYCLDER", label: "Oxygen Cylinder" },
     { value: "LPG_GAS_CYLINDER", label: "LPG Gas Cylinder" },
     { value: "GARBAGE_CHUTE", label: "Garbage Chute" },
-    
+
     // Vibrators
     { value: "ELECTRIC_VIBRATOR", label: "Electric Vibrator" },
     { value: "PETROL_VIBRATOR", label: "Petrol Vibrator" },
     { value: "DISEAL_VIBRATOR", label: "Diesel Vibrator" },
     { value: "HAND_ELECTRIC_VIBRATOR", label: "Hand Electric Vibrator" },
     { value: "NOZZEL_VIBRATOR", label: "Nozzle Vibrator" },
-    
+
     // Dewatering Pumps
     { value: "ONE_POINT_FIVE_HP_PETROL_DEWATERING_PUMP", label: "1.5 Hp Petrol Dewatering Pump" },
     { value: "THREE_HP_DISEAL_DEWATERING_PUMP", label: "3 Hp Diesel Dewatering Pump" },
@@ -279,7 +279,7 @@ const ITEM_OPTIONS = [
     { value: "TWO_HP_ELECTRIC_DEWATERING_PUMP", label: "2 Hp Electric Dewatering Pump" },
     { value: "THREE_HP_ELECTRIC_DEWATERING_PUMP", label: "3 Hp Electric Dewatering Pump" },
     { value: "FIVE_HP_ELECTRIC_DEWATERING_PUMP", label: "5 Hp Electric Dewatering Pump" },
-    
+
     // Submersible Pumps
     { value: "ONE_HP_SUMERSIBLE_PUMP", label: "1 Hp Submersible Pump" },
     { value: "ONE_POINT_FIVE_HP_SUMERSIBLE_PUMP", label: "1.5 Hp Submersible Pump" },
@@ -291,29 +291,29 @@ const ITEM_OPTIONS = [
     { value: "FOURTEEN_HP_SUMERSIBLE_PUMP", label: "14 Hp Submersible Pump" },
     { value: "FIFTEEN_HP_SUMERSIBLE_PUMP", label: "15 Hp Submersible Pump" },
     { value: "SUMERSIBLE_TULU_PUMP", label: "Submersible Tulu Pump" },
-    
+
     // Mud Submersible Pumps
     { value: "ONE_POINT_FIVE_HP_MUD_SUMERSIBLE_PUMP", label: "1.5 Hp Mud Submersible Pump" },
     { value: "TWO_HP_MUD_SUMERSIBLE_PUMP", label: "2 Hp Mud Submersible Pump" },
     { value: "THREE_HP_MUD_SUMERSIBLE_PUMP", label: "3 Hp Mud Submersible Pump" },
     { value: "FIVE_HP_MUD_SUMERSIBLE_PUMP", label: "5 Hp Mud Submersible Pump" },
-    
+
     // Monoblock Pumps
     { value: "ONE_HP_MONOBLOCK_PUMP", label: "1 Hp Monoblock Pump" },
     { value: "TWO_HP_MONOBLOCK_PUMP", label: "2 Hp Monoblock Pump" },
     { value: "THREE_HP_MONOBLOCK_PUMP", label: "3 Hp Monoblock Pump" },
     { value: "FIVE_HP_MONOBLOCK_PUMP", label: "5 Hp Monoblock Pump" },
     { value: "TWELVE_POINT_FIVE_HP_MONOBLOCK_PUMP", label: "12.5 Hp Monoblock Pump" },
-    
+
     // Diesel Generator
     { value: "DG_125_KVA", label: "DG 125 KVA" },
-    
+
     // Compactors and Welding Machines
     { value: "SOIL_COMPECTOR_MACHINE", label: "Soil Compactor Machine" },
     { value: "ROLLER_MINI_COMPACTOR", label: "Roller Mini Compactor" },
     { value: "SMALL_WELDING_MACHINE", label: "Small Welding Machine" },
     { value: "BIG_WELDING_MACHINE", label: "Big Welding Machine" },
-    
+
     // Cutting and Bending Machines
     { value: "FOURTEEN_INCH_STEEL_CUTTER_MACHINE", label: "14 Inch Steel Cutter Machine" },
     { value: "BIG_STEEL_CUTTER_MACHINE", label: "Big Steel Cutter Machine" },
@@ -322,7 +322,7 @@ const ITEM_OPTIONS = [
     { value: "GANDING_MACHINE", label: "Grinding Machine" },
     { value: "PLY_CUTTER_MACHINE", label: "Ply Cutter Machine" },
     { value: "BLOCK_CUTTING_MACHINE", label: "Block Cutting Machine" },
-    
+
     // Demolition and Drilling Tools
     { value: "FIVE_KG_DEMOLITION_HAMMER", label: "5 Kg Demolition Hammer" },
     { value: "SEVEN_KG_DEMOLITION_HAMMER", label: "7 Kg Demolition Hammer" },
@@ -331,13 +331,13 @@ const ITEM_OPTIONS = [
     { value: "SIXTEEN_KG_DRILL_HAMMER", label: "16 Kg Drill Hammer" },
     { value: "DRILL_MACHINE", label: "Drill Machine" },
     { value: "HILTI_GUN", label: "Hilti Gun" },
-    
+
     // Mixture Machines
     { value: "TEN_SEVEN_MIXTURE_MACHINE", label: "10/7 Mixture Machine" },
     { value: "TEN_FIVE_MIXTURE_MACHINE", label: "10/5 Mixture Machine" },
     { value: "BABY_MIXTURE_MACHINE", label: "Baby Mixture Machine" },
     { value: "ONE_THOUSAND_FIFTY_UNIVERSAL_MACHINE", label: "1050 Universal Machine" },
-    
+
     // Batching and Testing Equipment
     { value: "BATCHING_PLANT", label: "Batching Plant" },
     { value: "CEMENT_SILO", label: "Cement Silo" },
@@ -357,7 +357,7 @@ const ITEM_OPTIONS = [
     { value: "CTM_MACHINE_2000_KN", label: "CTM Machine 2000 KN" },
     { value: "ONE_TWENTY_KN_DAIL_GAUGE", label: "120 KN Dial Gauge" },
     { value: "TWO_THOUSAND_KN_DAIL_GAUGE", label: "2000 KN Dial Gauge" },
-    
+
     // Miscellaneous Testing and Utility
     { value: "MEASURING_CYLINDER", label: "Measuring Cylinder" },
     { value: "OIL_SUCKING_PUMP", label: "Oil Sucking Pump" },
@@ -365,20 +365,20 @@ const ITEM_OPTIONS = [
     { value: "SOIL_TESTING_MACHINE", label: "Soil Testing Machine" },
     { value: "SUSPENDED_PLATEFROM_HOIST_CADLE", label: "Suspended Platform Hoist Cradle" },
     { value: "JET_PUMP_CPWO2", label: "Jet Pump CPWO2" },
-    
+
     // Fans
     { value: "CELLING_FAN", label: "Ceiling Fan" },
     { value: "STAND_FAN", label: "Stand Fan" },
     { value: "WALL_FAN", label: "Wall Fan" },
     { value: "EXHUAST_FAN", label: "Exhaust Fan" },
-    
+
     // Computing Devices
     { value: "COMPUTER", label: "Computer" },
     { value: "CPU", label: "CPU" },
     { value: "UPS", label: "UPS" },
     { value: "MONITER", label: "Monitor" },
     { value: "PRINTER", label: "Printer" },
-    
+
     // Lights and Power
     { value: "TWO_HUNDRED_W_LED_LIGHT", label: "200 W LED Light" },
     { value: "TWO_FORTY_W_LED_LIGHT", label: "240 W LED Light" },
@@ -387,7 +387,7 @@ const ITEM_OPTIONS = [
     { value: "THREE_HUNDRED_W_LED_LIGHT", label: "300 W LED Light" },
     { value: "AIR_BLOWER", label: "Air Blower" },
     { value: "PROJECTOR", label: "Projector" },
-    
+
     // Concrete Pumps - Schwing
     { value: "SP_2000_CONCREATE_PUMP_SCHWING", label: "SP 2000 Concrete Pump Schwing" },
     { value: "CONCRETE_PUMP_1407_AQUARIOUS", label: "1407 Concrete Pump Aquarious" },
@@ -396,13 +396,13 @@ const ITEM_OPTIONS = [
     { value: "CONCRETE_PUMP_1460_AQUARIOUS", label: "1460 Concrete Pump Aquarious" },
     { value: "CONCRETE_PUMP_1400_AQUARIOUS", label: "1400 Concrete Pump Aquarious" },
     { value: "CONCRETE_PUMP_1405D_AQUARIOUS", label: "1405D Concrete Pump Aquarious" },
-    
+
     // Concrete Pump Pipes and Components
     { value: "THREE_MTR_PIPE_CONCREATE_PUMP", label: "3 Mtr Pipe Concrete Pump" },
     { value: "TWO_MTR_PIPE_CONCREATE_PUMP", label: "2 Mtr Pipe Concrete Pump" },
     { value: "ONE_MTR_PIPE_CONCREATE_PUMP", label: "1 Mtr Pipe Concrete Pump" },
     { value: "HALF_MTR_PIPE_CONCREATE_PUMP", label: "0.5 Mtr Pipe Concrete Pump" },
-    
+
     // Concrete Pump Bands
     { value: "NINETY_BAND_CONCREATE_PUMP", label: "90 Band Concrete Pump" },
     { value: "SIXTY_BAND_CONCREATE_PUMP", label: "60 Band Concrete Pump" },
@@ -410,7 +410,7 @@ const ITEM_OPTIONS = [
     { value: "THIRTY_BAND_CONCREATE_PUMP", label: "30 Band Concrete Pump" },
     { value: "FIFTEEN_BAND_CONCREATE_PUMP", label: "15 Band Concrete Pump" },
     { value: "S_BAND_CONCREATE_PUMP", label: "S Band Concrete Pump" },
-    
+
     // Concrete Pump Components
     { value: "PISTION_CONCREATE_PUMP", label: "Piston Concrete Pump" },
     { value: "BALL_HEAD_CONCREATE_PUMP", label: "Ball Head Concrete Pump" },
@@ -421,7 +421,7 @@ const ITEM_OPTIONS = [
     { value: "MAIN_PIPE_CONCREATE_PUMP", label: "Main Pipe Concrete Pump" },
     { value: "GATE_VALVE_CONCREATE_PUMP", label: "Gate Valve Concrete Pump" },
     { value: "BRACKET_FOR_CONCREATE_PIPE_LINE", label: "Bracket For Concrete Pipe Line" },
-    
+
     // Tower Crane items
     { value: "TOWER_CRAIN_SET", label: "Tower Crane Set" },
     { value: "THREE_MTR_MASS_PIC", label: "3 Mtr Mass Pic" },
@@ -475,7 +475,7 @@ const ITEM_OPTIONS = [
     { value: "CAGE_PIN_LOCK", label: "Cage Pin Lock" },
     { value: "CAGE_SIDE_RAILING", label: "Cage Side Railing" },
     { value: "GRISH_GUN", label: "Grish Gun" },
-    
+
     // Hoist items
     { value: "WINGS_ELECTRIC_MOTOR_SET", label: "Wings Electric Motor Set" },
     { value: "WINGS_DISEAL_MACHINE_SET", label: "Wings Diesel Machine Set" },
@@ -500,7 +500,7 @@ const ITEM_OPTIONS = [
     { value: "LIMIT_FRAM", label: "Limit Frame" },
     { value: "WALL_SUPPORT", label: "Wall Support" },
     { value: "TOWER_SUPPORT_FRAME", label: "Tower Support Frame" },
-    
+
     // MKG variants and additional hoist equipment
     { value: "MKG_WINGS_ELECTRIC_MOTOR_SET", label: "MKG Wings Electric Motor Set" },
     { value: "MKG_TOWER_HOIST_COLUMN_1MTR", label: "MKG 1 Mtr Tower Hoist Column" },
@@ -523,545 +523,673 @@ const ITEM_OPTIONS = [
 ] as const;
 
 export default function MaterialTransferModal({ open, onOpenChange, onSave, mode = 'create', transferId, onRequestNew }: MaterialTransferModalProps) {
-  const { toast } = useToast();
-  const { user } = useUser();
+    const { toast } = useToast();
+    const { user } = useUser();
 
-  // Form state
-  const [transferID, setTransferID] = useState("");
-  const [fromLocation, setFromLocation] = useState("");
-  const [toLocation, setToLocation] = useState("");
-  const [requestedDate, setRequestedDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
-  const [status, setStatus] = useState<TransferStatus>("PENDING");
-  const [driverName, setDriverName] = useState("");
-  const [etaMinutes, setEtaMinutes] = useState<string>("");
-  const [vehicleId, setVehicleId] = useState<string>("");
-  const [approvedById, setApprovedById] = useState<string>("");
-  const [priority, setPriority] = useState<TransferPriority>("NORMAL");
-  const [notes, setNotes] = useState("");
+    // Form state
+    const [transferID, setTransferID] = useState("");
+    const [fromLocation, setFromLocation] = useState("");
+    const [toLocation, setToLocation] = useState("");
+    const [requestedDate, setRequestedDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+    const [status, setStatus] = useState<TransferStatus>("PENDING");
+    const [driverName, setDriverName] = useState("");
+    const [etaMinutes, setEtaMinutes] = useState<string>("");
+    const [vehicleId, setVehicleId] = useState<string>("");
+    const [approvedById, setApprovedById] = useState<string>("");
+    const [priority, setPriority] = useState<TransferPriority>("NORMAL");
+    const [notes, setNotes] = useState("");
+    const [signatureFile, setSignatureFile] = useState<File | null>(null);
+    const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
 
-  // From/To as user selections
-  const [fromUserId, setFromUserId] = useState<string>("");
-  const [toUserId, setToUserId] = useState<string>("");
+    // From/To as user selections
+    const [fromUserId, setFromUserId] = useState<string>("");
+    const [toUserId, setToUserId] = useState<string>("");
 
-  const [items, setItems] = useState<ItemRow[]>([
-    { id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" },
-  ]);
-  const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
+    const [items, setItems] = useState<ItemRow[]>([
+        { id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" },
+    ]);
+    const [selectedRowIds, setSelectedRowIds] = useState<Set<number>>(new Set());
 
-  // Reference data
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [users, setUsers] = useState<UserOption[]>([]);
-  const [loading, setLoading] = useState(false);
+    // Reference data
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [users, setUsers] = useState<UserOption[]>([]);
+    const [loading, setLoading] = useState(false);
 
-  // const getToken = () => sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+    // Refs
+    const signatureInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    // Load vehicles and users
-    const vehiclesUrl = `${API_URL}/vehicles`;
-    Promise.all([
-      fetch(vehiclesUrl, { headers }).then((r) => (r.ok ? r.json() : [])),
-      fetch(`${API_URL}/users`, { headers }).then((r) => (r.ok ? r.json() : [])),
-    ])
-      .then(async ([vehiclesRes, usersRes]) => {
-        setVehicles(Array.isArray(vehiclesRes) ? vehiclesRes : []);
-        const normalizedUsers: UserOption[] = Array.isArray(usersRes)
-          ? usersRes.map((u: any) => ({ id: u.id, name: u.name || u.email || "User", email: u.email, role: u.role }))
-          : [];
-        if (user && !normalizedUsers.some((u) => u.id === user.id)) {
-          normalizedUsers.push({ id: user.id, name: user.name || user.email || "Current User", email: user.email || "", role: user.role || "" });
-        }
-        setUsers(normalizedUsers);
+    // const getToken = () => sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
 
-        // In create mode, default From to current user if available
-         if (mode === 'create' && user?.id) {
-           setFromUserId(user.id);
-           const me = normalizedUsers.find((u) => u.id === user.id);
-           if (me) setFromLocation(me.name || me.email || "");
-         } else if (mode === 'create') {
-           // Default to first store user if available
-           const firstStoreUser = normalizedUsers.find((u) => u.role === 'store');
-           if (firstStoreUser) {
-             setFromUserId(firstStoreUser.id);
-             setFromLocation(firstStoreUser.name || firstStoreUser.email || "");
-           }
-         }
+    useEffect(() => {
+        if (!open) return;
+        const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        // Load vehicles and users
+        const vehiclesUrl = `${API_URL}/vehicles`;
+        Promise.all([
+            fetch(vehiclesUrl, { headers }).then((r) => (r.ok ? r.json() : [])),
+            fetch(`${API_URL}/users`, { headers }).then((r) => (r.ok ? r.json() : [])),
+        ])
+            .then(async ([vehiclesRes, usersRes]) => {
+                setVehicles(Array.isArray(vehiclesRes) ? vehiclesRes : []);
+                const normalizedUsers: UserOption[] = Array.isArray(usersRes)
+                    ? usersRes.map((u: any) => ({ id: u.id, name: u.name || u.email || "User", email: u.email, role: u.role }))
+                    : [];
+                if (user && !normalizedUsers.some((u) => u.id === user.id)) {
+                    normalizedUsers.push({ id: user.id, name: user.name || user.email || "Current User", email: user.email || "", role: user.role || "" });
+                }
+                setUsers(normalizedUsers);
 
-        // If edit mode, fetch the transfer details
-        if (mode === 'edit' && transferId && user?.id) {
-          try {
-            const resp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers });
-            if (resp.ok) {
-              const t = await resp.json();
-              setTransferID(t.transferID || "");
-              setFromLocation(t.fromLocation || "");
-              setToLocation(t.toLocation || "");
-              // Try to resolve from/to user IDs based on names/emails stored in locations
-              const fromMatch = normalizedUsers.find((u) => u.name === t.fromLocation || u.email === t.fromLocation);
-              const toMatch = normalizedUsers.find((u) => u.name === t.toLocation || u.email === t.toLocation);
-              setFromUserId(fromMatch ? fromMatch.id : "");
-              setToUserId(toMatch ? toMatch.id : "");
+                // In create mode, default From to current user if available
+                if (mode === 'create' && user?.id) {
+                    setFromUserId(user.id);
+                    const me = normalizedUsers.find((u) => u.id === user.id);
+                    if (me) setFromLocation(me.name || me.email || "");
+                } else if (mode === 'create') {
+                    // Default to first store user if available
+                    const firstStoreUser = normalizedUsers.find((u) => u.role === 'store');
+                    if (firstStoreUser) {
+                        setFromUserId(firstStoreUser.id);
+                        setFromLocation(firstStoreUser.name || firstStoreUser.email || "");
+                    }
+                }
 
-              setRequestedDate(t.requestedDate ? new Date(t.requestedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-              setStatus((t.status || 'PENDING') as TransferStatus);
-              setDriverName(t.driverName || "");
-              setEtaMinutes(typeof t.etaMinutes === 'number' ? String((t.etaMinutes / 60).toFixed(1)) : "");
-              setVehicleId(t.vehicleId || "");
-              setApprovedById(t.approvedById || "");
-              setPriority((t.priority || 'NORMAL') as TransferPriority);
-              const mappedItems: ItemRow[] = Array.isArray(t.items)
-                ? t.items.map((it: any, idx: number) => ({
-                    id: idx + 1,
-                    itemCode: it.itemCode || "",
-                    itemName: it.itemName || "",
-                    itemNameOther: "",
-                    quantity: typeof it.quantity === 'number' ? it.quantity : 0,
-                    unit: (it.unit || "") as Unit | "",
-                    itemType: (it.itemType || "") as ItemType | "",
-                    inventoryId: it.inventoryId || undefined,
-                  }))
-                : [{ id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" }];
-              setItems(mappedItems);
-              setNotes("");
-            } else {
-              toast({ title: "Error", description: "Failed to load transfer details", variant: "destructive" });
-            }
-          } catch (e) {
-            toast({ title: "Error", description: "Failed to load transfer details", variant: "destructive" });
-          }
-        }
-      })
-      .catch(() => {
-        toast({ title: "Warning", description: "Failed to load reference data", variant: "destructive" });
-      });
-  }, [open, mode, transferId]);
+                // If edit mode, fetch the transfer details
+                if (mode === 'edit' && transferId && user?.id) {
+                    try {
+                        const resp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers });
+                        if (resp.ok) {
+                            const t = await resp.json();
+                            setTransferID(t.transferID || "");
+                            setFromLocation(t.fromLocation || "");
+                            setToLocation(t.toLocation || "");
+                            // Try to resolve from/to user IDs based on names/emails stored in locations
+                            const fromMatch = normalizedUsers.find((u) => u.name === t.fromLocation || u.email === t.fromLocation);
+                            const toMatch = normalizedUsers.find((u) => u.name === t.toLocation || u.email === t.toLocation);
+                            setFromUserId(fromMatch ? fromMatch.id : "");
+                            setToUserId(toMatch ? toMatch.id : "");
 
-  const addRow = () => {
-    const newId = items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1;
-    setItems((prev) => [...prev, { id: newId, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }]);
-  };
-
-  const removeSelectedRows = () => {
-    setItems((prev) => prev.filter((row) => !selectedRowIds.has(row.id)));
-    setSelectedRowIds(new Set());
-  };
-
-  const updateItem = (id: number, field: keyof ItemRow, value: any) => {
-    setItems((prev) => prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
-  };
-
-  const validate = () => {
-    if (!transferID.trim()) {
-      toast({ title: "Validation Error", description: "Transfer ID is required", variant: "destructive" });
-      return false;
-    }
-    if (!fromUserId || !toUserId) {
-      toast({ title: "Validation Error", description: "Please select both From and To users", variant: "destructive" });
-      return false;
-    }
-    if (!requestedDate) {
-      toast({ title: "Validation Error", description: "Requested date is required", variant: "destructive" });
-      return false;
-    }
-    const validItems = items.filter((i) => {
-      const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
-      return i.itemCode.trim() && hasItemName && i.quantity > 0 && i.itemType;
-    });
-    if (validItems.length === 0) {
-      toast({ title: "Validation Error", description: "At least one valid item is required (Item Code, Name, Type, and Quantity)", variant: "destructive" });
-      return false;
-    }
-    return true;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
-    setLoading(true);
-    try {
-      const etaMinutesValue = etaMinutes ? Math.round(Number(etaMinutes) * 60) : null;
-      const fromUser = users.find((u) => u.id === fromUserId);
-      const toUser = users.find((u) => u.id === toUserId);
-      const payload = {
-        transferID: transferID,
-        fromLocation: fromLocation.trim(),
-        toLocation: toLocation.trim(),
-        fromUserId: fromUserId,
-        toUserId: toUserId,
-        requestedDate: new Date(requestedDate).toISOString(),
-        status,
-        driverName: driverName.trim() || null,
-        etaMinutes: etaMinutesValue,
-        vehicleId: vehicleId || null,
-        approvedById: approvedById || null,
-        priority,
-        items: items
-          .filter((i) => {
-            const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
-            return i.itemCode.trim() && hasItemName && i.quantity > 0;
-          })
-          .map((i) => ({
-            itemCode: i.itemCode,
-            itemName: i.itemName === "OTHER" ? (i.itemNameOther || "") : i.itemName,
-            quantity: i.quantity,
-            unit: i.unit || null,
-            type: i.itemType || null,
-          })),
-        notes: notes.trim() || null,
-      };
-
-      const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      };
-      if (mode === 'edit' && transferId && user?.id) {
-        // Update the transfer header
-        const putResp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(payload),
-        });
-        if (!putResp.ok) {
-          const err = await putResp.json().catch(() => ({}));
-          throw new Error(err.error || 'Failed to update material transfer');
-        }
-
-        // Replace items: delete existing then create new
-        const itemsResp = await fetch(`${API_URL}/inventory/transfers/${transferId}/items?userId=${user.id}`, { headers });
-        if (!itemsResp.ok) throw new Error('Failed to load existing items');
-        const existingItems = await itemsResp.json();
-        await Promise.all(
-          (existingItems || []).map((it: any) =>
-            fetch(`${API_URL}/inventory/transfers/${transferId}/items/${it.id}?userId=${user.id}`, {
-              method: 'DELETE',
-              headers,
-            })
-          )
-        );
-        // Create new items
-        for (const i of payload.items) {
-          const createItemResp = await fetch(`${API_URL}/inventory/transfers/${transferId}/items?userId=${user.id}`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(i),
-          });
-          if (!createItemResp.ok) {
-            const err = await createItemResp.json().catch(() => ({}));
-            throw new Error(err.error || 'Failed to create transfer item');
-          }
-        }
-
-        const updatedResp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers });
-        const updated = updatedResp.ok ? await updatedResp.json() : null;
-        toast({ title: 'Success', description: 'Material transfer updated successfully' });
-        if (onSave) onSave(updated || { id: transferId, ...payload });
-        onOpenChange(false);
-      } else {
-        // Create new transfer
-        const resp = await fetch(`${API_URL}/inventory/transfers`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(payload),
-        });
-
-        if (resp.ok) {
-          const created = await resp.json();
-          toast({ title: "Success", description: "Material transfer created successfully" });
-          if (onSave) onSave(created);
-          onOpenChange(false);
-        } else {
-          const err = await resp.json().catch(() => ({}));
-          toast({ title: "Error", description: err.error || "Failed to create material transfer", variant: "destructive" });
-        }
-      }
-
-      // reset form after successful close
-      setTransferID("");
-      setFromLocation("");
-      setToLocation("");
-      setRequestedDate(new Date().toISOString().split("T")[0]);
-      setStatus("PENDING");
-      setDriverName("");
-      setEtaMinutes("");
-      setVehicleId("");
-      setApprovedById("");
-      setPriority("NORMAL");
-      setItems([{ id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" }]);
-      setNotes("");
-    } catch (e) {
-      toast({ title: "Error", description: (e as Error).message || (mode === 'edit' ? 'Failed to update material transfer' : 'Failed to create material transfer'), variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-full max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{mode === 'edit' ? 'Edit Material Transfer' : 'New Material Transfer'}</DialogTitle>
-          <DialogDescription>{mode === 'edit' ? 'Update transfer details and items.' : 'Capture transfer details and items.'}</DialogDescription>
-        </DialogHeader>
-
-        {/* Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label className="mb-1 block">Transfer ID *</Label>
-            <Input value={transferID} onChange={(e) => setTransferID(e.target.value)} placeholder="TRF001" />
-          </div>
-          <div>
-            <Label className="mb-1 block">Requested Date *</Label>
-            <Input type="date" value={requestedDate} onChange={(e) => setRequestedDate(e.target.value)} />
-          </div>
-          <div>
-            <Label className="mb-1 block">From *</Label>
-            <Select value={fromUserId} onValueChange={(v) => {
-              setFromUserId(v);
-              const u = users.find((x) => x.id === v);
-              if (u) setFromLocation(u.name);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select from user" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name} ({u.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block">To *</Label>
-            <Select value={toUserId} onValueChange={(v) => {
-              setToUserId(v);
-              const u = users.find((x) => x.id === v);
-              if (u) setToLocation(u.name);
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select destination user" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name} ({u.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block">Status *</Label>
-            <Select value={status} onValueChange={(v: TransferStatus) => setStatus(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
-                <SelectItem value="DELIVERED">Delivered</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block">Priority *</Label>
-            <Select value={priority} onValueChange={(v: TransferPriority) => setPriority(v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="LOW">Low</SelectItem>
-                <SelectItem value="NORMAL">Normal</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="URGENT">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block">Driver</Label>
-            <Input value={driverName} onChange={(e) => setDriverName(e.target.value)} placeholder="John Doe" />
-          </div>
-          <div>
-            <Label className="mb-1 block">ETA (hours)</Label>
-            <Input type="number" min="0" step="0.1" value={etaMinutes} onChange={(e) => setEtaMinutes(e.target.value)} placeholder="2.0" />
-          </div>
-          <div>
-            <Label className="mb-1 block">Vehicle</Label>
-            <Select value={vehicleId} onValueChange={setVehicleId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select vehicle" />
-              </SelectTrigger>
-              <SelectContent>
-                {vehicles.length === 0 ? (
-                  <SelectItem value="no-vehicles" disabled>
-                    No vehicles found
-                  </SelectItem>
-                ) : (
-                  vehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.vehicleName} ({v.registrationNumber}) - {v.driverName}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block">Approved By</Label>
-            <Select value={approvedById} onValueChange={setApprovedById}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select approver" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name} ({u.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Items */}
-        <Card className="mt-4">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Items</CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={addRow} size="sm">
-                  Add Item
-                </Button>
-                {selectedRowIds.size > 0 && (
-                  <Button variant="outline" size="sm" className="text-red-600" onClick={removeSelectedRows}>
-                    Delete Selected ({selectedRowIds.size})
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]"><input
-                      type="checkbox"
-                      checked={items.length > 0 && selectedRowIds.size === items.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedRowIds(new Set(items.map((i) => i.id)));
+                            setRequestedDate(t.requestedDate ? new Date(t.requestedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                            setStatus((t.status || 'PENDING') as TransferStatus);
+                            setDriverName(t.driverName || "");
+                            setEtaMinutes(typeof t.etaMinutes === 'number' ? String((t.etaMinutes / 60).toFixed(1)) : "");
+                            setVehicleId(t.vehicleId || "");
+                            setApprovedById(t.approvedById || "");
+                            setPriority((t.priority || 'NORMAL') as TransferPriority);
+                            const mappedItems: ItemRow[] = Array.isArray(t.items)
+                                ? t.items.map((it: any, idx: number) => ({
+                                    id: idx + 1,
+                                    itemCode: it.itemCode || "",
+                                    itemName: it.itemName || "",
+                                    itemNameOther: "",
+                                    quantity: typeof it.quantity === 'number' ? it.quantity : 0,
+                                    unit: (it.unit || "") as Unit | "",
+                                    itemType: (it.itemType || "") as ItemType | "",
+                                    inventoryId: it.inventoryId || undefined,
+                                }))
+                                : [{ id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" }];
+                            setItems(mappedItems);
+                            setNotes("");
+                            // Load authorised signature if it exists
+                            if (t.authorisedSignature) {
+                                setSignaturePreview(t.authorisedSignature);
+                            }
                         } else {
-                          setSelectedRowIds(new Set());
+                            toast({ title: "Error", description: "Failed to load transfer details", variant: "destructive" });
                         }
-                      }}
-                    /></TableHead>
-                    <TableHead>No.</TableHead>
-                    <TableHead>Item Code *</TableHead>
-                    <TableHead>Item Name *</TableHead>
-                    <TableHead className="w-[140px]">Item Type *</TableHead>
-                    <TableHead className="w-[120px]">Quantity *</TableHead>
-                    <TableHead className="w-[180px]">Unit</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((row, idx) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={selectedRowIds.has(row.id)}
-                          onChange={(e) => {
-                            const next = new Set(selectedRowIds);
-                            e.target.checked ? next.add(row.id) : next.delete(row.id);
-                            setSelectedRowIds(next);
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>{idx + 1}</TableCell>
-                      <TableCell>
-                        <Input
-                          value={row.itemCode}
-                          onChange={(e) => updateItem(row.id, "itemCode", e.target.value)}
-                          placeholder="e.g., CEM-001"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <SelectWithOther
-                          value={row.itemName}
-                          onValueChange={(v) => updateItem(row.id, "itemName", v)}
-                          otherValue={row.itemNameOther || ""}
-                          onOtherValueChange={(v) => updateItem(row.id, "itemNameOther", v)}
-                          options={ITEM_OPTIONS.filter(opt => opt.value !== "OTHER").map(opt => ({ value: opt.value, label: opt.label }))}
-                          placeholder="Select Item"
-                          otherPlaceholder="Enter item name"
-                          otherLabel="Item Name"
-                          otherOptionValue="OTHER"
-                          otherOptionLabel="Other"
-                          selectClassName="h-10"
-                          inputClassName="h-10"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Select value={row.itemType} onValueChange={(v: ItemType) => updateItem(row.id, "itemType", v)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Item Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="OLD">Old</SelectItem>
-                            <SelectItem value="NEW">New</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={row.quantity}
-                          onChange={(e) => updateItem(row.id, "quantity", Number(e.target.value))}
-                          placeholder="0"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Select value={row.unit} onValueChange={(v) => updateItem(row.id, "unit", v)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unit" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {UNITS.map((u) => (
-                              <SelectItem key={u.value} value={u.value}>
-                                {u.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    } catch (e) {
+                        toast({ title: "Error", description: "Failed to load transfer details", variant: "destructive" });
+                    }
+                }
+            })
+            .catch(() => {
+                toast({ title: "Warning", description: "Failed to load reference data", variant: "destructive" });
+            });
+    }, [open, mode, transferId]);
 
-        <div className="mt-4">
-          <Label className="mb-1 block">Notes</Label>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any additional information..." rows={3} />
-        </div>
+    const addRow = () => {
+        const newId = items.length > 0 ? Math.max(...items.map((i) => i.id)) + 1 : 1;
+        setItems((prev) => [...prev, { id: newId, itemCode: "", itemName: "", quantity: 0, unit: "", itemType: "" }]);
+    };
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Saving..." : "Save Transfer"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+    const removeSelectedRows = () => {
+        setItems((prev) => prev.filter((row) => !selectedRowIds.has(row.id)));
+        setSelectedRowIds(new Set());
+    };
+
+    const updateItem = (id: number, field: keyof ItemRow, value: any) => {
+        setItems((prev) => prev.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
+    };
+
+    const handleSignatureSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            const file = files[0];
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+                return;
+            }
+            // Validate file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                toast({ title: "Error", description: "File size must be less than 10MB", variant: "destructive" });
+                return;
+            }
+            setSignatureFile(file);
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setSignaturePreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const validate = () => {
+        if (!transferID.trim()) {
+            toast({ title: "Validation Error", description: "Transfer ID is required", variant: "destructive" });
+            return false;
+        }
+        if (!fromUserId || !toUserId) {
+            toast({ title: "Validation Error", description: "Please select both From and To users", variant: "destructive" });
+            return false;
+        }
+        if (!requestedDate) {
+            toast({ title: "Validation Error", description: "Requested date is required", variant: "destructive" });
+            return false;
+        }
+        const validItems = items.filter((i) => {
+            const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
+            return i.itemCode.trim() && hasItemName && i.quantity > 0 && i.itemType;
+        });
+        if (validItems.length === 0) {
+            toast({ title: "Validation Error", description: "At least one valid item is required (Item Code, Name, Type, and Quantity)", variant: "destructive" });
+            return false;
+        }
+        return true;
+    };
+
+    const handleSave = async () => {
+        if (!validate()) return;
+        setLoading(true);
+        try {
+            const etaMinutesValue = etaMinutes ? Math.round(Number(etaMinutes) * 60) : null;
+            const fromUser = users.find((u) => u.id === fromUserId);
+            const toUser = users.find((u) => u.id === toUserId);
+            const payload = {
+                transferID: transferID,
+                fromLocation: fromLocation.trim(),
+                toLocation: toLocation.trim(),
+                fromUserId: fromUserId,
+                toUserId: toUserId,
+                requestedDate: new Date(requestedDate).toISOString(),
+                status,
+                driverName: driverName.trim() || null,
+                etaMinutes: etaMinutesValue,
+                vehicleId: vehicleId || null,
+                approvedById: approvedById || null,
+                priority,
+                items: items
+                    .filter((i) => {
+                        const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
+                        return i.itemCode.trim() && hasItemName && i.quantity > 0;
+                    })
+                    .map((i) => ({
+                        itemCode: i.itemCode,
+                        itemName: i.itemName === "OTHER" ? (i.itemNameOther || "") : i.itemName,
+                        quantity: i.quantity,
+                        unit: i.unit || null,
+                        type: i.itemType || null,
+                    })),
+                notes: notes.trim() || null,
+            };
+
+            const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            };
+            if (mode === 'edit' && transferId && user?.id) {
+                // Update the transfer header
+                const putResp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, {
+                    method: 'PUT',
+                    headers,
+                    body: JSON.stringify(payload),
+                });
+                if (!putResp.ok) {
+                    const err = await putResp.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to update material transfer');
+                }
+
+                // Replace items: delete existing then create new
+                const itemsResp = await fetch(`${API_URL}/inventory/transfers/${transferId}/items?userId=${user.id}`, { headers });
+                if (!itemsResp.ok) throw new Error('Failed to load existing items');
+                const existingItems = await itemsResp.json();
+                await Promise.all(
+                    (existingItems || []).map((it: any) =>
+                        fetch(`${API_URL}/inventory/transfers/${transferId}/items/${it.id}?userId=${user.id}`, {
+                            method: 'DELETE',
+                            headers,
+                        })
+                    )
+                );
+                // Create new items
+                for (const i of payload.items) {
+                    const createItemResp = await fetch(`${API_URL}/inventory/transfers/${transferId}/items?userId=${user.id}`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(i),
+                    });
+                    if (!createItemResp.ok) {
+                        const err = await createItemResp.json().catch(() => ({}));
+                        throw new Error(err.error || 'Failed to create transfer item');
+                    }
+                }
+
+                const updatedResp = await fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers });
+                const updated = updatedResp.ok ? await updatedResp.json() : null;
+                toast({ title: 'Success', description: 'Material transfer updated successfully' });
+                if (onSave) onSave(updated || { id: transferId, ...payload });
+                onOpenChange(false);
+            } else {
+                // Create new transfer
+                const resp = await fetch(`${API_URL}/inventory/transfers`, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(payload),
+                });
+
+                if (resp.ok) {
+                    const created = await resp.json();
+                    toast({ title: "Success", description: "Material transfer created successfully" });
+                    if (onSave) onSave(created);
+                    onOpenChange(false);
+                } else {
+                    const err = await resp.json().catch(() => ({}));
+                    toast({ title: "Error", description: err.error || "Failed to create material transfer", variant: "destructive" });
+                }
+            }
+
+            // reset form after successful close
+            setTransferID("");
+            setFromLocation("");
+            setToLocation("");
+            setRequestedDate(new Date().toISOString().split("T")[0]);
+            setStatus("PENDING");
+            setDriverName("");
+            setEtaMinutes("");
+            setVehicleId("");
+            setApprovedById("");
+            setPriority("NORMAL");
+            setItems([{ id: 1, itemCode: "", itemName: "", itemNameOther: "", quantity: 0, unit: "", itemType: "" }]);
+            setNotes("");
+            setSignatureFile(null);
+            setSignaturePreview(null);
+        } catch (e) {
+            toast({ title: "Error", description: (e as Error).message || (mode === 'edit' ? 'Failed to update material transfer' : 'Failed to create material transfer'), variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-5xl w-full max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>{mode === 'edit' ? 'Edit Material Transfer' : 'New Material Transfer'}</DialogTitle>
+                    <DialogDescription>{mode === 'edit' ? 'Update transfer details and items.' : 'Capture transfer details and items.'}</DialogDescription>
+                </DialogHeader>
+
+                {/* Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <Label className="mb-1 block">Transfer ID *</Label>
+                        <Input value={transferID} onChange={(e) => setTransferID(e.target.value)} placeholder="TRF001" />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Requested Date *</Label>
+                        <Input type="date" value={requestedDate} onChange={(e) => setRequestedDate(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">From *</Label>
+                        <Select value={fromUserId} onValueChange={(v) => {
+                            setFromUserId(v);
+                            const u = users.find((x) => x.id === v);
+                            if (u) setFromLocation(u.name);
+                        }}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select from user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
+                                    <SelectItem key={u.id} value={u.id}>
+                                        {u.name} ({u.email})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">To *</Label>
+                        <Select value={toUserId} onValueChange={(v) => {
+                            setToUserId(v);
+                            const u = users.find((x) => x.id === v);
+                            if (u) setToLocation(u.name);
+                        }}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select destination user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
+                                    <SelectItem key={u.id} value={u.id}>
+                                        {u.name} ({u.email})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Status *</Label>
+                        <Select value={status} onValueChange={(v: TransferStatus) => setStatus(v)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="PENDING">Pending</SelectItem>
+                                <SelectItem value="IN_TRANSIT">In Transit</SelectItem>
+                                <SelectItem value="DELIVERED">Delivered</SelectItem>
+                                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Priority *</Label>
+                        <Select value={priority} onValueChange={(v: TransferPriority) => setPriority(v)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="LOW">Low</SelectItem>
+                                <SelectItem value="NORMAL">Normal</SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                                <SelectItem value="URGENT">Urgent</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Driver</Label>
+                        <Input value={driverName} onChange={(e) => setDriverName(e.target.value)} placeholder="John Doe" />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">ETA (hours)</Label>
+                        <Input type="number" min="0" step="0.1" value={etaMinutes} onChange={(e) => setEtaMinutes(e.target.value)} placeholder="2.0" />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Vehicle</Label>
+                        <Select value={vehicleId} onValueChange={setVehicleId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select vehicle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {vehicles.length === 0 ? (
+                                    <SelectItem value="no-vehicles" disabled>
+                                        No vehicles found
+                                    </SelectItem>
+                                ) : (
+                                    vehicles.map((v) => (
+                                        <SelectItem key={v.id} value={v.id}>
+                                            {v.vehicleName} ({v.registrationNumber}) - {v.driverName}
+                                        </SelectItem>
+                                    ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Approved By</Label>
+                        <Select value={approvedById} onValueChange={setApprovedById}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select approver" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {users.map((u) => (
+                                    <SelectItem key={u.id} value={u.id}>
+                                        {u.name} ({u.email})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {/* Items */}
+                <Card className="mt-4">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Items</CardTitle>
+                            <div className="flex gap-2">
+                                <Button variant="outline" onClick={addRow} size="sm">
+                                    Add Item
+                                </Button>
+                                {selectedRowIds.size > 0 && (
+                                    <Button variant="outline" size="sm" className="text-red-600" onClick={removeSelectedRows}>
+                                        Delete Selected ({selectedRowIds.size})
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[40px]"><input
+                                            type="checkbox"
+                                            checked={items.length > 0 && selectedRowIds.size === items.length}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedRowIds(new Set(items.map((i) => i.id)));
+                                                } else {
+                                                    setSelectedRowIds(new Set());
+                                                }
+                                            }}
+                                        /></TableHead>
+                                        <TableHead>No.</TableHead>
+                                        <TableHead>Item Code *</TableHead>
+                                        <TableHead>Item Name *</TableHead>
+                                        <TableHead className="w-[140px]">Item Type *</TableHead>
+                                        <TableHead className="w-[120px]">Quantity *</TableHead>
+                                        <TableHead className="w-[180px]">Unit</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {items.map((row, idx) => (
+                                        <TableRow key={row.id}>
+                                            <TableCell>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedRowIds.has(row.id)}
+                                                    onChange={(e) => {
+                                                        const next = new Set(selectedRowIds);
+                                                        e.target.checked ? next.add(row.id) : next.delete(row.id);
+                                                        setSelectedRowIds(next);
+                                                    }}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{idx + 1}</TableCell>
+                                            <TableCell>
+                                                <Input
+                                                    value={row.itemCode}
+                                                    onChange={(e) => updateItem(row.id, "itemCode", e.target.value)}
+                                                    placeholder="e.g., CEM-001"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <SelectWithOther
+                                                    value={row.itemName}
+                                                    onValueChange={(v) => updateItem(row.id, "itemName", v)}
+                                                    otherValue={row.itemNameOther || ""}
+                                                    onOtherValueChange={(v) => updateItem(row.id, "itemNameOther", v)}
+                                                    options={ITEM_OPTIONS.filter(opt => opt.value !== "OTHER").map(opt => ({ value: opt.value, label: opt.label }))}
+                                                    placeholder="Select Item"
+                                                    otherPlaceholder="Enter item name"
+                                                    otherLabel="Item Name"
+                                                    otherOptionValue="OTHER"
+                                                    otherOptionLabel="Other"
+                                                    selectClassName="h-10"
+                                                    inputClassName="h-10"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Select value={row.itemType} onValueChange={(v: ItemType) => updateItem(row.id, "itemType", v)}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Item Type" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="OLD">Old</SelectItem>
+                                                        <SelectItem value="NEW">New</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input
+                                                    type="number"
+                                                    min="0"
+                                                    value={row.quantity}
+                                                    onChange={(e) => updateItem(row.id, "quantity", Number(e.target.value))}
+                                                    placeholder="0"
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Select value={row.unit} onValueChange={(v) => updateItem(row.id, "unit", v)}>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Unit" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {UNITS.map((u) => (
+                                                            <SelectItem key={u.value} value={u.value}>
+                                                                {u.label}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <div className="mt-4">
+                    <Label className="mb-1 block">Notes</Label>
+                    <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any additional information..." rows={3} />
+                </div>
+
+                {/* Authorised Signature Upload */}
+                <Card className="mt-4">
+                    <CardHeader>
+                        <CardTitle>Authorised Signature</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {signaturePreview ? (
+                                <div className="space-y-4">
+                                    <div className="p-4 border rounded-md bg-gray-50">
+                                        <p className="text-sm font-medium mb-3">Current Signature:</p>
+                                        <img src={signaturePreview} alt="Signature preview" className="max-w-xs max-h-48 rounded border" />
+                                    </div>
+                                    {mode === 'edit' && (
+                                        <div>
+                                            <Label htmlFor="signature-upload" className="block mb-2 cursor-pointer">
+                                                Replace Signature Image
+                                            </Label>
+                                            <Input
+                                                id="signature-upload"
+                                                ref={signatureInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleSignatureSelect}
+                                                className="cursor-pointer"
+                                            />
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Supported formats: JPEG, PNG, GIF, WEBP | Max size: 10MB
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-1">
+                                        <Label htmlFor="signature-upload" className="block mb-2 cursor-pointer">
+                                            Upload Signature Image
+                                        </Label>
+                                        <Input
+                                            id="signature-upload"
+                                            ref={signatureInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleSignatureSelect}
+                                            className="cursor-pointer"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Supported formats: JPEG, PNG, GIF, WEBP | Max size: 10MB
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            {signatureFile && (
+                                <div className="space-y-3">
+                                    <div className="p-4 border rounded-md bg-blue-50">
+                                        <p className="text-sm font-medium mb-2">New Signature Preview:</p>
+                                        <img src={signaturePreview} alt="Signature preview" className="max-w-xs max-h-40 rounded border" />
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setSignatureFile(null);
+                                            // Only reset preview if we're in create mode or no existing signature
+                                            if (mode === 'create') {
+                                                setSignaturePreview(null);
+                                            } else {
+                                                // In edit mode, reload the original signature
+                                                if (transferId && user?.id) {
+                                                    const token = sessionStorage.getItem("jwt_token") || localStorage.getItem("jwt_token_backup");
+                                                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                                                    fetch(`${API_URL}/inventory/transfers/${transferId}?userId=${user.id}`, { headers })
+                                                        .then(r => r.ok ? r.json() : null)
+                                                        .then(t => {
+                                                            if (t?.authorisedSignature) {
+                                                                setSignaturePreview(t.authorisedSignature);
+                                                            }
+                                                        });
+                                                }
+                                            }
+                                            if (signatureInputRef.current) {
+                                                signatureInputRef.current.value = "";
+                                            }
+                                        }}
+                                    >
+                                        Cancel Upload
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+                        Cancel
+                    </Button>
+                    <Button onClick={handleSave} disabled={loading}>
+                        {loading ? "Saving..." : "Save Transfer"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
