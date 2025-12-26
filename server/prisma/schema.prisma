@@ -1299,12 +1299,16 @@ model MaterialTransferItem {
   hsnCode    String?
   transferId String           @db.Uuid
   transfer   MaterialTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-
+  
+  itemCode   String?          // Item code from the form (e.g., CEM-001)
+  itemName   String?
+  type       String?          // Item type: OLD or NEW
+  
   // Optional link to an inventory master record
   inventoryId String?    @db.Uuid
   inventory   Inventory? @relation(fields: [inventoryId], references: [id])
 
-  description String
+  description String?
   quantity    Float   @default(0)
   unit        Unit?
   notes       String?

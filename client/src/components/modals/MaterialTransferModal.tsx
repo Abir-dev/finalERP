@@ -10,6 +10,7 @@ import { SelectWithOther } from "@/components/ui/select-with-other";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
+import { X } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://testboard-266r.onrender.com/api";
 
@@ -575,11 +576,18 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
         setUsers(normalizedUsers);
 
         // In create mode, default From to current user if available
-        if (mode === 'create' && user?.id) {
-          setFromUserId(user.id);
-          const me = normalizedUsers.find((u) => u.id === user.id);
-          if (me) setFromLocation(me.name || me.email || "");
-        }
+         if (mode === 'create' && user?.id) {
+           setFromUserId(user.id);
+           const me = normalizedUsers.find((u) => u.id === user.id);
+           if (me) setFromLocation(me.name || me.email || "");
+         } else if (mode === 'create') {
+           // Default to first store user if available
+           const firstStoreUser = normalizedUsers.find((u) => u.role === 'store');
+           if (firstStoreUser) {
+             setFromUserId(firstStoreUser.id);
+             setFromLocation(firstStoreUser.name || firstStoreUser.email || "");
+           }
+         }
 
         // If edit mode, fetch the transfer details
         if (mode === 'edit' && transferId && user?.id) {
@@ -659,10 +667,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     }
     const validItems = items.filter((i) => {
       const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
-      return i.itemCode.trim() && hasItemName && i.quantity > 0;
+      return i.itemCode.trim() && hasItemName && i.quantity > 0 && i.itemType;
     });
     if (validItems.length === 0) {
-      toast({ title: "Validation Error", description: "At least one valid item is required", variant: "destructive" });
+      toast({ title: "Validation Error", description: "At least one valid item is required (Item Code, Name, Type, and Quantity)", variant: "destructive" });
       return false;
     }
     return true;
@@ -677,9 +685,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
       const toUser = users.find((u) => u.id === toUserId);
       const payload = {
         transferID: transferID,
-        // Persist names/emails for compatibility with backend expecting strings
-        fromUserId: fromUser ? (fromUserId) : fromLocation.trim(),
-        toUserId: toUser ? (toUserId) : toLocation.trim(),
+        fromLocation: fromLocation.trim(),
+        toLocation: toLocation.trim(),
+        fromUserId: fromUserId,
+        toUserId: toUserId,
         requestedDate: new Date(requestedDate).toISOString(),
         status,
         driverName: driverName.trim() || null,
@@ -810,14 +819,14 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
             <Label className="mb-1 block">From *</Label>
             <Select value={fromUserId} onValueChange={(v) => {
               setFromUserId(v);
-              const u = users.filter((x) => x.role !== 'store').find((x) => x.id === v);
-              setFromLocation(u ? (u.name || u.email || "") : "");
+              const u = users.find((x) => x.id === v);
+              if (u) setFromLocation(u.name);
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select from user" />
               </SelectTrigger>
               <SelectContent>
-                {users.filter((u) => u.role === 'store').map((u) => (
+                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.name} ({u.email})
                   </SelectItem>
@@ -829,14 +838,14 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
             <Label className="mb-1 block">To *</Label>
             <Select value={toUserId} onValueChange={(v) => {
               setToUserId(v);
-              const u = users.filter((x) => x.role !== 'store').find((x) => x.id === v);
-              setToLocation(u ? (u.name || u.email || "") : "");
+              const u = users.find((x) => x.id === v);
+              if (u) setToLocation(u.name);
             }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select destination user" />
               </SelectTrigger>
               <SelectContent>
-                {users.filter((u) => u.role === 'store').map((u) => (
+                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.name} ({u.email})
                   </SelectItem>

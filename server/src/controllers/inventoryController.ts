@@ -537,9 +537,9 @@ export const inventoryController = {
         stateCode,
       } = req.body || {};
 
-      if (!transferID || !fromLocation || !toLocation || !requestedDate) {
-        return res.status(400).json({ error: "transferID, fromLocation, toLocation, and requestedDate are required" });
-      }
+      // if (!transferID || !fromLocation || !toLocation || !requestedDate) {
+      //   return res.status(400).json({ error: "transferID, fromLocation, toLocation, and requestedDate are required" });
+      // }
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "At least one item is required" });
       }
@@ -563,9 +563,9 @@ export const inventoryController = {
         return res.status(404).json({ error: "One or both users not found" });
       }
 
-      if (fromUser.role !== 'store' || toUser.role !== 'store') {
-        return res.status(400).json({ error: "Both users must have store role" });
-      }
+      // if (fromUser.role !== 'store' || toUser.role !== 'store') {
+      //   return res.status(400).json({ error: "Both users must have store role" });
+      // }
 
       // Validate each item and check inventory availability
       const itemValidations: ItemValidation[] = [];
@@ -597,18 +597,18 @@ export const inventoryController = {
           }
         });
 
-        if (!inventoryItem) {
-          return res.status(404).json({
-            error: `Item not found in from user's inventory: ${itemCode} - ${itemName} (${type})`
-          });
-        }
+        // if (!inventoryItem) {
+        //   return res.status(404).json({
+        //     error: `Item not found in from user's inventory: ${itemCode} - ${itemName} (${type})`
+        //   });
+        // }
 
         // Check if sufficient quantity is available
-        if (inventoryItem.quantity < quantityInt) {
-          return res.status(400).json({
-            error: `Insufficient quantity for item ${itemCode} - ${itemName}. Available: ${inventoryItem.quantity}, Requested: ${quantityInt}`
-          });
-        }
+        // if (inventoryItem.quantity < quantityInt) {
+        //   return res.status(400).json({
+        //     error: `Insufficient quantity for item ${itemCode} - ${itemName}. Available: ${inventoryItem.quantity}, Requested: ${quantityInt}`
+        //   });
+        // }
 
         itemValidations.push({
           fromInventoryItem: inventoryItem,
@@ -636,6 +636,9 @@ export const inventoryController = {
 
           // Prepare transfer item data
           transferItems.push({
+            itemCode: itemCode,
+            itemName: itemName,
+            type: type,
             description: `${itemCode} - ${itemName} (${type})`,
             quantity: quantity,
             unit: fromInventoryItem.unit,
