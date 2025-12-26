@@ -1268,6 +1268,8 @@ model MaterialTransfer {
   state         String?
   stateCode     String?
 
+  authorisedSignature String?
+
 
   // Approvals
   approvedById String? @db.Uuid
