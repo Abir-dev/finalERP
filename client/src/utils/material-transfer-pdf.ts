@@ -344,12 +344,12 @@ export async function generateMaterialTransferPDF(
                 fontSize: 9,
             },
             columnStyles: {
-                0: { halign: "center", cellWidth: 15 },
-                1: { halign: "center", cellWidth: 25 },
-                2: { halign: "left", cellWidth: 35 },
-                3: { halign: "center", cellWidth: 20 },
-                4: { halign: "center", cellWidth: 15 },
-                5: { halign: "center", cellWidth: 20 },
+                0: { halign: "center" },
+                1: { halign: "center" },
+                2: { halign: "left" },
+                3: { halign: "center" },
+                4: { halign: "center" },
+                5: { halign: "center" },
             },
             theme: "grid",
         });
