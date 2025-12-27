@@ -173,7 +173,7 @@ export async function generateMaterialTransferPDF(
         };
 
         // Title
-        centerText("MATERIAL TRANSFER DOCUMENT", yPosition, 16, "bold");
+        centerText("DELIVERY CHALAN", yPosition, 16, "bold");
         yPosition += 8;
 
         // Horizontal line
