@@ -118,10 +118,34 @@ const addItemFormSchema = z.object({
     maxStock: z.number().min(0, "Maximum stock must be 0 or greater"),
     safetyStock: z.number().min(0, "Safety stock must be 0 or greater"),
     primarySupplier: z.string().min(1, "Please select a primary supplier"),
+    primarySupplierManual: z.string().optional(),
     secondarySupplier: z.string().optional(),
+    secondarySupplierManual: z.string().optional(),
     unitCost: z.number().min(0, "Unit cost must be 0 or greater"),
     image: z.instanceof(File).optional(),
-});
+}).refine(
+    (data) => {
+        if (data.primarySupplier === "OTHER" && !data.primarySupplierManual) {
+            return false;
+        }
+        return true;
+    },
+    {
+        message: "Please enter a supplier name",
+        path: ["primarySupplierManual"],
+    }
+).refine(
+    (data) => {
+        if (data.secondarySupplier === "OTHER" && !data.secondarySupplierManual) {
+            return false;
+        }
+        return true;
+    },
+    {
+        message: "Please enter a supplier name",
+        path: ["secondarySupplierManual"],
+    }
+);
 
 // Add maintenance form schema
 const maintenanceFormSchema = z.object({
@@ -203,7 +227,9 @@ const defaultValues: Partial<AddItemFormValues> = {
     category: [],
     unit: "",
     primarySupplier: "",
+    primarySupplierManual: "",
     secondarySupplier: "",
+    secondarySupplierManual: "",
     image: undefined,
     itemCode: "",
 };
@@ -887,11 +913,17 @@ const InventoryContent = () => {
     const [primarySupplierSearch, setPrimarySupplierSearch] = useState("");
     const [secondarySupplierSearch, setSecondarySupplierSearch] = useState("");
 
+    // Add state for manual supplier selection
+    const [primarySupplierIsOther, setPrimarySupplierIsOther] = useState(false);
+    const [secondarySupplierIsOther, setSecondarySupplierIsOther] = useState(false);
+
     // Add these state variables near your other state declarations
     const [editPrimarySupplierSearch, setEditPrimarySupplierSearch] =
         useState("");
     const [editSecondarySupplierSearch, setEditSecondarySupplierSearch] =
         useState("");
+    const [editPrimarySupplierIsOther, setEditPrimarySupplierIsOther] = useState(false);
+    const [editSecondarySupplierIsOther, setEditSecondarySupplierIsOther] = useState(false);
 
     // Add image preview states
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -1812,20 +1844,44 @@ const InventoryContent = () => {
                 localStorage.getItem("jwt_token_backup");
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-            // Find the vendor by name to get the vendor ID
-            const primaryVendor = vendors.find(
-                (vendor) => vendor.name === data.primarySupplier
-            );
-            const secondaryVendor =
-                data.secondarySupplier && data.secondarySupplier !== "none"
-                    ? vendors.find((vendor) => vendor.name === data.secondarySupplier)
-                    : null;
+            // Handle primary supplier - can be "OTHER" for manual entry
+            let primaryVendor: any = null;
+            let primarySupplierName = "";
+            let primarySupplierManualName = "";
+
+            if (data.primarySupplier === "OTHER") {
+                primarySupplierManualName = data.primarySupplierManual || "";
+                primarySupplierName = primarySupplierManualName;
+                // Create a dummy vendor ID for manual supplier (will be stored as manual name)
+                primaryVendor = { id: "manual-primary" };
+            } else {
+                primaryVendor = vendors.find(
+                    (vendor) => vendor.name === data.primarySupplier
+                );
+                primarySupplierName = data.primarySupplier;
+            }
 
             if (!primaryVendor) {
                 toast.error(
                     "Primary supplier not found. Please select a valid supplier."
                 );
                 return;
+            }
+
+            // Handle secondary supplier
+            let secondaryVendor: any = null;
+            let secondarySupplierName = "";
+            let secondarySupplierManualName = "";
+
+            if (data.secondarySupplier === "OTHER") {
+                secondarySupplierManualName = data.secondarySupplierManual || "";
+                secondarySupplierName = secondarySupplierManualName;
+                secondaryVendor = { id: "manual-secondary" };
+            } else if (data.secondarySupplier && data.secondarySupplier !== "none") {
+                secondaryVendor = vendors.find(
+                    (vendor) => vendor.name === data.secondarySupplier
+                );
+                secondarySupplierName = data.secondarySupplier;
             }
 
             // Create FormData for file upload
@@ -1838,20 +1894,18 @@ const InventoryContent = () => {
             formData.append("unit", data.unit);
             formData.append("maximumStock", data.maxStock.toString());
             formData.append("safetyStock", data.safetyStock.toString());
-            formData.append("primarySupplierName", data.primarySupplier);
-            formData.append("vendorId", primaryVendor.id);
+            formData.append("primarySupplierName", primarySupplierName);
+            formData.append("primarySupplierManualName", primarySupplierManualName);
+            formData.append("vendorId", primaryVendor.id !== "manual-primary" ? primaryVendor.id : "00000000-0000-0000-0000-000000000000");
 
-            // Handle secondary supplier - explicitly set to null if "none" or empty
-            if (
-                data.secondarySupplier &&
-                data.secondarySupplier !== "none" &&
-                secondaryVendor
-            ) {
-                formData.append("secondarySupplierName", data.secondarySupplier);
-                formData.append("secondaryVendorId", secondaryVendor.id);
+            // Handle secondary supplier
+            if (secondaryVendor) {
+                formData.append("secondarySupplierName", secondarySupplierName);
+                formData.append("secondarySupplierManualName", secondarySupplierManualName);
+                formData.append("secondaryVendorId", secondaryVendor.id !== "manual-secondary" ? secondaryVendor.id : "");
             } else {
-                // Explicitly set secondary supplier to null when "none" is selected
                 formData.append("secondarySupplierName", "");
+                formData.append("secondarySupplierManualName", "");
                 formData.append("secondaryVendorId", "");
             }
 
@@ -2696,6 +2750,10 @@ const InventoryContent = () => {
                     if (!open) {
                         form.reset();
                         setImagePreview(null);
+                        setPrimarySupplierIsOther(false);
+                        setSecondarySupplierIsOther(false);
+                        setPrimarySupplierSearch("");
+                        setSecondarySupplierSearch("");
                     }
                 }}
             >
@@ -2928,7 +2986,15 @@ const InventoryContent = () => {
                                         <FormItem>
                                             <FormLabel>Primary Supplier</FormLabel>
                                             <Select
-                                                onValueChange={field.onChange}
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    if (value === "OTHER") {
+                                                        setPrimarySupplierIsOther(true);
+                                                    } else {
+                                                        setPrimarySupplierIsOther(false);
+                                                        form.setValue("primarySupplierManual", "");
+                                                    }
+                                                }}
                                                 value={field.value}
                                             >
                                                 <FormControl>
@@ -2964,12 +3030,33 @@ const InventoryContent = () => {
                                                             No suppliers found
                                                         </div>
                                                     )}
+                                                    <SelectItem value="OTHER">Other (Add Manual)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
+
+                                {primarySupplierIsOther && (
+                                    <FormField
+                                        control={form.control}
+                                        name="primarySupplierManual"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Enter Supplier Name</FormLabel>
+                                                <FormControl>
+                                                    <textarea
+                                                        placeholder="Enter the supplier's name here..."
+                                                        {...field}
+                                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
 
                                 <FormField
                                     control={form.control}
@@ -2978,7 +3065,15 @@ const InventoryContent = () => {
                                         <FormItem>
                                             <FormLabel>Secondary Supplier (Optional)</FormLabel>
                                             <Select
-                                                onValueChange={field.onChange}
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    if (value === "OTHER") {
+                                                        setSecondarySupplierIsOther(true);
+                                                    } else {
+                                                        setSecondarySupplierIsOther(false);
+                                                        form.setValue("secondarySupplierManual", "");
+                                                    }
+                                                }}
                                                 value={field.value}
                                             >
                                                 <FormControl>
@@ -3015,12 +3110,33 @@ const InventoryContent = () => {
                                                             No suppliers found
                                                         </div>
                                                     )}
+                                                    <SelectItem value="OTHER">Other (Add Manual)</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
+
+                                {secondarySupplierIsOther && (
+                                    <FormField
+                                        control={form.control}
+                                        name="secondarySupplierManual"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Enter Supplier Name</FormLabel>
+                                                <FormControl>
+                                                    <textarea
+                                                        placeholder="Enter the supplier's name here..."
+                                                        {...field}
+                                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
 
                                 <FormField
                                     control={form.control}

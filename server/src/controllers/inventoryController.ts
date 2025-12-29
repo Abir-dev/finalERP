@@ -27,8 +27,10 @@ interface CreateInventoryItemRequest {
     maximumStock: number;
     safetyStock: number;
     primarySupplierName: string;
+    primarySupplierManualName?: string;
     vendorId: string;
     secondarySupplierName?: string;
+    secondarySupplierManualName?: string;
     secondaryVendorId?: string;
     unitCost: number;
     imageUrl?: string;
@@ -51,8 +53,10 @@ export const inventoryController = {
                 maximumStock,
                 safetyStock,
                 primarySupplierName,
+                primarySupplierManualName,
                 vendorId,
                 secondarySupplierName,
+                secondarySupplierManualName,
                 secondaryVendorId,
                 unitCost,
                 imageUrl,
@@ -97,14 +101,42 @@ export const inventoryController = {
                 createdById
             };
 
+            // Add manual primary supplier name if provided
+            if (primarySupplierManualName) {
+                createData.primarySupplierManualName = primarySupplierManualName;
+            }
+
             if (secondarySupplierName) {
                 createData.secondarySupplierName = secondarySupplierName;
+            }
+            // Add manual secondary supplier name if provided
+            if (secondarySupplierManualName) {
+                createData.secondarySupplierManualName = secondarySupplierManualName;
             }
             if (secondaryVendorId) {
                 createData.secondaryVendorId = secondaryVendorId;
             }
             if (projectId) {
                 createData.projectId = projectId;
+            }
+
+            // Validate that vendor exists (skip if null UUID or null)
+            const isNullUUID = vendorId === "00000000-0000-0000-0000-000000000000";
+            if (vendorId && !isNullUUID) {
+                const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+                if (!vendor) {
+                    return res.status(400).json({ error: `Vendor with ID ${vendorId} does not exist` });
+                }
+            } else if (isNullUUID) {
+                createData.vendorId = null;
+            }
+
+            // Validate secondary vendor if provided
+            if (secondaryVendorId) {
+                const secondaryVendor = await prisma.vendor.findUnique({ where: { id: secondaryVendorId } });
+                if (!secondaryVendor) {
+                    return res.status(400).json({ error: `Secondary vendor with ID ${secondaryVendorId} does not exist` });
+                }
             }
 
             const item = await prisma.inventory.create({
@@ -241,6 +273,25 @@ export const inventoryController = {
             }
             if (updateData.secondaryVendorId === "") {
                 updateData.secondaryVendorId = null;
+            }
+
+            // Validate that vendor exists if vendorId is being updated (skip if null UUID)
+            const isNullUUID = updateData.vendorId === "00000000-0000-0000-0000-000000000000";
+            if (updateData.vendorId && !isNullUUID) {
+                const vendor = await prisma.vendor.findUnique({ where: { id: updateData.vendorId } });
+                if (!vendor) {
+                    return res.status(400).json({ error: `Vendor with ID ${updateData.vendorId} does not exist` });
+                }
+            } else if (isNullUUID) {
+                updateData.vendorId = null;
+            }
+
+            // Validate secondary vendor if being updated
+            if (updateData.secondaryVendorId && updateData.secondaryVendorId !== null) {
+                const secondaryVendor = await prisma.vendor.findUnique({ where: { id: updateData.secondaryVendorId } });
+                if (!secondaryVendor) {
+                    return res.status(400).json({ error: `Secondary vendor with ID ${updateData.secondaryVendorId} does not exist` });
+                }
             }
 
             // Remove undefined values and createdById/createdAt/updatedAt from update

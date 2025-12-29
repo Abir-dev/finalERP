@@ -646,31 +646,33 @@ enum InventoryType {
 }
 
 model Inventory {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  itemCode              String?
-  itemName              Item
-  category              InventoryCategory
-  quantity              Int
-  type                  InventoryType
-  unit                  Unit
-  maximumStock          Int
-  safetyStock           Int
-  primarySupplierName   String
-  vendorId              String                 @db.Uuid
-  primarySupplier       Vendor                 @relation("PrimaryVendor", fields: [vendorId], references: [id], onDelete: Cascade)
-  secondarySupplierName String?
-  secondarySupplier     Vendor?                @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id], onDelete: Cascade)
-  secondaryVendorId     String?                @db.Uuid
-  unitCost              Int
-  imageUrl              String?
-  projectId             String?                @db.Uuid
-  project               Project?               @relation("InventoryProject", fields: [projectId], references: [id], onDelete: SetNull)
-  createdById           String                 @map("created_by_id") @db.Uuid
-  createdBy             User                   @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  requests              MaterialRequest[]
-  transferItems         MaterialTransferItem[]
+  id                          String                 @id @default(uuid()) @db.Uuid
+  itemCode                    String?
+  itemName                    Item
+  category                    InventoryCategory
+  quantity                    Int
+  type                        InventoryType
+  unit                        Unit
+  maximumStock                Int
+  safetyStock                 Int
+  primarySupplierName         String
+  primarySupplierManualName   String?
+  vendorId                    String?                @db.Uuid
+  primarySupplier             Vendor?                @relation("PrimaryVendor", fields: [vendorId], references: [id], onDelete: SetNull)
+  secondarySupplierName       String?
+  secondarySupplierManualName String?
+  secondarySupplier           Vendor?                @relation("SecondaryVendor", fields: [secondaryVendorId], references: [id], onDelete: Cascade)
+  secondaryVendorId           String?                @db.Uuid
+  unitCost                    Int
+  imageUrl                    String?
+  projectId                   String?                @db.Uuid
+  project                     Project?               @relation("InventoryProject", fields: [projectId], references: [id], onDelete: SetNull)
+  createdById                 String                 @map("created_by_id") @db.Uuid
+  createdBy                   User                   @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt                   DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                   DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  requests                    MaterialRequest[]
+  transferItems               MaterialTransferItem[]
 }
 
 model Warehouse {
