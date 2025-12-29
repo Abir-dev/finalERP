@@ -653,7 +653,6 @@ model Inventory {
   quantity              Int
   type                  InventoryType
   unit                  Unit
-  location              String
   maximumStock          Int
   safetyStock           Int
   primarySupplierName   String

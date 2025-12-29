@@ -115,7 +115,6 @@ const addItemFormSchema = z.object({
     type: z.string().min(1, "Please select a type"),
     quantity: z.number().min(0, "Quantity must be 0 or greater"),
     unit: z.string().min(1, "Please select a unit"),
-    location: z.string().min(1, "Please select a location"),
     maxStock: z.number().min(0, "Maximum stock must be 0 or greater"),
     safetyStock: z.number().min(0, "Safety stock must be 0 or greater"),
     primarySupplier: z.string().min(1, "Please select a primary supplier"),
@@ -203,7 +202,6 @@ const defaultValues: Partial<AddItemFormValues> = {
     unitCost: 0,
     category: [],
     unit: "",
-    location: "",
     primarySupplier: "",
     secondarySupplier: "",
     image: undefined,
@@ -726,7 +724,6 @@ const inventoryColumns = [
         ),
     },
     { key: "unit", label: "Unit", type: "text" as const },
-    { key: "location", label: "Location", type: "text" as const },
     {
         key: "project",
         label: "Project",
@@ -816,7 +813,7 @@ const InventoryContent = () => {
 
     // Add state for search and filters
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [typeFilter, setTypeFilter] = useState<"OLD" | "NEW" | null>(null);
 
@@ -1738,14 +1735,10 @@ const InventoryContent = () => {
         const matchesSearch =
             item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             categoryValue.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesLocation =
-            !selectedLocation ||
-            selectedLocation === "all_locations" ||
-            item.location === selectedLocation;
         const matchesCategory =
             !selectedCategory || categoryValue === selectedCategory;
         const matchesType = !typeFilter || item.type === typeFilter;
-        return matchesSearch && matchesLocation && matchesCategory && matchesType;
+        return matchesSearch && matchesCategory && matchesType;
     });
 
     // Group items by name and sum quantities
@@ -1843,7 +1836,6 @@ const InventoryContent = () => {
             formData.append("quantity", data.quantity.toString());
             formData.append("type", data.type || "OLD");
             formData.append("unit", data.unit);
-            formData.append("location", data.location);
             formData.append("maximumStock", data.maxStock.toString());
             formData.append("safetyStock", data.safetyStock.toString());
             formData.append("primarySupplierName", data.primarySupplier);
@@ -1936,7 +1928,6 @@ const InventoryContent = () => {
             formData.append("type", data.type || "OLD");
             formData.append("quantity", data.quantity.toString());
             formData.append("unit", data.unit);
-            formData.append("location", data.location);
             formData.append("maximumStock", data.maxStock.toString());
             formData.append("safetyStock", data.safetyStock.toString());
             formData.append("primarySupplierName", data.primarySupplier);
@@ -2280,7 +2271,6 @@ const InventoryContent = () => {
             type: getTypeEnum(item.type || "OLD"),
             quantity: item.quantity,
             unit: getUnitEnum(item.unit || ""),
-            location: item.location || "",
             maxStock: item.maxStock || 500,
             safetyStock: item.safetyStock || 20,
             primarySupplier: item.primarySupplier || "",
@@ -2479,12 +2469,6 @@ const InventoryContent = () => {
         {
             key: "itemCode",
             label: "Item Code",
-            type: "text" as const,
-            className: "hidden sm:table-cell",
-        },
-        {
-            key: "location",
-            label: "Location",
             type: "text" as const,
             className: "hidden sm:table-cell",
         },
@@ -2740,7 +2724,7 @@ const InventoryContent = () => {
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select project (Optional)" />
+                                                    <SelectValue placeholder="Select a project" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -2890,20 +2874,6 @@ const InventoryContent = () => {
                                                     ))}
                                                 </SelectContent>
                                             </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <FormField
-                                    control={form.control}
-                                    name="location"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Location</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Enter location" {...field} />
-                                            </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -3371,11 +3341,6 @@ const InventoryContent = () => {
                                             options: CATEGORY_OPTIONS.map((cat) => cat.label),
                                             multiple: false,
                                         },
-                                        {
-                                            key: "location",
-                                            label: "Location",
-                                            options: ["Warehouse A", "Warehouse B", "Site 1"],
-                                        },
                                     ]}
                                     onRowAction={handleInventoryAction}
                                 />
@@ -3405,11 +3370,6 @@ const InventoryContent = () => {
                                         label: "Category",
                                         options: CATEGORY_OPTIONS.map((cat) => cat.label),
                                         multiple: false,
-                                    },
-                                    {
-                                        key: "location",
-                                        label: "Location",
-                                        options: ["Warehouse A", "Warehouse B", "Site 1"],
                                     },
                                 ]}
                                 onRowAction={handleInventoryAction}
@@ -3945,19 +3905,6 @@ const InventoryContent = () => {
                                             )}
                                         />
 
-                                        <FormField
-                                            control={editForm.control}
-                                            name="location"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Location</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="Enter location" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -4344,12 +4291,12 @@ const InventoryContent = () => {
                                             </p>
                                         </div>
 
-                                        <div className="space-y-2">
+                                        {/* <div className="space-y-2">
                                             <Label className="text-sm font-medium text-muted-foreground">
                                                 Location
                                             </Label>
                                             <p className="text-base">{selectedItem.location}</p>
-                                        </div>
+                                        </div> */}
 
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium text-muted-foreground">
