@@ -50,6 +50,8 @@ interface Project {
     coverArea?: string;
     coverAreaUnit?: string;
     withOrWithoutCoverArea?: boolean;
+    structuralConsultant?: string;
+    architecturalConsultants?: string;
 }
 
 interface User {
@@ -531,7 +533,9 @@ const ProjectsContent = () => {
         withOrWithoutCostPlus: false,
         coverArea: '',
         coverAreaUnit: '',
-        withOrWithoutCoverArea: false
+        withOrWithoutCoverArea: false,
+        structuralConsultant: '',
+        architecturalConsultants: ''
         // designDate: '',
         // foundationDate: '',
         // structureDate: '',
@@ -616,7 +620,9 @@ const ProjectsContent = () => {
             withOrWithoutCostPlus: project.withOrWithoutCostPlus || false,
             coverArea: project.coverArea || '',
             coverAreaUnit: project.coverAreaUnit || '',
-            withOrWithoutCoverArea: project.withOrWithoutCoverArea || false
+            withOrWithoutCoverArea: project.withOrWithoutCoverArea || false,
+            structuralConsultant: project.structuralConsultant || '',
+            architecturalConsultants: project.architecturalConsultants || ''
         });
 
         // Set project type if available
@@ -673,6 +679,9 @@ const ProjectsContent = () => {
                 ...(newProject.coverArea && { coverArea: newProject.coverArea }),
                 ...(newProject.coverAreaUnit && { coverAreaUnit: newProject.coverAreaUnit }),
                 ...(newProject.withOrWithoutCoverArea !== undefined && { withOrWithoutCoverArea: newProject.withOrWithoutCoverArea }),
+                // Consultants
+                ...(newProject.structuralConsultant && { structuralConsultant: newProject.structuralConsultant }),
+                ...(newProject.architecturalConsultants && { architecturalConsultants: newProject.architecturalConsultants }),
                 // Include milestones if they exist
                 ...(newProject.milestones && newProject.milestones.length > 0 && {
                     milestones: newProject.milestones.filter(m => m.name && m.startDate)
@@ -712,7 +721,9 @@ const ProjectsContent = () => {
                     withOrWithoutCostPlus: false,
                     coverArea: '',
                     coverAreaUnit: '',
-                    withOrWithoutCoverArea: false
+                    withOrWithoutCoverArea: false,
+                    structuralConsultant: '',
+                    architecturalConsultants: ''
                 });
                 setProjectType('');
                 setEditingProject(null);
@@ -939,6 +950,9 @@ Add any additional notes here...
                 ...(newProject.coverArea && { coverArea: newProject.coverArea }),
                 ...(newProject.coverAreaUnit && { coverAreaUnit: newProject.coverAreaUnit }),
                 ...(newProject.withOrWithoutCoverArea !== undefined && { withOrWithoutCoverArea: newProject.withOrWithoutCoverArea }),
+                // Consultants
+                ...(newProject.structuralConsultant && { structuralConsultant: newProject.structuralConsultant }),
+                ...(newProject.architecturalConsultants && { architecturalConsultants: newProject.architecturalConsultants }),
                 // Include milestones if they exist
                 ...(newProject.milestones && newProject.milestones.length > 0 && {
                     milestones: newProject.milestones.filter(m => m.name && m.startDate)
@@ -978,7 +992,9 @@ Add any additional notes here...
                     withOrWithoutCostPlus: false,
                     coverArea: '',
                     coverAreaUnit: '',
-                    withOrWithoutCoverArea: false
+                    withOrWithoutCoverArea: false,
+                    structuralConsultant: '',
+                    architecturalConsultants: ''
                 });
                 setProjectType('');
                 setIsProjectDialogOpen(false);
@@ -1101,7 +1117,9 @@ Add any additional notes here...
                                 withOrWithoutCostPlus: false,
                                 coverArea: '',
                                 coverAreaUnit: '',
-                                withOrWithoutCoverArea: false
+                                withOrWithoutCoverArea: false,
+                                structuralConsultant: '',
+                                architecturalConsultants: ''
                             });
                         }
                     }}>
@@ -1262,6 +1280,27 @@ Add any additional notes here...
                                             onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                                             rows={4}
                                         />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="structuralConsultant">Structural Consultant</Label>
+                                            <Input
+                                                id="structuralConsultant"
+                                                placeholder="Enter structural consultant name"
+                                                value={newProject.structuralConsultant || ''}
+                                                onChange={(e) => setNewProject({ ...newProject, structuralConsultant: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="architecturalConsultants">Architectural Consultants</Label>
+                                            <Input
+                                                id="architecturalConsultants"
+                                                placeholder="Enter architectural consultants name"
+                                                value={newProject.architecturalConsultants || ''}
+                                                onChange={(e) => setNewProject({ ...newProject, architecturalConsultants: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
 
                                     <div className="space-y-2">
@@ -1632,7 +1671,9 @@ Add any additional notes here...
                                             withOrWithoutCostPlus: false,
                                             coverArea: '',
                                             coverAreaUnit: '',
-                                            withOrWithoutCoverArea: false
+                                            withOrWithoutCoverArea: false,
+                                            structuralConsultant: '',
+                                            architecturalConsultants: ''
                                         });
                                         setProjectType('');
                                         setEditingProject(null);
@@ -2148,14 +2189,19 @@ Add any additional notes here...
                                                                                 <span className="ml-1 font-medium">{project.location}</span>
                                                                             </div>
                                                                             <div className="flex items-center">
-                                                                                <LandPlot className="h-4 w-4 text-muted-foreground mr-2" />
-                                                                                <span className="text-muted-foreground">Square Footage:</span>
-                                                                                <span className="ml-1 font-medium">{project.squareFootage} sq ft</span>
-                                                                            </div>
-                                                                            <div className="flex items-center">
                                                                                 <Building2 className="h-4 w-4 text-muted-foreground mr-2" />
                                                                                 <span className="text-muted-foreground">Project Type:</span>
                                                                                 <span className="ml-1 font-medium">{project.projectType}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center">
+                                                                                <Building className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Structural Consultant:</span>
+                                                                                <span className="ml-1 font-medium">{project.structuralConsultant || 'N/A'}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center">
+                                                                                <Building className="h-4 w-4 text-muted-foreground mr-2" />
+                                                                                <span className="text-muted-foreground">Architectural Consultants:</span>
+                                                                                <span className="ml-1 font-medium">{project.architecturalConsultants || 'N/A'}</span>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -2170,6 +2216,7 @@ Add any additional notes here...
                                                                                     <span className="ml-2 font-medium">{project.budget}</span>
                                                                                 </div>
                                                                             </div>
+                                                                            
                                                                             {/* <div>
                                                                                 <div className="text-sm mb-1">
                                                                                     <span className="text-muted-foreground">Spent:</span>
