@@ -108,6 +108,7 @@ const API_URL =
 
 // Add the form schema
 const addItemFormSchema = z.object({
+    project: z.string().optional(),
     name: z.string().min(2, "Item name must be at least 2 characters"),
     itemCode: z.string().min(2, "Item code must be at least 2 characters"),
     category: z.array(z.string()).min(1, "Please select at least one category"),
@@ -726,6 +727,13 @@ const inventoryColumns = [
     },
     { key: "unit", label: "Unit", type: "text" as const },
     { key: "location", label: "Location", type: "text" as const },
+    {
+        key: "project",
+        label: "Project",
+        render: (value: any) => (
+            value ? <span className="text-sm text-gray-600">{value.name}</span> : <span className="text-xs text-gray-400">-</span>
+        ),
+    },
     { key: "lastUpdated", label: "Last Updated", type: "text" as const },
     { key: "actions", label: "Actions", type: "actions" as const },
 ];
@@ -863,6 +871,9 @@ const InventoryContent = () => {
     // Add vendors state
     const [vendors, setVendors] = useState<any[]>([]);
 
+    // Add projects state
+    const [projects, setProjects] = useState<any[]>([]);
+
     // Add state for Material Indent
     const [isAddMaterialIndentOpen, setIsAddMaterialIndentOpen] = useState(false);
     const [isViewMaterialIndentOpen, setIsViewMaterialIndentOpen] =
@@ -926,6 +937,25 @@ const InventoryContent = () => {
             setVendors(vendorsResponse.data);
         } catch (error) {
             console.error("Error fetching vendors:", error);
+        }
+    };
+
+    // Function to fetch projects data
+    const fetchProjects = async () => {
+        try {
+            const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            console.log("Fetching projects...");
+            const projectsResponse = await axios.get(`${API_URL}/projects`, {
+                headers,
+            });
+            console.log("Projects data:", projectsResponse.data);
+            setProjects(projectsResponse.data);
+        } catch (error) {
+            console.error("Error fetching projects:", error);
         }
     };
 
@@ -1288,6 +1318,7 @@ const InventoryContent = () => {
             const transformedItems = itemsResponse.data.map((item: any) => ({
                 id: item.id,
                 name: item.itemName || item.name,
+                itemCode: item.itemCode,
                 category: getCategoryLabel(item.category),
                 type: item.type || "OLD",
                 quantity: item.quantity,
@@ -1311,6 +1342,7 @@ const InventoryContent = () => {
                 photos: item.photos || [],
                 notes: item.notes,
                 imageUrl: item.imageUrl,
+                project: item.project,
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt,
             }));
@@ -1833,6 +1865,11 @@ const InventoryContent = () => {
 
             formData.append("unitCost", Math.round(data.unitCost * 100).toString()); // Backend expects cents
             formData.append("createdById", user.id);
+
+            // Add project if selected
+            if (data.project) {
+                formData.append("projectId", data.project);
+            }
 
             // Add image file if provided
             if (data.image) {
@@ -2452,6 +2489,15 @@ const InventoryContent = () => {
             className: "hidden sm:table-cell",
         },
         {
+            key: "project",
+            label: "Project",
+            type: "text" as const,
+            className: "hidden md:table-cell",
+            render: (value: any) => (
+                value ? <span className="text-sm text-gray-600">{value.name}</span> : <span className="text-xs text-gray-400">-</span>
+            ),
+        },
+        {
             key: "lastUpdated",
             label: "Last Updated",
             type: "text" as const,
@@ -2645,7 +2691,10 @@ const InventoryContent = () => {
                         </span>
                     </Button>
                     <Button
-                        onClick={() => setIsAddItemOpen(true)}
+                        onClick={() => {
+                            setIsAddItemOpen(true);
+                            fetchProjects();
+                        }}
                         size="sm"
                         className="h-9"
                     >
@@ -2679,6 +2728,34 @@ const InventoryContent = () => {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="project"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Project</FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select project (Optional)" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {projects.map((project) => (
+                                                    <SelectItem key={project.id} value={project.id}>
+                                                        {project.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
@@ -3470,6 +3547,21 @@ const InventoryContent = () => {
                                             </CardContent>
                                         </Card>
 
+                                        {/* Project Information */}
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Project Information</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div>
+                                                    <Label>Assigned Project</Label>
+                                                    <p className="text-lg">
+                                                        {selectedItem.project?.name || "No project assigned"}
+                                                    </p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
                                         {/* Supplier Information */}
                                         <Card>
                                             <CardHeader>
@@ -3676,26 +3768,54 @@ const InventoryContent = () => {
                                     onSubmit={editForm.handleSubmit(onEditSubmit)}
                                     className="space-y-6"
                                 >
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Item Name as Searchable Select */}
-                                        <FormField
-                                            control={editForm.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Item</FormLabel>
+                                    <FormField
+                                        control={editForm.control}
+                                        name="project"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Project</FormLabel>
+                                                <Select
+                                                    onValueChange={field.onChange}
+                                                    defaultValue={field.value}
+                                                >
                                                     <FormControl>
-                                                        <SimpleSearchableSelect
-                                                            value={field.value || ""}
-                                                            onValueChange={field.onChange}
-                                                            options={ITEM_OPTIONS}
-                                                            placeholder="Search and select item..."
-                                                        />
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select project (Optional)" />
+                                                        </SelectTrigger>
                                                     </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                                    <SelectContent>
+                                                        {projects.map((project) => (
+                                                            <SelectItem key={project.id} value={project.id}>
+                                                                {project.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                         {/* Item Name as Searchable Select */}
+                                         <FormField
+                                             control={editForm.control}
+                                             name="name"
+                                             render={({ field }) => (
+                                                 <FormItem>
+                                                     <FormLabel>Item</FormLabel>
+                                                     <FormControl>
+                                                         <SimpleSearchableSelect
+                                                             value={field.value || ""}
+                                                             onValueChange={field.onChange}
+                                                             options={ITEM_OPTIONS}
+                                                             placeholder="Search and select item..."
+                                                         />
+                                                     </FormControl>
+                                                     <FormMessage />
+                                                 </FormItem>
+                                             )}
+                                         />
 
                                         <FormField
                                             control={editForm.control}

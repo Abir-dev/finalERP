@@ -32,6 +32,7 @@ interface CreateInventoryItemRequest {
     secondaryVendorId?: string;
     unitCost: number;
     imageUrl?: string;
+    projectId?: string;
     createdById: string;
 }
 
@@ -55,6 +56,7 @@ export const inventoryController = {
                 secondaryVendorId,
                 unitCost,
                 imageUrl,
+                projectId,
                 createdById
             } = req.body;
 
@@ -101,6 +103,9 @@ export const inventoryController = {
             if (secondaryVendorId) {
                 createData.secondaryVendorId = secondaryVendorId;
             }
+            if (projectId) {
+                createData.projectId = projectId;
+            }
 
             const item = await prisma.inventory.create({
                 data: createData,
@@ -108,6 +113,7 @@ export const inventoryController = {
                     createdBy: { select: { id: true, name: true, email: true } },
                     primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
                     secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+                    project: { select: { id: true, name: true } },
                     requests: true
                 }
             });
@@ -130,6 +136,7 @@ export const inventoryController = {
                         createdBy: { select: { id: true, name: true, email: true } },
                         primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
                         secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+                        project: { select: { id: true, name: true } },
                         requests: true
                     }
                 });
@@ -143,6 +150,7 @@ export const inventoryController = {
                         createdBy: { select: { id: true, name: true, email: true } },
                         primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
                         secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+                        project: { select: { id: true, name: true } },
                         requests: true
                     }
                 });
@@ -166,6 +174,7 @@ export const inventoryController = {
                     createdBy: { select: { id: true, name: true, email: true } },
                     primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
                     secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+                    project: { select: { id: true, name: true } },
                     requests: true
                 }
             });
@@ -244,6 +253,7 @@ export const inventoryController = {
                     createdBy: { select: { id: true, name: true, email: true } },
                     primarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
                     secondarySupplier: { select: { id: true, name: true, email: true, mobile: true } },
+                    project: { select: { id: true, name: true } },
                     requests: true
                 }
             });

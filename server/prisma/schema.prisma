@@ -105,6 +105,7 @@ model Project {
   invoices         Invoice[]
   materialRequests MaterialRequest[]
   nonBillables     NonBillable[]
+  inventoryItems   Inventory[]       @relation("InventoryProject")
   totalSpend       Float?
 
   // New fields from the form
@@ -663,6 +664,8 @@ model Inventory {
   secondaryVendorId     String?                @db.Uuid
   unitCost              Int
   imageUrl              String?
+  projectId             String?                @db.Uuid
+  project               Project?               @relation("InventoryProject", fields: [projectId], references: [id], onDelete: SetNull)
   createdById           String                 @map("created_by_id") @db.Uuid
   createdBy             User                   @relation("InventoryCreator", fields: [createdById], references: [id], onDelete: Cascade)
   createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
