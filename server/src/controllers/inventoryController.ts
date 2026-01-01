@@ -591,8 +591,8 @@ export const inventoryController = {
                 approvedById,
                 priority,
                 items,
-                fromUserId,
-                toUserId,
+                fromProjectId,
+                toProjectId,
                 inventoryType,
                 gstIn,
                 state,
@@ -605,18 +605,18 @@ export const inventoryController = {
             if (!Array.isArray(items) || items.length === 0) {
                 return res.status(400).json({ error: "At least one item is required" });
             }
-            if (!fromUserId || !toUserId) {
-                return res.status(400).json({ error: "fromUserId and toUserId are required" });
+            if (!fromProjectId || !toProjectId) {
+                return res.status(400).json({ error: "fromProjectId and toProjectId are required" });
             }
 
-            // Validate that both users exist and have store role
+            // Validate that both users exist (fromProjectId and toProjectId store user IDs)
             const [fromUser, toUser] = await Promise.all([
                 prisma.user.findUnique({
-                    where: { id: fromUserId },
+                    where: { id: fromProjectId },
                     select: { id: true, name: true, email: true, role: true }
                 }),
                 prisma.user.findUnique({
-                    where: { id: toUserId },
+                    where: { id: toProjectId },
                     select: { id: true, name: true, email: true, role: true }
                 })
             ]);
@@ -624,10 +624,6 @@ export const inventoryController = {
             if (!fromUser || !toUser) {
                 return res.status(404).json({ error: "One or both users not found" });
             }
-
-            // if (fromUser.role !== 'store' || toUser.role !== 'store') {
-            //   return res.status(400).json({ error: "Both users must have store role" });
-            // }
 
             // Validate each item and check inventory availability
             const itemValidations: ItemValidation[] = [];
@@ -649,10 +645,9 @@ export const inventoryController = {
                     });
                 }
 
-                // Find the inventory item in the from user's inventory
+                // Find the inventory item (not tied to specific user anymore)
                 const inventoryItem = await prisma.inventory.findFirst({
                     where: {
-                        createdById: fromUserId,
                         itemCode: itemCode,
                         itemName: itemName, // itemName is an enum (Item)
                         type: type // type is an enum (InventoryType)
@@ -673,15 +668,15 @@ export const inventoryController = {
                 // }
 
                 itemValidations.push({
-                     fromInventoryItem: inventoryItem,
-                     quantity: quantityInt,
-                     itemCode,
-                     itemName: itemName as Item,
-                     type: type as InventoryType,
-                     unit: unit || null,
-                     notes: item.notes || null,
-                     hsnCode: hsnCode || null
-                 });
+                    fromInventoryItem: inventoryItem,
+                    quantity: quantityInt,
+                    itemCode,
+                    itemName: itemName as Item,
+                    type: type as InventoryType,
+                    unit: unit || null,
+                    notes: item.notes || null,
+                    hsnCode: hsnCode || null
+                });
             }
 
             // Use fallback locations if not provided
@@ -693,29 +688,29 @@ export const inventoryController = {
                 const transferItems: any[] = [];
 
                 for (const validation of itemValidations) {
-                     const { fromInventoryItem, quantity, itemCode, itemName, type, unit, notes, hsnCode } = validation;
+                    const { fromInventoryItem, quantity, itemCode, itemName, type, unit, notes, hsnCode } = validation;
 
-                     // Deduct from from user's inventory if item exists
-                     if (fromInventoryItem) {
-                         await tx.inventory.update({
-                             where: { id: fromInventoryItem.id },
-                             data: { quantity: fromInventoryItem.quantity - quantity }
-                         });
-                     }
+                    // Deduct from inventory if item exists
+                    if (fromInventoryItem) {
+                        await tx.inventory.update({
+                            where: { id: fromInventoryItem.id },
+                            data: { quantity: fromInventoryItem.quantity - quantity }
+                        });
+                    }
 
-                     // Prepare transfer item data
-                     transferItems.push({
-                         itemCode: itemCode,
-                         itemName: itemName,
-                         type: type,
-                         description: `${itemCode} - ${itemName} (${type})`,
-                         quantity: quantity,
-                         unit: unit || fromInventoryItem?.unit || null,
-                         inventoryId: fromInventoryItem?.id,
-                         notes: notes,
-                         hsnCode: hsnCode,
-                     });
-                 }
+                    // Prepare transfer item data
+                    transferItems.push({
+                        itemCode: itemCode,
+                        itemName: itemName,
+                        type: type,
+                        description: `${itemCode} - ${itemName} (${type})`,
+                        quantity: quantity,
+                        unit: unit || fromInventoryItem?.unit || null,
+                        inventoryId: fromInventoryItem?.id,
+                        notes: notes,
+                        hsnCode: hsnCode,
+                    });
+                }
 
                 // Create the material transfer
                 const created = await tx.materialTransfer.create({
@@ -723,8 +718,8 @@ export const inventoryController = {
                         transferID,
                         fromLocation: finalFromLocation,
                         toLocation: finalToLocation,
-                        fromProject: req.body.fromProject || null,
-                        toProject: req.body.toProject || null,
+                        fromProjectId: fromProjectId,
+                        toProjectId: toProjectId,
                         requestedDate: new Date(requestedDate),
                         status: status ?? 'PENDING',
                         driverName: driverName || null,
@@ -831,7 +826,10 @@ export const inventoryController = {
             if (!userId) {
                 return res.status(400).json({ error: "userId query param is required" });
             }
-            const existing = await (prisma as any).materialTransfer.findUnique({ where: { id } });
+            const existing = await (prisma as any).materialTransfer.findUnique({
+                where: { id },
+                include: { items: true }
+            });
             if (!existing) return res.status(404).json({ error: 'Material transfer not found' });
             if (existing.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
 
@@ -849,8 +847,103 @@ export const inventoryController = {
                 stateCode,
                 vehicleId,
                 approvedById,
-                priority
+                approvalStatus,
+                priority,
+                fromProjectId,
+                toProjectId
             } = req.body || {};
+
+            // Handle material transfer when approvalStatus is set to APPROVED
+            if (approvalStatus === "APPROVED" && existing.fromProjectId && existing.toProjectId) {
+                console.log(`[MaterialTransfer] Processing approval from user ${existing.fromProjectId} to user ${existing.toProjectId}`);
+                console.log(`[MaterialTransfer] Items count: ${existing.items?.length || 0}`);
+
+                // fromProjectId and toProjectId are actually USER IDs in this system
+                const fromUserId = existing.fromProjectId;
+                const toUserId = existing.toProjectId;
+
+                // Process each item in the transfer
+                if (existing.items && existing.items.length > 0) {
+                    for (const item of existing.items) {
+                        if (!item.itemName) {
+                            console.warn(`[MaterialTransfer] Skipping item - no itemName provided`);
+                            continue;
+                        }
+
+                        const transferQuantity = typeof item.quantity === 'number' ? item.quantity : parseFloat(String(item.quantity)) || 0;
+                        console.log(`[MaterialTransfer] Processing item: name="${item.itemName}", qty=${transferQuantity}, type=${item.type}, itemCode=${item.itemCode}`);
+
+                        // Get source inventory item (created by fromUserId)
+                        // itemName in MaterialTransferItem is String, but Inventory.itemName is Item enum
+                        const sourceInventory = await (prisma as any).inventory.findFirst({
+                            where: {
+                                createdById: fromUserId,
+                                itemName: String(item.itemName) as any,
+                            }
+                        });
+
+                        if (sourceInventory) {
+                            console.log(`[MaterialTransfer] Found source inventory: ${sourceInventory.id}, current qty: ${sourceInventory.quantity}`);
+
+                            // Deduct from source user's inventory
+                            const newQuantity = Math.max(0, sourceInventory.quantity - transferQuantity);
+                            await (prisma as any).inventory.update({
+                                where: { id: sourceInventory.id },
+                                data: { quantity: newQuantity }
+                            });
+
+                            console.log(`[MaterialTransfer] ✓ Deducted ${transferQuantity} from ${item.itemName}. New qty: ${newQuantity}`);
+
+                            // Get or create destination inventory item (for toUserId)
+                            const destInventory = await (prisma as any).inventory.findFirst({
+                                where: {
+                                    createdById: toUserId,
+                                    itemName: String(item.itemName) as any,
+                                }
+                            });
+
+                            if (destInventory) {
+                                // Item exists in destination user's inventory, update quantity
+                                const newDestQuantity = destInventory.quantity + transferQuantity;
+                                await (prisma as any).inventory.update({
+                                    where: { id: destInventory.id },
+                                    data: { quantity: newDestQuantity }
+                                });
+                                console.log(`[MaterialTransfer] ✓ Added ${transferQuantity} to ${item.itemName} for user ${toUserId}. New qty: ${newDestQuantity}`);
+                            } else {
+                                // Item doesn't exist for destination user, create new one
+                                await (prisma as any).inventory.create({
+                                    data: {
+                                        itemCode: item.itemCode || sourceInventory.itemCode,
+                                        itemName: item.itemName,
+                                        category: sourceInventory.category,
+                                        quantity: transferQuantity,
+                                        unit: item.unit || sourceInventory.unit,
+                                        type: item.type || sourceInventory.type,
+                                        maximumStock: sourceInventory.maximumStock,
+                                        safetyStock: sourceInventory.safetyStock,
+                                        primarySupplierName: sourceInventory.primarySupplierName,
+                                        primarySupplierManualName: sourceInventory.primarySupplierManualName,
+                                        vendorId: sourceInventory.vendorId,
+                                        secondarySupplierName: sourceInventory.secondarySupplierName,
+                                        secondarySupplierManualName: sourceInventory.secondarySupplierManualName,
+                                        secondaryVendorId: sourceInventory.secondaryVendorId,
+                                        unitCost: sourceInventory.unitCost,
+                                        projectId: sourceInventory.projectId,
+                                        createdById: toUserId,
+                                    }
+                                });
+                                console.log(`[MaterialTransfer] ✓ Created new inventory for user ${toUserId} with ${item.itemName} qty: ${transferQuantity}`);
+                            }
+                        } else {
+                            console.warn(`[MaterialTransfer] ✗ Item not found: ${item.itemName} for user ${fromUserId}`);
+                        }
+                    }
+                    console.log(`[MaterialTransfer] ✓ Approval processing complete`);
+                } else {
+                    console.warn(`[MaterialTransfer] No items found in transfer`);
+                }
+            }
 
             const updated = await (prisma as any).materialTransfer.update({
                 where: { id },
@@ -858,8 +951,8 @@ export const inventoryController = {
                     ...(transferID !== undefined && { transferID }),
                     ...(fromLocation && { fromLocation }),
                     ...(toLocation && { toLocation }),
-                    ...(req.body.fromProject !== undefined && { fromProject: req.body.fromProject }),
-                    ...(req.body.toProject !== undefined && { toProject: req.body.toProject }),
+                    ...(fromProjectId !== undefined && { fromProjectId }),
+                    ...(toProjectId !== undefined && { toProjectId }),
                     ...(requestedDate && { requestedDate: new Date(requestedDate) }),
                     ...(status && { status }),
                     ...(driverName !== undefined && { driverName }),
@@ -871,6 +964,7 @@ export const inventoryController = {
                     ...(req.body.vehicleNumber !== undefined && { vehicleNumber: req.body.vehicleNumber }),
                     ...(req.body.vehicleName !== undefined && { vehicleName: req.body.vehicleName }),
                     ...(approvedById !== undefined && { approvedById }),
+                    ...(approvalStatus !== undefined && { approvalStatus }),
                     ...(priority && { priority }),
                 },
                 include: {
@@ -937,14 +1031,14 @@ export const inventoryController = {
             if (parent.createdById !== userId) return res.status(403).json({ error: 'Forbidden' });
 
             const { itemCode, itemName, type, description, quantity, unit, inventoryId, notes, hsnCode } = req.body || {};
-            
+
             // Use itemCode and itemName to build description if description not provided
             const finalDescription = description || `${itemCode || 'Item'} - ${itemName || 'Unknown'} (${type || 'N/A'})`;
-            
+
             if (!quantity || typeof quantity !== 'number') {
                 return res.status(400).json({ error: 'quantity is required and must be a number' });
             }
-            
+
             const item = await (prisma as any).materialTransferItem.create({
                 data: {
                     transferId,

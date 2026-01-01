@@ -256,6 +256,7 @@ interface FilterOption {
 // Add interfaces for transfer
 
 interface Transfer {
+    approvalStatus: string;
     dbId?: string;
     id: string;
     from: string;
@@ -837,6 +838,13 @@ const InventoryContent = () => {
     const [isEditTransferOpen, setIsEditTransferOpen] = useState(false);
     const [editingTransfer, setEditingTransfer] = useState<Transfer | null>(null);
 
+    // Add state for Approve Transfer section
+    const [transfersForApproval, setTransfersForApproval] = useState<any[]>([]);
+    const [isLoadingApprovalTransfers, setIsLoadingApprovalTransfers] = useState(false);
+    const [isApproveTransferModalOpen, setIsApproveTransferModalOpen] = useState(false);
+    const [transferToApprove, setTransferToApprove] = useState<any | null>(null);
+    const [isApprovingTransfer, setIsApprovingTransfer] = useState(false);
+
     // Add state for search and filters
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -947,6 +955,109 @@ const InventoryContent = () => {
             reader.readAsDataURL(file);
         } else {
             setPreview(null);
+        }
+    };
+
+    // Function to fetch transfers by approver (for approval)
+    const fetchTransfersForApproval = async () => {
+        if (!user?.id) return; // Don't fetch if no user ID
+
+        setIsLoadingApprovalTransfers(true);
+        try {
+            const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            console.log("Fetching transfers for approval by user:", user.id);
+
+            // Fetch all transfers and filter by approvedById matching current user and approvalStatus = PENDING
+            const response = await axios.get(`${API_URL}/inventory/transfers`, {
+                headers,
+            });
+
+            const filteredTransfers = (Array.isArray(response.data) ? response.data : [])
+                .filter((t: any) => t.approvedById === user.id && t.approvalStatus === "PENDING");
+
+            console.log("Transfers for approval:", filteredTransfers);
+            setTransfersForApproval(filteredTransfers);
+        } catch (error) {
+            console.error("Error fetching transfers for approval:", error);
+        } finally {
+            setIsLoadingApprovalTransfers(false);
+        }
+    };
+
+    // Function to reject a transfer
+    const handleRejectTransfer = async (transferId: string) => {
+        try {
+            const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            console.log("Rejecting transfer:", transferId);
+
+            // Update the approvalStatus to REJECTED
+            const response = await axios.put(
+                `${API_URL}/inventory/transfers/${transferId}`,
+                { approvalStatus: "REJECTED" },
+                { headers }
+            );
+
+            toast.success("Transfer rejected successfully");
+
+            // Remove the transfer from the list
+            setTransfersForApproval((prev) =>
+                prev.filter((t) => t.id !== transferId)
+            );
+        } catch (error) {
+            console.error("Error rejecting transfer:", error);
+            toast.error("Failed to reject transfer");
+        }
+    };
+
+    // Function to approve transfer after modal approval
+    const handleApproveTransferFinal = async (transferData: any) => {
+        if (!transferToApprove || !user?.id) return;
+        
+        setIsApprovingTransfer(true);
+        try {
+            const token =
+                sessionStorage.getItem("jwt_token") ||
+                localStorage.getItem("jwt_token_backup");
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            console.log("Approving transfer:", transferToApprove.id);
+
+            // Update transfer status to APPROVED - server will handle material transfer
+            const response = await axios.put(
+                `${API_URL}/inventory/transfers/${transferToApprove.id}?userId=${transferToApprove.createdById}`,
+                {
+                    approvalStatus: "APPROVED",
+                    approvedById: user.id,
+                },
+                { headers }
+            );
+
+            toast.success("Transfer approved and materials transferred successfully");
+            
+            // Remove the transfer from the list
+            setTransfersForApproval((prev) =>
+                prev.filter((t) => t.id !== transferToApprove.id)
+            );
+            
+            // Close the modal
+            setIsApproveTransferModalOpen(false);
+            setTransferToApprove(null);
+            
+            // Refresh inventory data
+            await fetchInventoryData();
+        } catch (error) {
+            console.error("Error approving transfer:", error);
+            toast.error("Failed to approve transfer");
+        } finally {
+            setIsApprovingTransfer(false);
         }
     };
 
@@ -1405,6 +1516,7 @@ const InventoryContent = () => {
                         to: t?.toLocation || t?.to || "-",
                         items: Array.isArray(t?.items) ? t.items.length : t?.items ?? 0,
                         status: t?.status || "PENDING",
+                        approvalStatus: t?.approvalStatus || "PENDING",
                         driver: t?.driverName || t?.driver || "-",
                         eta:
                             t?.etaMinutes != null
@@ -1613,6 +1725,7 @@ const InventoryContent = () => {
             fetchVendors();
             fetchScheduleMaintenances();
             fetchMaterialIndents();
+            fetchTransfersForApproval();
         }
     }, [userID]);
 
@@ -4598,6 +4711,93 @@ const InventoryContent = () => {
                         />
                     </div>
 
+                    {/* Approve Transfer Section */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-blue-600" />
+                                Approve Transfer
+                            </CardTitle>
+                            <CardDescription>
+                                Manage transfer approvals assigned to you
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoadingApprovalTransfers ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                                        <p className="text-muted-foreground">Loading transfers...</p>
+                                    </div>
+                                </div>
+                            ) : transfersForApproval.length === 0 ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="text-center">
+                                        <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                        <p className="text-muted-foreground">No pending transfers for approval</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {transfersForApproval.map((transfer) => (
+                                        <div
+                                            key={transfer.id}
+                                            className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-blue-50 dark:bg-blue-950/20"
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div className="space-y-2 flex-1">
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Transfer ID</p>
+                                                        <p className="font-semibold">{transfer.transferID || transfer.id}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Route</p>
+                                                        <p className="text-sm font-medium">
+                                                            {transfer.fromLocation} → {transfer.toLocation}
+                                                        </p>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                                        <div>
+                                                            <p className="text-xs text-muted-foreground">Requested By</p>
+                                                            <p className="text-sm font-medium">{transfer.createdBy?.name || "-"}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-xs text-muted-foreground">Date</p>
+                                                            <p className="text-sm font-medium">
+                                                                {transfer.requestedDate ? new Date(transfer.requestedDate).toLocaleDateString() : "-"}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-green-600 border-green-200 hover:bg-green-50"
+                                                        onClick={() => {
+                                                            setTransferToApprove(transfer);
+                                                            setIsApproveTransferModalOpen(true);
+                                                        }}
+                                                    >
+                                                        Approve
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="text-red-600 border-red-200 hover:bg-red-50"
+                                                        onClick={() => handleRejectTransfer(transfer.id)}
+                                                    >
+                                                        Reject
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h2 className="text-2xl font-bold tracking-tight">
@@ -4628,7 +4828,7 @@ const InventoryContent = () => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {transfers.filter((t) => t.status === "APPROVED").length === 0 ? (
+                            {transfers.filter((t) => t.approvalStatus === "APPROVED").length === 0 ? (
                                 <div className="flex items-center justify-center py-12">
                                     <div className="text-center">
                                         <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -4639,7 +4839,7 @@ const InventoryContent = () => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {transfers.filter((t) => t.status === "APPROVED").map((transfer) => (
+                                    {transfers.filter((t) => t.approvalStatus === "APPROVED").map((transfer) => (
                                         <div
                                             key={transfer.id}
                                             className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-green-50 dark:bg-green-950/20"
@@ -4734,7 +4934,7 @@ const InventoryContent = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {transfers.filter((t) => t.status === "PENDING").length === 0 ? (
+                                {transfers.filter((t) => t.approvalStatus === "PENDING").length === 0 ? (
                                     <div className="flex items-center justify-center py-12">
                                         <div className="text-center">
                                             <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -4745,7 +4945,7 @@ const InventoryContent = () => {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {transfers.filter((t) => t.status === "PENDING").map((transfer) => (
+                                        {transfers.filter((t) => t.approvalStatus === "PENDING").map((transfer) => (
                                             <div
                                                 key={transfer.id}
                                                 className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-yellow-50 dark:bg-yellow-950/20"
@@ -4828,7 +5028,7 @@ const InventoryContent = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {transfers.filter((t) => t.status === "REJECTED").length === 0 ? (
+                                {transfers.filter((t) => t.approvalStatus === "REJECTED").length === 0 ? (
                                     <div className="flex items-center justify-center py-12">
                                         <div className="text-center">
                                             <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -4839,7 +5039,7 @@ const InventoryContent = () => {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {transfers.filter((t) => t.status === "REJECTED").map((transfer) => (
+                                        {transfers.filter((t) => t.approvalStatus === "REJECTED").map((transfer) => (
                                             <div
                                                 key={transfer.id}
                                                 className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-red-50 dark:bg-red-950/20"
@@ -4922,22 +5122,21 @@ const InventoryContent = () => {
                                     ? created.items.length
                                     : created?.items ?? 0,
                                 status: created?.status || "PENDING",
+                                approvalStatus: created?.approvalStatus || "PENDING",
                                 driver: created?.driverName || created?.driver || "-",
-                                eta:
-                                    created?.etaMinutes != null
-                                        ? `${(created.etaMinutes / 60).toFixed(1)} hrs`
-                                        : created?.eta || "-",
-                                etaMinutes:
-                                    typeof created?.etaMinutes === "number"
-                                        ? created.etaMinutes
-                                        : undefined,
+                                eta: created?.etaMinutes != null
+                                    ? `${(created.etaMinutes / 60).toFixed(1)} hrs`
+                                    : created?.eta || "-",
+                                etaMinutes: typeof created?.etaMinutes === "number"
+                                    ? created.etaMinutes
+                                    : undefined,
                                 isFlagged: false,
                                 requestedDate: created?.requestedDate
                                     ? new Date(created.requestedDate).toLocaleString()
                                     : undefined,
                                 requestedAtMs: created?.requestedDate
                                     ? new Date(created.requestedDate).getTime()
-                                    : Date.now(),
+                                    : Date.now()
                             };
                             setTransfers((prev) => [mapped, ...prev]);
                         }}
@@ -4951,6 +5150,7 @@ const InventoryContent = () => {
                             onRequestNew={() => setIsAddTransferOpen(true)}
                             onSave={(updated: any) => {
                                 const mapped: Transfer = {
+                                    dbId: editingTransfer?.dbId,
                                     id: updated?.transferID || updated?.id || editingTransfer.id,
                                     from:
                                         updated?.fromLocation ||
@@ -4961,6 +5161,7 @@ const InventoryContent = () => {
                                         ? updated.items.length
                                         : updated?.items ?? editingTransfer.items,
                                     status: updated?.status || editingTransfer.status,
+                                    approvalStatus: updated?.approvalStatus || editingTransfer.approvalStatus,
                                     driver:
                                         updated?.driverName ||
                                         updated?.driver ||
@@ -7540,6 +7741,166 @@ const InventoryContent = () => {
                             </form>
                         </Form>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Approve Transfer Modal */}
+            <Dialog open={isApproveTransferModalOpen} onOpenChange={setIsApproveTransferModalOpen}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Approve Material Transfer</DialogTitle>
+                        <DialogDescription>
+                            Review and approve the material transfer request
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {transferToApprove && (
+                        <div className="space-y-6">
+                            {/* Transfer Details */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Transfer Information</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">Transfer ID</Label>
+                                            <p className="font-semibold">{transferToApprove.transferID || transferToApprove.id}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">Status</Label>
+                                            <p className="font-semibold">{transferToApprove.status || "PENDING"}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">From Location</Label>
+                                            <p className="font-semibold">{transferToApprove.fromLocation}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">To Location</Label>
+                                            <p className="font-semibold">{transferToApprove.toLocation}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">Requested By</Label>
+                                            <p className="font-semibold">{transferToApprove.createdBy?.name || "-"}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">Requested Date</Label>
+                                            <p className="font-semibold">
+                                                {transferToApprove.requestedDate
+                                                    ? new Date(transferToApprove.requestedDate).toLocaleDateString()
+                                                    : "-"}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {transferToApprove.notes && (
+                                        <div>
+                                            <Label className="text-sm text-muted-foreground">Notes</Label>
+                                            <p className="font-semibold">{transferToApprove.notes}</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Items List */}
+                            {transferToApprove.items && Array.isArray(transferToApprove.items) && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Items to Transfer</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-3">
+                                            {transferToApprove.items.map((item: any, index: number) => (
+                                                <div key={index} className="border rounded-lg p-3 bg-muted/50">
+                                                    <div className="grid grid-cols-3 gap-4">
+                                                        <div>
+                                                            <Label className="text-xs text-muted-foreground">Description</Label>
+                                                            <p className="font-semibold text-sm">{item.description || item.itemName || "-"}</p>
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs text-muted-foreground">Quantity</Label>
+                                                            <p className="font-semibold text-sm">{item.quantity} {item.unit || ""}</p>
+                                                        </div>
+                                                        <div>
+                                                            <Label className="text-xs text-muted-foreground">Status</Label>
+                                                            <Badge variant="outline">{item.status || "PENDING"}</Badge>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Additional Info */}
+                            {transferToApprove.vehicle && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Vehicle Information</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label className="text-sm text-muted-foreground">Vehicle Name</Label>
+                                                <p className="font-semibold">{transferToApprove.vehicle.vehicleName || "-"}</p>
+                                            </div>
+                                            <div>
+                                                <Label className="text-sm text-muted-foreground">Registration Number</Label>
+                                                <p className="font-semibold">{transferToApprove.vehicle.registrationNumber || "-"}</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {transferToApprove.driverName && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Driver Information</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <Label className="text-sm text-muted-foreground">Driver Name</Label>
+                                                <p className="font-semibold">{transferToApprove.driverName}</p>
+                                            </div>
+                                            {transferToApprove.etaMinutes && (
+                                                <div>
+                                                    <Label className="text-sm text-muted-foreground">ETA</Label>
+                                                    <p className="font-semibold">{(transferToApprove.etaMinutes / 60).toFixed(1)} hrs</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setIsApproveTransferModalOpen(false);
+                                setTransferToApprove(null);
+                            }}
+                            disabled={isApprovingTransfer}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                if (transferToApprove) {
+                                    handleApproveTransferFinal(transferToApprove);
+                                }
+                            }}
+                            disabled={isApprovingTransfer}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            {isApprovingTransfer ? "Approving..." : "Approve Transfer"}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

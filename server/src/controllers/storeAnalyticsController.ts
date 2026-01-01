@@ -241,19 +241,18 @@ export const getTransfers = async (req: Request, res: Response) => {
     
     if (!userId) {
       const transfers = await prisma.materialTransfer.findMany({
-      include: {
-        items: {
-          include: {
-            inventory: true
-          }
+        include: {
+          items: {
+            include: {
+              inventory: true
+            }
+          },
+          approvedBy: true
         },
-        vehicle: true,
-        approvedBy: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+        orderBy: { createdAt: 'desc' }
+      });
 
-    res.json(transfers);
+      return res.json(transfers);
     }
 
     const whereClause: any = {
@@ -276,7 +275,6 @@ export const getTransfers = async (req: Request, res: Response) => {
             inventory: true
           }
         },
-        vehicle: true,
         approvedBy: true
       },
       orderBy: { createdAt: 'desc' }
