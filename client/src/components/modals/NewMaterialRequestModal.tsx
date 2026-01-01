@@ -331,7 +331,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
     // Validate items
     const validItems = items.filter(item => {
       const hasUOM = item.uom === "OTHER" ? (item.uomOther?.trim() || "") : (item.uom.trim() || "");
-      return item.hsnCode.trim() && item.quantity > 0 && hasUOM;
+      return item.quantity > 0 && hasUOM;
     });
 
     if (validItems.length === 0) {
@@ -356,7 +356,7 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
       // Filter out empty items
       const validItems = items.filter(item => {
         const hasUOM = item.uom === "OTHER" ? (item.uomOther?.trim() || "") : (item.uom.trim() || "");
-        return item.hsnCode.trim() && item.quantity > 0 && hasUOM;
+        return item.quantity > 0 && hasUOM;
       });
 
       const materialRequestData = {
@@ -560,8 +560,8 @@ export function NewMaterialRequestModal({ open, onOpenChange, onSave }: NewMater
                           />
                         </div>
                         <div className="col-span-1">No.</div>
-                        <div className="col-span-1">HSN Code *</div>
-                        <div className="col-span-1">Rate</div>
+                         <div className="col-span-1">HSN Code</div>
+                         <div className="col-span-1">Rate</div>
                         <div className="col-span-1">Value (Auto)</div>
                         <div className="col-span-1">Vehicle No</div>
                         <div className="col-span-2">Required By</div>

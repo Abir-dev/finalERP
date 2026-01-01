@@ -535,6 +535,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     const [driverName, setDriverName] = useState("");
     const [etaMinutes, setEtaMinutes] = useState<string>("");
     const [vehicleId, setVehicleId] = useState<string>("");
+    const [vehicleNumber, setVehicleNumber] = useState<string>("");
+    const [vehicleName, setVehicleName] = useState<string>("");
+    const [fromProject, setFromProject] = useState<string>("");
+    const [toProject, setToProject] = useState<string>("");
     const [approvedById, setApprovedById] = useState<string>("");
     const [priority, setPriority] = useState<TransferPriority>("NORMAL");
     const [notes, setNotes] = useState("");
@@ -614,6 +618,10 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                             setDriverName(t.driverName || "");
                             setEtaMinutes(typeof t.etaMinutes === 'number' ? String((t.etaMinutes / 60).toFixed(1)) : "");
                             setVehicleId(t.vehicleId || "");
+                            setVehicleNumber(t.vehicleNumber || "");
+                            setVehicleName(t.vehicleName || "");
+                            setFromProject(t.fromProject || "");
+                            setToProject(t.toProject || "");
                             setApprovedById(t.approvedById || "");
                             setPriority((t.priority || 'NORMAL') as TransferPriority);
                             const mappedItems: ItemRow[] = Array.isArray(t.items)
@@ -686,10 +694,6 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
     };
 
     const validate = () => {
-        if (!transferID.trim()) {
-            toast({ title: "Validation Error", description: "Transfer ID is required", variant: "destructive" });
-            return false;
-        }
         if (!fromUserId || !toUserId) {
             toast({ title: "Validation Error", description: "Please select both From and To users", variant: "destructive" });
             return false;
@@ -722,11 +726,15 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                 toLocation: toLocation.trim(),
                 fromUserId: fromUserId,
                 toUserId: toUserId,
+                fromProject: fromProject.trim() || null,
+                toProject: toProject.trim() || null,
                 requestedDate: new Date(requestedDate).toISOString(),
                 status,
                 driverName: driverName.trim() || null,
                 etaMinutes: etaMinutesValue,
                 vehicleId: vehicleId || null,
+                vehicleNumber: vehicleNumber.trim() || null,
+                vehicleName: vehicleName.trim() || null,
                 approvedById: approvedById || null,
                 priority,
                 items: items
@@ -843,12 +851,20 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                 {/* Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <Label className="mb-1 block">Transfer ID *</Label>
+                        <Label className="mb-1 block">Transfer ID</Label>
                         <Input value={transferID} onChange={(e) => setTransferID(e.target.value)} placeholder="TRF001" />
                     </div>
                     <div>
                         <Label className="mb-1 block">Requested Date *</Label>
                         <Input type="date" value={requestedDate} onChange={(e) => setRequestedDate(e.target.value)} />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">From Project</Label>
+                        <Input value={fromProject} onChange={(e) => setFromProject(e.target.value)} placeholder="Project name" />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">To Project</Label>
+                        <Input value={toProject} onChange={(e) => setToProject(e.target.value)} placeholder="Project name" />
                     </div>
                     <div>
                         <Label className="mb-1 block">From *</Label>
@@ -861,7 +877,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                                 <SelectValue placeholder="Select from user" />
                             </SelectTrigger>
                             <SelectContent>
-                                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
+                                {users.filter((u) => u.role === 'store' || u.role === 'project' || u.role === 'admin'  || u.role === 'warehouse').map((u) => (
                                     <SelectItem key={u.id} value={u.id}>
                                         {u.name} ({u.email})
                                     </SelectItem>
@@ -880,7 +896,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                                 <SelectValue placeholder="Select destination user" />
                             </SelectTrigger>
                             <SelectContent>
-                                {users.filter((u) => u.role === 'store' || u.role === 'project').map((u) => (
+                                {users.filter((u) => u.role === 'store' || u.role === 'project' || u.role === 'admin'  || u.role === 'warehouse').map((u) => (
                                     <SelectItem key={u.id} value={u.id}>
                                         {u.name} ({u.email})
                                     </SelectItem>
@@ -925,25 +941,12 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                         <Input type="number" min="0" step="0.1" value={etaMinutes} onChange={(e) => setEtaMinutes(e.target.value)} placeholder="2.0" />
                     </div>
                     <div>
-                        <Label className="mb-1 block">Vehicle</Label>
-                        <Select value={vehicleId} onValueChange={setVehicleId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select vehicle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {vehicles.length === 0 ? (
-                                    <SelectItem value="no-vehicles" disabled>
-                                        No vehicles found
-                                    </SelectItem>
-                                ) : (
-                                    vehicles.map((v) => (
-                                        <SelectItem key={v.id} value={v.id}>
-                                            {v.vehicleName} ({v.registrationNumber}) - {v.driverName}
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
+                        <Label className="mb-1 block">Vehicle Number</Label>
+                        <Input value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} placeholder="ABC-123" />
+                    </div>
+                    <div>
+                        <Label className="mb-1 block">Vehicle Name</Label>
+                        <Input value={vehicleName} onChange={(e) => setVehicleName(e.target.value)} placeholder="Truck A" />
                     </div>
                     <div>
                         <Label className="mb-1 block">Approved By</Label>
@@ -952,7 +955,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
                                 <SelectValue placeholder="Select approver" />
                             </SelectTrigger>
                             <SelectContent>
-                                {users.map((u) => (
+                                {users.filter((u) => u.role === 'admin'  || u.role === 'warehouse' || u.role === 'store' || u.role === 'project' ).map((u) => (
                                     <SelectItem key={u.id} value={u.id}>
                                         {u.name} ({u.email})
                                     </SelectItem>

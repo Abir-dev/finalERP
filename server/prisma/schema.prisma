@@ -1207,7 +1207,7 @@ model MaterialRequestItem {
   id                String          @id @default(uuid()) @db.Uuid
   materialRequestId String          @db.Uuid
   materialRequest   MaterialRequest @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
-  hsnCode           String
+  hsnCode           String?
   itemName          Item?
   requiredBy        String? // Date as string for flexibility
   quantity          Float           @default(0)
@@ -1229,7 +1229,7 @@ model Vehicle {
   registrationNumber String
   assignedSite       String
   licensePlate       String
-  driverName         String
+  driverName         String?
   length             Float?
   width              Float?
   height             Float?
@@ -1238,7 +1238,6 @@ model Vehicle {
   maintenanceHistory Maintenance[]
   createdById        String             @map("created_by_id") @db.Uuid
   createdBy          User               @relation("VehicleCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  MaterialTransfer   MaterialTransfer[]
 }
 
 model VehicleMovement {
@@ -1262,11 +1261,16 @@ model Maintenance {
 // Records the movement of materials between locations (e.g., Warehouse → Site)
 model MaterialTransfer {
   id            String         @id @default(uuid()) @db.Uuid
-  transferID    String         @unique
+  transferID    String?         @unique
   fromLocation  String
   toLocation    String
+  fromProjectId String? @db.Uuid
+  toProjectId String? @db.Uuid
+  fromProject   String?
+  toProject     String?
   requestedDate DateTime       @map("requested_date") @db.Timestamptz(6)
   status        TransferStatus @default(PENDING)
+  approvalStatus String? @default("PENDING")
   driverName    String?
   etaMinutes    Int?           @map("eta_minutes")
   inventoryType InventoryType?
@@ -1283,8 +1287,9 @@ model MaterialTransfer {
   approvedBy   User?   @relation("MaterialTransferApproval", fields: [approvedById], references: [id])
 
   // Vehicle used for transport
-  vehicleId String?  @db.Uuid
-  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  vehicleNumber String?
+  vehicleName   String?
+ 
 
   // Creator/auditing
   createdById String @db.Uuid
