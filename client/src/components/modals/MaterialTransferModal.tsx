@@ -706,10 +706,7 @@ export default function MaterialTransferModal({ open, onOpenChange, onSave, mode
             const hasItemName = i.itemName === "OTHER" ? (i.itemNameOther?.trim() || "") : (i.itemName.trim() || "");
             return i.itemCode.trim() && hasItemName && i.quantity > 0 && i.itemType;
         });
-        if (validItems.length === 0) {
-            toast({ title: "Validation Error", description: "At least one valid item is required (Item Code, Name, Type, and Quantity)", variant: "destructive" });
-            return false;
-        }
+      
         return true;
     };
 
