@@ -88,7 +88,7 @@ const Index = () => {
     },
     {
       title: "Inventory",
-      description: "Inventory tracking and warehouse management",
+      description: "Inventory tracking and Central Store management",
       icon: Package,
       link: "/inventory",
       color: "bg-amber-500"

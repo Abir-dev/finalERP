@@ -222,7 +222,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
 
   const bottomItems = [
     {
-      title: "Warehouse Management",
+      title: "Central Store Management",
       url: "/warehouse-management",
       icon: Warehouse,
       allowedRoles: ["admin", "md", "warehouse", "store", "project"],
