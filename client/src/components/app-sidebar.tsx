@@ -345,12 +345,12 @@ export function AppSidebar() {
 
     {
       id: "inventory",
-      title: "Inventory",
+      title: "SiteStock Management",
       base: "/inventory",
       icon: Warehouse,
       allowedRoles: ["admin", "md", "store", "project", "warehouse"],
       subitems: [
-        { title: "Inventory", url: "/inventory/inventory" },
+        { title: "SiteStock", url: "/inventory/inventory" },
         { title: "Material Forecast", url: "/inventory/material-forecast" },
         { title: "Issue Tracking", url: "/inventory/issue-tracking" },
         { title: "Transfers", url: "/inventory/transfers" },

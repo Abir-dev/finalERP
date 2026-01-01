@@ -2802,7 +2802,7 @@ const InventoryContent = () => {
             <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                        Inventory Management
+                        SiteStock Management
                         {selectedUser && selectedUser.id !== currentUser?.id && (
                             <span className="text-sm md:text-lg text-muted-foreground ml-2">
                                 - {selectedUser.name}
@@ -2810,7 +2810,7 @@ const InventoryContent = () => {
                         )}
                     </h1>
                     <p className="text-sm md:text-base text-muted-foreground">
-                        Comprehensive project tracking, inventory management and material
+                        Comprehensive project tracking, SiteStock management and material
                         planning
                         {!isLoading &&
                             ` • ${filteredItems.length} items${inventoryItems.length !== filteredItems.length
@@ -3353,7 +3353,7 @@ const InventoryContent = () => {
             >
                 {/* Hide tabs on mobile - show only on desktop */}
                 <TabsList className="hidden md:grid w-full grid-cols-6">
-                    <TabsTrigger value="inventory">Inventory</TabsTrigger>
+                    <TabsTrigger value="inventory">SiteStock</TabsTrigger>
                     <TabsTrigger value="material-forecast">Material Forecast</TabsTrigger>
                     <TabsTrigger value="material-indent">Material Indane</TabsTrigger>
                     <TabsTrigger value="issue-tracking">Issue Tracking</TabsTrigger>
@@ -3588,7 +3588,7 @@ const InventoryContent = () => {
                         ) : (
                             <ExpandableDataTable
                                 title="Inventory Items"
-                                description="Comprehensive inventory management with detailed insights"
+                                description="Comprehensive SiteStock management with detailed insights"
                                 data={filteredItems}
                                 columns={mobileInventoryColumns}
                                 expandableContent={inventoryExpandableContent}

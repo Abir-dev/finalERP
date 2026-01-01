@@ -880,7 +880,7 @@ const SiteDashboardContent = () => {
             status: "On Duty",
             availability: "Full-time",
             experience: "5 years",
-            certifications: ["Inventory Management", "Supply Chain"],
+            certifications: ["SiteStock Management", "Supply Chain"],
         },
         {
             name: "Jane Smith",
@@ -9264,7 +9264,7 @@ const SiteDashboardContent = () => {
                                     <Input
                                         id="certifications"
                                         name="certifications"
-                                        placeholder="Inventory Management, Supply Chain, etc."
+                                        placeholder="SiteStock Management, Supply Chain, etc."
                                         className="h-8 text-sm"
                                     />
                                     <p className="text-xs text-muted-foreground">

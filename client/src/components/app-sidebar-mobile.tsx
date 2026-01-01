@@ -197,7 +197,7 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
     },
 
     {
-      title: "Inventory",
+      title: "SiteStock",
       url: "/inventory",
       icon: Warehouse,
       allowedRoles: ["admin", "md", "store", "project", "warehouse"],
@@ -361,12 +361,12 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
 
     {
       id: "inventory",
-      title: "Inventory",
+      title: "SiteStock Management",
       base: "/inventory",
       icon: Warehouse,
       allowedRoles: ["admin", "md", "store", "project"],
       subitems: [
-        { title: "Inventory", url: "/inventory/inventory" },
+        { title: "SiteStock", url: "/inventory/inventory" },
         { title: "Material Forecast", url: "/inventory/material-forecast" },
         { title: "Issue Tracking", url: "/inventory/issue-tracking" },
         { title: "Transfers", url: "/inventory/transfers" },

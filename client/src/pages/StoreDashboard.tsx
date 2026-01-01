@@ -1301,7 +1301,7 @@ setInventory(response.data);
               )}
             </h1>
             <p className="text-sm md:text-base text-muted-foreground">
-              Inventory management and logistics
+              SiteStock management and logistics
             </p>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -4925,7 +4925,7 @@ setInventory(response.data);
                     <Input
                       id="certifications"
                       name="certifications"
-                      placeholder="Inventory Management, Supply Chain, etc."
+                      placeholder="SiteStock Management, Supply Chain, etc."
                       className="h-8 text-sm"
                       value={staffFormData.certifications}
                       onChange={(e) =>
