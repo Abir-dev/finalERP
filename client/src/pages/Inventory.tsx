@@ -1140,7 +1140,7 @@ const InventoryContent = () => {
             console.log("Transfer ID:", transferId);
             console.log("User ID:", userID);
             console.log("Frontend transfer object:", transfer);
-            
+
             const response = await axios.get(
                 `${API_URL}/inventory/transfers/${transferId}?userId=${userID}`,
                 { headers }
@@ -1157,7 +1157,7 @@ const InventoryContent = () => {
             console.log("Signature length:", apiTransfer?.authorisedSignature?.length);
 
             // Map the API response to PDF generator format
-            const itemsArray = Array.isArray(apiTransfer?.items) 
+            const itemsArray = Array.isArray(apiTransfer?.items)
                 ? apiTransfer.items.filter((item: any) => item !== null && item !== undefined).map((item: any, idx: number) => {
                     console.log(`Item ${idx}:`, JSON.stringify(item, null, 2));
                     const mappedItem = {
@@ -3873,25 +3873,25 @@ const InventoryContent = () => {
                                     />
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                         {/* Item Name as Searchable Select */}
-                                         <FormField
-                                             control={editForm.control}
-                                             name="name"
-                                             render={({ field }) => (
-                                                 <FormItem>
-                                                     <FormLabel>Item</FormLabel>
-                                                     <FormControl>
-                                                         <SimpleSearchableSelect
-                                                             value={field.value || ""}
-                                                             onValueChange={field.onChange}
-                                                             options={ITEM_OPTIONS}
-                                                             placeholder="Search and select item..."
-                                                         />
-                                                     </FormControl>
-                                                     <FormMessage />
-                                                 </FormItem>
-                                             )}
-                                         />
+                                        {/* Item Name as Searchable Select */}
+                                        <FormField
+                                            control={editForm.control}
+                                            name="name"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Item</FormLabel>
+                                                    <FormControl>
+                                                        <SimpleSearchableSelect
+                                                            value={field.value || ""}
+                                                            onValueChange={field.onChange}
+                                                            options={ITEM_OPTIONS}
+                                                            placeholder="Search and select item..."
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
 
                                         <FormField
                                             control={editForm.control}
@@ -4598,106 +4598,318 @@ const InventoryContent = () => {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Material Transfers</h2>
-                            <p className="text-sm text-muted-foreground">
-                                Track material movement between locations
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 className="text-2xl font-bold tracking-tight">
+                                Material Transfers
+                            </h2>
+                            <p className="text-muted-foreground mt-1">
+                                Track material movement between locations organized by approval status
                             </p>
                         </div>
                         <Button
                             onClick={() => setIsAddTransferOpen(true)}
-                            size="sm"
-                            className="h-9"
+                            className="gap-2"
                         >
-                            <Plus className="mr-1 md:mr-2 h-4 w-4" />
-                            <span className="hidden md:inline">New Transfer</span>
+                            <Plus className="h-4 w-4" />
+                            New Transfer
                         </Button>
                     </div>
 
-                    <ExpandableDataTable
-                        title="Material Transfers"
-                        description="Track material movement between locations"
-                        data={transfers}
-                        columns={mobileTransferColumns}
-                        rowActions={["edit", "delete"]}
-                        expandableContent={(row) => (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <h4 className="font-medium mb-2">Transfer Details</h4>
-                                    <div className="text-sm space-y-1">
-                                        <div>Request Date: {row.requestedDate || "-"}</div>
-                                        <div>Priority: {row.priority || "-"}</div>
-                                        <div>Vehicle: {row.vehicleName || "-"}</div>
-                                        <div>Vehicle Reg: {row.vehicleReg || "-"}</div>
-                                        <div>Approved By: {row.approvedByName || "-"}</div>
+                    {/* Approved Transfers Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                Approved Transfers
+                            </CardTitle>
+                            <CardDescription>
+                                Material transfers with approved status
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {transfers.filter((t) => t.status === "APPROVED").length === 0 ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <div className="text-center">
+                                        <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                        <p className="text-muted-foreground">
+                                            No approved transfers
+                                        </p>
                                     </div>
                                 </div>
-                                <div>
-                                    <h4 className="font-medium mb-2">Items</h4>
-                                    <div className="text-sm space-y-1">
-                                        {(row.itemsList && row.itemsList.length > 0
-                                            ? row.itemsList
-                                            : []
-                                        ).map((it: any, idx: number) => {
-                                            const UNIT_LABELS: Record<string, string> = {
-                                                'CUBIC_FEET': 'Cubic Feet',
-                                                'M_CUBE': 'Metre Cube',
-                                                'SQUARE_FEET': 'Square Feet',
-                                                'TONNE': 'Tonne',
-                                                'PIECE': 'Piece',
-                                                'LITRE': 'Litre',
-                                                'KILOGRAM': 'Kilogram',
-                                                'BOX': 'Box',
-                                                'ROLL': 'Roll',
-                                                'SHEET': 'Sheet',
-                                                'HOURS': 'Hours',
-                                                'DAYS': 'Days',
-                                                'LUMPSUM': 'Lump Sum',
-                                            };
-                                            const displayUnit = it.unit ? (UNIT_LABELS[it.unit] || it.unit) : "";
-                                            return (
-                                            <div key={idx}>
-                                                • {it.description}: {it.quantity} {displayUnit}
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {transfers.filter((t) => t.status === "APPROVED").map((transfer) => (
+                                        <div
+                                            key={transfer.id}
+                                            className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-green-50 dark:bg-green-950/20"
+                                        >
+                                            <div className="space-y-3">
+                                                {/* Transfer ID */}
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Transfer ID
+                                                    </p>
+                                                    <p className="font-semibold text-lg">
+                                                        {transfer.id}
+                                                    </p>
+                                                </div>
+
+                                                {/* From/To */}
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Route
+                                                    </p>
+                                                    <p className="text-sm font-medium">{transfer.from} → {transfer.to}</p>
+                                                </div>
+
+                                                {/* Date & Items */}
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Date
+                                                        </p>
+                                                        <p className="text-sm font-medium">
+                                                            {transfer.requestedDate || "-"}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Items
+                                                        </p>
+                                                        <p className="text-sm font-medium">
+                                                            {transfer.items || 0}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Status & Actions */}
+                                                <div className="flex items-center justify-between pt-2 border-t">
+                                                    <Badge className="bg-green-600 hover:bg-green-700">
+                                                        {transfer.status}
+                                                    </Badge>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                handleDownloadTransferPDF(transfer);
+                                                            }}
+                                                            title="Download as PDF"
+                                                        >
+                                                            <FileDown className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setEditingTransfer(transfer);
+                                                                setIsEditTransferOpen(true);
+                                                            }}
+                                                        >
+                                                            <Edit className="h-4 w-4 mr-1" />
+                                                            Edit
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            );
-                                        })}
-                                        {(!row.itemsList || row.itemsList.length === 0) && (
-                                            <div className="text-muted-foreground">No items</div>
-                                        )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Pending and Rejected Cards - Side by Side */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Pending Transfers Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Clock className="h-5 w-5 text-yellow-600" />
+                                    Pending Transfers
+                                </CardTitle>
+                                <CardDescription>
+                                    Transfers awaiting approval
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {transfers.filter((t) => t.status === "PENDING").length === 0 ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-muted-foreground">
+                                                No pending transfers
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="col-span-full flex gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                            handleDownloadTransferPDF(row);
-                                        }}
-                                        title="Download as PDF"
-                                    >
-                                        <FileDown className="h-4 w-4 mr-2" />
-                                        Download PDF
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                        searchKey="id"
-                        filters={[
-                            {
-                                key: "status",
-                                label: "Status",
-                                options: Array.from(
-                                    new Set(transfers.map((t) => t.status))
-                                ).filter(Boolean) as string[],
-                            },
-                        ]}
-                        onRowAction={handleTransferAction}
-                        onEditClick={(row) => {
-                            setEditingTransfer(row);
-                            setIsEditTransferOpen(true);
-                        }}
-                    />
+                                ) : (
+                                    <div className="space-y-4">
+                                        {transfers.filter((t) => t.status === "PENDING").map((transfer) => (
+                                            <div
+                                                key={transfer.id}
+                                                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-yellow-50 dark:bg-yellow-950/20"
+                                            >
+                                                <div className="space-y-3">
+                                                    {/* Transfer ID */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Transfer ID
+                                                        </p>
+                                                        <p className="font-semibold">
+                                                            {transfer.id}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* From/To */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Route
+                                                        </p>
+                                                        <p className="text-sm font-medium">{transfer.from} → {transfer.to}</p>
+                                                    </div>
+
+                                                    {/* Date */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Date
+                                                        </p>
+                                                        <p className="text-sm font-medium">
+                                                            {transfer.requestedDate || "-"}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Status & Actions */}
+                                                    <div className="flex items-center justify-between pt-2 border-t">
+                                                        <Badge className="bg-yellow-600 hover:bg-yellow-700">
+                                                            {transfer.status}
+                                                        </Badge>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    handleDownloadTransferPDF(transfer);
+                                                                }}
+                                                                title="Download as PDF"
+                                                            >
+                                                                <FileDown className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    setEditingTransfer(transfer);
+                                                                    setIsEditTransferOpen(true);
+                                                                }}
+                                                            >
+                                                                <Edit className="h-4 w-4 mr-1" />
+                                                                Edit
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Rejected Transfers Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                                    Rejected Transfers
+                                </CardTitle>
+                                <CardDescription>
+                                    Transfers that have been rejected
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {transfers.filter((t) => t.status === "REJECTED").length === 0 ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                            <p className="text-muted-foreground">
+                                                No rejected transfers
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {transfers.filter((t) => t.status === "REJECTED").map((transfer) => (
+                                            <div
+                                                key={transfer.id}
+                                                className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-red-50 dark:bg-red-950/20"
+                                            >
+                                                <div className="space-y-3">
+                                                    {/* Transfer ID */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Transfer ID
+                                                        </p>
+                                                        <p className="font-semibold">
+                                                            {transfer.id}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* From/To */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Route
+                                                        </p>
+                                                        <p className="text-sm font-medium">{transfer.from} → {transfer.to}</p>
+                                                    </div>
+
+                                                    {/* Date */}
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Date
+                                                        </p>
+                                                        <p className="text-sm font-medium">
+                                                            {transfer.requestedDate || "-"}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Status & Actions */}
+                                                    <div className="flex items-center justify-between pt-2 border-t">
+                                                        <Badge className="bg-red-600 hover:bg-red-700">
+                                                            {transfer.status}
+                                                        </Badge>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    handleDownloadTransferPDF(transfer);
+                                                                }}
+                                                                title="Download as PDF"
+                                                            >
+                                                                <FileDown className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    setEditingTransfer(transfer);
+                                                                    setIsEditTransferOpen(true);
+                                                                }}
+                                                            >
+                                                                <Edit className="h-4 w-4 mr-1" />
+                                                                Edit
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
                     <MaterialTransferModal
                         open={isAddTransferOpen}
                         onOpenChange={setIsAddTransferOpen}
