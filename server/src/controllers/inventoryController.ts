@@ -407,7 +407,7 @@ export const inventoryController = {
                     OR: [
                         // { itemName: { contains: search as Item, mode: 'insensitive' } },
                         { primarySupplierName: { contains: search as string, mode: 'insensitive' } },
-                        { location: { contains: search as string, mode: 'insensitive' } }
+                        { itemCode: { contains: search as string, mode: 'insensitive' } }
                     ]
                 },
                 include: {

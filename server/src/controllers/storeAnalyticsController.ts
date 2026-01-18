@@ -50,8 +50,7 @@ export const getStoreOverview = async (req: Request, res: Response) => {
     const recentTransactions = await prisma.materialTransfer.findMany({
       // where: { createdById: userId as string },
       include: {
-        items: true,
-        vehicle: true
+        items: true
       },
       orderBy: { createdAt: 'desc' },
       take: 5
@@ -113,8 +112,7 @@ export const getStoreOverview = async (req: Request, res: Response) => {
     const recentTransactions = await prisma.materialTransfer.findMany({
       where: { createdById: userId as string },
       include: {
-        items: true,
-        vehicle: true
+        items: true
       },
       orderBy: { createdAt: 'desc' },
       take: 5
@@ -200,7 +198,7 @@ export const getStockLevels = async (req: Request, res: Response) => {
         safetyStock: true,
         maximumStock: true,
         category: true,
-        location: true
+        itemCode: true
       }
     });
 
