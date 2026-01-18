@@ -79,6 +79,7 @@ interface UserContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => Promise<void>;
   clearError: () => void;
   isAuthenticated: boolean;
   retryAuth: () => Promise<void>;
@@ -268,6 +269,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  // Change password function
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string, confirmPassword: string) => {
+      dispatch({ type: "SET_LOADING", payload: true });
+      try {
+        const token = getToken();
+        if (!token) throw new Error("Not authenticated");
+        await axios.post(`${API_URL}/auth/change-password`, { currentPassword, newPassword, confirmPassword }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        dispatch({ type: "SET_ERROR", payload: null });
+      } catch (error: any) {
+        dispatch({ type: "SET_ERROR", payload: error.response?.data?.error || error.message || "Password change failed" });
+        throw error;
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    },
+    []
+  );
+
   // Retry authentication function
   const retryAuth = useCallback(async () => {
     const token = getToken();
@@ -390,6 +412,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     updateProfile,
+    changePassword,
     clearError,
     isAuthenticated: !!state.user,
     retryAuth,

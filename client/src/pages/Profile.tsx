@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { BellRing, Camera, Edit2, Key, Save, User } from "lucide-react";
+import { BellRing, Camera, Edit2, Key, Save, User, Eye, EyeOff, Check, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 
+// Password change functionality component
 const Profile = () => {
-  const { user, updateProfile } = useUser();
+  const { user, updateProfile, changePassword } = useUser();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: user?.name.split(' ')[0] || '',
@@ -19,7 +20,27 @@ const Profile = () => {
     email: user?.email || '',
     avatar: user?.avatar || ''
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [passwordError, setPasswordError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Validate passwords match in real-time
+  useEffect(() => {
+    if (passwordData.newPassword && passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError("Passwords do not match");
+    } else {
+      setPasswordError("");
+    }
+  }, [passwordData.newPassword, passwordData.confirmPassword]);
 
   const handleSave = async () => {
     try {
@@ -67,6 +88,78 @@ const Profile = () => {
         title: "Avatar upload",
         description: "This feature is not implemented yet. Please provide an image URL instead.",
       });
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Validate all fields are filled
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        toast({
+          title: "Validation error",
+          description: "Please fill in all password fields.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate new passwords match
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        toast({
+          title: "Validation error",
+          description: "New passwords do not match.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate new password is different from current
+      if (passwordData.currentPassword === passwordData.newPassword) {
+        toast({
+          title: "Validation error",
+          description: "New password must be different from current password.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validate new password length
+      if (passwordData.newPassword.length < 6) {
+        toast({
+          title: "Validation error",
+          description: "New password must be at least 6 characters long.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      await changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword,
+        passwordData.confirmPassword
+      );
+
+      // Clear form on success
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      toast({
+        title: "Success",
+        description: "Your password has been changed successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to change password",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -231,30 +324,127 @@ const Profile = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
-                    <Input id="current-password" type="password" />
+                    <div className="relative">
+                      <Input 
+                        id="current-password" 
+                        type={showPasswords.current ? "text" : "password"}
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                        onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                        tabIndex={-1}
+                      >
+                        {showPasswords.current ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
-                    <Input id="new-password" type="password" />
+                    <div className="relative">
+                      <Input 
+                        id="new-password" 
+                        type={showPasswords.new ? "text" : "password"}
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                        onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                        tabIndex={-1}
+                      >
+                        {showPasswords.new ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" />
+                    <div className="relative">
+                      <Input 
+                        id="confirm-password" 
+                        type={showPasswords.confirm ? "text" : "password"}
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="••••••••"
+                        className={passwordError ? "border-destructive" : ""}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none transition-colors"
+                        onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                        tabIndex={-1}
+                      >
+                        {showPasswords.confirm ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
+
+                  {passwordData.newPassword && passwordData.confirmPassword && (
+                    <div className={`flex items-center space-x-3 p-3 rounded-lg border bg-card/50 transition-all duration-200 ${
+                      passwordError 
+                        ? "border-destructive bg-destructive/5" 
+                        : "border-green-500/50 bg-green-500/5"
+                    }`}>
+                      <div className={`flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all duration-200 ease-in-out ${
+                        !passwordError
+                          ? "border-green-500 bg-green-500" 
+                          : "border-red-400 bg-red-50"
+                      }`}>
+                        {!passwordError && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                        {passwordError && (
+                          <X className="w-3 h-3 text-red-600" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-sm font-medium transition-colors duration-200 ${
+                          !passwordError
+                            ? "text-green-700" 
+                            : "text-red-600"
+                        }`}
+                      >
+                        {!passwordError
+                          ? "Passwords match"
+                          : "Passwords do not match"}
+                      </span>
+                    </div>
+                  )}
                   
                   <Separator />
                   
                   <div className="flex justify-end">
-                    <Button onClick={() => {
-                      toast({
-                        title: "Not implemented",
-                        description: "Password change functionality is not implemented yet.",
-                      });
-                    }}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Update Password
+                    <Button onClick={handleChangePassword} disabled={isSubmitting || !!passwordError || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}>
+                      {isSubmitting ? (
+                        <>
+                          <Save className="mr-2 h-4 w-4 animate-spin" />
+                          Updating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Update Password
+                        </>
+                      )}
                     </Button>
                   </div>
                 </CardContent>

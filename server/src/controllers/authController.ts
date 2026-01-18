@@ -196,6 +196,55 @@ export const authController = {
     }
   },
 
+  async changePassword(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+      }
+
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+
+      // Validate required fields
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      // Validate passwords match
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ error: "New passwords do not match" });
+      }
+
+      // Validate new password is different from current
+      if (currentPassword === newPassword) {
+        return res.status(400).json({ error: "New password must be different from current password" });
+      }
+
+      // Validate new password length
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters long" });
+      }
+
+      // Change the password using the service
+      await prismaUserService.changePassword(userId, currentPassword, newPassword);
+
+      res.status(200).json({
+        message: "Password changed successfully"
+      });
+    } catch (error) {
+      logger.error("Error:", error);
+      
+      if (error instanceof Error && error.message === "Invalid current password") {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      res.status(500).json({
+        message: "Internal server error",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
   async logout(req: Request, res: Response) {
     try {
       // Clear cookie if using cookie-based auth

@@ -152,6 +152,27 @@ async updateUser(id: string, updates: Partial<{ name: string; email: string; pas
   });
 },
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Verify current password
+    // @ts-ignore
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new Error('Invalid current password');
+    }
+
+    // Hash new password and update
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    return prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+  },
+
   async getAllUsers() {
     return prisma.user.findMany({
       select: {

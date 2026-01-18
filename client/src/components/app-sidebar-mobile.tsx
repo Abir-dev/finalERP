@@ -761,14 +761,6 @@ export function AppSidebarMobile({ className }: AppSidebarMobileProps) {
               >
                 Profile Settings
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => {
-                  navigate("/notifications");
-                  setIsOpen(false);
-                }}
-              >
-                Notifications
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

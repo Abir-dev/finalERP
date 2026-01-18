@@ -789,9 +789,6 @@ export function AppSidebar() {
               <DropdownMenuItem onClick={() => navigate("/profile")}>
                 Profile Settings
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/notifications")}>
-                Notifications
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
