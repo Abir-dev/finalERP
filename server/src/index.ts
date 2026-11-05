@@ -43,7 +43,7 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "https://testboard-1.onrender.com",
+  origin: process.env.CORS_ORIGIN || "https://finalerp.onrender.com",
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
